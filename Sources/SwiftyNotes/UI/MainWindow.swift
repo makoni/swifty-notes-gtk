@@ -15,14 +15,19 @@ final class MainWindow {
     private let editor = MarkdownEditor()
     private let preview = MarkdownPreview()
     private let headerTitle = WindowTitle(title: "Swifty Notes", subtitle: "Markdown notes")
+    private let sidebarToggle = Button(iconName: "sidebar-show-symbolic")
     private let previewToggle = Button(icon: .custom("sidebar-show-right-symbolic"))
     private let newNoteButton = Button(icon: .custom("list-add-symbolic"))
     private let saveNoteButton = Button(icon: .custom("document-save-symbolic"))
     private let deleteNoteButton = Button(icon: .userTrash)
     private let menuButton = MenuButton(icon: .custom("open-menu-symbolic"))
     private let toastOverlay = ToastOverlay()
+    private let splitView = OverlaySplitView()
     private let editorPreviewPane = Paned(orientation: .horizontal)
     private let editorScroll = ScrolledWindow()
+    private let previewRevealer = Revealer()
+    private let autosaveDelay: Duration
+    private let directoryOpener: @Sendable (URL) async throws -> Void
 
     private lazy var renameAction = SimpleAction(name: "rename-note") { [weak self] in
         self?.presentRenameDialogForSelectedNote()
@@ -48,12 +53,6 @@ final class MainWindow {
     private lazy var reloadAction = SimpleAction(name: "reload-notes") { [weak self] in
         self?.reloadFromDisk(announce: true)
     }
-    private lazy var saveAction = SimpleAction(name: "save-note") { [weak self] in
-        self?.saveSelectedNoteNow()
-    }
-    private lazy var togglePreviewAction = SimpleAction(name: "toggle-preview") { [weak self] in
-        self?.togglePreviewVisibility()
-    }
 
     private var displayedNotes: [Note] = []
     private var directorySnapshot = NotesDirectorySnapshot()
@@ -62,6 +61,8 @@ final class MainWindow {
     private var externalReloadDeferred = false
     private var suppressEditorChange = false
     private var isRestoringPreviewPaneLayout = false
+    private var previewAnimationID: SourceID?
+    private var isPreviewPaneAttached = false
     private var noteContextMenu: Popover?
     private var noteContextHandlers: [String: @MainActor () -> Void] = [:]
     private var noteContextDeferredAction: (@MainActor () -> Void)?
@@ -76,13 +77,17 @@ final class MainWindow {
         stateStore: WorkspaceStateStore,
         repository: NotesRepository,
         renderer: MarkdownRenderer,
-        autosave: AutosaveCoordinator
+        autosave: AutosaveCoordinator,
+        autosaveDelay: Duration = .seconds(2),
+        directoryOpener: @escaping @Sendable (URL) async throws -> Void = MainWindow.openDirectoryInSystemFileManager
     ) {
         self.state = state
         self.stateStore = stateStore
         self.repository = repository
         self.renderer = renderer
         self.autosave = autosave
+        self.autosaveDelay = autosaveDelay
+        self.directoryOpener = directoryOpener
 
         window = ApplicationWindow(application: application)
         window.title = "Swifty Notes"
@@ -111,18 +116,22 @@ final class MainWindow {
     }
 
     private func buildUI() {
+        sidebarToggle.addCSSClass(.flat)
         previewToggle.addCSSClass(.flat)
         newNoteButton.addCSSClass(.flat)
         saveNoteButton.addCSSClass(.flat)
         deleteNoteButton.addCSSClass(.flat)
         menuButton.addCSSClass(.flat)
         menuButton.hasFrame = false
+        configureToolbarAccessibility()
+        configureToolbarTooltips()
 
         sidebar.searchEntry.text = state.searchQuery
         sidebar.setSortMode(state.sortMode)
 
         let header = HeaderBar()
         header.titleWidget = headerTitle
+        header.packStart(sidebarToggle)
         header.packStart(newNoteButton)
         header.packStart(saveNoteButton)
         header.packStart(deleteNoteButton)
@@ -133,24 +142,30 @@ final class MainWindow {
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
 
         editorPreviewPane.startChild = editorScroll
-        editorPreviewPane.endChild = preview.rootScroll
+        previewRevealer.child = preview.rootScroll
+        previewRevealer.transitionType = .slideLeft
+        previewRevealer.transitionDuration = Self.previewAnimationDuration
         editorPreviewPane.resizeStartChild = true
         editorPreviewPane.resizeEndChild = false
         editorPreviewPane.shrinkStartChild = false
         editorPreviewPane.shrinkEndChild = true
         editorPreviewPane.wideHandle = true
-        applyPreviewVisibility()
+        applyPreviewVisibility(animated: false)
 
-        let contentPage = NavigationPage(child: editorPreviewPane, title: "Editor")
-        let sidebarPage = NavigationPage(child: sidebar.root, title: "Notes")
-        let navigation = NavigationSplitView()
-        navigation.sidebarWidthFraction = 0.26
-        navigation.setSidebar(sidebarPage)
-        navigation.setContent(contentPage)
+        splitView.pinSidebar = true
+        splitView.showSidebar = state.isSidebarVisible
+        splitView.enableShowGesture = true
+        splitView.enableHideGesture = true
+        splitView.sidebarWidthFraction = 0.26
+        splitView.minSidebarWidth = 240
+        splitView.maxSidebarWidth = 380
+        splitView.sidebar = sidebar.root
+        splitView.content = editorPreviewPane
+        applySidebarVisibility()
 
         let toolbar = ToolbarView()
         toolbar.addTopBar(header)
-        toolbar.content = navigation
+        toolbar.content = splitView
 
         toastOverlay.child = toolbar
         window.setContent(toastOverlay)
@@ -168,13 +183,14 @@ final class MainWindow {
             self.persistWorkspaceState()
         }
 
-        sidebar.sortDropDown.onSelectedChanged { [weak self] in
+        sidebar.onSortModeChanged { [weak self] sortMode in
             guard let self else { return }
-            let index = self.sidebar.sortDropDown.selected
-            guard NotesSortMode.allCases.indices.contains(index) else { return }
-            let sortMode = NotesSortMode.allCases[index]
             guard sortMode != self.state.sortMode else { return }
             self.setSortMode(sortMode)
+        }
+
+        sidebarToggle.onClicked { [weak self] in
+            self?.toggleSidebarVisibility()
         }
 
         previewToggle.onClicked { [weak self] in
@@ -194,16 +210,16 @@ final class MainWindow {
         }
 
         editor.view.onChanged { [weak self] in
-            guard let self, !self.suppressEditorChange, var selected = self.state.selectedNote else { return }
-            selected.content = self.editor.buffer.text
-            self.state.upsert(selected)
+            guard let self, !self.suppressEditorChange, let noteToSave = self.currentEditedNoteSnapshot() else { return }
+            self.state.upsert(noteToSave)
             self.refreshSidebar()
             self.refreshPreview()
             self.updateHeaderSubtitle()
-            let noteToSave = selected
             Task {
-                await self.autosave.scheduleSave {
-                    await self.performSave(note: noteToSave, announceSuccess: false)
+                await self.autosave.scheduleSave(after: self.autosaveDelay) {
+                    await MainActor.run { [weak self] in
+                        self?.saveCurrentEditedNote(announceSuccess: false)
+                    }
                 }
             }
         }
@@ -221,12 +237,19 @@ final class MainWindow {
             self?.handlePreviewPaneMoved()
         }
 
+        previewRevealer.onChildRevealed { [weak self] in
+            guard let self else { return }
+            guard !self.state.isPreviewVisible, !self.previewRevealer.childRevealed else { return }
+            self.detachPreviewPane()
+        }
+
         editorScroll.verticalAdjustment.onValueChanged { [weak self] in
             guard let self else { return }
             self.syncPreviewScroll()
         }
 
         window.onCloseRequest { [weak self] in
+            self?.saveCurrentEditedNote(announceSuccess: false)
             self?.persistWorkspaceState()
             self?.stopExternalChangeMonitor()
             Task { [weak self] in
@@ -275,13 +298,12 @@ final class MainWindow {
 
     private func loadInitialNotes() {
         do {
-            let notes = try repository.loadNotes()
+            var notes = try repository.loadNotes()
             if notes.isEmpty {
-                let note = try repository.createNote()
-                state.setNotes([note])
-            } else {
-                state.setNotes(notes)
+                _ = try repository.seedMarkdownShowcaseIfNeeded()
+                notes = try repository.loadNotes()
             }
+            state.setNotes(notes)
             directorySnapshot = try repository.directorySnapshot()
             renderSelection()
             updateHeaderSubtitle()
@@ -395,7 +417,7 @@ final class MainWindow {
         refreshPreview()
         saveNoteButton.visible = true
         deleteNoteButton.visible = true
-        applyPreviewVisibility()
+        applyPreviewVisibility(animated: false)
         updateHeaderSubtitle()
     }
 
@@ -449,24 +471,51 @@ final class MainWindow {
         window.addAction(importAction)
         window.addAction(openNotesFolderAction)
         window.addAction(reloadAction)
-        window.addAction(saveAction)
-        window.addAction(togglePreviewAction)
 
         let librarySection = GMenuRef()
         librarySection.append("Import markdown…", action: "win.import-note")
         librarySection.append("Reload from disk", action: "win.reload-notes")
         librarySection.append("Open notes folder", action: "win.open-notes-folder")
 
-        let viewSection = GMenuRef()
-        viewSection.append("Save now", action: "win.save-note")
-        viewSection.append("Toggle preview", action: "win.toggle-preview")
-
         let menu = GMenuRef()
         menu.appendSection("Library", section: librarySection)
-        menu.appendSection("View", section: viewSection)
-        overflowMenuSectionTitles = ["Library", "View"]
+        overflowMenuSectionTitles = ["Library"]
         menuButton.setMenuModel(menu)
         updateActionAvailability()
+    }
+
+    private func configureToolbarAccessibility() {
+        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
+        newNoteButton.setAccessibleLabel("New Note")
+        saveNoteButton.setAccessibleLabel("Save Note")
+        deleteNoteButton.setAccessibleLabel("Delete Note")
+        menuButton.setAccessibleLabel("Main Menu")
+        updatePreviewToggleAccessibility()
+    }
+
+    private func configureToolbarTooltips() {
+        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar"
+        newNoteButton.tooltipText = "New Note"
+        saveNoteButton.tooltipText = "Save Note"
+        deleteNoteButton.tooltipText = "Delete Note"
+        menuButton.tooltipText = "Main Menu"
+        updatePreviewToggleTooltip()
+    }
+
+    private func updatePreviewToggleAccessibility() {
+        previewToggle.setAccessibleLabel(state.isPreviewVisible ? "Hide Preview" : "Show Preview")
+    }
+
+    private func updatePreviewToggleTooltip() {
+        previewToggle.tooltipText = state.isPreviewVisible ? "Hide Preview" : "Show Preview"
+    }
+
+    private func updateSidebarToggleAccessibility() {
+        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
+    }
+
+    private func updateSidebarToggleTooltip() {
+        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar"
     }
 
     private func updateActionAvailability() {
@@ -476,32 +525,134 @@ final class MainWindow {
         deleteAction.enabled = hasSelection
         copyNoteIDAction.enabled = hasSelection
         exportAction.enabled = hasSelection
-        saveAction.enabled = hasSelection
     }
 
     private func togglePreviewVisibility() {
         state.isPreviewVisible.toggle()
-        applyPreviewVisibility()
+        applyPreviewVisibility(animated: true)
         persistWorkspaceState()
     }
 
-    private func applyPreviewVisibility() {
+    private func toggleSidebarVisibility() {
+        state.isSidebarVisible.toggle()
+        applySidebarVisibility()
+        persistWorkspaceState()
+    }
+
+    private func applySidebarVisibility() {
+        splitView.showSidebar = state.isSidebarVisible
+        updateSidebarToggleAccessibility()
+        updateSidebarToggleTooltip()
+    }
+
+    private func applyPreviewVisibility(animated: Bool) {
+        stopPreviewAnimation()
         if state.isPreviewVisible {
-            editorPreviewPane.endChild = preview.rootScroll
-            restorePreviewPaneLayout()
+            showPreviewPane(animated: animated)
         } else {
-            editorPreviewPane.endChild = nil
+            hidePreviewPane(animated: animated)
         }
+        updatePreviewToggleAccessibility()
+        updatePreviewToggleTooltip()
+    }
+
+    private func showPreviewPane(animated: Bool) {
+        attachPreviewPane()
+        previewRevealer.revealChild = true
+        if animated {
+            let totalWidth = currentPreviewContainerWidth
+            let targetPosition = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
+            editorPreviewPane.position = totalWidth
+            animatePreviewPane(to: targetPosition)
+            return
+        }
+        restorePreviewPaneLayout()
+    }
+
+    private func hidePreviewPane(animated: Bool) {
+        previewRevealer.revealChild = false
+        guard isPreviewPaneAttached else { return }
+        guard animated else {
+            detachPreviewPane()
+            return
+        }
+        animatePreviewPane(to: currentPreviewContainerWidth)
     }
 
     private func restorePreviewPaneLayout() {
         guard state.isPreviewVisible else { return }
-        let totalWidth = max(
+        let totalWidth = currentPreviewContainerWidth
+        isRestoringPreviewPaneLayout = true
+        editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
+        MainContext.idle { [weak self] in
+            self?.isRestoringPreviewPaneLayout = false
+        }
+    }
+
+    private func attachPreviewPane() {
+        guard !isPreviewPaneAttached else { return }
+        editorPreviewPane.endChild = previewRevealer
+        isPreviewPaneAttached = true
+    }
+
+    private func detachPreviewPane() {
+        guard isPreviewPaneAttached else { return }
+        stopPreviewAnimation()
+        editorPreviewPane.endChild = nil
+        isPreviewPaneAttached = false
+    }
+
+    private func animatePreviewPane(to targetPosition: Int) {
+        stopPreviewAnimation()
+        let startPosition = editorPreviewPane.position
+        guard startPosition != targetPosition else {
+            isRestoringPreviewPaneLayout = false
+            if !state.isPreviewVisible {
+                detachPreviewPane()
+            }
+            return
+        }
+
+        isRestoringPreviewPaneLayout = true
+        let startedAt = Date()
+        let duration = Double(Self.previewAnimationDuration) / 1000
+        previewAnimationID = MainContext.timeout(intervalMs: 16) { [weak self] in
+            guard let self else { return false }
+            let elapsed = Date().timeIntervalSince(startedAt)
+            let progress = min(max(elapsed / duration, 0), 1)
+            let easedProgress = 1 - pow(1 - progress, 3)
+            let position = Double(startPosition) + (Double(targetPosition - startPosition) * easedProgress)
+            self.editorPreviewPane.position = Int(position.rounded())
+            if progress < 1 {
+                return true
+            }
+
+            self.previewAnimationID = nil
+            self.isRestoringPreviewPaneLayout = false
+            if !self.state.isPreviewVisible {
+                self.detachPreviewPane()
+            }
+            return false
+        }
+    }
+
+    private func stopPreviewAnimation() {
+        if let previewAnimationID {
+            MainContext.cancel(sourceId: previewAnimationID)
+            self.previewAnimationID = nil
+        }
+    }
+
+    private var currentPreviewContainerWidth: Int {
+        max(
             editorPreviewPane.width,
-            window.width > 0 ? window.width - sidebar.root.width : 0,
+            window.width > 0 ? window.width - currentSidebarWidth : 0,
             window.defaultWidth - 280,
             state.preferredWindowWidth - 280
         )
+    }
+
+    private func resolvedVisiblePreviewPosition(totalWidth: Int) -> Int {
         let previewWidth = Self.resolvedPreviewWidth(
             storedWidth: state.preferredPreviewWidth,
             availableWidth: totalWidth
@@ -510,29 +661,28 @@ final class MainWindow {
            previewWidth > state.preferredPreviewWidth {
             state.setPreferredPreviewWidth(previewWidth)
         }
-
         preview.rootScroll.minContentWidth = Self.minimumPreviewWidth
-
-        isRestoringPreviewPaneLayout = true
-        editorPreviewPane.position = max(totalWidth - previewWidth, Self.minimumEditorWidth)
-        MainContext.idle { [weak self] in
-            self?.isRestoringPreviewPaneLayout = false
-        }
+        return max(totalWidth - previewWidth, Self.minimumEditorWidth)
     }
 
     private func handlePreviewPaneMoved() {
-        guard state.isPreviewVisible, editorPreviewPane.endChild != nil, !isRestoringPreviewPaneLayout else { return }
-        let totalWidth = max(editorPreviewPane.width, window.width - sidebar.root.width, window.defaultWidth - 280)
+        guard state.isPreviewVisible, previewRevealer.revealChild, !isRestoringPreviewPaneLayout else { return }
+        let totalWidth = max(editorPreviewPane.width, window.width - currentSidebarWidth, window.defaultWidth - 280)
         guard totalWidth >= Self.minimumPreviewWidth + Self.minimumEditorWidth else { return }
         let previewWidth = totalWidth - editorPreviewPane.position
         guard previewWidth >= Self.minimumPreviewWidth else { return }
         state.setPreferredPreviewWidth(previewWidth)
     }
 
+    private var currentSidebarWidth: Int {
+        splitView.showSidebar ? sidebar.root.width : 0
+    }
+
     private func setSortMode(_ sortMode: NotesSortMode) {
         state.setSortMode(sortMode)
         refreshSidebar()
         persistWorkspaceState()
+        toastOverlay.dismissAll()
         toastOverlay.showToast("Sorting by \(sortMode.displayName.lowercased())")
     }
 
@@ -557,33 +707,37 @@ final class MainWindow {
     }
 
     private func saveSelectedNoteNow() {
-        guard let selected = state.selectedNote else { return }
+        saveCurrentEditedNote(announceSuccess: true)
         Task {
             await autosave.cancel()
-            await performSave(note: selected, announceSuccess: true)
         }
     }
 
-    private func performSave(note: Note, announceSuccess: Bool) async {
-        let result = Result { try repository.save(note: note) }
-        await MainActor.run { [weak self] in
-            guard let self else { return }
-            switch result {
-            case let .success(savedNote):
-                self.handleSaveSuccess(savedNote, expectedContent: note.content, announceSuccess: announceSuccess)
-            case let .failure(error):
-                self.handleSaveFailure(error)
-            }
+    private func currentEditedNoteSnapshot() -> Note? {
+        guard var selected = state.selectedNote else { return nil }
+        selected.content = editor.buffer.text
+        return selected
+    }
+
+    private func saveCurrentEditedNote(announceSuccess: Bool) {
+        guard let noteToSave = currentEditedNoteSnapshot() else { return }
+        state.upsert(noteToSave)
+        refreshSidebar()
+        refreshPreview()
+        do {
+            let savedNote = try repository.save(note: noteToSave)
+            handleSaveSuccess(savedNote, announceSuccess: announceSuccess)
+        } catch {
+            handleSaveFailure(error)
         }
     }
 
-    private func handleSaveSuccess(_ savedNote: Note, expectedContent: String, announceSuccess: Bool) {
-        _ = state.replace(savedNote, ifCurrentContentMatches: expectedContent)
-        if state.selectedNoteID == savedNote.id, editor.buffer.text == savedNote.content {
-            editor.buffer.modified = false
-        }
+    private func handleSaveSuccess(_ savedNote: Note, announceSuccess: Bool) {
+        state.upsert(savedNote)
+        editor.buffer.modified = false
         refreshDirectorySnapshot()
         refreshSidebar()
+        refreshPreview()
         updateHeaderSubtitle()
         if announceSuccess {
             toastOverlay.showToast("Note saved")
@@ -870,8 +1024,34 @@ final class MainWindow {
     }
 
     private func openNotesFolder() {
-        let launcher = UriLauncher(uri: repository.notesDirectoryURL.absoluteString)
-        launcher.launch(parent: window)
+        do {
+            let folderURL = try ensureNotesDirectoryExists()
+            Task { [weak self] in
+                await self?.openNotesFolder(at: folderURL)
+            }
+        } catch {
+            presentError(
+                heading: "Could not open notes folder",
+                body: error.localizedDescription
+            )
+        }
+    }
+
+    private func ensureNotesDirectoryExists() throws -> URL {
+        let folderURL = repository.notesDirectoryURL.standardizedFileURL
+        try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+        return folderURL
+    }
+
+    private func openNotesFolder(at folderURL: URL) async {
+        do {
+            try await directoryOpener(folderURL)
+        } catch {
+            presentError(
+                heading: "Could not open notes folder",
+                body: error.localizedDescription
+            )
+        }
     }
 
     private func reloadFromDisk(announce: Bool, forceDiscardingUnsavedChanges: Bool = false) {
@@ -996,6 +1176,75 @@ final class MainWindow {
 
     static let minimumPreviewWidth = 400
     private static let minimumEditorWidth = 420
+    private static let previewAnimationDuration = 220
+
+    private struct DirectoryOpenFailure: LocalizedError {
+        let message: String
+
+        var errorDescription: String? {
+            message
+        }
+    }
+
+    private static func openDirectoryInSystemFileManager(_ folderURL: URL) async throws {
+        do {
+            try await runDirectoryOpenCommand(
+                executablePath: "/usr/bin/gio",
+                arguments: ["open", folderURL.path()]
+            )
+            return
+        } catch let gioError {
+            do {
+                try await runDirectoryOpenCommand(
+                    executablePath: "/usr/bin/xdg-open",
+                    arguments: [folderURL.path()]
+                )
+            } catch let xdgOpenError {
+                throw DirectoryOpenFailure(
+                    message: [
+                        gioError.localizedDescription,
+                        xdgOpenError.localizedDescription
+                    ]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: "\n")
+                )
+            }
+        }
+    }
+
+    private static func runDirectoryOpenCommand(
+        executablePath: String,
+        arguments: [String]
+    ) async throws {
+        try await Task.detached(priority: .userInitiated) {
+            guard FileManager.default.isExecutableFile(atPath: executablePath) else {
+                throw DirectoryOpenFailure(message: "\(executablePath) is not available.")
+            }
+
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: executablePath)
+            process.arguments = arguments
+
+            let stdout = Pipe()
+            let stderr = Pipe()
+            process.standardOutput = stdout
+            process.standardError = stderr
+
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else {
+                let errorData = stderr.fileHandleForReading.readDataToEndOfFile()
+                let outputData = stdout.fileHandleForReading.readDataToEndOfFile()
+                let message = [
+                    String(data: errorData, encoding: .utf8),
+                    String(data: outputData, encoding: .utf8)
+                ]
+                .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .first(where: { !$0.isEmpty }) ?? "Exit status \(process.terminationStatus)."
+                throw DirectoryOpenFailure(message: message)
+            }
+        }.value
+    }
 
     static func resolvedPreviewWidth(storedWidth: Int, availableWidth: Int) -> Int {
         let boundedAvailableWidth = max(availableWidth, minimumPreviewWidth + minimumEditorWidth)
@@ -1026,6 +1275,22 @@ final class MainWindow {
         g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(newNoteButton.opaquePointer), "clicked")
     }
 
+    func debugEmitSaveClicked() {
+        g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(saveNoteButton.opaquePointer), "clicked")
+    }
+
+    func debugEmitSidebarToggleClicked() {
+        g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(sidebarToggle.opaquePointer), "clicked")
+    }
+
+    func debugEmitPreviewToggleClicked() {
+        g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(previewToggle.opaquePointer), "clicked")
+    }
+
+    func debugEmitSortButtonClicked() {
+        g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(sidebar.sortButton.opaquePointer), "clicked")
+    }
+
     func debugSetEditorText(_ text: String) {
         editor.buffer.text = text
     }
@@ -1036,6 +1301,10 @@ final class MainWindow {
 
     var debugSelectedNoteContent: String? {
         state.selectedNote?.content
+    }
+
+    var debugEditorModified: Bool {
+        editor.buffer.modified
     }
 
     var debugPreviewText: String {
@@ -1074,6 +1343,17 @@ final class MainWindow {
         overflowMenuSectionTitles
     }
 
+    var debugToolbarTooltips: [String: String?] {
+        [
+            "sidebar": sidebarToggle.tooltipText,
+            "new": newNoteButton.tooltipText,
+            "save": saveNoteButton.tooltipText,
+            "delete": deleteNoteButton.tooltipText,
+            "preview": previewToggle.tooltipText,
+            "menu": menuButton.tooltipText
+        ]
+    }
+
     var debugNoteContextMenuLabels: [String] {
         noteContextMenuLabels
     }
@@ -1082,13 +1362,17 @@ final class MainWindow {
         state.sortMode
     }
 
+    var debugSidebarVisible: Bool {
+        splitView.showSidebar
+    }
+
     var debugSidebarSortSelection: Int {
-        sidebar.sortDropDown.selected
+        sidebar.selectedSortIndex
     }
 
     func debugSelectSidebarSort(at index: Int) {
         guard NotesSortMode.allCases.indices.contains(index) else { return }
-        sidebar.sortDropDown.selected = index
+        setSortMode(NotesSortMode.allCases[index])
     }
 
     @discardableResult
@@ -1111,8 +1395,24 @@ final class MainWindow {
         pollForExternalChanges()
     }
 
+    func debugOpenNotesFolder() async {
+        do {
+            let folderURL = try ensureNotesDirectoryExists()
+            try await directoryOpener(folderURL)
+        } catch {
+            presentError(
+                heading: "Could not open notes folder",
+                body: error.localizedDescription
+            )
+        }
+    }
+
     var debugPreferredPreviewWidth: Int {
         state.preferredPreviewWidth
+    }
+
+    var debugIsPreviewPaneAttached: Bool {
+        isPreviewPaneAttached
     }
     #endif
 }

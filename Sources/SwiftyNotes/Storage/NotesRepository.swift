@@ -171,6 +171,26 @@ public final class NotesRepository: @unchecked Sendable {
         notesDirectory.appendingPathComponent(note.filename, isDirectory: false)
     }
 
+    @discardableResult
+    public func seedMarkdownShowcaseIfNeeded(createdAt: Date = Date()) throws -> Note? {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let urls = try fileManager.contentsOfDirectory(
+                at: notesDirectory,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            )
+            if urls.contains(where: { $0.pathExtension == "md" }) {
+                return nil
+            }
+
+            let note = makeNewNote(content: MarkdownShowcaseSeed.content, createdAt: createdAt)
+            try persistUnlocked(note)
+            try persistShowcaseImageUnlockedIfNeeded()
+            return note
+        }
+    }
+
     private func ensureNotesDirectoryUnlocked() throws {
         try fileManager.createDirectory(at: notesDirectory, withIntermediateDirectories: true)
     }
@@ -195,6 +215,15 @@ public final class NotesRepository: @unchecked Sendable {
         let url = notesDirectory.appendingPathComponent(note.filename, isDirectory: false)
         guard let data = note.content.data(using: .utf8) else {
             throw CocoaError(.fileWriteInapplicableStringEncoding)
+        }
+        try data.write(to: url, options: .atomic)
+    }
+
+    private func persistShowcaseImageUnlockedIfNeeded() throws {
+        let url = notesDirectory.appendingPathComponent(MarkdownShowcaseSeed.imageFilename, isDirectory: false)
+        guard !fileManager.fileExists(atPath: url.path()) else { return }
+        guard let data = Data(base64Encoded: MarkdownShowcaseSeed.imageBase64) else {
+            throw CocoaError(.fileReadCorruptFile)
         }
         try data.write(to: url, options: .atomic)
     }

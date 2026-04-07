@@ -4,6 +4,7 @@ import Foundation
 public final class AppState {
     public private(set) var notes: [Note] = []
     public private(set) var selectedNoteID: UUID?
+    public var isSidebarVisible: Bool
     public var isPreviewVisible: Bool
     public var searchQuery: String
     public var sortMode: NotesSortMode
@@ -13,6 +14,7 @@ public final class AppState {
 
     public init(persistedState: WorkspaceState = .default) {
         selectedNoteID = persistedState.selectedNoteID
+        isSidebarVisible = persistedState.isSidebarVisible
         isPreviewVisible = persistedState.isPreviewVisible
         searchQuery = persistedState.searchQuery
         sortMode = persistedState.sortMode
@@ -83,6 +85,7 @@ public final class AppState {
     public func persistedState(windowWidth: Int, windowHeight: Int) -> WorkspaceState {
         WorkspaceState(
             selectedNoteID: selectedNoteID,
+            isSidebarVisible: isSidebarVisible,
             isPreviewVisible: isPreviewVisible,
             searchQuery: searchQuery,
             sortMode: sortMode,

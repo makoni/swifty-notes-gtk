@@ -1,4 +1,5 @@
 import Adwaita
+import CAdwaita
 import Foundation
 
 @MainActor
@@ -46,37 +47,25 @@ final class MarkdownPreview {
 
     var plainText: String {
         container.children()
-            .compactMap { widget -> String? in
-                if let label = widget.tryCast(Label.self) {
-                    return label.text
-                }
-                if let picture = widget.tryCast(Picture.self) {
-                    return picture.alternativeText
-                }
-                if let box = widget.tryCast(Box.self) {
-                    return box.children()
-                        .compactMap { child -> String? in
-                            if let label = child.tryCast(Label.self) {
-                                return label.text
-                            }
-                            if let nested = child.tryCast(Box.self) {
-                                return nested.children()
-                                    .compactMap { $0.tryCast(Label.self)?.text }
-                                    .joined(separator: "\n")
-                            }
-                            return nil
-                        }
-                        .joined(separator: "\n")
-                }
-                if let grid = widget.tryCast(Grid.self) {
-                    return grid.children()
-                        .compactMap { $0.tryCast(Label.self)?.text }
-                        .joined(separator: "\n")
-                }
-                return nil
-            }
+            .compactMap(Self.extractPlainText(from:))
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
+    }
+
+    private static func extractPlainText(from widget: Widget) -> String? {
+        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
+        if g_type_check_instance_is_a(instance, gtk_label_get_type()) != 0 {
+            return Label(borrowing: widget.pointer).text
+        }
+        if g_type_check_instance_is_a(instance, gtk_picture_get_type()) != 0 {
+            return Picture(borrowing: widget.pointer).alternativeText
+        }
+
+        let nestedText = widget.children()
+            .compactMap(extractPlainText(from:))
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        return nestedText.isEmpty ? nil : nestedText
     }
 
     func attach(to window: ApplicationWindow) {

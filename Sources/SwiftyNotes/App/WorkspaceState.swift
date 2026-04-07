@@ -45,6 +45,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
     public static let defaultPreviewWidth = 560
 
     public var selectedNoteID: UUID?
+    public var isSidebarVisible: Bool
     public var isPreviewVisible: Bool
     public var searchQuery: String
     public var sortMode: NotesSortMode
@@ -54,6 +55,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
 
     public init(
         selectedNoteID: UUID? = nil,
+        isSidebarVisible: Bool = true,
         isPreviewVisible: Bool = true,
         searchQuery: String = "",
         sortMode: NotesSortMode = .newestFirst,
@@ -62,6 +64,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         previewWidth: Int = WorkspaceState.defaultPreviewWidth
     ) {
         self.selectedNoteID = selectedNoteID
+        self.isSidebarVisible = isSidebarVisible
         self.isPreviewVisible = isPreviewVisible
         self.searchQuery = searchQuery
         self.sortMode = sortMode
@@ -74,6 +77,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case selectedNoteID
+        case isSidebarVisible
         case isPreviewVisible
         case searchQuery
         case sortMode
@@ -85,6 +89,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         selectedNoteID = try container.decodeIfPresent(UUID.self, forKey: .selectedNoteID)
+        isSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isSidebarVisible) ?? true
         isPreviewVisible = try container.decodeIfPresent(Bool.self, forKey: .isPreviewVisible) ?? true
         searchQuery = try container.decodeIfPresent(String.self, forKey: .searchQuery) ?? ""
         sortMode = try container.decodeIfPresent(NotesSortMode.self, forKey: .sortMode) ?? .newestFirst

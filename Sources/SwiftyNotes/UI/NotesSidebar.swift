@@ -7,10 +7,18 @@ struct NotesSidebar {
     let list: ListBox
     let titleLabel: Label
     let searchEntry: SearchEntry
-    let sortDropDown: DropDown
+    let sortButton: SplitButton
 
     private let emptyLabel: Label
+    private let sortPopover: Popover
+    private let sortOptionButtons: [NotesSortMode: Button]
+    private let sortState: SortState
+
     private static let sortModes = NotesSortMode.allCases
+
+    private final class SortState {
+        var currentMode: NotesSortMode = .newestFirst
+    }
 
     init() {
         list = ListBox()
@@ -28,9 +36,26 @@ struct NotesSidebar {
         searchEntry = SearchEntry()
         searchEntry.placeholderText = "Search notes"
         searchEntry.searchDelay = 120
+        searchEntry.hexpand = true
 
-        sortDropDown = DropDown(strings: Self.sortModes.map(\.displayName))
-        sortDropDown.selected = Self.sortIndex(for: .newestFirst)
+        sortButton = SplitButton()
+        sortButton.canShrink = true
+        sortButton.dropdownTooltip = "Sort Notes"
+        sortButton.direction = .down
+
+        sortPopover = Popover()
+        sortState = SortState()
+
+        var sortButtons: [NotesSortMode: Button] = [:]
+        let sortMenuBox = Box(orientation: .vertical, spacing: 2)
+        sortMenuBox.setMargins(4)
+        for mode in Self.sortModes {
+            let button = Self.makeSortOptionButton(for: mode)
+            sortMenuBox.append(button)
+            sortButtons[mode] = button
+        }
+        sortPopover.child = sortMenuBox
+        sortButton.setPopover(sortPopover)
 
         emptyLabel = Label("No notes yet.")
         emptyLabel.wrap = true
@@ -40,24 +65,22 @@ struct NotesSidebar {
         let header = HeaderBar()
         header.titleWidget = titleLabel
 
-        let sortLabel = Label("Sort")
-        sortLabel.xalign = 0
-        sortLabel.addCSSClass(.dimLabel)
-
-        let sortRow = Box(orientation: .horizontal, spacing: 8)
-        sortRow.append(sortLabel)
-        sortRow.append(sortDropDown)
+        let controlsRow = Box(orientation: .horizontal, spacing: 6)
+        controlsRow.append(searchEntry)
+        controlsRow.append(sortButton)
 
         let content = Box(orientation: .vertical, spacing: 12)
         content.setMargins(12)
-        content.append(searchEntry)
-        content.append(sortRow)
+        content.append(controlsRow)
         content.append(scroll)
         content.append(emptyLabel)
 
         root = ToolbarView()
         root.addTopBar(header)
         root.content = content
+
+        sortOptionButtons = sortButtons
+        setSortMode(.newestFirst)
     }
 
     func render(notes: [Note], selectedID: UUID?, totalCount: Int, searchQuery: String, sortMode: NotesSortMode) {
@@ -100,10 +123,36 @@ struct NotesSidebar {
     }
 
     func setSortMode(_ sortMode: NotesSortMode) {
-        let selectedIndex = Self.sortIndex(for: sortMode)
-        if sortDropDown.selected != selectedIndex {
-            sortDropDown.selected = selectedIndex
+        sortState.currentMode = sortMode
+        sortButton.iconName = Self.iconName(for: sortMode)
+        sortButton.tooltipText = Self.tooltip(for: sortMode)
+        sortButton.setAccessibleLabel(Self.accessibilityLabel(for: sortMode))
+    }
+
+    func onSortModeChanged(_ handler: @escaping @MainActor (NotesSortMode) -> Void) {
+        sortButton.onClicked { [sortButton, sortState] in
+            let nextMode = Self.nextSortMode(after: sortState.currentMode)
+            sortState.currentMode = nextMode
+            sortButton.iconName = Self.iconName(for: nextMode)
+            sortButton.tooltipText = Self.tooltip(for: nextMode)
+            sortButton.setAccessibleLabel(Self.accessibilityLabel(for: nextMode))
+            handler(nextMode)
         }
+
+        for (mode, button) in sortOptionButtons {
+            button.onClicked { [sortPopover, sortButton, sortState] in
+                sortState.currentMode = mode
+                sortButton.iconName = Self.iconName(for: mode)
+                sortButton.tooltipText = Self.tooltip(for: mode)
+                sortButton.setAccessibleLabel(Self.accessibilityLabel(for: mode))
+                sortPopover.popdown()
+                handler(mode)
+            }
+        }
+    }
+
+    var selectedSortIndex: Int {
+        Self.sortModes.firstIndex(of: sortState.currentMode) ?? 0
     }
 
     private static func displayDate(_ date: Date) -> String {
@@ -113,7 +162,64 @@ struct NotesSidebar {
         return formatter.string(from: date)
     }
 
-    private static func sortIndex(for mode: NotesSortMode) -> Int {
-        sortModes.firstIndex(of: mode) ?? 0
+    private static func iconName(for mode: NotesSortMode) -> String {
+        switch mode {
+        case .newestFirst:
+            "view-sort-descending-symbolic"
+        case .oldestFirst:
+            "view-sort-ascending-symbolic"
+        case .title:
+            "font-select-symbolic"
+        }
+    }
+
+    private static func tooltip(for mode: NotesSortMode) -> String {
+        switch mode {
+        case .newestFirst:
+            "Newest First"
+        case .oldestFirst:
+            "Oldest First"
+        case .title:
+            "Sort by Title"
+        }
+    }
+
+    private static func accessibilityLabel(for mode: NotesSortMode) -> String {
+        switch mode {
+        case .newestFirst:
+            "Sort Notes by Newest First"
+        case .oldestFirst:
+            "Sort Notes by Oldest First"
+        case .title:
+            "Sort Notes by Title"
+        }
+    }
+
+    private static func nextSortMode(after mode: NotesSortMode) -> NotesSortMode {
+        let currentIndex = sortModes.firstIndex(of: mode) ?? 0
+        let nextIndex = sortModes.index(after: currentIndex)
+        return nextIndex < sortModes.endIndex ? sortModes[nextIndex] : sortModes[sortModes.startIndex]
+    }
+
+    private static func makeSortOptionButton(for mode: NotesSortMode) -> Button {
+        let button = Button()
+        let row = Box(orientation: .horizontal, spacing: 8)
+        row.hexpand = true
+        row.halign = .fill
+
+        let icon = Image(iconName: iconName(for: mode))
+        icon.halign = .start
+        row.append(icon)
+
+        let label = Label(mode.displayName)
+        label.xalign = 0
+        label.hexpand = true
+        row.append(label)
+
+        button.child = row
+        button.addCSSClass("flat")
+        button.halign = .fill
+        button.hexpand = true
+        return button
     }
 }

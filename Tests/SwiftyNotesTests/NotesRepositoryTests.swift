@@ -16,6 +16,18 @@ actor SaveRecorder {
     }
 }
 
+actor URLRecorder {
+    private var value: URL?
+
+    func set(_ url: URL) {
+        value = url
+    }
+
+    func snapshot() -> URL? {
+        value
+    }
+}
+
 struct NotesRepositoryTests {
     @Test
     func derivedTitleUsesFirstMeaningfulLine() {
@@ -158,6 +170,27 @@ struct NotesRepositoryTests {
     }
 
     @Test
+    func repositorySeedsMarkdownShowcaseOnlyForEmptyStorage() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let seeded = try repository.seedMarkdownShowcaseIfNeeded(createdAt: Date(timeIntervalSince1970: 100))
+        let notesAfterSeed = try repository.loadNotes()
+
+        #expect(seeded != nil)
+        #expect(notesAfterSeed.count == 1)
+        #expect(notesAfterSeed[0].title == "Markdown Showcase")
+        #expect(notesAfterSeed[0].content == MarkdownShowcaseSeed.content)
+        #expect(FileManager.default.fileExists(atPath: temp.appendingPathComponent(MarkdownShowcaseSeed.imageFilename).path()))
+
+        let secondSeed = try repository.seedMarkdownShowcaseIfNeeded(createdAt: Date(timeIntervalSince1970: 200))
+        let notesAfterSecondSeed = try repository.loadNotes()
+        #expect(secondSeed == nil)
+        #expect(notesAfterSecondSeed.count == 1)
+    }
+
+    @Test
     func duplicateNotesKeepDistinctStableIDsAndDeleteIndependently() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -214,6 +247,7 @@ struct NotesRepositoryTests {
 
         let expected = WorkspaceState(
             selectedNoteID: UUID(),
+            isSidebarVisible: false,
             isPreviewVisible: false,
             searchQuery: "swift",
             sortMode: .title,
@@ -241,6 +275,7 @@ struct NotesRepositoryTests {
         """.utf8)
 
         let decoded = try JSONDecoder().decode(WorkspaceState.self, from: data)
+        #expect(decoded.isSidebarVisible)
         #expect(decoded.previewWidth == WorkspaceState.defaultPreviewWidth)
         #expect(decoded.searchQuery == "legacy")
     }
@@ -363,7 +398,9 @@ struct NotesRepositoryTests {
 
         window.debugLoadInitialNotes()
         #expect(window.debugNotesCount == 1)
-        #expect(window.debugPreviewText.contains("Nothing to preview yet."))
+        #expect(window.debugSelectedNoteContent == MarkdownShowcaseSeed.content)
+        #expect(window.debugPreviewText.contains("Markdown Showcase"))
+        #expect(window.debugPreviewText.contains("Welcome to the demo note"))
 
         window.debugSetEditorText("# Title\n\nBody")
         #expect(window.debugSelectedNoteContent == "# Title\n\nBody")
@@ -421,6 +458,178 @@ struct NotesRepositoryTests {
 
         window.debugEmitNewNoteClicked()
         #expect(window.debugNotesCount == 2)
+    }
+
+    @Test @MainActor
+    func mainWindowToolbarButtonsExposeStandardTooltips() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Tooltips")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugToolbarTooltips["sidebar"] == "Hide Notes Sidebar")
+        #expect(window.debugToolbarTooltips["new"] == "New Note")
+        #expect(window.debugToolbarTooltips["save"] == "Save Note")
+        #expect(window.debugToolbarTooltips["delete"] == "Delete Note")
+        #expect(window.debugToolbarTooltips["menu"] == "Main Menu")
+        #expect(window.debugToolbarTooltips["preview"] == "Hide Preview")
+
+        window.debugEmitPreviewToggleClicked()
+        #expect(window.debugToolbarTooltips["preview"] == "Show Preview")
+        window.debugEmitPreviewToggleClicked()
+        #expect(window.debugToolbarTooltips["preview"] == "Hide Preview")
+    }
+
+    @Test @MainActor
+    func mainWindowSidebarToggleHidesAndShowsSidebar() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SidebarToggle")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugSidebarVisible)
+        #expect(window.debugToolbarTooltips["sidebar"] == "Hide Notes Sidebar")
+
+        window.debugEmitSidebarToggleClicked()
+        #expect(!window.debugSidebarVisible)
+        #expect(window.debugToolbarTooltips["sidebar"] == "Show Notes Sidebar")
+
+        window.debugEmitSidebarToggleClicked()
+        #expect(window.debugSidebarVisible)
+        #expect(window.debugToolbarTooltips["sidebar"] == "Hide Notes Sidebar")
+    }
+
+    @Test @MainActor
+    func mainWindowPreviewToggleDetachesAndRestoresPreviewPane() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.PreviewPane")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugIsPreviewPaneAttached)
+
+        window.debugEmitPreviewToggleClicked()
+        try await Task.sleep(for: .milliseconds(280))
+        #expect(!window.debugIsPreviewPaneAttached)
+        #expect(window.debugToolbarTooltips["preview"] == "Show Preview")
+
+        window.debugEmitPreviewToggleClicked()
+        #expect(window.debugIsPreviewPaneAttached)
+        #expect(window.debugToolbarTooltips["preview"] == "Hide Preview")
+    }
+
+    @Test @MainActor
+    func mainWindowSaveButtonPersistsCurrentEditorText() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SaveButton")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+            autosaveDelay: .seconds(2)
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("# Saved Title\n\nSaved body")
+        #expect(window.debugEditorModified)
+
+        window.debugEmitSaveClicked()
+        try await Task.sleep(for: .milliseconds(80))
+
+        let saved = try repository.loadNotes()
+        #expect(saved.count == 1)
+        #expect(saved[0].content == "# Saved Title\n\nSaved body")
+        #expect(saved[0].title == "Saved Title")
+        #expect(!window.debugEditorModified)
+        #expect(window.debugDisplayedNoteTitles.first == "Saved Title")
+    }
+
+    @Test @MainActor
+    func mainWindowAutosaveWaitsForLastEditBeforeSaving() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Autosave")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+            autosaveDelay: .milliseconds(40)
+        )
+
+        window.debugLoadInitialNotes()
+        let originalContent = try repository.loadNotes()[0].content
+
+        window.debugSetEditorText("# First draft\n\nA")
+        try await Task.sleep(for: .milliseconds(15))
+        #expect(try repository.loadNotes()[0].content == originalContent)
+
+        window.debugSetEditorText("# Final draft\n\nB")
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(try repository.loadNotes()[0].content == originalContent)
+
+        try await Task.sleep(for: .milliseconds(60))
+        let autosaved = try repository.loadNotes()
+        #expect(autosaved[0].content == "# Final draft\n\nB")
+        #expect(autosaved[0].title == "Final draft")
+        #expect(!window.debugEditorModified)
     }
 
     @Test @MainActor
@@ -516,7 +725,7 @@ struct NotesRepositoryTests {
         window.present()
         window.debugCreateNote()
         #expect(window.debugNotesCount == 2)
-        #expect(window.debugOverflowMenuSectionTitles == ["Library", "View"])
+        #expect(window.debugOverflowMenuSectionTitles == ["Library"])
 
         window.debugOpenContextMenuForDisplayedNote(at: 1)
         #expect(window.debugHasContextMenu)
@@ -543,7 +752,41 @@ struct NotesRepositoryTests {
     }
 
     @Test @MainActor
-    func mainWindowSidebarSortDropdownReflectsAndChangesSortMode() throws {
+    func mainWindowOpenNotesFolderUsesInjectedDirectoryOpener() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.OpenNotesFolder")
+        try app.register()
+
+        let openedURL = URLRecorder()
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+            directoryOpener: { url in
+                await openedURL.set(url)
+            }
+        )
+
+        window.debugLoadInitialNotes()
+        await window.debugOpenNotesFolder()
+
+        let recordedURL = await openedURL.snapshot()
+        #expect(recordedURL?.standardizedFileURL == temp.standardizedFileURL)
+
+        var isDirectory: ObjCBool = false
+        #expect(FileManager.default.fileExists(atPath: temp.path(), isDirectory: &isDirectory))
+        #expect(isDirectory.boolValue)
+    }
+
+    @Test @MainActor
+    func mainWindowSidebarSortControlReflectsAndChangesSortMode() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -565,7 +808,7 @@ struct NotesRepositoryTests {
         _ = try repository.save(note: alpha)
         _ = try repository.save(note: zeta)
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SortDropdown")
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SortControl")
         try app.register()
 
         let window = MainWindow(
@@ -583,6 +826,11 @@ struct NotesRepositoryTests {
         #expect(window.debugSortMode == .newestFirst)
         #expect(window.debugSidebarSortSelection == 0)
         #expect(window.debugDisplayedNoteTitles == ["Zeta", "Alpha"])
+
+        window.debugEmitSortButtonClicked()
+        #expect(window.debugSortMode == .oldestFirst)
+        #expect(window.debugSidebarSortSelection == 1)
+        #expect(window.debugDisplayedNoteTitles == ["Alpha", "Zeta"])
 
         window.debugSelectSidebarSort(at: 2)
 
