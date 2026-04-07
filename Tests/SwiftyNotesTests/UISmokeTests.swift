@@ -45,14 +45,14 @@ struct UISmokeTests {
             """,
             prepare: { xdgDataHome, xdgStateHome in
                 let notesDirectory = xdgDataHome
-                    .appendingPathComponent("io.github.makoni.SwiftyNotes", isDirectory: true)
+                    .appendingPathComponent("me.spaceinbox.SwiftyNotes", isDirectory: true)
                     .appendingPathComponent("notes", isDirectory: true)
                 let repository = NotesRepository(notesDirectory: notesDirectory)
                 let alpha = try repository.createNote(initialContent: "# Alpha\n\nFirst")
                 _ = try repository.createNote(initialContent: "# Beta\n\nSecond")
 
                 let stateFileURL = xdgStateHome
-                    .appendingPathComponent("io.github.makoni.SwiftyNotes", isDirectory: true)
+                    .appendingPathComponent("me.spaceinbox.SwiftyNotes", isDirectory: true)
                     .appendingPathComponent("workspace.json", isDirectory: false)
                 let stateStore = WorkspaceStateStore(stateFileURL: stateFileURL)
                 try stateStore.save(WorkspaceState(
@@ -138,7 +138,7 @@ private func runWaylandUIScript(
     let runtimeDirectory = temp.appendingPathComponent("runtime", isDirectory: true)
     let xdgDataHome = temp.appendingPathComponent("xdg-data", isDirectory: true)
     let xdgStateHome = temp.appendingPathComponent("xdg-state", isDirectory: true)
-    let appID = "io.github.makoni.SwiftyNotes.UITests.\(temp.lastPathComponent.lowercased())"
+    let appID = "me.spaceinbox.SwiftyNotes.UITests.\(temp.lastPathComponent.lowercased())"
     try FileManager.default.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: xdgDataHome, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: xdgStateHome, withIntermediateDirectories: true)
@@ -153,7 +153,7 @@ private func runWaylandUIScript(
     export WAYLAND_DISPLAY="swifty-notes-test-wayland"
     export XDG_DATA_HOME="$XDG_DATA_HOME"
     export XDG_STATE_HOME="$XDG_STATE_HOME"
-    export NOTES_DIR="$XDG_DATA_HOME/io.github.makoni.SwiftyNotes/notes"
+    export NOTES_DIR="$XDG_DATA_HOME/me.spaceinbox.SwiftyNotes/notes"
     chmod 700 "$XDG_RUNTIME_DIR"
 
     weston --backend=headless --renderer=pixman --shell=desktop --socket="$WAYLAND_DISPLAY" --width=1440 --height=1024 --idle-time=0 >/tmp/swifty-ui-smoke-weston.out 2>/tmp/swifty-ui-smoke-weston.err &

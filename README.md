@@ -71,8 +71,8 @@ swift run SwiftyNotes -- cli update <note-id> --stdin
 
 ## Storage
 
-- Notes directory: `XDG_DATA_HOME/io.github.makoni.SwiftyNotes/notes`
-- Workspace state: `XDG_STATE_HOME/io.github.makoni.SwiftyNotes/workspace.json`
+- Notes directory: `XDG_DATA_HOME/me.spaceinbox.SwiftyNotes/notes`
+- Workspace state: `XDG_STATE_HOME/me.spaceinbox.SwiftyNotes/workspace.json`
 
 If the notes directory is empty on first launch, the app creates the `Markdown Showcase` note automatically.
 

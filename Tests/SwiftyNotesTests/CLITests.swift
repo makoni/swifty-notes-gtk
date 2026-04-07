@@ -145,7 +145,7 @@ struct CLITests {
         #expect(createResult.exitCode == 0)
 
         let defaultDirectory = xdgDataHome
-            .appendingPathComponent("io.github.makoni.SwiftyNotes", isDirectory: true)
+            .appendingPathComponent("me.spaceinbox.SwiftyNotes", isDirectory: true)
             .appendingPathComponent("notes", isDirectory: true)
         let repository = NotesRepository(notesDirectory: defaultDirectory)
         let notes = try repository.loadNotes()

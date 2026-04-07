@@ -36,7 +36,7 @@ private func buildApp() {
     let applicationID = ProcessInfo.processInfo.environment["SWIFTY_NOTES_APP_ID"]?
         .trimmingCharacters(in: .whitespacesAndNewlines)
     let app = Application(
-        id: (applicationID?.isEmpty == false) ? applicationID! : "io.github.makoni.SwiftyNotes"
+        id: (applicationID?.isEmpty == false) ? applicationID! : AppIdentity.identifier
     )
 
     app.onActivate {

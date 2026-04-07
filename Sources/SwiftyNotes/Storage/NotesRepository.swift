@@ -40,7 +40,7 @@ public final class NotesRepository: @unchecked Sendable {
         self.notesDirectory = notesDirectory
         self.fileManager = fileManager
         self.formatter = ISO8601DateFormatter()
-        self.queue = DispatchQueue(label: "io.github.makoni.SwiftyNotes.notes-repository")
+        self.queue = DispatchQueue(label: AppIdentity.notesRepositoryQueueLabel)
         formatter.formatOptions = [.withInternetDateTime]
     }
 
@@ -59,8 +59,7 @@ public final class NotesRepository: @unchecked Sendable {
                 .appendingPathComponent(".local", isDirectory: true)
                 .appendingPathComponent("share", isDirectory: true)
         }
-        return base
-            .appendingPathComponent("io.github.makoni.SwiftyNotes", isDirectory: true)
+        return AppIdentity.applicationDirectory(in: base)
             .appendingPathComponent("notes", isDirectory: true)
     }
 
@@ -192,7 +191,26 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func ensureNotesDirectoryUnlocked() throws {
+        try migrateLegacyStorageIfNeededUnlocked()
         try fileManager.createDirectory(at: notesDirectory, withIntermediateDirectories: true)
+    }
+
+    private func migrateLegacyStorageIfNeededUnlocked() throws {
+        guard notesDirectory.lastPathComponent == "notes" else { return }
+        let appDirectory = notesDirectory.deletingLastPathComponent()
+        guard appDirectory.lastPathComponent == AppIdentity.identifier else { return }
+
+        let baseDirectory = appDirectory.deletingLastPathComponent()
+        let legacyAppDirectory = AppIdentity.applicationDirectory(
+            in: baseDirectory,
+            identifier: AppIdentity.legacyIdentifier
+        )
+
+        guard !fileManager.fileExists(atPath: appDirectory.path()),
+              fileManager.fileExists(atPath: legacyAppDirectory.path()) else { return }
+
+        try fileManager.createDirectory(at: baseDirectory, withIntermediateDirectories: true)
+        try fileManager.moveItem(at: legacyAppDirectory, to: appDirectory)
     }
 
     private func loadNoteUnlocked(from url: URL) throws -> Note {

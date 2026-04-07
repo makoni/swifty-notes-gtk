@@ -1115,7 +1115,7 @@ final class MainWindow {
             appName: "Swifty Notes",
             version: "Development",
             developer: "Sergey Armodin",
-            appIcon: "io.github.makoni.SwiftyNotes",
+            appIcon: AppIdentity.identifier,
             website: "https://github.com/makoni/swifty-notes-gtk",
             issueUrl: "https://github.com/makoni/swifty-notes-gtk/issues",
             copyright: "© 2026 Sergey Armodin",

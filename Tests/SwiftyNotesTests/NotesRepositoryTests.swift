@@ -191,6 +191,85 @@ struct NotesRepositoryTests {
     }
 
     @Test
+    func repositoryMigratesLegacyDefaultStoragePrefix() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let legacyNotesDirectory = temp
+            .appendingPathComponent(AppIdentity.legacyIdentifier, isDirectory: true)
+            .appendingPathComponent("notes", isDirectory: true)
+        try FileManager.default.createDirectory(at: legacyNotesDirectory, withIntermediateDirectories: true)
+        try "# Legacy".write(
+            to: legacyNotesDirectory.appendingPathComponent("legacy.md", isDirectory: false),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let migratedRepository = NotesRepository(
+            notesDirectory: temp
+                .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                .appendingPathComponent("notes", isDirectory: true)
+        )
+
+        let notes = try migratedRepository.loadNotes()
+        #expect(notes.count == 1)
+        #expect(notes.first?.content == "# Legacy")
+        #expect(FileManager.default.fileExists(
+            atPath: temp
+                .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                .appendingPathComponent("notes", isDirectory: true)
+                .path()
+        ))
+        #expect(!FileManager.default.fileExists(
+            atPath: temp.appendingPathComponent(AppIdentity.legacyIdentifier, isDirectory: true).path()
+        ))
+    }
+
+    @Test
+    func workspaceStateStoreMigratesLegacyDefaultStatePrefix() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let legacyStateDirectory = temp.appendingPathComponent(AppIdentity.legacyIdentifier, isDirectory: true)
+        try FileManager.default.createDirectory(at: legacyStateDirectory, withIntermediateDirectories: true)
+        let legacyStateStore = WorkspaceStateStore(
+            stateFileURL: legacyStateDirectory.appendingPathComponent("workspace.json", isDirectory: false)
+        )
+        let storedState = WorkspaceState(
+            selectedNoteID: UUID(),
+            isSidebarVisible: false,
+            isPreviewVisible: false,
+            searchQuery: "legacy",
+            sortMode: .title,
+            windowWidth: 1111,
+            windowHeight: 777,
+            previewWidth: 515
+        )
+        try legacyStateStore.save(storedState)
+
+        let migratedStateStore = WorkspaceStateStore(
+            stateFileURL: temp
+                .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                .appendingPathComponent("workspace.json", isDirectory: false)
+        )
+        let loadedState = try migratedStateStore.load()
+
+        #expect(loadedState == storedState)
+        #expect(FileManager.default.fileExists(
+            atPath: temp
+                .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                .appendingPathComponent("workspace.json", isDirectory: false)
+                .path()
+        ))
+        #expect(!FileManager.default.fileExists(
+            atPath: temp
+                .appendingPathComponent(AppIdentity.legacyIdentifier, isDirectory: true)
+                .appendingPathComponent("workspace.json", isDirectory: false)
+                .path()
+        ))
+    }
+
+    @Test
     func duplicateNotesKeepDistinctStableIDsAndDeleteIndependently() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -382,7 +461,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests")
         try app.register()
 
         let window = MainWindow(
@@ -416,7 +495,7 @@ struct NotesRepositoryTests {
         let repository = NotesRepository(notesDirectory: temp)
         _ = try repository.createNote(initialContent: "# Initial\n\nPreview body")
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.InitialPreview")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.InitialPreview")
         try app.register()
 
         let window = MainWindow(
@@ -443,7 +522,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Create")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.Create")
         try app.register()
 
         let window = MainWindow(
@@ -469,7 +548,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Signal")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.Signal")
         try app.register()
 
         let window = MainWindow(
@@ -495,7 +574,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Tooltips")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.Tooltips")
         try app.register()
 
         let window = MainWindow(
@@ -528,7 +607,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SidebarToggle")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.SidebarToggle")
         try app.register()
 
         let window = MainWindow(
@@ -566,7 +645,7 @@ struct NotesRepositoryTests {
         _ = try repository.createNote(initialContent: "# Beta\n\nSecond")
 
         let stateStore = WorkspaceStateStore(stateFileURL: stateFileURL)
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Search")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.Search")
         try app.register()
 
         let window = MainWindow(
@@ -594,7 +673,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.PreviewPane")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.PreviewPane")
         try app.register()
 
         let window = MainWindow(
@@ -640,7 +719,7 @@ struct NotesRepositoryTests {
             windowHeight: 720,
             previewWidth: 620
         )
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.RestoreState")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.RestoreState")
         try app.register()
 
         let window = MainWindow(
@@ -669,7 +748,7 @@ struct NotesRepositoryTests {
         defer { try? FileManager.default.removeItem(at: temp) }
 
         let repository = NotesRepository(notesDirectory: temp)
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SaveButton")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.SaveButton")
         try app.register()
 
         let window = MainWindow(
@@ -705,7 +784,7 @@ struct NotesRepositoryTests {
         defer { try? FileManager.default.removeItem(at: temp) }
 
         let repository = NotesRepository(notesDirectory: temp)
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Autosave")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.Autosave")
         try app.register()
 
         let window = MainWindow(
@@ -746,7 +825,7 @@ struct NotesRepositoryTests {
         let repository = NotesRepository(notesDirectory: temp)
         let externalRepository = NotesRepository(notesDirectory: temp)
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.ExternalCreate")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.ExternalCreate")
         try app.register()
 
         let window = MainWindow(
@@ -779,7 +858,7 @@ struct NotesRepositoryTests {
         let original = try repository.createNote(initialContent: "# Original\n\nBody")
         let externalRepository = NotesRepository(notesDirectory: temp)
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.ExternalUpdate")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.ExternalUpdate")
         try app.register()
 
         let window = MainWindow(
@@ -814,7 +893,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.ContextMenu")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.ContextMenu")
         try app.register()
 
         let window = MainWindow(
@@ -872,7 +951,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.OpenNotesFolder")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.OpenNotesFolder")
         try app.register()
 
         let openedURL = URLRecorder()
@@ -906,7 +985,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.OpenNotesFolderAction")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.OpenNotesFolderAction")
         try app.register()
 
         let openedURL = URLRecorder()
@@ -982,7 +1061,7 @@ struct NotesRepositoryTests {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.AboutDialog")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.AboutDialog")
         try app.register()
 
         let window = MainWindow(
@@ -1037,7 +1116,7 @@ struct NotesRepositoryTests {
         _ = try repository.save(note: first)
         _ = try repository.save(note: second)
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SelectionSwitch")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.SelectionSwitch")
         try app.register()
 
         let window = MainWindow(
@@ -1093,7 +1172,7 @@ struct NotesRepositoryTests {
         _ = try repository.save(note: alpha)
         _ = try repository.save(note: zeta)
 
-        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SortControl")
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.SortControl")
         try app.register()
 
         let window = MainWindow(

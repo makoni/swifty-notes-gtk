@@ -16,6 +16,7 @@ public final class WorkspaceStateStore {
     }
 
     public func load() throws -> WorkspaceState {
+        try migrateLegacyStateIfNeeded()
         guard fileManager.fileExists(atPath: stateFileURL.path()) else {
             return .default
         }
@@ -24,6 +25,7 @@ public final class WorkspaceStateStore {
     }
 
     public func save(_ state: WorkspaceState) throws {
+        try migrateLegacyStateIfNeeded()
         let directory = stateFileURL.deletingLastPathComponent()
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
         let data = try encoder.encode(state)
@@ -41,8 +43,25 @@ public final class WorkspaceStateStore {
                 .appendingPathComponent(".local", isDirectory: true)
                 .appendingPathComponent("state", isDirectory: true)
         }
-        return base
-            .appendingPathComponent("io.github.makoni.SwiftyNotes", isDirectory: true)
+        return AppIdentity.applicationDirectory(in: base)
             .appendingPathComponent("workspace.json", isDirectory: false)
+    }
+
+    private func migrateLegacyStateIfNeeded() throws {
+        guard stateFileURL.lastPathComponent == "workspace.json" else { return }
+        let appDirectory = stateFileURL.deletingLastPathComponent()
+        guard appDirectory.lastPathComponent == AppIdentity.identifier else { return }
+
+        let baseDirectory = appDirectory.deletingLastPathComponent()
+        let legacyAppDirectory = AppIdentity.applicationDirectory(
+            in: baseDirectory,
+            identifier: AppIdentity.legacyIdentifier
+        )
+
+        guard !fileManager.fileExists(atPath: appDirectory.path()),
+              fileManager.fileExists(atPath: legacyAppDirectory.path()) else { return }
+
+        try fileManager.createDirectory(at: baseDirectory, withIntermediateDirectories: true)
+        try fileManager.moveItem(at: legacyAppDirectory, to: appDirectory)
     }
 }

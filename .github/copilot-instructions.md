@@ -19,8 +19,8 @@
 
 - `Sources/SwiftyNotes/main.swift` is the only entry point. The same executable runs either the GTK app or the CLI: if the first argument is `cli`, it routes into `NotesCLI`; otherwise it starts the Adwaita application.
 - `MainWindow` is the orchestration hub for the desktop app. It wires together `NotesSidebar`, `MarkdownEditor`, and `MarkdownPreview`, owns headerbar actions, autosave scheduling, preview/sidebar visibility, context menus, toast notifications, workspace persistence, and external file reload handling.
-- Persistent note storage lives in `NotesRepository`. Both GUI and CLI use the same repository and the same default XDG-backed notes directory (`XDG_DATA_HOME` or `~/.local/share/io.github.makoni.SwiftyNotes/notes`), so storage behavior must stay compatible across both entry points.
-- Persisted UI/session state lives in `WorkspaceStateStore`, backed by JSON under `XDG_STATE_HOME` or `~/.local/state/io.github.makoni.SwiftyNotes/workspace.json`. `AppState` is the in-memory model for selected note, sidebar/preview visibility, search query, sort mode, and preferred window/pane sizes.
+- Persistent note storage lives in `NotesRepository`. Both GUI and CLI use the same repository and the same default XDG-backed notes directory (`XDG_DATA_HOME` or `~/.local/share/me.spaceinbox.SwiftyNotes/notes`), so storage behavior must stay compatible across both entry points.
+- Persisted UI/session state lives in `WorkspaceStateStore`, backed by JSON under `XDG_STATE_HOME` or `~/.local/state/me.spaceinbox.SwiftyNotes/workspace.json`. `AppState` is the in-memory model for selected note, sidebar/preview visibility, search query, sort mode, and preferred window/pane sizes.
 - Markdown preview is fully native GTK. The pipeline is `swift-markdown` -> `HTMLFormatter` / `HTMLSubsetParser` in `MarkdownRenderer` -> `RenderedBlock` values -> GTK widget construction in `MarkdownPreview`. Do not assume a WebView/WebKit architecture.
 - Tests are split across:
   - `NotesRepositoryTests.swift` for repository, renderer, CLI parsing/integration, and MainWindow regression coverage via debug hooks.
