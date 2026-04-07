@@ -1,6 +1,7 @@
 import Foundation
 
-public actor AutosaveCoordinator {
+@MainActor
+public final class AutosaveCoordinator {
     private var currentTask: Task<Void, Never>?
 
     public init() {}

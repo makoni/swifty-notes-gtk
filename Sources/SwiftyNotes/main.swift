@@ -33,7 +33,11 @@ private let appController = AppController()
 
 @MainActor
 private func buildApp() {
-    let app = Application(id: "io.github.makoni.SwiftyNotes")
+    let applicationID = ProcessInfo.processInfo.environment["SWIFTY_NOTES_APP_ID"]?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    let app = Application(
+        id: (applicationID?.isEmpty == false) ? applicationID! : "io.github.makoni.SwiftyNotes"
+    )
 
     app.onActivate {
         appController.activate(app: app)

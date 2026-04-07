@@ -110,15 +110,15 @@ struct NotesRepositoryTests {
         #expect(lightText.markup != darkText.markup)
     }
 
-    @Test
+    @Test @MainActor
     func autosaveCoordinatorRunsLatestTask() async {
         let autosave = AutosaveCoordinator()
         let recorder = SaveRecorder()
 
-        await autosave.scheduleSave(after: .milliseconds(10)) {
+        autosave.scheduleSave(after: .milliseconds(10)) {
             await recorder.append(1)
         }
-        await autosave.scheduleSave(after: .milliseconds(10)) {
+        autosave.scheduleSave(after: .milliseconds(10)) {
             await recorder.append(2)
         }
 
@@ -409,6 +409,36 @@ struct NotesRepositoryTests {
     }
 
     @Test @MainActor
+    func mainWindowPresentRendersPreviewForInitiallySelectedNote() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "# Initial\n\nPreview body")
+
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.InitialPreview")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.present()
+        try await Task.sleep(for: .milliseconds(40))
+
+        #expect(window.debugSelectedNoteContent == "# Initial\n\nPreview body")
+        #expect(window.debugPreviewText.contains("Initial"))
+        #expect(window.debugPreviewText.contains("Preview body"))
+    }
+
+    @Test @MainActor
     func mainWindowCreateNoteAddsAnotherNote() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -526,6 +556,40 @@ struct NotesRepositoryTests {
     }
 
     @Test @MainActor
+    func mainWindowSearchEntryFiltersDisplayedNotesAndPersistsQuery() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let stateFileURL = temp.appendingPathComponent("workspace.json", isDirectory: false)
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "# Alpha\n\nFirst")
+        _ = try repository.createNote(initialContent: "# Beta\n\nSecond")
+
+        let stateStore = WorkspaceStateStore(stateFileURL: stateFileURL)
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.Search")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: stateStore,
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugDisplayedNoteTitles == ["Beta", "Alpha"])
+
+        window.debugSetSearchQuery("alp")
+
+        #expect(window.debugSearchQuery == "alp")
+        #expect(window.debugDisplayedNotesCount == 1)
+        #expect(window.debugDisplayedNoteTitles == ["Alpha"])
+        #expect(try stateStore.load().searchQuery == "alp")
+    }
+
+    @Test @MainActor
     func mainWindowPreviewToggleDetachesAndRestoresPreviewPane() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -555,6 +619,48 @@ struct NotesRepositoryTests {
         window.debugEmitPreviewToggleClicked()
         #expect(window.debugIsPreviewPaneAttached)
         #expect(window.debugToolbarTooltips["preview"] == "Hide Preview")
+    }
+
+    @Test @MainActor
+    func mainWindowRestoresPersistedWorkspaceStateForFilteringAndVisibility() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let alpha = try repository.createNote(initialContent: "# Alpha\n\nFirst")
+        _ = try repository.createNote(initialContent: "# Beta\n\nSecond")
+
+        let persisted = WorkspaceState(
+            selectedNoteID: alpha.id,
+            isSidebarVisible: false,
+            isPreviewVisible: false,
+            searchQuery: "a",
+            sortMode: .title,
+            windowWidth: 980,
+            windowHeight: 720,
+            previewWidth: 620
+        )
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.RestoreState")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(persistedState: persisted),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+
+        #expect(!window.debugSidebarVisible)
+        #expect(!window.debugIsPreviewPaneAttached)
+        #expect(window.debugSearchQuery == "a")
+        #expect(window.debugSortMode == .title)
+        #expect(window.debugDisplayedNoteTitles == ["Alpha", "Beta"])
     }
 
     @Test @MainActor
@@ -783,6 +889,62 @@ struct NotesRepositoryTests {
         var isDirectory: ObjCBool = false
         #expect(FileManager.default.fileExists(atPath: temp.path(), isDirectory: &isDirectory))
         #expect(isDirectory.boolValue)
+    }
+
+    @Test @MainActor
+    func mainWindowSwitchingBetweenNotesRefreshesPreview() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let first = Note(
+            id: UUID(),
+            filename: "first.md",
+            createdAt: Date(timeIntervalSince1970: 100),
+            updatedAt: Date(timeIntervalSince1970: 100),
+            content: "# First\n\nOne"
+        )
+        let second = Note(
+            id: UUID(),
+            filename: "second.md",
+            createdAt: Date(timeIntervalSince1970: 200),
+            updatedAt: Date(timeIntervalSince1970: 200),
+            content: "# Second\n\nTwo"
+        )
+        _ = try repository.save(note: first)
+        _ = try repository.save(note: second)
+
+        let app = Application(id: "io.github.makoni.SwiftyNotes.Tests.SelectionSwitch")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(window.debugPreviewText.contains("Second"))
+        #expect(window.debugPreviewText.contains("Two"))
+
+        window.present()
+        try await Task.sleep(for: .milliseconds(30))
+
+        window.debugSelectDisplayedNote(at: 1)
+        try await Task.sleep(for: .milliseconds(10))
+        #expect(window.debugPreviewText.contains("First"))
+        #expect(window.debugPreviewText.contains("One"))
+
+        window.debugSelectDisplayedNote(at: 0)
+        try await Task.sleep(for: .milliseconds(10))
+        #expect(window.debugPreviewText.contains("Second"))
+        #expect(window.debugPreviewText.contains("Two"))
     }
 
     @Test @MainActor

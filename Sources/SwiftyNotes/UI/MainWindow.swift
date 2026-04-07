@@ -25,7 +25,6 @@ final class MainWindow {
     private let splitView = OverlaySplitView()
     private let editorPreviewPane = Paned(orientation: .horizontal)
     private let editorScroll = ScrolledWindow()
-    private let previewRevealer = Revealer()
     private let autosaveDelay: Duration
     private let directoryOpener: @Sendable (URL) async throws -> Void
 
@@ -60,6 +59,9 @@ final class MainWindow {
     private var externalChangeMonitorID: SourceID?
     private var externalReloadDeferred = false
     private var suppressEditorChange = false
+    private var previewRefreshID: SourceID?
+    private var pendingPreviewBlocks: [RenderedBlock]?
+    private var pendingPreviewBaseDirectory: URL?
     private var isRestoringPreviewPaneLayout = false
     private var previewAnimationID: SourceID?
     private var isPreviewPaneAttached = false
@@ -95,8 +97,7 @@ final class MainWindow {
             width: state.preferredWindowWidth,
             height: state.preferredWindowHeight
         )
-        window.defaultWidth = preferredSize.width
-        window.defaultHeight = preferredSize.height
+        window.setDefaultSize(width: preferredSize.width, height: preferredSize.height)
 
         buildUI()
         preview.attach(to: window)
@@ -110,6 +111,7 @@ final class MainWindow {
         loadInitialNotes()
         startExternalChangeMonitor()
         MainContext.idle { [weak self] in
+            self?.refreshPreview()
             self?.restorePreviewPaneLayout()
             self?.editor.focus()
         }
@@ -142,9 +144,6 @@ final class MainWindow {
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
 
         editorPreviewPane.startChild = editorScroll
-        previewRevealer.child = preview.rootScroll
-        previewRevealer.transitionType = .slideLeft
-        previewRevealer.transitionDuration = Self.previewAnimationDuration
         editorPreviewPane.resizeStartChild = true
         editorPreviewPane.resizeEndChild = false
         editorPreviewPane.shrinkStartChild = false
@@ -215,8 +214,8 @@ final class MainWindow {
             self.refreshSidebar()
             self.refreshPreview()
             self.updateHeaderSubtitle()
-            Task {
-                await self.autosave.scheduleSave(after: self.autosaveDelay) {
+            Task { @MainActor in
+                self.autosave.scheduleSave(after: self.autosaveDelay) {
                     await MainActor.run { [weak self] in
                         self?.saveCurrentEditedNote(announceSuccess: false)
                     }
@@ -237,12 +236,6 @@ final class MainWindow {
             self?.handlePreviewPaneMoved()
         }
 
-        previewRevealer.onChildRevealed { [weak self] in
-            guard let self else { return }
-            guard !self.state.isPreviewVisible, !self.previewRevealer.childRevealed else { return }
-            self.detachPreviewPane()
-        }
-
         editorScroll.verticalAdjustment.onValueChanged { [weak self] in
             guard let self else { return }
             self.syncPreviewScroll()
@@ -252,8 +245,8 @@ final class MainWindow {
             self?.saveCurrentEditedNote(announceSuccess: false)
             self?.persistWorkspaceState()
             self?.stopExternalChangeMonitor()
-            Task { [weak self] in
-                await self?.autosave.cancel()
+            Task { @MainActor [weak self] in
+                self?.autosave.cancel()
             }
             return false
         }
@@ -306,6 +299,7 @@ final class MainWindow {
             state.setNotes(notes)
             directorySnapshot = try repository.directorySnapshot()
             renderSelection()
+            flushPendingPreviewRefresh()
             updateHeaderSubtitle()
             persistWorkspaceState()
         } catch {
@@ -404,7 +398,7 @@ final class MainWindow {
             suppressEditorChange = true
             editor.setText("")
             suppressEditorChange = false
-            preview.render(blocks: [], baseDirectory: repository.notesDirectoryURL)
+            schedulePreviewRefresh(blocks: [], baseDirectory: repository.notesDirectoryURL)
             saveNoteButton.visible = false
             deleteNoteButton.visible = false
             updateHeaderSubtitle()
@@ -444,16 +438,48 @@ final class MainWindow {
 
     private func refreshPreview() {
         guard let selected = state.selectedNote else {
-            preview.render(blocks: [], baseDirectory: repository.notesDirectoryURL)
+            schedulePreviewRefresh(blocks: [], baseDirectory: repository.notesDirectoryURL)
             return
         }
         let blocks = renderer.blocks(for: selected.content)
-        preview.render(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
-        syncPreviewScroll()
+        schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
+    }
+
+    private func schedulePreviewRefresh(blocks: [RenderedBlock], baseDirectory: URL) {
+        if let previewRefreshID {
+            MainContext.cancel(sourceId: previewRefreshID)
+            self.previewRefreshID = nil
+        }
+        pendingPreviewBlocks = blocks
+        pendingPreviewBaseDirectory = baseDirectory
+        previewRefreshID = MainContext.timeout(intervalMs: 1) { [weak self] in
+            guard let self else { return false }
+            self.flushPendingPreviewRefresh()
+            return false
+        }
+    }
+
+    private func flushPendingPreviewRefresh() {
+        guard previewRefreshID != nil || pendingPreviewBlocks != nil || pendingPreviewBaseDirectory != nil else {
+            return
+        }
+        if let previewRefreshID {
+            MainContext.cancel(sourceId: previewRefreshID)
+            self.previewRefreshID = nil
+        }
+        let blocks = pendingPreviewBlocks ?? []
+        let baseDirectory = pendingPreviewBaseDirectory ?? repository.notesDirectoryURL
+        pendingPreviewBlocks = nil
+        pendingPreviewBaseDirectory = nil
+        preview.render(blocks: blocks, baseDirectory: baseDirectory)
+        MainContext.idle { [weak self] in
+            self?.syncPreviewScroll()
+        }
     }
 
     private func syncPreviewScroll() {
-        guard state.isPreviewVisible else { return }
+        guard state.isPreviewVisible, isPreviewPaneAttached else { return }
+        guard preview.rootScroll.parent != nil, preview.rootScroll.width > 0, preview.rootScroll.height > 0 else { return }
         let source = editorScroll.verticalAdjustment
         let destination = preview.rootScroll.verticalAdjustment
         let sourceMax = max(source.upper - source.pageSize - source.lower, 0)
@@ -558,8 +584,7 @@ final class MainWindow {
 
     private func showPreviewPane(animated: Bool) {
         attachPreviewPane()
-        previewRevealer.revealChild = true
-        if animated {
+        if animated, canAnimatePreviewPane {
             let totalWidth = currentPreviewContainerWidth
             let targetPosition = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
             editorPreviewPane.position = totalWidth
@@ -570,9 +595,8 @@ final class MainWindow {
     }
 
     private func hidePreviewPane(animated: Bool) {
-        previewRevealer.revealChild = false
         guard isPreviewPaneAttached else { return }
-        guard animated else {
+        guard animated, canAnimatePreviewPane else {
             detachPreviewPane()
             return
         }
@@ -591,7 +615,7 @@ final class MainWindow {
 
     private func attachPreviewPane() {
         guard !isPreviewPaneAttached else { return }
-        editorPreviewPane.endChild = previewRevealer
+        editorPreviewPane.endChild = preview.rootScroll
         isPreviewPaneAttached = true
     }
 
@@ -608,7 +632,7 @@ final class MainWindow {
         guard startPosition != targetPosition else {
             isRestoringPreviewPaneLayout = false
             if !state.isPreviewVisible {
-                detachPreviewPane()
+                schedulePreviewDetachIfHidden()
             }
             return
         }
@@ -630,9 +654,16 @@ final class MainWindow {
             self.previewAnimationID = nil
             self.isRestoringPreviewPaneLayout = false
             if !self.state.isPreviewVisible {
-                self.detachPreviewPane()
+                self.schedulePreviewDetachIfHidden()
             }
             return false
+        }
+    }
+
+    private func schedulePreviewDetachIfHidden() {
+        MainContext.delay(ms: 1) { [weak self] in
+            guard let self, !self.state.isPreviewVisible else { return }
+            self.detachPreviewPane()
         }
     }
 
@@ -652,6 +683,10 @@ final class MainWindow {
         )
     }
 
+    private var canAnimatePreviewPane: Bool {
+        editorPreviewPane.parent != nil && editorPreviewPane.width > 0 && editorPreviewPane.height > 0
+    }
+
     private func resolvedVisiblePreviewPosition(totalWidth: Int) -> Int {
         let previewWidth = Self.resolvedPreviewWidth(
             storedWidth: state.preferredPreviewWidth,
@@ -666,7 +701,7 @@ final class MainWindow {
     }
 
     private func handlePreviewPaneMoved() {
-        guard state.isPreviewVisible, previewRevealer.revealChild, !isRestoringPreviewPaneLayout else { return }
+        guard state.isPreviewVisible, isPreviewPaneAttached, !isRestoringPreviewPaneLayout else { return }
         let totalWidth = max(editorPreviewPane.width, window.width - currentSidebarWidth, window.defaultWidth - 280)
         guard totalWidth >= Self.minimumPreviewWidth + Self.minimumEditorWidth else { return }
         let previewWidth = totalWidth - editorPreviewPane.position
@@ -708,8 +743,8 @@ final class MainWindow {
 
     private func saveSelectedNoteNow() {
         saveCurrentEditedNote(announceSuccess: true)
-        Task {
-            await autosave.cancel()
+        Task { @MainActor in
+            autosave.cancel()
         }
     }
 
@@ -840,7 +875,9 @@ final class MainWindow {
         self.noteContextMenu = nil
         noteContextHandlers = [:]
         noteContextMenuLabels = []
-        noteContextMenu.popdown()
+        if noteContextMenu.parent != nil {
+            noteContextMenu.popdown()
+        }
     }
 
     private func runAfterNoteContextMenuClosure(_ action: @escaping @MainActor () -> Void) {
@@ -1101,6 +1138,12 @@ final class MainWindow {
             MainContext.cancel(sourceId: externalChangeMonitorID)
             self.externalChangeMonitorID = nil
         }
+        if let previewRefreshID {
+            MainContext.cancel(sourceId: previewRefreshID)
+            self.previewRefreshID = nil
+        }
+        pendingPreviewBlocks = nil
+        pendingPreviewBaseDirectory = nil
     }
 
     private func pollForExternalChanges() {
@@ -1295,6 +1338,11 @@ final class MainWindow {
         editor.buffer.text = text
     }
 
+    func debugSetSearchQuery(_ text: String) {
+        sidebar.searchEntry.text = text
+        g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(sidebar.searchEntry.opaquePointer), "search-changed")
+    }
+
     var debugNotesCount: Int {
         state.notes.count
     }
@@ -1308,7 +1356,8 @@ final class MainWindow {
     }
 
     var debugPreviewText: String {
-        preview.plainText
+        flushPendingPreviewRefresh()
+        return preview.plainText
     }
 
     var debugDisplayedNotesCount: Int {
@@ -1319,8 +1368,16 @@ final class MainWindow {
         displayedNotes.map(\.title)
     }
 
+    var debugSearchQuery: String {
+        sidebar.searchEntry.text
+    }
+
     var debugDisplayedNoteStableIDs: [String] {
         displayedNotes.map(\.stableID)
+    }
+
+    func debugSelectDisplayedNote(at index: Int) {
+        selectNote(at: index)
     }
 
     func debugOpenContextMenuForDisplayedNote(at index: Int) {
@@ -1328,7 +1385,15 @@ final class MainWindow {
         let note = displayedNotes[index]
         state.select(noteID: note.id)
         renderSelection()
-        presentNoteContextMenu(forNoteID: note.id, x: 8, y: 8)
+        noteContextDeferredAction = nil
+        dismissNoteContextMenu()
+
+        let popover = Popover()
+        popover.hasArrow = true
+        popover.position = .bottom
+        popover.autohide = true
+        popover.child = makeNoteContextPopoverContent()
+        noteContextMenu = popover
     }
 
     func debugDismissContextMenu() {

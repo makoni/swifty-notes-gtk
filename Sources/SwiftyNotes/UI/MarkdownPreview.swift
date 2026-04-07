@@ -43,6 +43,7 @@ final class MarkdownPreview {
         rootScroll.setPolicy(horizontal: .never, vertical: .automatic)
         rootScroll.kineticScrolling = true
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
+        rootScroll.setAccessibleLabel("Markdown Preview")
     }
 
     var plainText: String {

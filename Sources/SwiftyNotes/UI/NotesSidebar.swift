@@ -25,6 +25,7 @@ struct NotesSidebar {
         list.selectionMode = .single
         list.activateOnSingleClick = true
         list.addCSSClass("navigation-sidebar")
+        list.setAccessibleLabel("Notes List")
 
         let scroll = ScrolledWindow(child: list)
         scroll.setPolicy(horizontal: .never, vertical: .automatic)
@@ -37,6 +38,7 @@ struct NotesSidebar {
         searchEntry.placeholderText = "Search notes"
         searchEntry.searchDelay = 120
         searchEntry.hexpand = true
+        searchEntry.setAccessibleLabel("Search Notes")
 
         sortButton = SplitButton()
         sortButton.canShrink = true
@@ -78,6 +80,7 @@ struct NotesSidebar {
         root = ToolbarView()
         root.addTopBar(header)
         root.content = content
+        root.setAccessibleLabel("Notes Sidebar")
 
         sortOptionButtons = sortButtons
         setSortMode(.newestFirst)
@@ -90,6 +93,7 @@ struct NotesSidebar {
             let row = ListBoxRow()
             row.activatable = true
             row.selectable = true
+            row.setAccessibleLabel(note.title)
 
             let rowBox = Box(orientation: .vertical, spacing: 2)
             rowBox.setMargins(8)

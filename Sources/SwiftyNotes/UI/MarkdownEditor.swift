@@ -30,6 +30,7 @@ struct MarkdownEditor {
         view.rightMargin = 8
         view.topMargin = 8
         view.bottomMargin = 8
+        view.setAccessibleLabel("Markdown Editor")
     }
 
     func setText(_ text: String) {
