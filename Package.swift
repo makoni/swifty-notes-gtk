@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../swift-adwaita"),
-        .package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.6.0")
+        .package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.7.3")
     ],
     targets: [
         .executableTarget(

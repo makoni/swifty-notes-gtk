@@ -69,6 +69,29 @@ struct UISmokeTests {
         )
         expectUIScriptSucceeded(result)
     }
+
+    @Test
+    func appEditingDoesNotEmitSnapshotWarningsUnderHeadlessWayland() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            require_named(frame, "Markdown Editor")
+            app_stderr_log = os.environ["APP_STDERR_LOG"]
+            wait_until(
+                lambda: "Smoke edit from launch hook" in open(app_stderr_log, "r", encoding="utf-8").read(),
+                "launch edit settles",
+                timeout=5
+            )
+            time.sleep(2)
+            stderr = open(app_stderr_log, "r", encoding="utf-8").read()
+            assert "Trying to snapshot" not in stderr, stderr
+            """,
+            environment: [
+                "SWIFTY_NOTES_DEBUG_APPEND_TEXT_ON_LAUNCH": "Smoke edit from launch hook"
+            ]
+        )
+        expectUIScriptSucceeded(result)
+    }
 }
 
 private struct UIScriptResult {
@@ -122,7 +145,8 @@ private func runUIScript(
 
 private func runWaylandUIScript(
     _ pythonScript: String,
-    prepare: ((URL, URL) throws -> Void)? = nil
+    prepare: ((URL, URL) throws -> Void)? = nil,
+    environment: [String: String] = [:]
 ) throws -> UIScriptResult {
     guard ProcessInfo.processInfo.environment["DBUS_SESSION_BUS_ADDRESS"] != nil else {
         return UIScriptResult(exitCode: 0, stdout: "", stderr: "")
@@ -154,6 +178,7 @@ private func runWaylandUIScript(
     export XDG_DATA_HOME="$XDG_DATA_HOME"
     export XDG_STATE_HOME="$XDG_STATE_HOME"
     export NOTES_DIR="$XDG_DATA_HOME/me.spaceinbox.SwiftyNotes/notes"
+    export APP_STDERR_LOG="/tmp/swifty-ui-smoke.err"
     chmod 700 "$XDG_RUNTIME_DIR"
 
     weston --backend=headless --renderer=pixman --shell=desktop --socket="$WAYLAND_DISPLAY" --width=1440 --height=1024 --idle-time=0 >/tmp/swifty-ui-smoke-weston.out 2>/tmp/swifty-ui-smoke-weston.err &
@@ -276,7 +301,7 @@ private func runWaylandUIScript(
             "TEST_RUNTIME_DIR": runtimeDirectory.path(),
             "XDG_DATA_HOME": xdgDataHome.path(),
             "XDG_STATE_HOME": xdgStateHome.path()
-        ]
+        ].merging(environment) { _, new in new }
     )
 }
 

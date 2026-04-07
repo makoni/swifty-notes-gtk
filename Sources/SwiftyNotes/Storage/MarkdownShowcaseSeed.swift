@@ -53,12 +53,11 @@ enum MarkdownShowcaseSeed {
     ```
 
     ## Table
-
+    
     | Feature | Example | Status |
     | --- | --- | --- |
-    | Bold | `**bold**` | Works |
-    | Code | `` `code` `` | Works |
-    | Table | `| a | b |` | Works |
+    | Bold | **bold** | Works |
+    | Code | `code`| Works |
 
     ## Thematic Break
 
@@ -69,8 +68,8 @@ enum MarkdownShowcaseSeed {
     ![Tiny demo pixel](markdown-demo-image.png)
 
     ## Mixed Content
-
-    You can combine text, lists, tables, and code blocks in one note to create rich documentation or project notes.
+    
+    You can combine text, lists, tables, and code blocks in one note to create rich documentation or project notes
     """
 
     static let imageBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII="

@@ -28,6 +28,19 @@ final class MarkdownPreview {
         line-height: 0.45;
     }
 
+    .preview-table-header {
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-bottom: 4px;
+    }
+
+    .preview-table-cell {
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-top: 3px;
+        padding-bottom: 3px;
+    }
+
     """)
 
     private var baseDirectory: URL?
@@ -203,6 +216,7 @@ final class MarkdownPreview {
     private func makeListItem(text: RenderedText, depth: Int, marker: String, compact: Bool) -> Widget {
         let row = Box(orientation: .horizontal, spacing: 8)
         row.marginStart = 16 * depth
+        row.marginBottom = compact ? 0 : 4
         row.addCSSClass("preview-list-row")
 
         let markerLabel = Label(displayMarker(for: marker, depth: depth))
@@ -297,25 +311,35 @@ final class MarkdownPreview {
     private func makeTable(headers: [RenderedText], rows: [[RenderedText]], alignments: [RenderedTableAlignment]) -> Widget {
         let wrapper = Box(orientation: .vertical, spacing: 0)
         wrapper.addCSSClass("card")
+        wrapper.hexpand = true
 
         let inner = Box(orientation: .vertical, spacing: 10)
         inner.setMargins(14)
+        inner.hexpand = true
 
-        let grid = Grid(columnSpacing: 18, rowSpacing: 10)
+        let grid = Grid(columnSpacing: 18, rowSpacing: 6)
         grid.columnHomogeneous = false
+        grid.hexpand = true
 
         for (column, header) in headers.enumerated() {
             let label = makeMarkupLabel("<b>\(header.markup)</b>")
+            label.addCSSClass("preview-table-header")
             applyAlignment(label, alignments: alignments, column: column)
             grid.attach(label, column: column, row: 0)
         }
+
+        let separator = Separator()
+        separator.marginTop = 0
+        separator.marginBottom = 4
+        grid.attach(separator, column: 0, row: 1, width: max(headers.count, 1))
 
         for (rowIndex, row) in rows.enumerated() {
             for (column, cell) in row.enumerated() {
                 let label = makeMarkupLabel(cell.markup)
                 label.selectable = true
+                label.addCSSClass("preview-table-cell")
                 applyAlignment(label, alignments: alignments, column: column)
-                grid.attach(label, column: column, row: rowIndex + 1)
+                grid.attach(label, column: column, row: rowIndex + 2)
             }
         }
 
