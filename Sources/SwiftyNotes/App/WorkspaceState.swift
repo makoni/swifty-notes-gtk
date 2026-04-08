@@ -21,12 +21,12 @@ public enum NotesSortMode: String, Codable, CaseIterable, Sendable {
             switch self {
             case .newestFirst:
                 if lhs.createdAt == rhs.createdAt {
-                    return lhs.filename > rhs.filename
+                    return lhs.stableID > rhs.stableID
                 }
                 return lhs.createdAt > rhs.createdAt
             case .oldestFirst:
                 if lhs.createdAt == rhs.createdAt {
-                    return lhs.filename < rhs.filename
+                    return lhs.stableID < rhs.stableID
                 }
                 return lhs.createdAt < rhs.createdAt
             case .title:

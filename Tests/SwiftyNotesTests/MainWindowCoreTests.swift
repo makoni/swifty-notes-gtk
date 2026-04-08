@@ -134,6 +134,73 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
+    func mainWindowCreateNoteAfterPresentKeepsSelectionStable() async throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.CreatePresented")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.present()
+        try await Task.sleep(for: .milliseconds(40))
+
+        window.debugCreateNote()
+        try await Task.sleep(for: .milliseconds(40))
+
+        #expect(window.debugNotesCount == 2)
+        #expect(window.debugSelectedNoteContent == "")
+        #expect(window.debugHeaderSubtitle.contains("Saved"))
+    }
+
+    @Test @MainActor
+    func mainWindowImportsDroppedImageIntoSelectedNoteAssetsAndMarkdown() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let existing = try repository.createNote(initialContent: "# Images\n\nBody")
+
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.DropImage")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugSelectedNoteStableID() == existing.stableID)
+
+        let sourceImageURL = temp.appendingPathComponent("Dragged Diagram.PNG", isDirectory: false)
+        try Data("dropped-image".utf8).write(to: sourceImageURL, options: .atomic)
+
+        try window.importDroppedImages(from: [sourceImageURL])
+        #expect(window.debugSelectedNoteContent?.contains("![Dragged Diagram](assets/dragged-diagram.png)") == true)
+
+        window.saveSelectedNoteNow()
+        let reloaded = try repository.loadNotes()
+        #expect(reloaded[0].content.contains("![Dragged Diagram](assets/dragged-diagram.png)"))
+        #expect(try Data(contentsOf: repository.noteAssetsDirectoryURL(for: reloaded[0]).appendingPathComponent("dragged-diagram.png")) == Data("dropped-image".utf8))
+    }
+
+    @Test @MainActor
     func mainWindowPlusButtonSignalCreatesNote() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -225,13 +292,14 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
-    func mainWindowSearchEntryFiltersDisplayedNotesAndPersistsQuery() throws {
+    func mainWindowSearchEntryFiltersDisplayedNotesAndPersistsQuery() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
         let stateFileURL = temp.appendingPathComponent("workspace.json", isDirectory: false)
         let repository = NotesRepository(notesDirectory: temp)
         _ = try repository.createNote(initialContent: "# Alpha\n\nFirst")
+        try await Task.sleep(for: .milliseconds(20))
         _ = try repository.createNote(initialContent: "# Beta\n\nSecond")
 
         let stateStore = WorkspaceStateStore(stateFileURL: stateFileURL)
@@ -389,14 +457,17 @@ struct MainWindowCoreTests {
             autosaveDelay: .milliseconds(40)
         )
 
-        window.debugLoadInitialNotes()
+        window.present()
+        try await Task.sleep(for: .milliseconds(40))
         let originalContent = try repository.loadNotes()[0].content
 
         window.debugSetEditorText("# First draft\n\nA")
+        #expect(window.debugHeaderSubtitle.contains("Unsaved changes"))
         try await Task.sleep(for: .milliseconds(15))
         #expect(try repository.loadNotes()[0].content == originalContent)
 
         window.debugSetEditorText("# Final draft\n\nB")
+        #expect(window.debugHeaderSubtitle.contains("Unsaved changes"))
         try await Task.sleep(for: .milliseconds(20))
         #expect(try repository.loadNotes()[0].content == originalContent)
 
@@ -405,6 +476,8 @@ struct MainWindowCoreTests {
         #expect(autosaved[0].content == "# Final draft\n\nB")
         #expect(autosaved[0].title == "Final draft")
         #expect(!window.debugEditorModified)
+        #expect(window.debugHeaderSubtitle.contains("Saved"))
+        #expect(!window.debugHeaderSubtitle.contains("Unsaved changes"))
     }
 
     @Test @MainActor

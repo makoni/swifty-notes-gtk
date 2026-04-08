@@ -9,7 +9,7 @@ extension MainWindow {
             return
         }
         let blocks = renderer.blocks(for: selected.content)
-        schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
+        schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.noteContentBaseDirectoryURL(for: selected))
     }
 
     func scheduleDebugLaunchEditIfRequested() {
@@ -39,6 +39,20 @@ extension MainWindow {
             .flatMap(Int.init) ?? 500
         MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
             self?.presentSettingsWindow()
+        }
+    }
+
+    func scheduleDebugCreateNoteIfRequested() {
+        guard !hasScheduledDebugCreateNote else { return }
+        let shouldCreate = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_CREATE_NOTE_ON_LAUNCH"]
+            .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
+        guard shouldCreate else { return }
+
+        hasScheduledDebugCreateNote = true
+        let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_CREATE_NOTE_DELAY_MS"]
+            .flatMap(Int.init) ?? 500
+        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+            self?.createNote()
         }
     }
 

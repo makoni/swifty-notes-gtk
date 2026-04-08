@@ -21,6 +21,7 @@ struct CLICommandTests {
             from: Data((createResult?.stdout ?? "").utf8)
         )
         #expect(created.title == "CLI Title")
+        #expect(created.filename.hasSuffix("/note.md"))
 
         let listResult = NotesCLI.runIfRequested(
             arguments: ["cli", "list", "--notes-dir", temp.path()]
@@ -32,6 +33,7 @@ struct CLICommandTests {
         )
         #expect(listed.count == 1)
         #expect(listed.first?.id == created.id)
+        #expect(listed.first?.filename.hasSuffix("/note.md") == true)
 
         let getResult = NotesCLI.runIfRequested(
             arguments: ["cli", "get", "--notes-dir", temp.path(), created.id]
@@ -53,6 +55,7 @@ struct CLICommandTests {
         )
         #expect(updated.title == "Updated")
         #expect(updated.content == "# Updated\n\nReplaced")
+        #expect(updated.filename == created.filename)
 
         let rawGetResult = NotesCLI.runIfRequested(
             arguments: ["cli", "get", "--notes-dir", temp.path(), created.id, "--raw"]

@@ -2,6 +2,8 @@ import Foundation
 
 enum MarkdownShowcaseSeed {
     static let imageFilename = "markdown-demo-image.png"
+    static let legacySharedImageFilename = imageFilename
+    static let imageAssetPath = "assets/\(imageFilename)"
 
     static let content = """
     # Markdown Showcase
@@ -65,7 +67,7 @@ enum MarkdownShowcaseSeed {
 
     ## Image
 
-    ![Swift and Adwaita showcase artwork](markdown-demo-image.png)
+    ![Swift and Adwaita showcase artwork](assets/markdown-demo-image.png)
 
     ## Mixed Content
     

@@ -87,6 +87,7 @@ final class MainWindow {
     var lastCopiedNoteID: String?
     var hasScheduledDebugLaunchEdit = false
     var hasScheduledDebugSettingsOpen = false
+    var hasScheduledDebugCreateNote = false
 
     init(
         application: Application,
@@ -133,6 +134,7 @@ final class MainWindow {
         startExternalChangeMonitor()
         scheduleDebugLaunchEditIfRequested()
         scheduleDebugSettingsOpenIfRequested()
+        scheduleDebugCreateNoteIfRequested()
         MainContext.idle { [weak self] in
             self?.refreshPreview()
             self?.restorePreviewPaneLayout()
@@ -165,6 +167,7 @@ final class MainWindow {
 
         editorScroll.child = editor.view
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
+        installEditorImageDropTarget()
 
         editorPreviewPane.startChild = editorScroll
         editorPreviewPane.resizeStartChild = true

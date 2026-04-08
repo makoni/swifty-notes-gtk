@@ -26,6 +26,7 @@ struct CLITests {
         #expect(createFromStdin?.exitCode == 0)
         let stdinDocument = try decodeDocument(from: createFromStdin?.stdout ?? "")
         #expect(stdinDocument.title == "From Stdin")
+        #expect(stdinDocument.filename.hasSuffix("/note.md"))
 
         let createFromFile = NotesCLI.runIfRequested(
             arguments: ["cli", "create", "--notes-dir", notesDirectory.path(), "--content-file", contentFile.path()]
@@ -33,6 +34,7 @@ struct CLITests {
         #expect(createFromFile?.exitCode == 0)
         let fileDocument = try decodeDocument(from: createFromFile?.stdout ?? "")
         #expect(fileDocument.title == "From File")
+        #expect(fileDocument.filename.hasSuffix("/note.md"))
 
         let updateFromFile = NotesCLI.runIfRequested(
             arguments: ["cli", "update", "--notes-dir", notesDirectory.path(), stdinDocument.id, "--content-file", contentFile.path()]
@@ -54,6 +56,7 @@ struct CLITests {
         let listed = try decodeSummaries(from: listResult?.stdout ?? "")
         #expect(listed.count == 2)
         #expect(Set(listed.map(\.id)) == Set([stdinDocument.id, fileDocument.id]))
+        #expect(listed.allSatisfy { $0.filename.hasSuffix("/note.md") })
     }
 
     @Test
@@ -104,6 +107,7 @@ struct CLITests {
         #expect(createResult.exitCode == 0)
         #expect(createResult.stderr.isEmpty)
         let created = try decodeDocument(from: createResult.stdout)
+        #expect(created.filename.hasSuffix("/note.md"))
 
         let listResult = try runCLIExecutable(arguments: ["cli", "list", "--notes-dir", notesDirectory.path()])
         #expect(listResult.exitCode == 0)
@@ -123,6 +127,7 @@ struct CLITests {
         #expect(updateResult.exitCode == 0)
         let updated = try decodeDocument(from: updateResult.stdout)
         #expect(updated.title == "Updated Process Note")
+        #expect(updated.filename == created.filename)
 
         let persisted = try NotesRepository(notesDirectory: notesDirectory).loadNotes()
         #expect(persisted.count == 1)

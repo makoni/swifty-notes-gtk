@@ -1,6 +1,20 @@
 import Adwaita
 import Foundation
 
+private enum DroppedImageImportError: LocalizedError {
+    case noSelectedNote
+    case unsupportedFile(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .noSelectedNote:
+            return "Open or create a note before dropping images."
+        case let .unsupportedFile(filename):
+            return "Unsupported image type for \(filename)."
+        }
+    }
+}
+
 @MainActor
 extension MainWindow {
     func presentNoteContextMenu(forNoteID noteID: UUID, x: Int, y: Int) {
@@ -145,6 +159,42 @@ extension MainWindow {
         lastCopiedNoteID = note.stableID
         window.clipboard.setText(note.stableID)
         toastOverlay.showToast("Copied note ID")
+    }
+
+    func installEditorImageDropTarget() {
+        let dropTarget = DropTarget.forFiles()
+        dropTarget.onDropFiles { [weak self] urls in
+            guard let self, !urls.isEmpty else { return false }
+            do {
+                try self.importDroppedImages(from: urls)
+                return true
+            } catch {
+                self.presentError(
+                    heading: "Could not add image",
+                    body: error.localizedDescription
+                )
+                return false
+            }
+        }
+        editor.view.addController(dropTarget)
+    }
+
+    func importDroppedImages(from sourceURLs: [URL]) throws {
+        guard let selected = currentEditedNoteSnapshot() else {
+            throw DroppedImageImportError.noSelectedNote
+        }
+        if let unsupported = sourceURLs.first(where: { !NotesRepository.supportsImageAssetImport(from: $0) }) {
+            throw DroppedImageImportError.unsupportedFile(unsupported.lastPathComponent)
+        }
+
+        let snippets = try sourceURLs.map { sourceURL in
+            let relativePath = try repository.importImageAsset(from: sourceURL, for: selected)
+            return "![\(Self.droppedImageAltText(for: sourceURL))](\(relativePath))"
+        }
+
+        refreshDirectorySnapshot()
+        editor.buffer.insertAtCursor(snippets.joined(separator: "\n"))
+        toastOverlay.showToast(sourceURLs.count == 1 ? "Image added to note" : "Images added to note")
     }
 
     func importNote() {
@@ -494,6 +544,15 @@ extension MainWindow {
         dialog.defaultResponse = "ok"
         dialog.closeResponse = "ok"
         dialog.present(window)
+    }
+
+    private static func droppedImageAltText(for sourceURL: URL) -> String {
+        let raw = sourceURL.deletingPathExtension().lastPathComponent
+        let normalized = raw
+            .replacingOccurrences(of: #"[_-]+"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.isEmpty ? "Image" : normalized
     }
 
 }

@@ -440,7 +440,17 @@ final class MarkdownPreview {
             return URL(fileURLWithPath: expanded)
         }
         if let baseDirectory {
-            return baseDirectory.appendingPathComponent(expanded)
+            let noteLocalURL = baseDirectory.appendingPathComponent(expanded)
+            if FileManager.default.fileExists(atPath: noteLocalURL.path()) {
+                return noteLocalURL
+            }
+
+            let sharedNotesURL = baseDirectory.deletingLastPathComponent().appendingPathComponent(expanded)
+            if baseDirectory.lastPathComponent != "notes",
+               FileManager.default.fileExists(atPath: sharedNotesURL.path()) {
+                return sharedNotesURL
+            }
+            return noteLocalURL
         }
         return URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(expanded)
     }

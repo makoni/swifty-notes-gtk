@@ -17,12 +17,16 @@ struct UISmokeTests {
         require_named(frame, "Welcome to the demo note for Swifty Notes. This document shows the main Markdown features supported by the editor and preview.")
 
         wait_until(lambda: os.path.isdir(NOTES_DIR), "notes dir created")
-        md_files = wait_until(
-            lambda: sorted(name for name in os.listdir(NOTES_DIR) if name.endswith(".md")) or None,
-            "seeded markdown note written"
+        note_dirs = wait_until(
+            lambda: sorted(
+                name for name in os.listdir(NOTES_DIR)
+                if os.path.isdir(os.path.join(NOTES_DIR, name))
+                and os.path.isfile(os.path.join(NOTES_DIR, name, "note.md"))
+            ) or None,
+            "seeded note directory written"
         )
-        assert len(md_files) == 1, md_files
-        showcase = open(os.path.join(NOTES_DIR, md_files[0]), "r", encoding="utf-8").read()
+        assert len(note_dirs) == 1, note_dirs
+        showcase = open(os.path.join(NOTES_DIR, note_dirs[0], "note.md"), "r", encoding="utf-8").read()
         assert "Markdown Showcase" in showcase
         """)
         expectUIScriptSucceeded(result)
@@ -40,8 +44,12 @@ struct UISmokeTests {
             assert find_named(frame, "Beta") is None, visible_names(frame)
 
             assert os.path.isdir(NOTES_DIR), NOTES_DIR
-            md_files = sorted(name for name in os.listdir(NOTES_DIR) if name.endswith(".md"))
-            assert len(md_files) == 2, md_files
+            note_dirs = sorted(
+                name for name in os.listdir(NOTES_DIR)
+                if os.path.isdir(os.path.join(NOTES_DIR, name))
+                and os.path.isfile(os.path.join(NOTES_DIR, name, "note.md"))
+            )
+            assert len(note_dirs) == 2, note_dirs
             """,
             prepare: { xdgDataHome, xdgStateHome in
                 let notesDirectory = xdgDataHome
@@ -94,6 +102,29 @@ struct UISmokeTests {
     }
 
     @Test
+    func appCreatingNoteDoesNotEmitSnapshotWarningsUnderHeadlessWayland() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            require_named(frame, "New Note")
+            wait_until(
+                lambda: find_named(frame, "Notes (2)") is not None,
+                "created note appears",
+                timeout=5
+            )
+            app_stderr_log = os.environ["APP_STDERR_LOG"]
+            time.sleep(1)
+            stderr = open(app_stderr_log, "r", encoding="utf-8").read()
+            assert "Trying to snapshot" not in stderr, stderr
+            """,
+            environment: [
+                "SWIFTY_NOTES_DEBUG_CREATE_NOTE_ON_LAUNCH": "1"
+            ]
+        )
+        expectUIScriptSucceeded(result)
+    }
+
+    @Test
     func settingsWindowOpensUnderHeadlessWaylandAndShowsControls() throws {
         let result = try runWaylandUIScript(
             """
@@ -116,10 +147,9 @@ struct UISmokeTests {
             settings_frame = wait_for_named_frame("Settings")
             require_named(settings_frame, "Notes folder")
             require_named(settings_frame, "Wrap long lines")
-            require_named(settings_frame, "Editor font size")
-            require_named(settings_frame, "Tab width")
+            require_named(settings_frame, "Editor")
             require_named(settings_frame, "Indent style")
-            require_named(settings_frame, "Autosave delay")
+            require_named(settings_frame, "Saving")
             require_named(settings_frame, "Appearance")
             """,
             environment: [

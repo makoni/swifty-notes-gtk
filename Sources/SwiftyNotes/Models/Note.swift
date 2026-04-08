@@ -30,18 +30,7 @@ public struct Note: Identifiable, Sendable, Equatable {
     }
 
     public var suggestedExportFilename: String {
-        let fallback = title.isEmpty ? "note" : title
-        let sanitized = fallback.unicodeScalars.reduce(into: "") { partial, scalar in
-            if CharacterSet.alphanumerics.contains(scalar) {
-                partial.unicodeScalars.append(scalar)
-            } else if partial.last != "-" {
-                partial.append("-")
-            }
-        }
-        let stem = sanitized
-            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-            .lowercased()
-        let filenameStem = stem.isEmpty ? "note" : stem
+        let filenameStem = Self.sanitizedFilenameStem(from: title, defaultStem: "note")
         return "\(filenameStem).md"
     }
 
@@ -87,6 +76,22 @@ public struct Note: Identifiable, Sendable, Equatable {
             }
         }
         return "New Note"
+    }
+
+    public static func sanitizedFilenameStem(from rawValue: String, defaultStem: String) -> String {
+        let fallback = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate = fallback.isEmpty ? defaultStem : fallback
+        let sanitized = candidate.unicodeScalars.reduce(into: "") { partial, scalar in
+            if CharacterSet.alphanumerics.contains(scalar) {
+                partial.unicodeScalars.append(scalar)
+            } else if partial.last != "-" {
+                partial.append("-")
+            }
+        }
+        let stem = sanitized
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+            .lowercased()
+        return stem.isEmpty ? defaultStem : stem
     }
 
     private static func replacingFirstMeaningfulLine(in content: String, with title: String) -> String? {

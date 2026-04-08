@@ -53,6 +53,10 @@ extension MainWindow {
         editor.buffer.modified
     }
 
+    var debugHeaderSubtitle: String {
+        headerTitle.subtitle
+    }
+
     var debugPreviewText: String {
         flushPendingPreviewRefresh()
         return preview.plainText

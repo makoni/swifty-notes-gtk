@@ -39,7 +39,9 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            editor.focus()
+            MainContext.idle { [weak self] in
+                self?.editor.focus()
+            }
         } catch {
             presentError(
                 heading: "Could not create note",

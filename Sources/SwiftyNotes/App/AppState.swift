@@ -98,7 +98,7 @@ public final class AppState {
     private func sortStoredNotes() {
         notes.sort {
             if $0.createdAt == $1.createdAt {
-                return $0.filename > $1.filename
+                return $0.stableID > $1.stableID
             }
             return $0.createdAt > $1.createdAt
         }
