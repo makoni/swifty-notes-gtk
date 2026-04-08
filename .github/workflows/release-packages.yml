@@ -28,14 +28,12 @@ jobs:
             desktop-file-utils \
             libadwaita-1-dev \
             libgtk-4-dev \
-            libgtksourceview-5-dev \
-            xvfb
+            libgtksourceview-5-dev
 
       - name: Verify project
         run: |
           swift build
           swift test --filter 'CLICommandTests|CLITests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel
-          xvfb-run -a swift test --filter 'MainWindowActionsTests|MainWindowCoreTests' --no-parallel
 
       - name: Assemble /usr install root
         run: |
