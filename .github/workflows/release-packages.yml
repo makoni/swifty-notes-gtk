@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install build dependencies
         run: |
@@ -28,12 +28,14 @@ jobs:
             desktop-file-utils \
             libadwaita-1-dev \
             libgtk-4-dev \
-            libgtksourceview-5-dev
+            libgtksourceview-5-dev \
+            xvfb
 
       - name: Verify project
         run: |
           swift build
-          swift test --no-parallel
+          swift test --filter 'CLICommandTests|CLITests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel
+          xvfb-run -a swift test --filter 'MainWindowActionsTests|MainWindowCoreTests' --no-parallel
 
       - name: Assemble /usr install root
         run: |
@@ -55,7 +57,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download /usr install root
         uses: actions/download-artifact@v4
@@ -82,7 +84,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install RPM build toolchain
         run: |
@@ -117,7 +119,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Render Flatpak manifest
         run: |
@@ -162,7 +164,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download /usr install root
         uses: actions/download-artifact@v4
