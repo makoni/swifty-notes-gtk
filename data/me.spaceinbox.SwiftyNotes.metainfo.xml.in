@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>me.spaceinbox.SwiftyNotes</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Swifty Notes</name>
+  <developer id="me.spaceinbox">
+    <name>Sergey Armodin</name>
+  </developer>
+  <summary>Native GTK markdown notes for Linux</summary>
+  <launchable type="desktop-id">me.spaceinbox.SwiftyNotes.desktop</launchable>
+  <categories>
+    <category>Utility</category>
+    <category>TextEditor</category>
+  </categories>
+  <keywords>
+    <keyword>notes</keyword>
+    <keyword>markdown</keyword>
+    <keyword>editor</keyword>
+    <keyword>preview</keyword>
+  </keywords>
+  <description>
+    <p>Swifty Notes is a native GTK/libadwaita markdown notes application for Linux written in Swift.</p>
+    <p>It keeps notes as regular files, offers a live native Markdown preview, and shares one storage format between the desktop app and the CLI.</p>
+    <ul>
+      <li>Create, rename, duplicate, export, and delete Markdown notes.</li>
+      <li>Autosave edits, remember workspace state, and keep note-local image assets.</li>
+      <li>Import images with drag and drop and render Markdown with a native GTK preview.</li>
+    </ul>
+  </description>
+  <provides>
+    <binary>SwiftyNotes</binary>
+  </provides>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main window with sidebar, editor, and native Markdown preview.</caption>
+      <image type="source" width="1440" height="1024">@SCREENSHOT_URL@</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <url type="homepage">https://github.com/makoni/swifty-notes-gtk</url>
+  <url type="bugtracker">https://github.com/makoni/swifty-notes-gtk/issues</url>
+  <releases>
+    <release version="@VERSION@" date="@DATE@">
+      <description>
+        <p>Release build prepared from the current Swifty Notes source tree.</p>
+      </description>
+    </release>
+  </releases>
+</component>

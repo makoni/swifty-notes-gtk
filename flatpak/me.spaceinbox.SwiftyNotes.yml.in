@@ -1,0 +1,40 @@
+app-id: me.spaceinbox.SwiftyNotes
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.swift6
+command: SwiftyNotes
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --env=GTK_USE_PORTAL=1
+
+build-options:
+  append-path: /usr/lib/sdk/swift6/bin
+  prepend-ld-library-path: /usr/lib/sdk/swift6/lib
+
+modules:
+  - name: swifty-notes
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: @SOURCE_PATH@
+      - type: git
+        url: https://github.com/makoni/swift-adwaita.git
+        commit: abf7a8cf43e74a13aa8230f7ae4e9d8a029b974f
+        dest: flatpak-deps/swift-adwaita
+      - type: git
+        url: https://github.com/swiftlang/swift-markdown.git
+        commit: 7d9a5ce307528578dfa777d505496bd5f544ad94
+        dest: flatpak-deps/swift-markdown
+      - type: git
+        url: https://github.com/swiftlang/swift-cmark.git
+        commit: 5d9bdaa4228b381639fff09403e39a04926e2dbe
+        dest: flatpak-deps/swift-cmark
+    build-commands:
+      - rm -f Package.resolved && SWIFTY_NOTES_USE_BUNDLED_SWIFTPM_DEPS=1 packaging/release/assemble-install-root.sh --version @VERSION@ --repo-slug @REPO_SLUG@ --dest flatpak-app --prefix /app
+      - cp -a flatpak-app/app/. /app/

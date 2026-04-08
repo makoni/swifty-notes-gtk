@@ -1,0 +1,33 @@
+name: swifty-notes-gtk
+title: Swifty Notes
+base: core24
+version: "1.0.0"
+summary: Native GTK markdown notes for Linux
+description: |
+  Swifty Notes is a native GTK/libadwaita markdown notes application for Linux.
+  It keeps notes in plain files, supports a live native Markdown preview,
+  autosave, drag-and-drop image import, and a storage-compatible CLI.
+grade: stable
+confinement: strict
+license: MIT
+website:
+  - https://github.com/makoni/swifty-notes-gtk
+issues:
+  - https://github.com/makoni/swifty-notes-gtk/issues
+source-code:
+  - https://github.com/makoni/swifty-notes-gtk
+icon: data/me.spaceinbox.SwiftyNotes.svg
+platforms:
+  amd64:
+
+apps:
+  swifty-notes:
+    command: usr/bin/SwiftyNotes
+    desktop: usr/share/applications/me.spaceinbox.SwiftyNotes.desktop
+    extensions:
+      - gnome
+
+parts:
+  swifty-notes:
+    plugin: dump
+    source: packaging/out/install-root-usr

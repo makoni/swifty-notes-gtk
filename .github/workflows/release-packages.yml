@@ -1,0 +1,187 @@
+name: Release Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version to stamp into package metadata
+        required: true
+        default: "1.0.0"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-install-roots:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            appstream \
+            desktop-file-utils \
+            libadwaita-1-dev \
+            libgtk-4-dev \
+            libgtksourceview-5-dev
+
+      - name: Verify project
+        run: |
+          swift build
+          swift test --no-parallel
+
+      - name: Assemble /usr install root
+        run: |
+          packaging/release/assemble-install-root.sh \
+            --version "${{ inputs.version }}" \
+            --repo-slug "${{ github.repository }}" \
+            --dest packaging/out/install-root-usr \
+            --prefix /usr
+
+      - name: Upload /usr install root
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-root-usr
+          path: packaging/out/install-root-usr
+
+  build-deb:
+    runs-on: ubuntu-24.04
+    needs: prepare-install-roots
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download /usr install root
+        uses: actions/download-artifact@v4
+        with:
+          name: install-root-usr
+          path: packaging/out/install-root-usr
+
+      - name: Build Debian package
+        run: |
+          packaging/release/build-deb.sh \
+            --version "${{ inputs.version }}" \
+            --install-root packaging/out/install-root-usr \
+            --output packaging/out/deb
+
+      - name: Upload Debian artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifty-notes-gtk-deb
+          path: packaging/out/deb/*.deb
+
+  build-rpm:
+    runs-on: ubuntu-24.04
+    needs: prepare-install-roots
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install RPM build toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      - name: Download /usr install root
+        uses: actions/download-artifact@v4
+        with:
+          name: install-root-usr
+          path: packaging/out/install-root-usr
+
+      - name: Build RPM package
+        run: |
+          packaging/release/build-rpm.sh \
+            --version "${{ inputs.version }}" \
+            --install-root packaging/out/install-root-usr \
+            --output packaging/out/rpm
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifty-notes-gtk-rpm
+          path: packaging/out/rpm/*.rpm
+
+  build-flatpak:
+    runs-on: ubuntu-24.04
+    needs: prepare-install-roots
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Render Flatpak manifest
+        run: |
+          packaging/release/render-flatpak-manifest.sh \
+            --version "${{ inputs.version }}" \
+            --repo-slug "${{ github.repository }}" \
+            --source-path .. \
+            --output flatpak/me.spaceinbox.SwiftyNotes.yml
+
+      - name: Build Flatpak bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: flatpak/me.spaceinbox.SwiftyNotes.yml
+          bundle: swifty-notes-gtk-${{ inputs.version }}-x86_64.flatpak
+          branch: stable
+          build-dir: packaging/out/flatpak/build
+          repo-dir: packaging/out/flatpak/repo
+          state-dir: packaging/out/flatpak/state
+          cache-key: flatpak-builder-${{ github.sha }}
+          mirror-screenshots-url: https://dl.flathub.org/media/
+          upload-artifact: false
+          verbose: true
+
+      - name: Install Flatpak linter
+        run: flatpak install -y flathub org.flatpak.Builder
+
+      - name: Lint Flatpak manifest
+        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/me.spaceinbox.SwiftyNotes.yml
+
+      - name: Lint Flatpak repo
+        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo packaging/out/flatpak/repo
+
+      - name: Upload Flatpak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifty-notes-gtk-flatpak
+          path: swifty-notes-gtk-${{ inputs.version }}-x86_64.flatpak
+
+  build-snap:
+    runs-on: ubuntu-24.04
+    needs: prepare-install-roots
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download /usr install root
+        uses: actions/download-artifact@v4
+        with:
+          name: install-root-usr
+          path: packaging/out/install-root-usr
+
+      - name: Stamp Snap version
+        run: |
+          sed -i 's/^version: .*/version: "${{ inputs.version }}"/' snap/snapcraft.yaml
+
+      - name: Build Snap
+        id: build-snap
+        uses: snapcore/action-build@v1
+        with:
+          path: .
+
+      - name: Upload Snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifty-notes-gtk-snap
+          path: ${{ steps.build-snap.outputs.snap }}

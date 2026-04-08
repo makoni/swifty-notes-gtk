@@ -4,7 +4,7 @@ Native GTK markdown notes for Linux, written in Swift with `swift-adwaita`.
 
 ## Features
 
-- file-backed markdown notes stored as plain `.md` files
+- file-backed markdown notes stored in per-note directories with `note.md`, `meta.json`, and `assets/`
 - GTK/libadwaita UI with notes sidebar, live Markdown editor, and inspector-style preview
 - first-launch seeded example note (`Markdown Showcase`)
 - autosave, manual save, import/export, duplicate, rename, delete, and open-notes-folder flows
@@ -27,7 +27,8 @@ Native GTK markdown notes for Linux, written in Swift with `swift-adwaita`.
 
 - Swift 6 toolchain
 - Linux desktop environment with GTK 4, libadwaita, and GtkSourceView 5 available
-- local checkout of [`swift-adwaita`](https://github.com/stackotter/swift-adwaita) at `../swift-adwaita` because `Package.swift` references it as a path dependency
+
+If you want to test local `swift-adwaita` changes instead of the pinned git revision, set `SWIFTY_NOTES_LOCAL_SWIFT_ADWAITA_PATH=/absolute/path/to/swift-adwaita` before building.
 
 ## Build and run
 
@@ -57,6 +58,17 @@ swift test --filter 'appLaunchesUnderHeadlessWaylandWithAccessibleWindowAndSeede
 ```
 
 The smoke tests require a working session bus and tools such as `weston` and `pyatspi`.
+
+## Release packaging
+
+Release packaging assets live under `packaging/`, `snap/`, and `data/`.
+
+- Build a staged Linux install root: `packaging/release/assemble-install-root.sh --version 1.0.0 --dest packaging/out/install-root-usr --prefix /usr`
+- Build a `.deb` from that root: `packaging/release/build-deb.sh --version 1.0.0 --install-root packaging/out/install-root-usr --output packaging/out/deb`
+- Build a source-built `.flatpak` bundle: `packaging/release/build-flatpak.sh --version 1.0.0 --output packaging/out/flatpak`
+- Build `.rpm` artifacts in CI with `packaging/release/build-rpm.sh`
+
+The Flatpak manifest template lives in `flatpak/me.spaceinbox.SwiftyNotes.yml.in` and pins the SwiftPM dependency sources used in CI. GitHub Actions release automation lives in `.github/workflows/release-packages.yml` and accepts a `version` input via `workflow_dispatch`.
 
 ## CLI
 

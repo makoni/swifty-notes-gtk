@@ -1,0 +1,38 @@
+Name:           swifty-notes-gtk
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Native GTK markdown notes for Linux
+License:        MIT
+URL:            https://github.com/makoni/swifty-notes-gtk
+Source0:        swifty-notes-gtk-@VERSION@-root.tar.gz
+BuildArch:      x86_64
+
+%description
+Swifty Notes is a native GTK/libadwaita markdown notes application for Linux.
+It keeps notes in plain files, supports a native Markdown preview, autosave,
+drag-and-drop image import, and a storage-compatible CLI.
+
+%prep
+%setup -q -T -c
+tar -xzf %{SOURCE0}
+
+%build
+
+%install
+mkdir -p %{buildroot}
+cp -a usr %{buildroot}/
+
+%files
+%license /usr/share/licenses/swifty-notes-gtk/LICENSE
+/usr/bin/SwiftyNotes
+%dir /usr/libexec/swifty-notes
+/usr/libexec/swifty-notes/SwiftyNotes
+%dir /usr/libexec/swifty-notes/swifty-notes-gtk_SwiftyNotes.resources
+/usr/libexec/swifty-notes/swifty-notes-gtk_SwiftyNotes.resources/*
+/usr/share/applications/me.spaceinbox.SwiftyNotes.desktop
+/usr/share/icons/hicolor/scalable/apps/me.spaceinbox.SwiftyNotes.svg
+/usr/share/metainfo/me.spaceinbox.SwiftyNotes.metainfo.xml
+
+%changelog
+* Tue Apr 08 2026 Sergey Armodin <makoni@users.noreply.github.com> - @VERSION@-1
+- Automated release build.

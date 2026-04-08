@@ -8,3 +8,5 @@ DerivedData/
 .netrc
 Package.resolved
 default.profraw
+/packaging/out
+/flatpak/me.spaceinbox.SwiftyNotes.yml
