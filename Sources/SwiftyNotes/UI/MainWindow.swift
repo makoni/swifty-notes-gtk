@@ -223,7 +223,7 @@ final class MainWindow {
         }
 
         newNoteButton.onClicked { [weak self] in
-            self?.createNote()
+            self?.requestCreateNote()
         }
 
         saveNoteButton.onClicked { [weak self] in
@@ -278,7 +278,7 @@ final class MainWindow {
         }
 
         window.addKeyboardShortcut("<Ctrl>n") { [weak self] in
-            self?.createNote()
+            self?.requestCreateNote()
             return true
         }
         window.addKeyboardShortcut("<Ctrl>s") { [weak self] in

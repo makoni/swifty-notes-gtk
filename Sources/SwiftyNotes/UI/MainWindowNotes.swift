@@ -3,6 +3,12 @@ import Foundation
 
 @MainActor
 extension MainWindow {
+    func requestCreateNote() {
+        MainContext.idle { [weak self] in
+            self?.createNote()
+        }
+    }
+
     func loadInitialNotes() {
         do {
             var notes = try repository.loadNotes()

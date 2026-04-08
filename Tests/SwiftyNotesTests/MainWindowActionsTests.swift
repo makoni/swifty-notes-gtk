@@ -451,6 +451,43 @@ struct MainWindowActionsTests {
     }
 
     @Test @MainActor
+    func mainWindowAboutDialogUsesReleaseVersionEnvironmentWhenProvided() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let previousValue = ProcessInfo.processInfo.environment["SWIFTY_NOTES_VERSION"]
+        setenv("SWIFTY_NOTES_VERSION", "1.2.3", 1)
+        defer {
+            if let previousValue {
+                setenv("SWIFTY_NOTES_VERSION", previousValue, 1)
+            } else {
+                unsetenv("SWIFTY_NOTES_VERSION")
+            }
+        }
+
+        let app = Application(id: "me.spaceinbox.SwiftyNotes.Tests.AboutDialogReleaseVersion")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.present()
+        window.debugActivateAboutAction()
+
+        #expect(window.debugAboutDialogSnapshot?.version == "1.2.3")
+
+        window.debugCloseAboutDialog()
+    }
+
+    @Test @MainActor
     func mainWindowSwitchingBetweenNotesRefreshesPreview() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }

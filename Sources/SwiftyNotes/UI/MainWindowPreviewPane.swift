@@ -52,7 +52,7 @@ extension MainWindow {
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_CREATE_NOTE_DELAY_MS"]
             .flatMap(Int.init) ?? 500
         MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
-            self?.createNote()
+            self?.requestCreateNote()
         }
     }
 

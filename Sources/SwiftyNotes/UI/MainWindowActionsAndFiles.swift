@@ -295,7 +295,7 @@ extension MainWindow {
     func presentAboutDialog() {
         let about = AboutDialog(
             appName: "Swifty Notes",
-            version: "Development",
+            version: BuildInfo.version,
             developer: "Sergey Armodin",
             appIcon: AppIdentity.identifier,
             website: "https://github.com/makoni/swifty-notes-gtk",

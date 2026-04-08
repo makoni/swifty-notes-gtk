@@ -201,7 +201,7 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
-    func mainWindowPlusButtonSignalCreatesNote() throws {
+    func mainWindowPlusButtonSignalCreatesNote() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -220,9 +220,11 @@ struct MainWindowCoreTests {
         )
 
         window.present()
+        try await Task.sleep(for: .milliseconds(40))
         #expect(window.debugNotesCount == 1)
 
         window.debugEmitNewNoteClicked()
+        window.debugDrainMainContext()
         #expect(window.debugNotesCount == 2)
     }
 
