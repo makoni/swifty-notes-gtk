@@ -44,11 +44,17 @@ jobs:
             --dest packaging/out/install-root-usr \
             --prefix /usr
 
+      - name: Archive /usr install root
+        run: |
+          tar -C packaging/out/install-root-usr -czf \
+            "packaging/out/swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz" \
+            .
+
       - name: Upload /usr install root
         uses: actions/upload-artifact@v7
         with:
-          name: install-root-usr
-          path: packaging/out/install-root-usr
+          name: swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz
+          path: packaging/out/swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz
 
   build-deb:
     runs-on: ubuntu-24.04
@@ -61,8 +67,15 @@ jobs:
       - name: Download /usr install root
         uses: actions/download-artifact@v8
         with:
-          name: install-root-usr
-          path: packaging/out/install-root-usr
+          name: swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz
+          path: packaging/out/install-root-archive
+
+      - name: Extract /usr install root
+        run: |
+          rm -rf packaging/out/install-root-usr
+          mkdir -p packaging/out/install-root-usr
+          tar -C packaging/out/install-root-usr -xzf \
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz"
 
       - name: Build Debian package
         run: |
@@ -71,11 +84,22 @@ jobs:
             --install-root packaging/out/install-root-usr \
             --output packaging/out/deb
 
+      - name: Resolve Debian artifact
+        id: deb-artifact
+        run: |
+          set -- packaging/out/deb/*.deb
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "Expected exactly one Debian artifact, found: $*" >&2
+            exit 1
+          fi
+          echo "path=$1" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$1")" >> "$GITHUB_OUTPUT"
+
       - name: Upload Debian artifact
         uses: actions/upload-artifact@v7
         with:
-          name: swifty-notes-gtk-deb
-          path: packaging/out/deb/*.deb
+          name: ${{ steps.deb-artifact.outputs.name }}
+          path: ${{ steps.deb-artifact.outputs.path }}
 
   build-rpm:
     runs-on: ubuntu-24.04
@@ -93,8 +117,15 @@ jobs:
       - name: Download /usr install root
         uses: actions/download-artifact@v8
         with:
-          name: install-root-usr
-          path: packaging/out/install-root-usr
+          name: swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz
+          path: packaging/out/install-root-archive
+
+      - name: Extract /usr install root
+        run: |
+          rm -rf packaging/out/install-root-usr
+          mkdir -p packaging/out/install-root-usr
+          tar -C packaging/out/install-root-usr -xzf \
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz"
 
       - name: Build RPM package
         run: |
@@ -103,11 +134,22 @@ jobs:
             --install-root packaging/out/install-root-usr \
             --output packaging/out/rpm
 
+      - name: Resolve RPM artifact
+        id: rpm-artifact
+        run: |
+          set -- packaging/out/rpm/*.rpm
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "Expected exactly one RPM artifact, found: $*" >&2
+            exit 1
+          fi
+          echo "path=$1" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$1")" >> "$GITHUB_OUTPUT"
+
       - name: Upload RPM artifact
         uses: actions/upload-artifact@v7
         with:
-          name: swifty-notes-gtk-rpm
-          path: packaging/out/rpm/*.rpm
+          name: ${{ steps.rpm-artifact.outputs.name }}
+          path: ${{ steps.rpm-artifact.outputs.path }}
 
   build-flatpak:
     runs-on: ubuntu-24.04
@@ -164,7 +206,7 @@ jobs:
       - name: Upload Flatpak artifact
         uses: actions/upload-artifact@v7
         with:
-          name: swifty-notes-gtk-flatpak
+          name: swifty-notes-gtk-${{ inputs.version }}-x86_64.flatpak
           path: swifty-notes-gtk-${{ inputs.version }}-x86_64.flatpak
 
   build-snap:
@@ -178,8 +220,15 @@ jobs:
       - name: Download /usr install root
         uses: actions/download-artifact@v8
         with:
-          name: install-root-usr
-          path: packaging/out/install-root-usr
+          name: swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz
+          path: packaging/out/install-root-archive
+
+      - name: Extract /usr install root
+        run: |
+          rm -rf packaging/out/install-root-usr
+          mkdir -p packaging/out/install-root-usr
+          tar -C packaging/out/install-root-usr -xzf \
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ inputs.version }}-linux-x86_64-install-root.tar.gz"
 
       - name: Stamp Snap version
         run: |
@@ -197,8 +246,19 @@ jobs:
         with:
           path: .
 
+      - name: Resolve Snap artifact
+        id: snap-artifact
+        run: |
+          snap_path='${{ steps.build-snap.outputs.snap }}'
+          if [ ! -f "$snap_path" ]; then
+            echo "Missing snap artifact at $snap_path" >&2
+            exit 1
+          fi
+          echo "path=$snap_path" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$snap_path")" >> "$GITHUB_OUTPUT"
+
       - name: Upload Snap artifact
         uses: actions/upload-artifact@v7
         with:
-          name: swifty-notes-gtk-snap
-          path: ${{ steps.build-snap.outputs.snap }}
+          name: ${{ steps.snap-artifact.outputs.name }}
+          path: ${{ steps.snap-artifact.outputs.path }}
