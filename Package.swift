@@ -33,9 +33,13 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
-        .executable(
+        .library(
             name: "SwiftyNotes",
             targets: ["SwiftyNotes"]
+        ),
+        .executable(
+            name: "swiftynotes",
+            targets: ["swiftynotes"]
         )
     ],
     dependencies: [
@@ -57,7 +61,7 @@ let package = Package(
         )
     ],
     targets: [
-        .executableTarget(
+        .target(
             name: "SwiftyNotes",
             dependencies: [
                 .product(name: "Adwaita", package: "swift-adwaita"),
@@ -66,6 +70,11 @@ let package = Package(
             resources: [
                 .process("Resources")
             ]
+        ),
+        .executableTarget(
+            name: "swiftynotes",
+            dependencies: ["SwiftyNotes"],
+            path: "Sources/swiftynotes"
         ),
         .testTarget(
             name: "SwiftyNotesTests",

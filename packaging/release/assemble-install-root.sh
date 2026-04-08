@@ -94,7 +94,7 @@ cd "$repo_root"
 
 swift build -c release --static-swift-stdlib
 build_dir="$(swift build -c release --static-swift-stdlib --show-bin-path)"
-binary_path="${build_dir}/SwiftyNotes"
+binary_path="${build_dir}/swiftynotes"
 resources_dir="${build_dir}/swifty-notes-gtk_SwiftyNotes.resources"
 
 if [ ! -x "$binary_path" ]; then
@@ -123,21 +123,21 @@ mkdir -p \
     "${dest}${metainfo_dir}" \
     "${dest}${license_dir}"
 
-install -Dm755 "$binary_path" "${dest}${libexec_dir}/SwiftyNotes"
+install -Dm755 "$binary_path" "${dest}${libexec_dir}/swiftynotes"
 cp -R "$resources_dir" "${dest}${libexec_dir}/"
 install -Dm644 data/me.spaceinbox.swiftynotes.desktop "${dest}${applications_dir}/me.spaceinbox.swiftynotes.desktop"
 install -Dm644 data/me.spaceinbox.swiftynotes.svg "${dest}${icon_dir}/me.spaceinbox.swiftynotes.svg"
 install -Dm644 LICENSE "${dest}${license_dir}/LICENSE"
 
-cat > "${dest}${bin_dir}/SwiftyNotes" <<EOF
+cat > "${dest}${bin_dir}/swiftynotes" <<EOF
 #!/bin/sh
 set -eu
 : "\${SWIFTY_NOTES_VERSION:=${version}}"
 : "\${SWIFTY_NOTES_APP_ID:=me.spaceinbox.swiftynotes}"
 root_prefix="\${SWIFTY_NOTES_ROOT_PREFIX:-\${SNAP:-}}"
-exec "\${root_prefix}${libexec_dir}/SwiftyNotes" "\$@"
+exec "\${root_prefix}${libexec_dir}/swiftynotes" "\$@"
 EOF
-chmod 755 "${dest}${bin_dir}/SwiftyNotes"
+chmod 755 "${dest}${bin_dir}/swiftynotes"
 
 sed \
     -e "s|@VERSION@|${version}|g" \
@@ -170,4 +170,4 @@ SWIFTY_NOTES_VERSION="$version" \
 XDG_DATA_HOME="${validation_root}/data" \
 XDG_CONFIG_HOME="${validation_root}/config" \
 XDG_STATE_HOME="${validation_root}/state" \
-    "${dest}${bin_dir}/SwiftyNotes" cli list >/dev/null
+    "${dest}${bin_dir}/swiftynotes" cli list >/dev/null

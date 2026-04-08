@@ -56,6 +56,23 @@ extension MainWindow {
         }
     }
 
+    func scheduleDebugSelectionSwitchIfRequested() {
+        guard let targetIndex = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SELECT_NOTE_INDEX_ON_LAUNCH"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            let index = Int(targetIndex)
+        else {
+            return
+        }
+
+        let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SELECT_NOTE_DELAY_MS"]
+            .flatMap(Int.init) ?? 500
+        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+            guard let self else { return }
+            FileHandle.standardError.write(Data("SwiftyNotes debug launch select note: \(index)\n".utf8))
+            self.requestSelectNote(at: index)
+        }
+    }
+
     func schedulePreviewRefresh(blocks: [RenderedBlock], baseDirectory: URL) {
         if let previewRefreshID {
             MainContext.cancel(sourceId: previewRefreshID)

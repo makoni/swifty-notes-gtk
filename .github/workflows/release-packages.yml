@@ -237,8 +237,8 @@ jobs:
       - name: Restore Snap executable bits
         run: |
           chmod 755 \
-            packaging/out/install-root-usr/usr/bin/SwiftyNotes \
-            packaging/out/install-root-usr/usr/libexec/swifty-notes/SwiftyNotes
+            packaging/out/install-root-usr/usr/bin/swiftynotes \
+            packaging/out/install-root-usr/usr/libexec/swifty-notes/swiftynotes
 
       - name: Build Snap
         id: build-snap

@@ -205,7 +205,7 @@ struct CLITests {
     func cliExecutableSurfacesHelpAndExitCodes() throws {
         let helpResult = try runCLIExecutable(arguments: ["cli", "help", "create"])
         #expect(helpResult.exitCode == 0)
-        #expect(helpResult.stdout.contains("SwiftyNotes cli create"))
+        #expect(helpResult.stdout.contains("swiftynotes cli create"))
         #expect(helpResult.stderr.isEmpty)
 
         let invalidIDResult = try runCLIExecutable(
@@ -310,5 +310,5 @@ private func runCLIExecutable(
 private func swiftyNotesExecutableURL() -> URL {
     URL(fileURLWithPath: CommandLine.arguments[0], isDirectory: false)
         .deletingLastPathComponent()
-        .appendingPathComponent("SwiftyNotes", isDirectory: false)
+        .appendingPathComponent("swiftynotes", isDirectory: false)
 }

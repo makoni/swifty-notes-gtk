@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Swifty Notes
 Comment=Native GTK markdown notes with preview and CLI automation
-Exec=SwiftyNotes
+Exec=swiftynotes
 Icon=me.spaceinbox.swiftynotes
 Terminal=false
 Type=Application

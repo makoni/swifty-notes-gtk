@@ -11,13 +11,14 @@ Native GTK markdown notes for Linux, written in Swift with `swift-adwaita`.
 - settings window for choosing and moving the notes storage folder
 - editor preferences for line wrapping, font size, tab width, and spaces-vs-tabs indentation
 - configurable autosave delay and appearance override (follow system, light, dark)
+- configurable note storage location that can live in a cloud-synced folder for cross-device sync
 - CLI for listing, reading, creating, and replacing notes by stable ID
 - workspace persistence for selection, search, sort mode, sidebar/preview visibility, and window layout
 - native Wayland UI smoke coverage with headless Weston + AT-SPI
 
 ## Project layout
 
-- `Sources/SwiftyNotes/main.swift` starts either the GTK app or the CLI entrypoint.
+- `Sources/swiftynotes/main.swift` starts either the GTK app or the CLI entrypoint via the shared `SwiftyNotes` module.
 - `Sources/SwiftyNotes/UI/` contains the main window, sidebar, editor, and preview widgets.
 - `Sources/SwiftyNotes/Storage/` contains note persistence and workspace-state persistence.
 - `Sources/SwiftyNotes/Services/MarkdownRenderer.swift` converts markdown into the native GTK preview model.
@@ -34,7 +35,7 @@ If you want to test local `swift-adwaita` changes instead of the pinned git revi
 
 ```bash
 swift build
-swift run SwiftyNotes
+swift run swiftynotes
 ```
 
 ## Tests
@@ -75,11 +76,11 @@ The Flatpak manifest template lives in `flatpak/me.spaceinbox.swiftynotes.yml.in
 The same executable exposes a CLI:
 
 ```bash
-swift run SwiftyNotes -- cli list
-swift run SwiftyNotes -- cli get <note-id>
-swift run SwiftyNotes -- cli get <note-id> --raw
-swift run SwiftyNotes -- cli create --content '# Title\n\nBody'
-swift run SwiftyNotes -- cli update <note-id> --stdin
+swift run swiftynotes -- cli list
+swift run swiftynotes -- cli get <note-id>
+swift run swiftynotes -- cli get <note-id> --raw
+swift run swiftynotes -- cli create --content '# Title\n\nBody'
+swift run swiftynotes -- cli update <note-id> --stdin
 ```
 
 `update` replaces the full markdown content of the target note. The CLI emits JSON that is easy to drive from scripts, shell pipelines, and AI agents while still operating on the same file-backed notes as the desktop app.
@@ -94,6 +95,8 @@ If the notes directory is empty on first launch, the app creates the `Markdown S
 
 When you change the notes folder in Settings, the app moves the existing notes directory to the new location. The CLI follows the same configured folder automatically unless `--notes-dir` is passed explicitly.
 
+That makes it practical to place the notes folder inside a cloud-synced directory such as Google Drive, Nextcloud, Syncthing, or another file-sync service and keep the same plain files in sync across devices.
+
 ## Settings
 
 The Settings window currently lets you configure:
@@ -105,6 +108,8 @@ The Settings window currently lets you configure:
 - spaces vs tabs indentation
 - autosave delay
 - appearance override
+
+This combination lets you tailor the editor to your screen and writing style while also relocating note storage to a directory that your preferred sync tool already mirrors.
 
 ## Preview architecture
 

@@ -24,9 +24,9 @@ cp -a usr %{buildroot}/
 
 %files
 %license /usr/share/licenses/swifty-notes-gtk/LICENSE
-/usr/bin/SwiftyNotes
+/usr/bin/swiftynotes
 %dir /usr/libexec/swifty-notes
-/usr/libexec/swifty-notes/SwiftyNotes
+/usr/libexec/swifty-notes/swiftynotes
 %dir /usr/libexec/swifty-notes/swifty-notes-gtk_SwiftyNotes.resources
 /usr/libexec/swifty-notes/swifty-notes-gtk_SwiftyNotes.resources/*
 /usr/share/applications/me.spaceinbox.swiftynotes.desktop

@@ -135,6 +135,7 @@ final class MainWindow {
         scheduleDebugLaunchEditIfRequested()
         scheduleDebugSettingsOpenIfRequested()
         scheduleDebugCreateNoteIfRequested()
+        scheduleDebugSelectionSwitchIfRequested()
         MainContext.idle { [weak self] in
             self?.refreshPreview()
             self?.restorePreviewPaneLayout()

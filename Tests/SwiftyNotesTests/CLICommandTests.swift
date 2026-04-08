@@ -78,14 +78,14 @@ struct CLICommandTests {
         #expect(result?.exitCode == 0)
         #expect(result?.stdout.contains("SwiftyNotes CLI") == true)
         #expect(result?.stdout.contains("Commands:") == true)
-        #expect(result?.stdout.contains("SwiftyNotes cli help <command>") == true)
+        #expect(result?.stdout.contains("swiftynotes cli help <command>") == true)
     }
 
     @Test
     func cliCommandHelpIsAvailable() {
         let result = NotesCLI.runIfRequested(arguments: ["cli", "help", "update"])
         #expect(result?.exitCode == 0)
-        #expect(result?.stdout.contains("SwiftyNotes cli update <note-id>") == true)
+        #expect(result?.stdout.contains("swiftynotes cli update <note-id>") == true)
         #expect(result?.stdout.contains("Replace an existing note's markdown content by ID.") == true)
         #expect(result?.stdout.contains("--stdin") == true)
     }
@@ -94,7 +94,7 @@ struct CLICommandTests {
     func cliSubcommandHelpFlagIsAvailable() {
         let result = NotesCLI.runIfRequested(arguments: ["cli", "get", "--help"])
         #expect(result?.exitCode == 0)
-        #expect(result?.stdout.contains("SwiftyNotes cli get <note-id>") == true)
+        #expect(result?.stdout.contains("swiftynotes cli get <note-id>") == true)
         #expect(result?.stdout.contains("--raw") == true)
     }
 }

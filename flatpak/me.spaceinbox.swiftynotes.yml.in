@@ -4,7 +4,7 @@ runtime-version: "48"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.swift6
-command: SwiftyNotes
+command: swiftynotes
 
 finish-args:
   - --share=ipc

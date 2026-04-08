@@ -24,7 +24,7 @@ platforms:
 
 apps:
   swifty-notes:
-    command: usr/bin/SwiftyNotes
+    command: usr/bin/swiftynotes
     desktop: usr/share/applications/me.spaceinbox.swiftynotes.desktop
     extensions:
       - gnome

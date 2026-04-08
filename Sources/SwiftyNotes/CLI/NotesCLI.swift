@@ -93,7 +93,7 @@ enum NotesCLI {
             Manage the same file-backed markdown notes used by the GUI.
 
             Usage:
-              SwiftyNotes cli <command> [options]
+              swiftynotes cli <command> [options]
 
             Commands:
               list      List notes as JSON
@@ -111,18 +111,18 @@ enum NotesCLI {
               - JSON output is intended to be easy for scripts and AI agents to consume.
 
             Examples:
-              SwiftyNotes cli list
-              SwiftyNotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554
-              SwiftyNotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --raw
-              SwiftyNotes cli create --content '# Title\n\nBody'
-              SwiftyNotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --stdin
+              swiftynotes cli list
+              swiftynotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554
+              swiftynotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --raw
+              swiftynotes cli create --content '# Title\n\nBody'
+              swiftynotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --stdin
 
-            Run `SwiftyNotes cli help <command>` for details on a specific command.
+            Run `swiftynotes cli help <command>` for details on a specific command.
             """
         case .list:
             """
             Usage:
-              SwiftyNotes cli list [--notes-dir PATH]
+              swiftynotes cli list [--notes-dir PATH]
 
             List all notes as a JSON array.
 
@@ -135,12 +135,12 @@ enum NotesCLI {
               - updatedAt
 
             Example:
-              SwiftyNotes cli list --notes-dir /path/to/notes
+              swiftynotes cli list --notes-dir /path/to/notes
             """
         case .get:
             """
             Usage:
-              SwiftyNotes cli get <note-id> [--raw] [--notes-dir PATH]
+              swiftynotes cli get <note-id> [--raw] [--notes-dir PATH]
 
             Read one note by ID.
 
@@ -151,12 +151,12 @@ enum NotesCLI {
               Default output is a JSON document with note metadata and content.
 
             Example:
-              SwiftyNotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --raw
+              swiftynotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --raw
             """
         case .create:
             """
             Usage:
-              SwiftyNotes cli create [--content TEXT | --content-file PATH | --stdin] [--notes-dir PATH]
+              swiftynotes cli create [--content TEXT | --content-file PATH | --stdin] [--notes-dir PATH]
 
             Create a new note.
 
@@ -170,14 +170,14 @@ enum NotesCLI {
               - Output is the created note as JSON.
 
             Examples:
-              SwiftyNotes cli create --content '# Title'
-              SwiftyNotes cli create --content-file ./note.md
-              cat note.md | SwiftyNotes cli create --stdin
+              swiftynotes cli create --content '# Title'
+              swiftynotes cli create --content-file ./note.md
+              cat note.md | swiftynotes cli create --stdin
             """
         case .update:
             """
             Usage:
-              SwiftyNotes cli update <note-id> (--content TEXT | --content-file PATH | --stdin) [--notes-dir PATH]
+              swiftynotes cli update <note-id> (--content TEXT | --content-file PATH | --stdin) [--notes-dir PATH]
 
             Replace an existing note's markdown content by ID.
 
@@ -191,8 +191,8 @@ enum NotesCLI {
               - Output is the updated note as JSON.
 
             Examples:
-              SwiftyNotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --content '# Updated'
-              cat note.md | SwiftyNotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --stdin
+              swiftynotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --content '# Updated'
+              cat note.md | swiftynotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --stdin
             """
         }
     }

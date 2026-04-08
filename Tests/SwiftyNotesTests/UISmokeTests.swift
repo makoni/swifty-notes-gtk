@@ -125,6 +125,36 @@ struct UISmokeTests {
     }
 
     @Test
+    func appSwitchingNotesDoesNotEmitSnapshotWarningsUnderHeadlessWayland() throws {
+        let result = try runWaylandUIScript(
+            """
+            app_stderr_log = os.environ["APP_STDERR_LOG"]
+            wait_until(
+                lambda: "SwiftyNotes debug launch select note: 1" in open(app_stderr_log, "r", encoding="utf-8").read(),
+                "launch selection settles",
+                timeout=5
+            )
+            time.sleep(1)
+            stderr = open(app_stderr_log, "r", encoding="utf-8").read()
+            assert "Trying to snapshot" not in stderr, stderr
+            """,
+            prepare: { xdgDataHome, _ in
+                let notesDirectory = xdgDataHome
+                    .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                    .appendingPathComponent("notes", isDirectory: true)
+                let repository = NotesRepository(notesDirectory: notesDirectory)
+                _ = try repository.createNote(initialContent: "# Alpha\n\nFirst")
+                _ = try repository.createNote(initialContent: "# Beta\n\nSecond")
+            },
+            environment: [
+                "SWIFTY_NOTES_DEBUG_SELECT_NOTE_INDEX_ON_LAUNCH": "1"
+            ],
+            requiresAccessibility: false
+        )
+        expectUIScriptSucceeded(result)
+    }
+
+    @Test
     func settingsWindowOpensUnderHeadlessWaylandAndShowsControls() throws {
         let result = try runWaylandUIScript(
             """
@@ -133,7 +163,7 @@ struct UISmokeTests {
                     desktop = pyatspi.Registry.getDesktop(0)
                     for index in range(desktop.childCount):
                         app = desktop.getChildAtIndex(index)
-                        if (app.name or "") != "SwiftyNotes":
+                        if (app.name or "").lower() != "swiftynotes":
                             continue
                         if process_id(app) != TARGET_PID:
                             continue
@@ -212,7 +242,8 @@ private func runUIScript(
 private func runWaylandUIScript(
     _ pythonScript: String,
     prepare: ((URL, URL) throws -> Void)? = nil,
-    environment: [String: String] = [:]
+    environment: [String: String] = [:],
+    requiresAccessibility: Bool = true
 ) throws -> UIScriptResult {
     guard ProcessInfo.processInfo.environment["DBUS_SESSION_BUS_ADDRESS"] != nil else {
         return UIScriptResult(exitCode: 0, stdout: "", stderr: "")
@@ -236,10 +267,25 @@ private func runWaylandUIScript(
     try FileManager.default.createDirectory(at: xdgConfigHome, withIntermediateDirectories: true)
     try prepare?(xdgDataHome, xdgStateHome)
 
+    let accessibilityEnvironment: String
+    let pythonImport: String
+    if requiresAccessibility {
+        accessibilityEnvironment = """
+        export NO_AT_BRIDGE=0
+        export GTK_A11Y=atspi
+        """
+        pythonImport = "import pyatspi"
+    } else {
+        accessibilityEnvironment = """
+        export NO_AT_BRIDGE=1
+        unset GTK_A11Y || true
+        """
+        pythonImport = ""
+    }
+
     let script = """
     set -euo pipefail
-    export NO_AT_BRIDGE=0
-    export GTK_A11Y=atspi
+    \(accessibilityEnvironment)
     export GDK_BACKEND=wayland
     export XDG_RUNTIME_DIR="$TEST_RUNTIME_DIR"
     export WAYLAND_DISPLAY="swifty-notes-test-wayland"
@@ -277,8 +323,8 @@ private func runWaylandUIScript(
     export APP_PID
     python3 - <<'PY'
     import os
-    import pyatspi
     import time
+    \(pythonImport)
     
     TARGET_PID = int(os.environ["APP_PID"])
     NOTES_DIR = os.environ["NOTES_DIR"]
@@ -332,7 +378,7 @@ private func runWaylandUIScript(
             desktop = pyatspi.Registry.getDesktop(0)
             for index in range(desktop.childCount):
                 app = desktop.getChildAtIndex(index)
-                if (app.name or "") != "SwiftyNotes":
+                if (app.name or "").lower() != "swiftynotes":
                     continue
                 if process_id(app) != TARGET_PID:
                     continue
@@ -403,5 +449,5 @@ private func temporaryDirectory() -> URL {
 private func swiftyNotesExecutableURL() -> URL {
     URL(fileURLWithPath: CommandLine.arguments[0], isDirectory: false)
         .deletingLastPathComponent()
-        .appendingPathComponent("SwiftyNotes", isDirectory: false)
+        .appendingPathComponent("swiftynotes", isDirectory: false)
 }

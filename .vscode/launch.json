@@ -5,20 +5,20 @@
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:swifty-notes-gtk}",
-            "name": "Debug SwiftyNotes",
-            "target": "SwiftyNotes",
+            "name": "Debug swiftynotes",
+            "target": "swiftynotes",
             "configuration": "debug",
-            "preLaunchTask": "swift: Build Debug SwiftyNotes"
+            "preLaunchTask": "swift: Build Debug swiftynotes"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:swifty-notes-gtk}",
-            "name": "Release SwiftyNotes",
-            "target": "SwiftyNotes",
+            "name": "Release swiftynotes",
+            "target": "swiftynotes",
             "configuration": "release",
-            "preLaunchTask": "swift: Build Release SwiftyNotes"
+            "preLaunchTask": "swift: Build Release swiftynotes"
         }
     ]
 }

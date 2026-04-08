@@ -17,7 +17,7 @@
 
 ## High-level architecture
 
-- `Sources/SwiftyNotes/main.swift` is the only entry point. The same executable runs either the GTK app or the CLI: if the first argument is `cli`, it routes into `NotesCLI`; otherwise it starts the Adwaita application.
+- `Sources/swiftynotes/main.swift` is the executable entry point. The same binary runs either the GTK app or the CLI: if the first argument is `cli`, it routes into `NotesCLI`; otherwise it starts the Adwaita application.
 - `MainWindow` is the orchestration hub for the desktop app. It wires together `NotesSidebar`, `MarkdownEditor`, and `MarkdownPreview`, owns headerbar actions, autosave scheduling, preview/sidebar visibility, context menus, toast notifications, workspace persistence, and external file reload handling.
 - Persistent note storage lives in `NotesRepository`. Both GUI and CLI use the same repository and the same default XDG-backed notes directory (`XDG_DATA_HOME` or `~/.local/share/me.spaceinbox.swiftynotes/notes`), so storage behavior must stay compatible across both entry points.
 - Persisted UI/session state lives in `WorkspaceStateStore`, backed by JSON under `XDG_STATE_HOME` or `~/.local/state/me.spaceinbox.swiftynotes/workspace.json`. `AppState` is the in-memory model for selected note, sidebar/preview visibility, search query, sort mode, and preferred window/pane sizes.
@@ -33,6 +33,6 @@
 - A note's display title comes from its markdown content, not its filename. Renaming a note means rewriting the first meaningful line of the markdown. Filenames are storage identifiers, not user-facing titles.
 - Stable note identity is the lowercase UUID string exposed as `stableID`. Filenames encode timestamp + UUID, and `loadNotes()` reconstructs IDs from that filename format. In tests that depend on restored selection/persisted state, create notes through `NotesRepository` instead of inventing arbitrary filenames.
 - First launch seeds `Markdown Showcase` only when the notes directory has no `.md` files. The showcase also includes a companion image asset in the notes directory.
-- The CLI is intentionally storage-compatible with the GUI. `SwiftyNotes cli update` replaces the full markdown content of a note; do not implement partial patch semantics there unless the CLI contract changes explicitly.
+- The CLI is intentionally storage-compatible with the GUI. `swiftynotes cli update` replaces the full markdown content of a note; do not implement partial patch semantics there unless the CLI contract changes explicitly.
 - For unit-style UI regressions, prefer existing `MainWindow.debug...` helpers instead of trying to drive GTK widgets directly. Reserve `UISmokeTests` for real black-box Wayland scenarios that rely on accessibility-visible names and persisted startup state.
-- `UISmokeTests` use a unique `SWIFTY_NOTES_APP_ID` per run so the smoke harness does not accidentally activate an already running `SwiftyNotes` instance. Keep that isolation behavior if you expand the smoke harness.
+- `UISmokeTests` use a unique `SWIFTY_NOTES_APP_ID` per run so the smoke harness does not accidentally activate an already running `swiftynotes` instance. Keep that isolation behavior if you expand the smoke harness.
