@@ -55,12 +55,37 @@ extension JSONDecoder {
 }
 
 @MainActor
-func drainMainContext(iterations: Int = 8) {
-    guard let context = g_main_context_default() else { return }
-    for _ in 0..<max(iterations, 1) {
-        while g_main_context_pending(context) != 0 {
-            _ = g_main_context_iteration(context, 0)
+final class TestMainActorScheduler {
+    private final class Entry {
+        let action: @MainActor () -> Void
+        var isCancelled = false
+
+        init(action: @escaping @MainActor () -> Void) {
+            self.action = action
         }
-        _ = g_main_context_iteration(context, 0)
+    }
+
+    private var pendingEntries: [Entry] = []
+
+    func schedule(_ action: @escaping @MainActor () -> Void) {
+        pendingEntries.append(Entry(action: action))
+    }
+
+    func schedule(after _: Duration, operation: @escaping @MainActor () -> Void) -> (() -> Void) {
+        let entry = Entry(action: operation)
+        pendingEntries.append(entry)
+        return {
+            entry.isCancelled = true
+        }
+    }
+
+    func runPendingActions() {
+        while !pendingEntries.isEmpty {
+            let entries = pendingEntries
+            pendingEntries.removeAll()
+            for entry in entries where !entry.isCancelled {
+                entry.action()
+            }
+        }
     }
 }

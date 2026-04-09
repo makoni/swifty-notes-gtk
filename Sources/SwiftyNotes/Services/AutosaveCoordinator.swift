@@ -3,23 +3,33 @@ import GObjectSupport
 
 @MainActor
 public final class AutosaveCoordinator {
-    private var currentTask: MainContext.Task?
+    private var cancelCurrentTask: (() -> Void)?
+    private let taskScheduler: (Duration, @escaping @MainActor () -> Void) -> (() -> Void)
 
-    public init() {}
+    public init(
+        taskScheduler: @escaping (Duration, @escaping @MainActor () -> Void) -> (() -> Void) = { delay, operation in
+            let task = MainContext.task(after: delay) {
+                operation()
+            }
+            return { task.cancel() }
+        }
+    ) {
+        self.taskScheduler = taskScheduler
+    }
 
     public func scheduleSave(
         after delay: Duration = .milliseconds(400),
         operation: @escaping @MainActor () -> Void
     ) {
         cancel()
-        currentTask = MainContext.task(after: delay) { [weak self] in
-            self?.currentTask = nil
+        cancelCurrentTask = taskScheduler(delay) { [weak self] in
+            self?.cancelCurrentTask = nil
             operation()
         }
     }
 
     public func cancel() {
-        currentTask?.cancel()
-        currentTask = nil
+        cancelCurrentTask?()
+        cancelCurrentTask = nil
     }
 }

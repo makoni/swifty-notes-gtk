@@ -4,13 +4,13 @@ import Foundation
 @MainActor
 extension MainWindow {
     func requestCreateNote() {
-        MainContext.idle { [weak self] in
+        deferredUIActionScheduler { [weak self] in
             self?.createNote()
         }
     }
 
     func requestSelectNote(at index: Int) {
-        MainContext.idle { [weak self] in
+        deferredUIActionScheduler { [weak self] in
             self?.selectNote(at: index)
         }
     }

@@ -201,9 +201,10 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
-    func mainWindowCreateNoteRequestCreatesNoteAfterMainLoopDrain() async throws {
+    func mainWindowCreateNoteRequestCreatesNoteAfterMainLoopDrain() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
+        let deferredScheduler = TestMainActorScheduler()
 
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.signal")
         try app.register()
@@ -216,15 +217,15 @@ struct MainWindowCoreTests {
             ),
             repository: NotesRepository(notesDirectory: temp),
             renderer: MarkdownRenderer(),
-            autosave: AutosaveCoordinator()
+            autosave: AutosaveCoordinator(),
+            deferredUIActionScheduler: deferredScheduler.schedule
         )
 
-        window.present()
-        try await Task.sleep(for: .milliseconds(40))
+        window.debugLoadInitialNotes()
         #expect(window.debugNotesCount == 1)
 
         window.debugRequestCreateNote()
-        window.debugDrainMainContext()
+        deferredScheduler.runPendingActions()
         #expect(window.debugNotesCount == 2)
     }
 
@@ -250,6 +251,7 @@ struct MainWindowCoreTests {
         )
         let savedFirst = try repository.save(note: first)
         let savedSecond = try repository.save(note: second)
+        let deferredScheduler = TestMainActorScheduler()
 
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.deferredselection")
         try app.register()
@@ -262,10 +264,10 @@ struct MainWindowCoreTests {
             ),
             repository: repository,
             renderer: MarkdownRenderer(),
-            autosave: AutosaveCoordinator()
+            autosave: AutosaveCoordinator(),
+            deferredUIActionScheduler: deferredScheduler.schedule
         )
 
-        window.present()
         window.debugLoadInitialNotes()
 
         #expect(window.debugSelectedNoteStableID() == savedSecond.stableID)
@@ -273,7 +275,7 @@ struct MainWindowCoreTests {
         window.debugRequestSelectDisplayedNote(at: 1)
         #expect(window.debugSelectedNoteStableID() == savedSecond.stableID)
 
-        window.debugDrainMainContext()
+        deferredScheduler.runPendingActions()
         #expect(window.debugSelectedNoteStableID() == savedFirst.stableID)
         #expect(window.debugPreviewText.contains("First"))
         #expect(window.debugPreviewText.contains("One"))
@@ -622,6 +624,7 @@ struct MainWindowCoreTests {
         defer { try? FileManager.default.removeItem(at: temp) }
 
         let repository = NotesRepository(notesDirectory: temp)
+        let autosaveScheduler = TestMainActorScheduler()
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.autosave")
         try app.register()
 
@@ -633,29 +636,22 @@ struct MainWindowCoreTests {
             ),
             repository: repository,
             renderer: MarkdownRenderer(),
-            autosave: AutosaveCoordinator(),
+            autosave: AutosaveCoordinator(taskScheduler: autosaveScheduler.schedule(after:operation:)),
             autosaveDelay: .milliseconds(40)
         )
 
-        window.present()
-        try await Task.sleep(for: .milliseconds(40))
-        drainMainContext()
+        window.debugLoadInitialNotes()
         let originalContent = try repository.loadNotes()[0].content
 
         window.debugSetEditorText("# First draft\n\nA")
         #expect(window.debugHeaderSubtitle.contains("Unsaved changes"))
-        try await Task.sleep(for: .milliseconds(15))
-        drainMainContext()
         #expect(try repository.loadNotes()[0].content == originalContent)
 
         window.debugSetEditorText("# Final draft\n\nB")
         #expect(window.debugHeaderSubtitle.contains("Unsaved changes"))
-        try await Task.sleep(for: .milliseconds(20))
-        drainMainContext()
         #expect(try repository.loadNotes()[0].content == originalContent)
 
-        try await Task.sleep(for: .milliseconds(60))
-        drainMainContext()
+        autosaveScheduler.runPendingActions()
         let autosaved = try repository.loadNotes()
         #expect(autosaved[0].content == "# Final draft\n\nB")
         #expect(autosaved[0].title == "Final draft")

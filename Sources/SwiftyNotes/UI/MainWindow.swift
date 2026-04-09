@@ -37,6 +37,7 @@ final class MainWindow {
     let autosaveDelayOverride: Duration?
     var autosaveDelay: Duration
     let directoryOpener: (URL) throws -> Void
+    let deferredUIActionScheduler: (@escaping @MainActor () -> Void) -> Void
 
     lazy var renameAction = SimpleAction(name: "rename-note") { [weak self] in
         self?.presentRenameDialogForSelectedNote()
@@ -108,7 +109,10 @@ final class MainWindow {
         appSettingsStore: AppSettingsStore = AppSettingsStore(),
         appSettings: AppSettings = .default,
         autosaveDelay: Duration? = nil,
-        directoryOpener: @escaping (URL) throws -> Void = MainWindow.openDirectoryInSystemFileManager
+        directoryOpener: @escaping (URL) throws -> Void = MainWindow.openDirectoryInSystemFileManager,
+        deferredUIActionScheduler: @escaping (@escaping @MainActor () -> Void) -> Void = { action in
+            MainContext.idle { action() }
+        }
     ) {
         self.state = state
         self.stateStore = stateStore
@@ -120,6 +124,7 @@ final class MainWindow {
         self.autosaveDelayOverride = autosaveDelay
         self.autosaveDelay = autosaveDelay ?? .seconds(appSettings.autosaveDelaySeconds)
         self.directoryOpener = directoryOpener
+        self.deferredUIActionScheduler = deferredUIActionScheduler
 
         window = ApplicationWindow(application: application)
         window.title = "Swifty Notes"

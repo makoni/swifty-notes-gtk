@@ -189,7 +189,8 @@ struct NoteModelAndRendererTests {
 
     @Test @MainActor
     func autosaveCoordinatorRunsLatestTask() async {
-        let autosave = AutosaveCoordinator()
+        let scheduler = TestMainActorScheduler()
+        let autosave = AutosaveCoordinator(taskScheduler: scheduler.schedule(after:operation:))
         var values: [Int] = []
 
         autosave.scheduleSave(after: .milliseconds(10)) {
@@ -199,8 +200,7 @@ struct NoteModelAndRendererTests {
             values.append(2)
         }
 
-        try? await Task.sleep(for: .milliseconds(40))
-        drainMainContext()
+        scheduler.runPendingActions()
 
         #expect(values == [2])
     }
