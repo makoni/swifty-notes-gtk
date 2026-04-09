@@ -269,7 +269,7 @@ public final class NotesRepository: @unchecked Sendable {
 
     @discardableResult
     public func seedMarkdownShowcaseIfNeeded(createdAt: Date = Date()) throws -> Note? {
-        try queue.sync {
+        try queue.sync { () throws -> Note? in
             try ensureNotesDirectoryUnlocked()
             if try !storedNoteDirectoriesUnlocked().isEmpty {
                 return nil
@@ -279,6 +279,34 @@ public final class NotesRepository: @unchecked Sendable {
             try persistUnlocked(note)
             try persistShowcaseImageUnlockedIfNeeded(for: note)
             return note
+        }
+    }
+
+    @discardableResult
+    public func seedDefaultNotesIfNeeded(createdAt: Date = Date()) throws -> [Note] {
+        try queue.sync { () throws -> [Note] in
+            try ensureNotesDirectoryUnlocked()
+            if try !storedNoteDirectoriesUnlocked().isEmpty {
+                return []
+            }
+
+            let showcase = makeNewNote(content: MarkdownShowcaseSeed.content, createdAt: createdAt)
+            try persistUnlocked(showcase)
+            try persistShowcaseImageUnlockedIfNeeded(for: showcase)
+
+            let overview = makeNewNote(
+                content: SwiftyNotesOverviewSeed.content,
+                createdAt: createdAt.addingTimeInterval(-1)
+            )
+            try persistUnlocked(overview)
+
+            let cliGuide = makeNewNote(
+                content: SwiftyNotesCLISeed.content,
+                createdAt: createdAt.addingTimeInterval(-2)
+            )
+            try persistUnlocked(cliGuide)
+
+            return [showcase, overview, cliGuide]
         }
     }
 

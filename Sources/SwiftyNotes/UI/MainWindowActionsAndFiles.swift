@@ -19,10 +19,35 @@ private enum DroppedImageImportError: LocalizedError {
 extension MainWindow {
     func presentNoteContextMenu(forNoteID noteID: UUID, x: Int, y: Int) {
         noteContextDeferredAction = nil
-        dismissNoteContextMenu()
-        guard let rowIndex = displayedNotes.firstIndex(where: { $0.id == noteID }),
-              let row = sidebar.list.rowAt(rowIndex),
-              row.root != nil else {
+        noteContextMenuRequestID &+= 1
+        let requestID = noteContextMenuRequestID
+        dismissNoteContextMenu(cancelPendingPresentation: false)
+        presentNoteContextMenuIfReady(forNoteID: noteID, x: x, y: y, requestID: requestID)
+    }
+
+    func presentNoteContextMenuIfReady(
+        forNoteID noteID: UUID,
+        x: Int,
+        y: Int,
+        requestID: UInt,
+        remainingAttempts: Int = 20
+    ) {
+        guard requestID == noteContextMenuRequestID,
+              let rowIndex = displayedNotes.firstIndex(where: { $0.id == noteID }),
+              let row = sidebar.list.rowAt(rowIndex) else {
+            return
+        }
+        guard row.root != nil, row.width > 0, row.height > 0 else {
+            guard remainingAttempts > 0 else { return }
+            MainContext.delay(for: .milliseconds(10)) { [weak self] in
+                self?.presentNoteContextMenuIfReady(
+                    forNoteID: noteID,
+                    x: x,
+                    y: y,
+                    requestID: requestID,
+                    remainingAttempts: remainingAttempts - 1
+                )
+            }
             return
         }
 
@@ -33,28 +58,47 @@ extension MainWindow {
         popover.child = makeNoteContextPopoverContent()
         popover.onClosed { [weak self, weak popover] in
             guard let self, let popover else { return }
-            if popover.parent != nil {
+            if popover.root != nil {
                 popover.unparent()
             }
             if self.noteContextMenu === popover {
                 self.noteContextMenu = nil
             }
-            if let deferredAction = self.noteContextDeferredAction {
-                self.noteContextDeferredAction = nil
-                MainContext.idle(deferredAction)
-            }
+            self.noteContextHandlers = [:]
+            self.noteContextMenuLabels = []
         }
-        guard popover.present(from: row, x: x, y: y) else { return }
+        guard popover.present(from: row, x: x, y: y) else {
+            guard remainingAttempts > 0 else { return }
+            MainContext.delay(for: .milliseconds(10)) { [weak self] in
+                self?.presentNoteContextMenuIfReady(
+                    forNoteID: noteID,
+                    x: x,
+                    y: y,
+                    requestID: requestID,
+                    remainingAttempts: remainingAttempts - 1
+                )
+            }
+            return
+        }
         noteContextMenu = popover
     }
 
-    func dismissNoteContextMenu() {
+    func dismissNoteContextMenu(cancelPendingPresentation: Bool = true) {
+        if cancelPendingPresentation {
+            noteContextMenuRequestID &+= 1
+        }
         guard let noteContextMenu else { return }
         self.noteContextMenu = nil
         noteContextHandlers = [:]
         noteContextMenuLabels = []
-        if noteContextMenu.parent != nil {
-            noteContextMenu.popdown()
+        let deferredAction = noteContextDeferredAction
+        noteContextDeferredAction = nil
+        noteContextMenu.popdown()
+        if noteContextMenu.root != nil {
+            noteContextMenu.unparent()
+        }
+        if let deferredAction {
+            MainContext.idle(deferredAction)
         }
     }
 

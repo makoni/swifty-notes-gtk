@@ -8,70 +8,55 @@ enum MarkdownShowcaseSeed {
     static let content = """
     # Markdown Showcase
 
-    Welcome to the demo note for **Swifty Notes**. This document shows the main Markdown features supported by the editor and preview.
+    ![Swift and Adwaita showcase artwork](assets/markdown-demo-image.png)
 
-    ## Headings
+    *A screenshot-ready note that shows off the native preview, spacing, and typography.*
 
-    ### Smaller Heading
+    Swifty Notes renders Markdown as real GTK widgets, so images, lists, tables, code, and prose all stay crisp without a web view.
 
-    Regular paragraphs work as expected, and you can mix *italic*, **bold**, ***bold italic***, ~~strikethrough~~, and `inline code` in the same sentence.
+    > Tip: use the `Editor`, `Split`, and `Preview` buttons in the header bar to capture different layouts for release screenshots.
+
+    ## Highlights
+
+    - Balanced list spacing that stays compact in the preview
+      - Great for outlines, changelogs, and checklists
+      - Clean nesting without oversized gaps
+    - Inline formatting such as *italic*, **bold**, ~~strikethrough~~, and `inline code`
+    - Native image blocks that feel at home in the rest of the interface
+
+    ## Quick Checklist
+
+    - [x] Live Markdown preview
+    - [x] Native GTK styling
+    - [x] Per-note image assets
+    - [ ] Add your own launch-day copy
+
+    ## Feature Snapshot
+
+    | Area | What it shows |
+    | --- | --- |
+    | Toolbar | Quick formatting without memorizing syntax |
+    | Split view | Write and review side by side |
+    | CLI | Automate the same file-backed notes |
 
     ## Links
 
-    Visit [Swift.org](https://www.swift.org) or [GTK](https://www.gtk.org) for more details.
+    Visit [Swift.org](https://www.swift.org) and [GTK](https://www.gtk.org) for the foundations behind the app.
 
-    ## Blockquote
+    ## Quote
 
-    > Markdown is a lightweight way to write rich text.
-    >
-    > It is great for notes, drafts, and technical documentation.
+    > Fast enough for daily notes, simple enough for plain files, and polished enough for screenshots.
 
-    ## Lists
-
-    - Unordered item
-    - Another item
-      - Nested item
-    - Final item
-
-    ## Ordered List
-
-    1. First step
-    2. Second step
-    3. Third step
-
-    ## Task List
-
-    - [x] Write the note
-    - [x] Test the preview
-    - [ ] Add your own content
-
-    ## Code Block
+    ## Code Sample
 
     ```swift
-    import Foundation
-
-    let message = "Hello from Swifty Notes"
-    print(message)
+    let modes = ["Editor", "Split", "Preview"]
+    print("Swifty Notes: \\(modes.joined(separator: " / "))")
     ```
 
-    ## Table
-    
-    | Feature | Example | Status |
-    | --- | --- | --- |
-    | Bold | **bold** | Works |
-    | Code | `code`| Works |
-
-    ## Thematic Break
-
-    ---
-
-    ## Image
-
-    ![Swift and Adwaita showcase artwork](assets/markdown-demo-image.png)
-
     ## Mixed Content
-    
-    You can combine text, lists, tables, and code blocks in one note to create rich documentation or project notes
+
+    You can combine text, lists, tables, code blocks, and media in one note to build clean project docs or product-ready release collateral.
     """
 
     static func imageData() throws -> Data {

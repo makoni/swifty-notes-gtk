@@ -25,17 +25,52 @@ struct MainWindowCoreTests {
         )
 
         window.debugLoadInitialNotes()
-        #expect(window.debugNotesCount == 1)
+        #expect(window.debugNotesCount == 3)
         #expect(window.debugSelectedNoteContent == MarkdownShowcaseSeed.content)
         #expect(window.debugPreviewText.contains("Markdown Showcase"))
-        #expect(window.debugPreviewText.contains("Welcome to the demo note"))
-        #expect(window.debugPreviewText.contains("Bold"))
-        #expect(window.debugPreviewText.contains("Code"))
+        #expect(window.debugPreviewText.contains("screenshot-ready note"))
+        #expect(window.debugPreviewText.contains("Feature Snapshot"))
+        #expect(window.debugPreviewText.contains("Toolbar"))
 
         window.debugSetEditorText("# Title\n\nBody")
         #expect(window.debugSelectedNoteContent == "# Title\n\nBody")
         #expect(window.debugPreviewText.contains("Title"))
         #expect(window.debugPreviewText.contains("Body"))
+    }
+
+    @Test @MainActor
+    func mainWindowSelectingCLISeededNoteUpdatesPreview() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.cliseedpreview")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugDisplayedNoteTitles == [
+            "Markdown Showcase",
+            "About Swifty Notes",
+            "Using Swifty Notes CLI"
+        ])
+
+        window.debugSelectDisplayedNote(at: 2)
+
+        #expect(window.debugSelectedNoteStableID() != nil)
+        #expect(window.debugSelectedNoteContent == SwiftyNotesCLISeed.content)
+        #expect(window.debugPreviewText.contains("Using Swifty Notes CLI"))
+        #expect(window.debugPreviewText.contains("swiftynotes cli list"))
+        #expect(window.debugPreviewText.contains("swiftynotes cli update"))
     }
 
     @Test @MainActor
@@ -127,10 +162,10 @@ struct MainWindowCoreTests {
         )
 
         window.debugLoadInitialNotes()
-        #expect(window.debugNotesCount == 1)
+        #expect(window.debugNotesCount == 3)
 
         window.debugCreateNote()
-        #expect(window.debugNotesCount == 2)
+        #expect(window.debugNotesCount == 4)
     }
 
     @Test @MainActor
@@ -158,7 +193,7 @@ struct MainWindowCoreTests {
         window.debugCreateNote()
         try await Task.sleep(for: .milliseconds(40))
 
-        #expect(window.debugNotesCount == 2)
+        #expect(window.debugNotesCount == 4)
         #expect(window.debugSelectedNoteContent == "")
         #expect(window.debugHeaderSubtitle.contains("Saved"))
     }
@@ -222,11 +257,11 @@ struct MainWindowCoreTests {
         )
 
         window.debugLoadInitialNotes()
-        #expect(window.debugNotesCount == 1)
+        #expect(window.debugNotesCount == 3)
 
         window.debugRequestCreateNote()
         deferredScheduler.runPendingActions()
-        #expect(window.debugNotesCount == 2)
+        #expect(window.debugNotesCount == 4)
     }
 
     @Test @MainActor
@@ -611,7 +646,7 @@ struct MainWindowCoreTests {
         try await Task.sleep(for: .milliseconds(80))
 
         let saved = try repository.loadNotes()
-        #expect(saved.count == 1)
+        #expect(saved.count == 3)
         #expect(saved[0].content == "# Saved Title\n\nSaved body")
         #expect(saved[0].title == "Saved Title")
         #expect(!window.debugEditorModified)
@@ -683,13 +718,13 @@ struct MainWindowCoreTests {
         )
 
         window.debugLoadInitialNotes()
-        #expect(window.debugNotesCount == 1)
+        #expect(window.debugNotesCount == 3)
 
         _ = try externalRepository.createNote(initialContent: "# External\n\nCreated from CLI")
         window.debugPollForExternalChanges()
 
-        #expect(window.debugNotesCount == 2)
-        #expect(window.debugDisplayedNotesCount == 2)
+        #expect(window.debugNotesCount == 4)
+        #expect(window.debugDisplayedNotesCount == 4)
     }
 
     @Test @MainActor

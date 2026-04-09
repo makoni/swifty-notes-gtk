@@ -6,6 +6,66 @@ import CAdwaita
 
 struct MainWindowActionsTests {
     @Test @MainActor
+    func mainWindowSelectionChangeDismissesContextMenuBeforeSidebarRefresh() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.contextmenu-dismiss")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugOpenContextMenuForDisplayedNote(at: 0)
+        #expect(window.debugHasContextMenu)
+        #expect(!window.debugNoteContextMenuLabels.isEmpty)
+
+        window.selectNote(at: 1)
+
+        #expect(!window.debugHasContextMenu)
+        #expect(window.debugNoteContextMenuLabels.isEmpty)
+        #expect(window.debugSelectedNoteContent == SwiftyNotesOverviewSeed.content)
+    }
+
+    @Test @MainActor
+    func mainWindowCreateNoteDismissesExistingContextMenuBeforeSidebarRefresh() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.contextmenu-newnote")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugOpenContextMenuForDisplayedNote(at: 0)
+        #expect(window.debugHasContextMenu)
+
+        window.debugCreateNote()
+
+        #expect(!window.debugHasContextMenu)
+        #expect(window.debugNotesCount == 4)
+    }
+
+    @Test @MainActor
     func mainWindowContextMenuActionsExecuteForSelectedRowAfterSidebarRefresh() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -26,7 +86,7 @@ struct MainWindowActionsTests {
 
         window.present()
         window.debugCreateNote()
-        #expect(window.debugNotesCount == 2)
+        #expect(window.debugNotesCount == 4)
         #expect(window.debugOverflowMenuSectionTitles == ["Library", "Help"])
         #expect(window.debugOverflowMenuItemsBySection == [
             "Library": [
@@ -60,7 +120,7 @@ struct MainWindowActionsTests {
         #expect(window.debugHasContextMenu)
         #expect(window.debugInvokeContextMenuAction(label: "Duplicate note"))
         #expect(!window.debugHasContextMenu)
-        #expect(window.debugNotesCount == 3)
+        #expect(window.debugNotesCount == 5)
         #expect(Set(window.debugDisplayedNoteStableIDs).count == window.debugDisplayedNoteStableIDs.count)
     }
 

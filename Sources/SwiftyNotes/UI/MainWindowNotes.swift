@@ -19,7 +19,7 @@ extension MainWindow {
         do {
             var notes = try repository.loadNotes()
             if notes.isEmpty {
-                _ = try repository.seedMarkdownShowcaseIfNeeded()
+                _ = try repository.seedDefaultNotesIfNeeded()
                 notes = try repository.loadNotes()
             }
             state.setNotes(notes)
@@ -144,6 +144,7 @@ extension MainWindow {
     }
 
     func refreshSidebar() {
+        dismissNoteContextMenu()
         displayedNotes = state.sortMode.sort(notes: state.notes.filter { $0.matches(searchQuery: state.searchQuery) })
         sidebar.render(
             notes: displayedNotes,

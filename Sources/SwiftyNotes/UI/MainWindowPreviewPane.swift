@@ -21,8 +21,21 @@ extension MainWindow {
         hasScheduledDebugLaunchEdit = true
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_EDIT_DELAY_MS"]
             .flatMap(Int.init) ?? 800
-        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
-            guard let self, self.state.selectedNote != nil else { return }
+        scheduleDebugLaunchEdit(suffix: suffix, after: max(delayMilliseconds, 0), remainingAttempts: 25)
+    }
+
+    private func scheduleDebugLaunchEdit(suffix: String, after delayMilliseconds: Int, remainingAttempts: Int) {
+        MainContext.delay(for: .milliseconds(delayMilliseconds)) { [weak self] in
+            guard let self else { return }
+            guard self.state.selectedNote != nil else {
+                guard remainingAttempts > 0 else { return }
+                self.scheduleDebugLaunchEdit(
+                    suffix: suffix,
+                    after: 200,
+                    remainingAttempts: remainingAttempts - 1
+                )
+                return
+            }
             FileHandle.standardError.write(Data("SwiftyNotes debug launch edit: \(suffix)\n".utf8))
             self.editor.buffer.text += "\n\n\(suffix)"
         }

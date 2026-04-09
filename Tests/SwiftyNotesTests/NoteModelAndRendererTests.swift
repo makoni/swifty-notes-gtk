@@ -12,6 +12,12 @@ struct NoteModelAndRendererTests {
     }
 
     @Test
+    func derivedTitleSkipsLeadingStandaloneImage() {
+        let title = Note.derivedTitle(from: "![Cover](assets/cover.png)\n\n# Hello world\nBody")
+        #expect(title == "Hello world")
+    }
+
+    @Test
     func derivedTitleFallsBackForEmptyNote() {
         #expect(Note.derivedTitle(from: " \n\n ") == "New Note")
     }
@@ -29,6 +35,21 @@ struct NoteModelAndRendererTests {
         let renamed = note.retitled("Groceries")
         #expect(renamed.title == "Groceries")
         #expect(renamed.content.hasPrefix("Groceries"))
+    }
+
+    @Test
+    func noteRetitlePreservesLeadingImageAndReplacesHeadingAfterIt() {
+        let note = Note(
+            id: UUID(),
+            filename: "note.md",
+            createdAt: Date(),
+            updatedAt: Date(),
+            content: "![Cover](assets/cover.png)\n\n# Original\n\nBody"
+        )
+
+        let renamed = note.retitled("Updated")
+        #expect(renamed.title == "Updated")
+        #expect(renamed.content == "![Cover](assets/cover.png)\n\n# Updated\n\nBody")
     }
 
     @Test
@@ -141,6 +162,36 @@ struct NoteModelAndRendererTests {
         #expect(rows[0].map(\.plainText) == ["Emphasis", "**bold**", "Ready"])
         #expect(rows[1].map(\.plainText) == ["Checklist", "- [x] Ship it", "Ready"])
         #expect(alignments == [.leading, .leading, .center])
+    }
+
+    @Test
+    func htmlSubsetParserTreatsUnsupportedTagsAsLiteralText() {
+        let nodes = HTMLSubsetParser().parse("<pre><code>swiftynotes cli get <note-id></code></pre>")
+        let blocks = HTMLPreviewDocumentBuilder(darkAppearance: false).blocks(from: nodes, listDepth: 0)
+
+        #expect(blocks == [
+            .codeBlock(code: "swiftynotes cli get <note-id>", language: nil)
+        ])
+    }
+
+    @Test
+    func rendererBuildsBlocksForCLISeedNote() {
+        let renderer = MarkdownRenderer()
+        let blocks = renderer.blocks(for: SwiftyNotesCLISeed.content, darkAppearance: false)
+
+        #expect(!blocks.isEmpty)
+        #expect(blocks.contains { block in
+            if case let .heading(level, text) = block {
+                return level == 1 && text.plainText == "Using Swifty Notes CLI"
+            }
+            return false
+        })
+        #expect(blocks.contains { block in
+            if case let .codeBlock(code, language) = block {
+                return language == "bash" && code.contains("swiftynotes cli list")
+            }
+            return false
+        })
     }
 
     @Test

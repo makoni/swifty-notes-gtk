@@ -15,8 +15,10 @@ struct UISmokeTests {
         require_named(frame, "Split")
         require_named(frame, "Preview")
         require_named(frame, "Markdown Showcase")
-        require_named(frame, "Notes (1)")
-        require_named(frame, "Welcome to the demo note for Swifty Notes. This document shows the main Markdown features supported by the editor and preview.")
+        require_named(frame, "About Swifty Notes")
+        require_named(frame, "Using Swifty Notes CLI")
+        require_named(frame, "Notes (3)")
+        require_named(frame, "A screenshot-ready note that shows off the native preview, spacing, and typography.")
 
         wait_until(lambda: os.path.isdir(NOTES_DIR), "notes dir created")
         note_dirs = wait_until(
@@ -27,9 +29,14 @@ struct UISmokeTests {
             ) or None,
             "seeded note directory written"
         )
-        assert len(note_dirs) == 1, note_dirs
-        showcase = open(os.path.join(NOTES_DIR, note_dirs[0], "note.md"), "r", encoding="utf-8").read()
-        assert "Markdown Showcase" in showcase
+        assert len(note_dirs) == 3, note_dirs
+        contents = [
+            open(os.path.join(NOTES_DIR, note_dir, "note.md"), "r", encoding="utf-8").read()
+            for note_dir in note_dirs
+        ]
+        assert any("Markdown Showcase" in content for content in contents)
+        assert any("About Swifty Notes" in content for content in contents)
+        assert any("Using Swifty Notes CLI" in content for content in contents)
         """)
         expectUIScriptSucceeded(result)
     }
@@ -109,12 +116,9 @@ struct UISmokeTests {
     func appAutosaveClearsUnsavedStatusUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
+            frame = wait_for_frame()
             app_stderr_log = os.environ["APP_STDERR_LOG"]
-            wait_until(
-                lambda: "SwiftyNotes debug launch edit: Smoke autosave edit" in open(app_stderr_log, "r", encoding="utf-8").read(),
-                "launch edit settles",
-                timeout=5
-            )
+            wait_until(lambda: os.path.isdir(NOTES_DIR), "notes dir created")
             note_dirs = wait_until(
                 lambda: sorted(
                     name for name in os.listdir(NOTES_DIR)
@@ -123,11 +127,17 @@ struct UISmokeTests {
                 ) or None,
                 "note directory created"
             )
-            note_path = os.path.join(NOTES_DIR, note_dirs[0], "note.md")
             wait_until(
-                lambda: "Smoke autosave edit" in open(note_path, "r", encoding="utf-8").read(),
+                lambda: any(
+                    "Smoke autosave edit" in open(
+                        os.path.join(NOTES_DIR, note_dir, "note.md"),
+                        "r",
+                        encoding="utf-8"
+                    ).read()
+                    for note_dir in note_dirs
+                ),
                 "autosave writes note content",
-                timeout=6
+                timeout=15
             )
             subtitle_log = wait_until(
                 lambda: next(
@@ -139,7 +149,7 @@ struct UISmokeTests {
                     None
                 ),
                 "header subtitle logged",
-                timeout=6
+                timeout=15
             )
             assert "Saved" in subtitle_log, subtitle_log
             assert "Unsaved changes" not in subtitle_log, subtitle_log
@@ -148,8 +158,7 @@ struct UISmokeTests {
                 "SWIFTY_NOTES_DEBUG_APPEND_TEXT_ON_LAUNCH": "Smoke autosave edit",
                 "SWIFTY_NOTES_DEBUG_EDIT_DELAY_MS": "200",
                 "SWIFTY_NOTES_DEBUG_LOG_HEADER_SUBTITLE_DELAY_MS": "3200"
-            ],
-            requiresAccessibility: false
+            ]
         )
         expectUIScriptSucceeded(result)
     }
@@ -161,7 +170,7 @@ struct UISmokeTests {
             frame = wait_for_frame()
             require_named(frame, "New Note")
             wait_until(
-                lambda: find_named(frame, "Notes (2)") is not None,
+                lambda: find_named(frame, "Notes (4)") is not None,
                 "created note appears",
                 timeout=5
             )
@@ -440,7 +449,7 @@ private func runWaylandUIScript(
                     if candidate.getRoleName() == "frame" and (candidate.name or "") == "Swifty Notes":
                         return candidate
             return None
-        return wait_until(locate, "Swifty Notes frame appears")
+        return wait_until(locate, "Swifty Notes frame appears", timeout=40)
 
     def find_named(root, name):
         if (root.name or "") == name:

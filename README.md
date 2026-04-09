@@ -6,7 +6,7 @@ Native GTK markdown notes for Linux, written in Swift with `swift-adwaita`.
 
 - file-backed markdown notes stored in per-note directories with `note.md`, `meta.json`, and `assets/`
 - GTK/libadwaita UI with notes sidebar, live Markdown editor, and inspector-style preview
-- first-launch seeded example note (`Markdown Showcase`)
+- first-launch seeded notes (`Markdown Showcase`, `About Swifty Notes`, and `Using Swifty Notes CLI`)
 - autosave, manual save, import/export, duplicate, rename, delete, and open-notes-folder flows
 - settings window for choosing and moving the notes storage folder
 - editor preferences for line wrapping, font size, tab width, and spaces-vs-tabs indentation
@@ -75,7 +75,7 @@ Release packaging assets live under `packaging/`, `snap/`, and `data/`.
 - Build a source-built `.flatpak` bundle: `packaging/release/build-flatpak.sh --version 1.0.0 --output packaging/out/flatpak`
 - Build `.rpm` artifacts in CI with `packaging/release/build-rpm.sh`
 
-The Flatpak manifest template lives in `flatpak/me.spaceinbox.swiftynotes.yml.in` and pins the SwiftPM dependency sources used in CI. GitHub Actions release automation lives in `.github/workflows/release-packages.yml` and accepts a `version` input via `workflow_dispatch`.
+The Flatpak manifest template lives in `flatpak/me.spaceinbox.swiftynotes.yml.in` and pins the SwiftPM dependency sources used in CI. GitHub Actions release automation lives in `.github/workflows/release-packages.yml`, accepts a `version` input via `workflow_dispatch`, and finishes by drafting a GitHub release that bundles every uploaded artifact from the run.
 
 ## CLI
 
@@ -97,7 +97,7 @@ swift run swiftynotes -- cli update <note-id> --stdin
 - Configurable notes directory: set in the app via **Settings** and persisted in `XDG_CONFIG_HOME/me.spaceinbox.swiftynotes/settings.json`
 - Workspace state: `XDG_STATE_HOME/me.spaceinbox.swiftynotes/workspace.json`
 
-If the notes directory is empty on first launch, the app creates the `Markdown Showcase` note automatically.
+If the notes directory is empty on first launch, the app creates `Markdown Showcase`, `About Swifty Notes`, and `Using Swifty Notes CLI` automatically.
 
 When you change the notes folder in Settings, the app moves the existing notes directory to the new location. The CLI follows the same configured folder automatically unless `--notes-dir` is passed explicitly.
 

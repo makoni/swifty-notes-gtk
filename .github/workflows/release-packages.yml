@@ -10,7 +10,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-project:
@@ -347,3 +347,38 @@ jobs:
         with:
           name: ${{ steps.snap-artifact.outputs.name }}
           path: ${{ steps.snap-artifact.outputs.path }}
+
+  draft-release:
+    name: Draft GitHub release
+    runs-on: ubuntu-24.04
+    needs:
+      - prepare-install-roots
+      - build-deb
+      - build-rpm
+      - build-flatpak
+      - build-snap
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release-artifacts
+
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          find release-artifacts -type f -print0 | while IFS= read -r -d '' file; do
+            cp "$file" release-assets/
+          done
+          ls -al release-assets
+
+      - name: Draft GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          body: Release drafted automatically. Update notes before publishing.
+          draft: true
+          files: release-assets/*

@@ -67,6 +67,9 @@ public struct Note: Identifiable, Sendable, Equatable {
         for rawLine in content.split(whereSeparator: \.isNewline) {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
+            if isTitleIgnorableMarkdown(line) {
+                continue
+            }
             let cleaned = line
                 .replacingOccurrences(of: #"^#+\s*"#, with: "", options: .regularExpression)
                 .replacingOccurrences(of: #"^>\s*"#, with: "", options: .regularExpression)
@@ -99,6 +102,9 @@ public struct Note: Identifiable, Sendable, Equatable {
         for index in lines.indices {
             let trimmed = lines[index].trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
+            if isTitleIgnorableMarkdown(trimmed) {
+                continue
+            }
 
             if trimmed.hasPrefix("#") {
                 let hashes = trimmed.prefix { $0 == "#" }
@@ -115,6 +121,10 @@ public struct Note: Identifiable, Sendable, Equatable {
             return nil
         }
         return nil
+    }
+
+    private static func isTitleIgnorableMarkdown(_ line: String) -> Bool {
+        line.hasPrefix("![")
     }
 
     private static func isStructuralMarkdown(_ line: String) -> Bool {

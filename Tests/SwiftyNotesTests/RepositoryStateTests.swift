@@ -50,29 +50,33 @@ struct RepositoryStateTests {
     }
 
     @Test
-    func repositorySeedsMarkdownShowcaseOnlyForEmptyStorage() throws {
+    func repositorySeedsDefaultNotesOnlyForEmptyStorage() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
         let repository = NotesRepository(notesDirectory: temp)
-        let seeded = try repository.seedMarkdownShowcaseIfNeeded(createdAt: Date(timeIntervalSince1970: 100))
+        let seeded = try repository.seedDefaultNotesIfNeeded(createdAt: Date(timeIntervalSince1970: 100))
         let notesAfterSeed = try repository.loadNotes()
 
-        #expect(seeded != nil)
-        #expect(notesAfterSeed.count == 1)
-        #expect(notesAfterSeed[0].title == "Markdown Showcase")
+        #expect(seeded.count == 3)
+        #expect(notesAfterSeed.count == 3)
+        #expect(notesAfterSeed.map(\.title) == ["Markdown Showcase", "About Swifty Notes", "Using Swifty Notes CLI"])
         #expect(notesAfterSeed[0].content == MarkdownShowcaseSeed.content)
+        #expect(notesAfterSeed[1].content == SwiftyNotesOverviewSeed.content)
+        #expect(notesAfterSeed[2].content == SwiftyNotesCLISeed.content)
         #expect(notesAfterSeed[0].filename.hasSuffix("/note.md"))
+        #expect(notesAfterSeed[1].filename.hasSuffix("/note.md"))
+        #expect(notesAfterSeed[2].filename.hasSuffix("/note.md"))
         let imageURL = repository
             .noteAssetsDirectoryURL(for: notesAfterSeed[0])
             .appendingPathComponent(MarkdownShowcaseSeed.imageFilename, isDirectory: false)
         #expect(FileManager.default.fileExists(atPath: imageURL.path()))
         #expect(try Data(contentsOf: imageURL) == MarkdownShowcaseSeed.imageData())
 
-        let secondSeed = try repository.seedMarkdownShowcaseIfNeeded(createdAt: Date(timeIntervalSince1970: 200))
+        let secondSeed = try repository.seedDefaultNotesIfNeeded(createdAt: Date(timeIntervalSince1970: 200))
         let notesAfterSecondSeed = try repository.loadNotes()
-        #expect(secondSeed == nil)
-        #expect(notesAfterSecondSeed.count == 1)
+        #expect(secondSeed.isEmpty)
+        #expect(notesAfterSecondSeed.count == 3)
     }
 
     @Test

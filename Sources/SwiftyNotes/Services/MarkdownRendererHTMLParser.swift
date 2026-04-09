@@ -15,26 +15,32 @@ struct HTMLSubsetParser {
         var index = html.startIndex
 
         while index < html.endIndex {
-            if html[index] == "<", let tagRange = html[index...].firstIndex(of: ">") {
-                let end = html.index(after: tagRange)
-                let token = String(html[index..<end])
-                if let tag = parseTag(token) {
-                    switch tag.kind {
-                    case .opening:
-                        let node = HTMLNode.element(name: tag.name, attributes: tag.attributes)
-                        stack[stack.count - 1].children.append(node)
-                        if !tag.selfClosing {
-                            stack.append(node)
+            if html[index] == "<" {
+                if let tagRange = html[index...].firstIndex(of: ">") {
+                    let end = html.index(after: tagRange)
+                    let token = String(html[index..<end])
+                    if let tag = parseTag(token) {
+                        switch tag.kind {
+                        case .opening:
+                            let node = HTMLNode.element(name: tag.name, attributes: tag.attributes)
+                            stack[stack.count - 1].children.append(node)
+                            if !tag.selfClosing {
+                                stack.append(node)
+                            }
+                        case .closing:
+                            if let matchedIndex = stack.lastIndex(where: { $0.name == tag.name }) {
+                                stack.removeSubrange((matchedIndex + 1)..<stack.count)
+                                stack.removeLast()
+                            }
                         }
-                    case .closing:
-                        if let matchedIndex = stack.lastIndex(where: { $0.name == tag.name }) {
-                            stack.removeSubrange((matchedIndex + 1)..<stack.count)
-                            stack.removeLast()
-                        }
+                        index = end
+                        continue
                     }
-                    index = end
-                    continue
                 }
+
+                stack[stack.count - 1].children.append(.text("<"))
+                index = html.index(after: index)
+                continue
             }
 
             let nextTag = html[index...].firstIndex(of: "<") ?? html.endIndex
@@ -182,4 +188,3 @@ func pangoEscape(_ text: String) -> String {
 func pangoEscapeAttribute(_ text: String) -> String {
     pangoEscape(text).replacingOccurrences(of: "\"", with: "&quot;")
 }
-

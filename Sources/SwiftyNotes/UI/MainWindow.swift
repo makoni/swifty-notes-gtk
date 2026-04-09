@@ -86,6 +86,7 @@ final class MainWindow {
     var suppressViewModeToggleChange = false
     var editorFormattingButtons: [MarkdownFormattingAction: Button] = [:]
     var noteContextMenu: Popover?
+    var noteContextMenuRequestID: UInt = 0
     var noteContextHandlers: [String: @MainActor () -> Void] = [:]
     var noteContextDeferredAction: (@MainActor () -> Void)?
     var activeFileDialog: FileDialog?
