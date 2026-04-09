@@ -461,7 +461,7 @@ extension MainWindow {
 
     func startExternalChangeMonitor() {
         stopExternalChangeMonitor()
-        externalChangeMonitorID = MainContext.timeout(intervalMs: 1500) { [weak self] in
+        externalChangeMonitorID = MainContext.timeout(every: .milliseconds(1500)) { [weak self] in
             guard let self else { return false }
             self.pollForExternalChanges()
             return true

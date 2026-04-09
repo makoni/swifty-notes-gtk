@@ -21,7 +21,7 @@ extension MainWindow {
         hasScheduledDebugLaunchEdit = true
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_EDIT_DELAY_MS"]
             .flatMap(Int.init) ?? 800
-        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
             guard let self, self.state.selectedNote != nil else { return }
             FileHandle.standardError.write(Data("SwiftyNotes debug launch edit: \(suffix)\n".utf8))
             self.editor.buffer.text += "\n\n\(suffix)"
@@ -33,7 +33,7 @@ extension MainWindow {
             .flatMap(Int.init)
         guard let delayMilliseconds else { return }
 
-        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
             guard let self else { return }
             FileHandle.standardError.write(
                 Data("SwiftyNotes debug header subtitle: \(self.headerTitle.subtitle)\n".utf8)
@@ -50,7 +50,7 @@ extension MainWindow {
         hasScheduledDebugSettingsOpen = true
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS"]
             .flatMap(Int.init) ?? 500
-        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
             self?.presentSettingsWindow()
         }
     }
@@ -64,7 +64,7 @@ extension MainWindow {
         hasScheduledDebugCreateNote = true
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_CREATE_NOTE_DELAY_MS"]
             .flatMap(Int.init) ?? 500
-        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
             self?.requestCreateNote()
         }
     }
@@ -79,7 +79,7 @@ extension MainWindow {
 
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SELECT_NOTE_DELAY_MS"]
             .flatMap(Int.init) ?? 500
-        MainContext.delay(ms: UInt32(max(delayMilliseconds, 0))) { [weak self] in
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
             guard let self else { return }
             FileHandle.standardError.write(Data("SwiftyNotes debug launch select note: \(index)\n".utf8))
             self.requestSelectNote(at: index)
@@ -93,7 +93,7 @@ extension MainWindow {
         }
         pendingPreviewBlocks = blocks
         pendingPreviewBaseDirectory = baseDirectory
-        previewRefreshID = MainContext.timeout(intervalMs: 1) { [weak self] in
+        previewRefreshID = MainContext.timeout(every: .milliseconds(1)) { [weak self] in
             guard let self else { return false }
             self.flushPendingPreviewRefresh()
             return false
@@ -110,7 +110,7 @@ extension MainWindow {
         }
         if shouldDeferPreviewRender() {
             if previewRefreshRetryID == nil {
-                previewRefreshRetryID = MainContext.timeout(intervalMs: 16) { [weak self] in
+                previewRefreshRetryID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
                     guard let self else { return false }
                     self.previewRefreshRetryID = nil
                     self.flushPendingPreviewRefresh()
@@ -388,7 +388,7 @@ extension MainWindow {
         isRestoringPreviewPaneLayout = true
         let startedAt = Date()
         let duration = Double(Self.previewAnimationDuration) / 1000
-        previewAnimationID = MainContext.timeout(intervalMs: 16) { [weak self] in
+        previewAnimationID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
             guard let self else { return false }
             let elapsed = Date().timeIntervalSince(startedAt)
             let progress = min(max(elapsed / duration, 0), 1)
@@ -409,7 +409,7 @@ extension MainWindow {
     }
 
     func schedulePreviewDetachIfNeeded() {
-        MainContext.delay(ms: 1) { [weak self] in
+        MainContext.delay(for: .milliseconds(1)) { [weak self] in
             guard let self, self.state.viewMode != .split else { return }
             self.detachPreviewPane()
         }

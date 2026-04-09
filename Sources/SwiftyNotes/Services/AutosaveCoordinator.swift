@@ -3,7 +3,7 @@ import GObjectSupport
 
 @MainActor
 public final class AutosaveCoordinator {
-    private var currentSourceID: SourceID?
+    private var currentTask: MainContext.Task?
 
     public init() {}
 
@@ -12,24 +12,14 @@ public final class AutosaveCoordinator {
         operation: @escaping @MainActor () -> Void
     ) {
         cancel()
-        currentSourceID = MainContext.timeout(intervalMs: milliseconds(from: delay)) { [weak self] in
-            self?.currentSourceID = nil
+        currentTask = MainContext.task(after: delay) { [weak self] in
+            self?.currentTask = nil
             operation()
-            return false
         }
     }
 
     public func cancel() {
-        guard let currentSourceID else { return }
-        MainContext.cancel(sourceId: currentSourceID)
-        self.currentSourceID = nil
-    }
-
-    private func milliseconds(from duration: Duration) -> UInt32 {
-        let components = duration.components
-        let secondsMilliseconds = components.seconds * 1_000
-        let attosecondsMilliseconds = components.attoseconds / 1_000_000_000_000_000
-        let totalMilliseconds = max(0, secondsMilliseconds + attosecondsMilliseconds)
-        return UInt32(clamping: totalMilliseconds)
+        currentTask?.cancel()
+        currentTask = nil
     }
 }
