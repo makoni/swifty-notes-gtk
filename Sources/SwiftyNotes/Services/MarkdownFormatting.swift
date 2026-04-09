@@ -111,27 +111,27 @@ enum MarkdownFormatting {
         let normalizedSelection = normalize(selection, in: text)
         switch action {
         case .bold:
-            return wrapInline(in: text, selection: normalizedSelection, prefix: "**", suffix: "**", placeholder: "bold")
+            return toggleInline(in: text, selection: normalizedSelection, prefix: "**", suffix: "**", placeholder: "bold")
         case .italic:
-            return wrapInline(in: text, selection: normalizedSelection, prefix: "*", suffix: "*", placeholder: "emphasis")
+            return toggleInline(in: text, selection: normalizedSelection, prefix: "*", suffix: "*", placeholder: "emphasis")
         case .code:
-            return formatCode(in: text, selection: normalizedSelection)
+            return toggleCode(in: text, selection: normalizedSelection)
         case .link:
-            return formatLink(in: text, selection: normalizedSelection)
+            return toggleLink(in: text, selection: normalizedSelection)
         case .heading:
-            return prefixLines(in: text, selection: normalizedSelection) { _ in "# " }
+            return toggleLines(in: text, selection: normalizedSelection, action: action)
         case .quote:
-            return prefixLines(in: text, selection: normalizedSelection) { _ in "> " }
+            return toggleLines(in: text, selection: normalizedSelection, action: action)
         case .bulletList:
-            return prefixLines(in: text, selection: normalizedSelection) { _ in "- " }
+            return toggleLines(in: text, selection: normalizedSelection, action: action)
         case .numberedList:
-            return prefixLines(in: text, selection: normalizedSelection) { index in "\(index + 1). " }
+            return toggleLines(in: text, selection: normalizedSelection, action: action)
         case .taskList:
-            return prefixLines(in: text, selection: normalizedSelection) { _ in "- [ ] " }
+            return toggleLines(in: text, selection: normalizedSelection, action: action)
         }
     }
 
-    private static func wrapInline(
+    private static func toggleInline(
         in text: String,
         selection: Range<Int>,
         prefix: String,
@@ -139,73 +139,90 @@ enum MarkdownFormatting {
         placeholder: String
     ) -> MarkdownFormattingEdit {
         let selectedText = substring(in: text, range: selection)
+        if let unwrappedText = unwrapInline(selectedText, prefix: prefix, suffix: suffix) {
+            return MarkdownFormattingEdit(
+                replacementRange: selection,
+                replacementText: unwrappedText,
+                selectedRange: selection.lowerBound..<(selection.lowerBound + unwrappedText.count)
+            )
+        }
+
         let innerText = selectedText.isEmpty ? placeholder : selectedText
         let replacementText = prefix + innerText + suffix
-        let selectionStart = selection.lowerBound + prefix.count
-        let selectedRange = selectionStart..<(selectionStart + innerText.count)
         return MarkdownFormattingEdit(
             replacementRange: selection,
             replacementText: replacementText,
-            selectedRange: selectedRange
+            selectedRange: selection.lowerBound..<(selection.lowerBound + replacementText.count)
         )
     }
 
-    private static func formatCode(
+    private static func toggleCode(
         in text: String,
         selection: Range<Int>
     ) -> MarkdownFormattingEdit {
         let selectedText = substring(in: text, range: selection)
+        if let unwrappedText = unwrapCode(selectedText) {
+            return MarkdownFormattingEdit(
+                replacementRange: selection,
+                replacementText: unwrappedText,
+                selectedRange: selection.lowerBound..<(selection.lowerBound + unwrappedText.count)
+            )
+        }
+
         if selectedText.contains("\n") {
             let replacementText = "```\n\(selectedText)\n```"
-            let selectionStart = selection.lowerBound + 4
             return MarkdownFormattingEdit(
                 replacementRange: selection,
                 replacementText: replacementText,
-                selectedRange: selectionStart..<(selectionStart + selectedText.count)
+                selectedRange: selection.lowerBound..<(selection.lowerBound + replacementText.count)
             )
         }
-        return wrapInline(in: text, selection: selection, prefix: "`", suffix: "`", placeholder: "code")
+        return toggleInline(in: text, selection: selection, prefix: "`", suffix: "`", placeholder: "code")
     }
 
-    private static func formatLink(
+    private static func toggleLink(
         in text: String,
         selection: Range<Int>
     ) -> MarkdownFormattingEdit {
         let selectedText = substring(in: text, range: selection)
+        if let label = unwrapLink(selectedText) {
+            return MarkdownFormattingEdit(
+                replacementRange: selection,
+                replacementText: label,
+                selectedRange: selection.lowerBound..<(selection.lowerBound + label.count)
+            )
+        }
+
         let label = selectedText.isEmpty ? "link text" : selectedText
         let urlPlaceholder = "https://"
         let replacementText = "[\(label)](\(urlPlaceholder))"
-        let selectionStart: Int
-        let selectionLength: Int
-        if selectedText.isEmpty {
-            selectionStart = selection.lowerBound + 1
-            selectionLength = label.count
-        } else {
-            selectionStart = selection.lowerBound + 3 + label.count
-            selectionLength = urlPlaceholder.count
-        }
         return MarkdownFormattingEdit(
             replacementRange: selection,
             replacementText: replacementText,
-            selectedRange: selectionStart..<(selectionStart + selectionLength)
+            selectedRange: selection.lowerBound..<(selection.lowerBound + replacementText.count)
         )
     }
 
-    private static func prefixLines(
+    private static func toggleLines(
         in text: String,
         selection: Range<Int>,
-        prefix: (Int) -> String
+        action: MarkdownFormattingAction
     ) -> MarkdownFormattingEdit {
         let lineRange = linesCovered(by: selection, in: text)
         let block = substring(in: text, range: lineRange)
         let lines = block.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        let replacementText = lines.enumerated().map { index, line in
-            prefix(index) + line
+        let parsedLines = lines.map(parseBlockLine)
+        let shouldRemove = parsedLines.allSatisfy { line in
+            matches(action: action, line: line)
+        }
+
+        let replacementLines = parsedLines.enumerated().map { index, line in
+            transform(line: line, action: action, index: index, shouldRemove: shouldRemove)
         }.joined(separator: "\n")
         return MarkdownFormattingEdit(
             replacementRange: lineRange,
-            replacementText: replacementText,
-            selectedRange: lineRange.lowerBound..<(lineRange.lowerBound + replacementText.count)
+            replacementText: replacementLines,
+            selectedRange: lineRange.lowerBound..<(lineRange.lowerBound + replacementLines.count)
         )
     }
 
@@ -252,4 +269,159 @@ enum MarkdownFormatting {
     private static func index(at offset: Int, in text: String) -> String.Index {
         text.index(text.startIndex, offsetBy: max(0, min(offset, text.count)))
     }
+
+    private static func unwrapInline(_ text: String, prefix: String, suffix: String) -> String? {
+        guard text.count >= prefix.count + suffix.count,
+              text.hasPrefix(prefix),
+              text.hasSuffix(suffix)
+        else {
+            return nil
+        }
+
+        if prefix == "*", suffix == "*", (text.hasPrefix("**") || text.hasSuffix("**")) {
+            return nil
+        }
+
+        return String(text.dropFirst(prefix.count).dropLast(suffix.count))
+    }
+
+    private static func unwrapCode(_ text: String) -> String? {
+        if text.hasPrefix("```\n"), text.hasSuffix("\n```"), text.count >= 8 {
+            return String(text.dropFirst(4).dropLast(4))
+        }
+        return unwrapInline(text, prefix: "`", suffix: "`")
+    }
+
+    private static func unwrapLink(_ text: String) -> String? {
+        guard text.hasPrefix("["),
+              text.hasSuffix(")"),
+              let separatorRange = text.range(of: "](")
+        else {
+            return nil
+        }
+
+        let label = String(text[text.index(after: text.startIndex)..<separatorRange.lowerBound])
+        let urlStart = separatorRange.upperBound
+        guard urlStart <= text.index(before: text.endIndex) else { return nil }
+        let url = String(text[urlStart..<text.index(before: text.endIndex)])
+        guard !label.isEmpty, !url.isEmpty else { return nil }
+        return label
+    }
+
+    private static func matches(action: MarkdownFormattingAction, line: ParsedBlockLine) -> Bool {
+        switch action {
+        case .heading:
+            if case .heading(level: 1) = line.kind { return true }
+            return false
+        case .quote:
+            if case .quote = line.kind { return true }
+            return false
+        case .bulletList:
+            if case .bulletList = line.kind { return true }
+            return false
+        case .numberedList:
+            if case .numberedList = line.kind { return true }
+            return false
+        case .taskList:
+            if case .taskList = line.kind { return true }
+            return false
+        case .bold, .italic, .code, .link:
+            return false
+        }
+    }
+
+    private static func transform(
+        line: ParsedBlockLine,
+        action: MarkdownFormattingAction,
+        index: Int,
+        shouldRemove: Bool
+    ) -> String {
+        let baseContent = line.content
+        if shouldRemove {
+            return line.indentation + baseContent
+        }
+
+        let prefix: String = switch action {
+        case .heading:
+            "# "
+        case .quote:
+            "> "
+        case .bulletList:
+            "- "
+        case .numberedList:
+            "\(index + 1). "
+        case .taskList:
+            "- [ ] "
+        case .bold, .italic, .code, .link:
+            ""
+        }
+        return line.indentation + prefix + baseContent
+    }
+
+    private static func parseBlockLine(_ line: String) -> ParsedBlockLine {
+        let indentation = String(line.prefix { $0 == " " || $0 == "\t" })
+        let contentStart = line.index(line.startIndex, offsetBy: indentation.count)
+        let trimmed = String(line[contentStart...])
+
+        if let match = trimmed.wholeMatch(of: /^(#{1,6})\s+(.*)$/) {
+            return ParsedBlockLine(
+                indentation: indentation,
+                content: String(match.2),
+                kind: .heading(level: match.1.count)
+            )
+        }
+
+        if let match = trimmed.wholeMatch(of: /^>\s+(.*)$/) {
+            return ParsedBlockLine(
+                indentation: indentation,
+                content: String(match.1),
+                kind: .quote
+            )
+        }
+
+        if let match = trimmed.wholeMatch(of: /^(?:[-+*]|\d+\.)\s+\[([xX ])\]\s+(.*)$/) {
+            return ParsedBlockLine(
+                indentation: indentation,
+                content: String(match.2),
+                kind: .taskList(checked: match.1.lowercased() == "x")
+            )
+        }
+
+        if let match = trimmed.wholeMatch(of: /^([-+*])\s+(.*)$/) {
+            return ParsedBlockLine(
+                indentation: indentation,
+                content: String(match.2),
+                kind: .bulletList
+            )
+        }
+
+        if let match = trimmed.wholeMatch(of: /^(\d+)\.\s+(.*)$/) {
+            return ParsedBlockLine(
+                indentation: indentation,
+                content: String(match.2),
+                kind: .numberedList
+            )
+        }
+
+        return ParsedBlockLine(
+            indentation: indentation,
+            content: trimmed,
+            kind: .none
+        )
+    }
+}
+
+private struct ParsedBlockLine {
+    let indentation: String
+    let content: String
+    let kind: ParsedBlockKind
+}
+
+private enum ParsedBlockKind {
+    case none
+    case heading(level: Int)
+    case quote
+    case bulletList
+    case numberedList
+    case taskList(checked: Bool)
 }

@@ -38,6 +38,12 @@ swift build
 swift run swiftynotes
 ```
 
+To install the app, desktop entry, and icon into your user profile for launcher integration:
+
+```bash
+packaging/release/install-user.sh --version 1.0.0
+```
+
 ## Tests
 
 Run the full suite:

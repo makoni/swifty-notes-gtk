@@ -5,7 +5,7 @@ import Foundation
 @MainActor
 extension MarkdownEditor {
     func applyFormatting(_ action: MarkdownFormattingAction) {
-        let selection = currentSelectionRange()
+        let selection = selectedRange()
         let edit = MarkdownFormatting.edit(
             for: action,
             in: buffer.text,
@@ -33,7 +33,7 @@ extension MarkdownEditor {
         buffer.castedPointer()
     }
 
-    private func currentSelectionRange() -> Range<Int> {
+    func selectedRange() -> Range<Int> {
         var start = GtkTextIter()
         var end = GtkTextIter()
         if gtk_text_buffer_get_selection_bounds(textBufferPointer, &start, &end) != 0 {

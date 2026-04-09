@@ -69,6 +69,24 @@ struct NoteModelAndRendererTests {
     }
 
     @Test
+    func rendererPreservesTaskListMarkersWhenItemContainsInlineMarkdown() {
+        let renderer = MarkdownRenderer()
+        let blocks = renderer.blocks(for: """
+        - [ ] Если было выделено **слово**, то после нажатия должно быть `код`
+        """, darkAppearance: false)
+
+        #expect(blocks.count == 1)
+        guard case let .listItem(text, depth, marker) = blocks[0] else {
+            Issue.record("Expected a task list item block")
+            return
+        }
+
+        #expect(depth == 0)
+        #expect(marker == "[ ]")
+        #expect(text.plainText == "Если было выделено слово, то после нажатия должно быть код")
+    }
+
+    @Test
     func rendererUsesThemeAwareInlineCodeBackground() {
         let renderer = MarkdownRenderer()
         let lightBlocks = renderer.blocks(for: "Use `code` here", darkAppearance: false)

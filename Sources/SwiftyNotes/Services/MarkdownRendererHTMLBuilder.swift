@@ -305,7 +305,7 @@ struct HTMLPreviewDocumentBuilder {
                 }
 
                 let checked = match.1.lowercased() == "x"
-                let text = String(match.2)
+                let text = normalizedTaskListText(from: String(match.2))
                 let depth = indentation.reduce(into: 0) { partial, character in
                     partial += character == "\t" ? 1 : 0
                     if character == " " {
@@ -316,9 +316,17 @@ struct HTMLPreviewDocumentBuilder {
                 return TaskListItem(
                     depth: depth,
                     checked: checked,
-                    text: text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    text: text
                 )
             }
+    }
+
+    func normalizedTaskListText(from markdown: String) -> String {
+        let html = HTMLFormatter.format(markdown)
+        let nodes = HTMLSubsetParser().parse(html)
+        return blockText(from: blocks(from: nodes, listDepth: 0))
+            .plainText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func restoringImageMetadata(in blocks: [RenderedBlock], markdown: String) -> [RenderedBlock] {

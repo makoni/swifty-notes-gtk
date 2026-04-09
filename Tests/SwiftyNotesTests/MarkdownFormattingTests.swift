@@ -12,7 +12,20 @@ struct MarkdownFormattingTests {
 
         #expect(edit.replacementRange == 6..<11)
         #expect(edit.replacementText == "**world**")
-        #expect(edit.selectedRange == 8..<13)
+        #expect(edit.selectedRange == 6..<15)
+    }
+
+    @Test
+    func boldUnwrapsSelectionWhenAlreadyFormatted() {
+        let edit = MarkdownFormatting.edit(
+            for: .bold,
+            in: "Hello **world**",
+            selection: 6..<15
+        )
+
+        #expect(edit.replacementRange == 6..<15)
+        #expect(edit.replacementText == "world")
+        #expect(edit.selectedRange == 6..<11)
     }
 
     @Test
@@ -25,7 +38,7 @@ struct MarkdownFormattingTests {
 
         #expect(edit.replacementRange == 5..<5)
         #expect(edit.replacementText == "*emphasis*")
-        #expect(edit.selectedRange == 6..<14)
+        #expect(edit.selectedRange == 5..<15)
     }
 
     @Test
@@ -38,7 +51,7 @@ struct MarkdownFormattingTests {
 
         #expect(edit.replacementRange == 5..<9)
         #expect(edit.replacementText == "[docs](https://)")
-        #expect(edit.selectedRange == 12..<20)
+        #expect(edit.selectedRange == 5..<21)
     }
 
     @Test
@@ -55,6 +68,19 @@ struct MarkdownFormattingTests {
     }
 
     @Test
+    func headingTogglesCurrentLineOff() {
+        let edit = MarkdownFormatting.edit(
+            for: .heading,
+            in: "First line\n# Second line",
+            selection: 14..<14
+        )
+
+        #expect(edit.replacementRange == 11..<24)
+        #expect(edit.replacementText == "Second line")
+        #expect(edit.selectedRange == 11..<22)
+    }
+
+    @Test
     func bulletListPrefixesEachSelectedLine() {
         let edit = MarkdownFormatting.edit(
             for: .bulletList,
@@ -65,6 +91,19 @@ struct MarkdownFormattingTests {
         #expect(edit.replacementRange == 0..<10)
         #expect(edit.replacementText == "- Alpha\n- Beta")
         #expect(edit.selectedRange == 0..<14)
+    }
+
+    @Test
+    func bulletListTogglesWholeCurrentLineOffAtCursor() {
+        let edit = MarkdownFormatting.edit(
+            for: .bulletList,
+            in: "- Alpha\nBeta",
+            selection: 3..<3
+        )
+
+        #expect(edit.replacementRange == 0..<7)
+        #expect(edit.replacementText == "Alpha")
+        #expect(edit.selectedRange == 0..<5)
     }
 
     @Test
@@ -89,5 +128,31 @@ struct MarkdownFormattingTests {
 
         #expect(edit.replacementText == "- [ ] Ship it")
         #expect(edit.selectedRange == 0..<13)
+    }
+
+    @Test
+    func taskListConvertsExistingBulletListLine() {
+        let edit = MarkdownFormatting.edit(
+            for: .taskList,
+            in: "- Ship it",
+            selection: 4..<4
+        )
+
+        #expect(edit.replacementRange == 0..<9)
+        #expect(edit.replacementText == "- [ ] Ship it")
+        #expect(edit.selectedRange == 0..<13)
+    }
+
+    @Test
+    func taskListTogglesOffWholeLineWhenAlreadyTaskItem() {
+        let edit = MarkdownFormatting.edit(
+            for: .taskList,
+            in: "- [ ] Ship it",
+            selection: 7..<7
+        )
+
+        #expect(edit.replacementRange == 0..<13)
+        #expect(edit.replacementText == "Ship it")
+        #expect(edit.selectedRange == 0..<7)
     }
 }

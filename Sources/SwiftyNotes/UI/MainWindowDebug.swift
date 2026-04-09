@@ -84,8 +84,16 @@ extension MainWindow {
         headerTitle.subtitle
     }
 
+    var debugWindowIconName: String? {
+        window.iconName
+    }
+
     var debugEditorText: String {
         editor.buffer.text
+    }
+
+    var debugEditorSelectionRange: Range<Int> {
+        editor.selectedRange()
     }
 
     var debugPreviewText: String {

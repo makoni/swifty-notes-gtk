@@ -123,6 +123,7 @@ final class MainWindow {
 
         window = ApplicationWindow(application: application)
         window.title = "Swifty Notes"
+        window.iconName = AppIdentity.identifier
         let preferredSize = Self.clampedWindowSize(
             width: state.preferredWindowWidth,
             height: state.preferredWindowHeight

@@ -319,6 +319,28 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
+    func mainWindowUsesApplicationIconName() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.windowicon")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        #expect(window.debugWindowIconName == AppIdentity.identifier)
+    }
+
+    @Test @MainActor
     func mainWindowSidebarToggleHidesAndShowsSidebar() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -450,6 +472,69 @@ struct MainWindowCoreTests {
 
         #expect(window.debugEditorText == "Hello **world**")
         #expect(window.debugSelectedNoteContent == "Hello **world**")
+        #expect(window.debugEditorSelectionRange == 6..<15)
+    }
+
+    @Test @MainActor
+    func mainWindowFormattingToolbarTogglesBoldOffForFormattedSelection() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.formattingtoggle")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("Hello **world**")
+        window.debugSelectEditorRange(6..<15)
+
+        window.debugEmitEditorFormattingButtonClicked(.bold)
+
+        #expect(window.debugEditorText == "Hello world")
+        #expect(window.debugSelectedNoteContent == "Hello world")
+        #expect(window.debugEditorSelectionRange == 6..<11)
+    }
+
+    @Test @MainActor
+    func mainWindowFormattingToolbarTogglesTaskListAtCursorAcrossWholeLine() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.tasktoggle")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator()
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("- Ship it")
+        window.debugSelectEditorRange(4..<4)
+
+        window.debugEmitEditorFormattingButtonClicked(.taskList)
+        #expect(window.debugEditorText == "- [ ] Ship it")
+        #expect(window.debugEditorSelectionRange == 0..<13)
+
+        window.debugEmitEditorFormattingButtonClicked(.taskList)
+        #expect(window.debugEditorText == "Ship it")
+        #expect(window.debugEditorSelectionRange == 0..<7)
     }
 
     @Test @MainActor
