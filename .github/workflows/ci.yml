@@ -34,14 +34,15 @@ jobs:
             dbus-user-session \
             libadwaita-1-dev \
             libgtk-4-dev \
-            libgtksourceview-5-dev
+            libgtksourceview-5-dev \
+            xvfb
 
       - name: Build project
         run: swift build
 
       - name: Run core test suites
         run: |
-          dbus-run-session -- bash -lc \
+          xvfb-run -a dbus-run-session -- bash -lc \
             "swift test --filter 'CLICommandTests|CLITests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
 
   ui-smoke-tests:
