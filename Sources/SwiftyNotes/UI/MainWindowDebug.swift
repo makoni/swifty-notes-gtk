@@ -13,6 +13,10 @@ extension MainWindow {
         createNote()
     }
 
+    func debugRequestCreateNote() {
+        requestCreateNote()
+    }
+
     func debugEmitNewNoteClicked() {
         g_signal_emit_by_name_no_args(UnsafeMutableRawPointer(newNoteButton.opaquePointer), "clicked")
     }
