@@ -1,6 +1,6 @@
 app-id: me.spaceinbox.swiftynotes
 runtime: org.gnome.Platform
-runtime-version: "48"
+runtime-version: "50"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.swift6
@@ -25,7 +25,7 @@ modules:
         path: @SOURCE_PATH@
       - type: git
         url: https://github.com/makoni/swift-adwaita.git
-        commit: db9dd0c9e2bb6f15c64ad755e0b92e47c983d48f
+        commit: 4ff079ad37d3942a26d4f31a34b6ca8e7c0e8b88
         dest: flatpak-deps/swift-adwaita
       - type: git
         url: https://github.com/swiftlang/swift-markdown.git
