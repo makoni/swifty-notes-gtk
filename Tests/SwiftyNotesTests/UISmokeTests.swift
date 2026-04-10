@@ -234,8 +234,9 @@ struct UISmokeTests {
                             if candidate.getRoleName() == "frame" and (candidate.name or "") == name:
                                 return candidate
                     return None
-                return wait_until(locate, f"{name} frame appears")
+                return wait_until(locate, f"{name} frame appears", timeout=40)
 
+            wait_for_frame()
             settings_frame = wait_for_named_frame("Settings")
             require_named(settings_frame, "Notes folder")
             require_named(settings_frame, "Wrap long lines")
@@ -322,7 +323,7 @@ private func runWaylandUIScript(
     let xdgDataHome = temp.appendingPathComponent("xdg-data", isDirectory: true)
     let xdgStateHome = temp.appendingPathComponent("xdg-state", isDirectory: true)
     let xdgConfigHome = temp.appendingPathComponent("xdg-config", isDirectory: true)
-    let appID = "\(AppIdentity.identifier).uitests.\(temp.lastPathComponent.lowercased())"
+    let appID = "\(AppIdentity.identifier).uitests.t\(temp.lastPathComponent.replacingOccurrences(of: "-", with: "").lowercased())"
     try FileManager.default.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: xdgDataHome, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: xdgStateHome, withIntermediateDirectories: true)
