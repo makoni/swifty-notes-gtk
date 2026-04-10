@@ -3,13 +3,14 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: assemble-install-root.sh --version VERSION --dest DESTDIR [options]
+Usage: assemble-install-root.sh --dest DESTDIR [options]
 
 Options:
   --prefix PREFIX             Install prefix inside the package root (/usr or /app). Default: /usr
   --license-subdir NAME       Directory name under share/licenses. Default: swifty-notes-gtk
   --repo-slug OWNER/REPO      GitHub slug used for generated screenshot URLs.
   --repo-ref REF              Git ref used for generated screenshot URLs. Default: master
+  --version VERSION           Version written into package metadata. Default: VERSION file at repo root.
   --build-date YYYY-MM-DD     Release date written into metainfo. Default: current UTC date.
   --screenshot-url URL        Override the primary AppStream screenshot URL. Additional screenshots use the same directory.
 EOF
@@ -70,7 +71,7 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-if [ -z "$version" ] || [ -z "$dest" ]; then
+if [ -z "$dest" ]; then
     usage >&2
     exit 1
 fi
@@ -93,7 +94,9 @@ screenshot_editor_url="${screenshot_base_url}/markdown-preview.png"
 screenshot_cli_url="${screenshot_base_url}/cli-workflow.png"
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-repo_root="$(cd "${script_dir}/../.." && pwd)"
+source "${script_dir}/version.sh"
+repo_root="$(release_repo_root)"
+version="$(resolve_release_version "$version")"
 cd "$repo_root"
 
 swift build -c release --static-swift-stdlib

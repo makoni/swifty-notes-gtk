@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: build-rpm.sh --version VERSION --install-root ROOT --output OUTPUT_DIR
+Usage: build-rpm.sh --install-root ROOT --output OUTPUT_DIR [--version VERSION]
 EOF
 }
 
@@ -38,10 +38,14 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-if [ -z "$version" ] || [ -z "$install_root" ] || [ -z "$output_dir" ]; then
+if [ -z "$install_root" ] || [ -z "$output_dir" ]; then
     usage >&2
     exit 1
 fi
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+source "${script_dir}/version.sh"
+version="$(resolve_release_version "$version")"
 
 if ! command -v rpmbuild >/dev/null 2>&1; then
     echo "rpmbuild is required to build the RPM artifact." >&2
@@ -53,7 +57,6 @@ if [ ! -d "$install_root/usr" ]; then
     exit 1
 fi
 
-script_dir="$(cd "$(dirname "$0")" && pwd)"
 repo_root="$(cd "${script_dir}/../.." && pwd)"
 top_dir="$(mktemp -d)"
 build_arch="$(rpmbuild --eval '%{_arch}')"

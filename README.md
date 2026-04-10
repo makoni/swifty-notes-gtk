@@ -37,6 +37,8 @@ Native GTK markdown notes for Linux, written in Swift with `swift-adwaita`.
 
 If you want to test local `swift-adwaita` changes instead of the pinned git revision, set `SWIFTY_NOTES_LOCAL_SWIFT_ADWAITA_PATH=/absolute/path/to/swift-adwaita` before building.
 
+Release packaging reads the release number from the repository `VERSION` file by default, so package metadata, AppStream releases, artifact names, and draft tags stay aligned unless you explicitly override `--version`.
+
 ## Build and run
 
 ```bash
@@ -47,7 +49,7 @@ swift run swiftynotes
 To install the app, desktop entry, and icon into your user profile for launcher integration:
 
 ```bash
-packaging/release/install-user.sh --version 1.0.0
+packaging/release/install-user.sh
 ```
 
 ## Tests
@@ -76,12 +78,12 @@ The smoke tests require a working session bus and tools such as `weston` and `py
 
 Release packaging assets live under `packaging/`, `snap/`, and `data/`.
 
-- Build a staged Linux install root: `packaging/release/assemble-install-root.sh --version 1.0.0 --dest packaging/out/install-root-usr --prefix /usr`
-- Build a `.deb` from that root: `packaging/release/build-deb.sh --version 1.0.0 --install-root packaging/out/install-root-usr --output packaging/out/deb`
-- Build a source-built `.flatpak` bundle: `packaging/release/build-flatpak.sh --version 1.0.0 --output packaging/out/flatpak`
+- Build a staged Linux install root: `packaging/release/assemble-install-root.sh --dest packaging/out/install-root-usr --prefix /usr`
+- Build a `.deb` from that root: `packaging/release/build-deb.sh --install-root packaging/out/install-root-usr --output packaging/out/deb`
+- Build a source-built `.flatpak` bundle: `packaging/release/build-flatpak.sh --output packaging/out/flatpak`
 - Build `.rpm` artifacts in CI with `packaging/release/build-rpm.sh`
 
-The Flatpak manifest template lives in `flatpak/me.spaceinbox.swiftynotes.yml.in` and pins the SwiftPM dependency sources used in CI. GitHub Actions release automation lives in `.github/workflows/release-packages.yml`, accepts a `version` input via `workflow_dispatch`, and finishes by drafting a GitHub release that bundles every uploaded artifact from the run.
+The Flatpak manifest template lives in `flatpak/me.spaceinbox.swiftynotes.yml.in` and pins the SwiftPM dependency sources used in CI. GitHub Actions release automation lives in `.github/workflows/release-packages.yml`, resolves its version from the repository `VERSION` file by default (with an optional `workflow_dispatch` override), and finishes by drafting a GitHub release that bundles every uploaded artifact from the run.
 
 ## CLI
 

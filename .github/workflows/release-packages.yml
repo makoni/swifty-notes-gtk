@@ -4,18 +4,38 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release version to stamp into package metadata
-        required: true
-        default: "1.0.0"
+        description: Optional release version override. Defaults to the VERSION file in the repository.
+        required: false
+        default: ""
         type: string
 
 permissions:
   contents: write
 
 jobs:
+  resolve-version:
+    name: Resolve release version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/release/version.sh
+          version="$(resolve_release_version '${{ inputs.version }}')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
   verify-project:
     name: Verify project (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    needs: resolve-version
     strategy:
       fail-fast: false
       matrix:
@@ -50,7 +70,9 @@ jobs:
   prepare-install-roots:
     name: Prepare install root (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: verify-project
+    needs:
+      - resolve-version
+      - verify-project
     strategy:
       fail-fast: false
       matrix:
@@ -82,7 +104,7 @@ jobs:
       - name: Assemble /usr install root
         run: |
           packaging/release/assemble-install-root.sh \
-            --version "${{ inputs.version }}" \
+            --version "${{ needs.resolve-version.outputs.version }}" \
             --repo-slug "${{ github.repository }}" \
             --repo-ref "${{ github.sha }}" \
             --dest packaging/out/install-root-usr \
@@ -91,19 +113,21 @@ jobs:
       - name: Archive /usr install root
         run: |
           tar -C packaging/out/install-root-usr -czf \
-            "packaging/out/swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz" \
+            "packaging/out/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz" \
             .
 
       - name: Upload /usr install root
         uses: actions/upload-artifact@v7
         with:
-          name: swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
-          path: packaging/out/swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
+          path: packaging/out/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
 
   build-deb:
     name: Build Debian package (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: prepare-install-roots
+    needs:
+      - resolve-version
+      - prepare-install-roots
     strategy:
       fail-fast: false
       matrix:
@@ -120,7 +144,7 @@ jobs:
       - name: Download /usr install root
         uses: actions/download-artifact@v8
         with:
-          name: swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
           path: packaging/out/install-root-archive
 
       - name: Extract /usr install root
@@ -128,12 +152,12 @@ jobs:
           rm -rf packaging/out/install-root-usr
           mkdir -p packaging/out/install-root-usr
           tar -C packaging/out/install-root-usr -xzf \
-            "packaging/out/install-root-archive/swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz"
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz"
 
       - name: Build Debian package
         run: |
           packaging/release/build-deb.sh \
-            --version "${{ inputs.version }}" \
+            --version "${{ needs.resolve-version.outputs.version }}" \
             --install-root packaging/out/install-root-usr \
             --output packaging/out/deb
 
@@ -157,7 +181,9 @@ jobs:
   build-rpm:
     name: Build RPM package (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: prepare-install-roots
+    needs:
+      - resolve-version
+      - prepare-install-roots
     strategy:
       fail-fast: false
       matrix:
@@ -179,7 +205,7 @@ jobs:
       - name: Download /usr install root
         uses: actions/download-artifact@v8
         with:
-          name: swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
           path: packaging/out/install-root-archive
 
       - name: Extract /usr install root
@@ -187,12 +213,12 @@ jobs:
           rm -rf packaging/out/install-root-usr
           mkdir -p packaging/out/install-root-usr
           tar -C packaging/out/install-root-usr -xzf \
-            "packaging/out/install-root-archive/swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz"
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz"
 
       - name: Build RPM package
         run: |
           packaging/release/build-rpm.sh \
-            --version "${{ inputs.version }}" \
+            --version "${{ needs.resolve-version.outputs.version }}" \
             --install-root packaging/out/install-root-usr \
             --output packaging/out/rpm
 
@@ -216,7 +242,9 @@ jobs:
   build-flatpak:
     name: Build Flatpak bundle (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: verify-project
+    needs:
+      - resolve-version
+      - verify-project
     strategy:
       fail-fast: false
       matrix:
@@ -236,7 +264,7 @@ jobs:
       - name: Render Flatpak manifest
         run: |
           packaging/release/render-flatpak-manifest.sh \
-            --version "${{ inputs.version }}" \
+            --version "${{ needs.resolve-version.outputs.version }}" \
             --repo-slug "${{ github.repository }}" \
             --repo-ref "${{ github.sha }}" \
             --source-path ../../.. \
@@ -246,7 +274,7 @@ jobs:
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           manifest-path: packaging/out/flatpak/me.spaceinbox.swiftynotes.yml
-          bundle: swifty-notes-gtk-${{ inputs.version }}-${{ matrix.arch }}.flatpak
+          bundle: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.flatpak
           branch: stable
           build-dir: packaging/out/flatpak/build
           repo-dir: packaging/out/flatpak/repo
@@ -279,13 +307,15 @@ jobs:
       - name: Upload Flatpak artifact
         uses: actions/upload-artifact@v7
         with:
-          name: swifty-notes-gtk-${{ inputs.version }}-${{ matrix.arch }}.flatpak
-          path: swifty-notes-gtk-${{ inputs.version }}-${{ matrix.arch }}.flatpak
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.flatpak
+          path: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.flatpak
 
   build-snap:
     name: Build snap package (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
-    needs: prepare-install-roots
+    needs:
+      - resolve-version
+      - prepare-install-roots
     strategy:
       fail-fast: false
       matrix:
@@ -304,7 +334,7 @@ jobs:
       - name: Download /usr install root
         uses: actions/download-artifact@v8
         with:
-          name: swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.install_root_arch }}-install-root.tar.gz
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.install_root_arch }}-install-root.tar.gz
           path: packaging/out/install-root-archive
 
       - name: Extract /usr install root
@@ -312,11 +342,11 @@ jobs:
           rm -rf packaging/out/install-root-usr
           mkdir -p packaging/out/install-root-usr
           tar -C packaging/out/install-root-usr -xzf \
-            "packaging/out/install-root-archive/swifty-notes-gtk-${{ inputs.version }}-linux-${{ matrix.install_root_arch }}-install-root.tar.gz"
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.install_root_arch }}-install-root.tar.gz"
 
       - name: Stamp Snap version
         run: |
-          sed -i 's/^version: .*/version: "${{ inputs.version }}"/' snap/snapcraft.yaml
+          sed -i 's/^version: .*/version: "${{ needs.resolve-version.outputs.version }}"/' snap/snapcraft.yaml
 
       - name: Restore Snap executable bits
         run: |
@@ -352,6 +382,7 @@ jobs:
     name: Draft GitHub release
     runs-on: ubuntu-24.04
     needs:
+      - resolve-version
       - prepare-install-roots
       - build-deb
       - build-rpm
@@ -376,8 +407,8 @@ jobs:
       - name: Draft GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version }}
-          name: ${{ inputs.version }}
+          tag_name: ${{ needs.resolve-version.outputs.version }}
+          name: ${{ needs.resolve-version.outputs.version }}
           target_commitish: ${{ github.sha }}
           body: Release drafted automatically. Update notes before publishing.
           draft: true

@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: build-flatpak.sh --version VERSION --output OUTPUT_DIR [--repo-slug OWNER/REPO]
+Usage: build-flatpak.sh --output OUTPUT_DIR [--version VERSION] [--repo-slug OWNER/REPO]
 EOF
 }
 
@@ -38,7 +38,7 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-if [ -z "$version" ] || [ -z "$output_dir" ]; then
+if [ -z "$output_dir" ]; then
     usage >&2
     exit 1
 fi
@@ -51,7 +51,9 @@ if ! command -v flatpak-builder >/dev/null 2>&1; then
 fi
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-repo_root="$(cd "${script_dir}/../.." && pwd)"
+source "${script_dir}/version.sh"
+repo_root="$(release_repo_root)"
+version="$(resolve_release_version "$version")"
 work_dir="$(mktemp -d)"
 cleanup() {
     rm -rf "$work_dir"
@@ -75,7 +77,6 @@ tar \
 
 manifest_path="${work_dir}/${app_id}.yml"
 "${repo_root}/packaging/release/render-flatpak-manifest.sh" \
-    --version "$version" \
     --repo-slug "$repo_slug" \
     --source-path source \
     --output "$manifest_path"

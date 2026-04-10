@@ -6,7 +6,7 @@ usage() {
 Usage: install-user.sh [options]
 
 Options:
-  --version VERSION         Version exported to the installed launcher. Default: 1.0.0
+  --version VERSION         Version exported to the installed launcher. Default: VERSION file at repo root.
   --prefix PREFIX           User install prefix. Default: $HOME/.local
   --license-subdir NAME     Directory name under share/licenses. Default: swifty-notes-gtk
   --repo-slug OWNER/REPO    GitHub slug used for generated screenshot URLs.
@@ -16,7 +16,7 @@ Options:
 EOF
 }
 
-version="1.0.0"
+version=""
 prefix="${HOME}/.local"
 license_subdir="swifty-notes-gtk"
 repo_slug="makoni/swifty-notes-gtk"
@@ -84,7 +84,9 @@ screenshot_editor_url="${screenshot_base_url}/markdown-preview.png"
 screenshot_cli_url="${screenshot_base_url}/cli-workflow.png"
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-repo_root="$(cd "${script_dir}/../.." && pwd)"
+source "${script_dir}/version.sh"
+repo_root="$(release_repo_root)"
+version="$(resolve_release_version "$version")"
 cd "$repo_root"
 
 swift build -c release --static-swift-stdlib

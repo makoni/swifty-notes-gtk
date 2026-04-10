@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: render-flatpak-manifest.sh --version VERSION --source-path PATH --output FILE [--repo-slug OWNER/REPO]
+Usage: render-flatpak-manifest.sh --source-path PATH --output FILE [--version VERSION] [--repo-slug OWNER/REPO]
 EOF
 }
 
@@ -47,13 +47,15 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-if [ -z "$version" ] || [ -z "$source_path" ] || [ -z "$output_path" ]; then
+if [ -z "$source_path" ] || [ -z "$output_path" ]; then
     usage >&2
     exit 1
 fi
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-repo_root="$(cd "${script_dir}/../.." && pwd)"
+source "${script_dir}/version.sh"
+repo_root="$(release_repo_root)"
+version="$(resolve_release_version "$version")"
 mkdir -p "$(dirname "$output_path")"
 
 sed \
