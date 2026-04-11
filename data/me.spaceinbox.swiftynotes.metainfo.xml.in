@@ -62,7 +62,12 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description>
-        <p>Native GTK release with Markdown preview, editor customization, configurable note storage for cloud-synced folders, note-local image assets, and CLI automation for scripts and AI agents.</p>
+        <p>This update makes command-line workflows friendlier for packaged installs and keeps release builds more consistent across Linux formats.</p>
+        <ul>
+          <li>The CLI now better fits Flathub installs, with clearer guidance for terminal use and improved note discovery when your notes live in Flatpak storage.</li>
+          <li>Release packaging and version reporting are now aligned more consistently across Flatpak, Snap, Debian, and RPM builds.</li>
+          <li>Project and store presentation were refreshed with updated screenshots, links, and release metadata.</li>
+        </ul>
       </description>
     </release>
   </releases>
