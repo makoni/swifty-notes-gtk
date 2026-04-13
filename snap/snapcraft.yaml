@@ -32,5 +32,78 @@ apps:
 
 parts:
   swifty-notes:
-    plugin: dump
-    source: packaging/out/install-root-usr
+    plugin: nil
+    source: .
+    build-packages:
+      - appstream
+      - binutils
+      - curl
+      - desktop-file-utils
+      - git
+      - gnupg2
+      - libc6-dev
+      - libcurl4-openssl-dev
+      - libedit2
+      - libgcc-13-dev
+      - libgtk-4-dev
+      - libgtksourceview-5-dev
+      - libadwaita-1-dev
+      - libncurses-dev
+      - libpython3-dev
+      - libsqlite3-0
+      - libstdc++-13-dev
+      - libxml2-dev
+      - libz3-dev
+      - pkg-config
+      - tzdata
+      - unzip
+      - zlib1g-dev
+    override-build: |
+      set -eux
+
+      prebuilt_install_root='packaging/out/install-root-usr'
+      if [ -x "${prebuilt_install_root}/usr/bin/swiftynotes" ] && [ -x "${prebuilt_install_root}/usr/libexec/swifty-notes/swiftynotes" ]; then
+        mkdir -p "${CRAFT_PART_INSTALL}"
+        cp -a "${prebuilt_install_root}/." "${CRAFT_PART_INSTALL}/"
+        exit 0
+      fi
+
+      swift_branch='swift-6.2.2-release'
+      swift_version='swift-6.2.2-RELEASE'
+      swift_platform='ubuntu24.04'
+      swift_signing_key='52BB7E3DE28A71BE22EC05FFEF80A866B47A981F'
+
+      case "$(dpkg --print-architecture)" in
+        amd64)
+          swift_arch_suffix=''
+          ;;
+        arm64)
+          swift_arch_suffix='-aarch64'
+          ;;
+        *)
+          echo "Unsupported architecture: $(dpkg --print-architecture)" >&2
+          exit 1
+          ;;
+      esac
+
+      swift_dir_name="${swift_version}-${swift_platform}${swift_arch_suffix}"
+      swift_webdir="https://download.swift.org/${swift_branch}/${swift_platform//./}${swift_arch_suffix}"
+      swift_bin_url="${swift_webdir}/${swift_version}/${swift_dir_name}.tar.gz"
+      swift_toolchain_dir="${CRAFT_PART_BUILD}/swift-toolchain"
+      export GNUPGHOME="$(mktemp -d)"
+
+      curl -fsSL "${swift_bin_url}" -o swift.tar.gz
+      curl -fsSL "${swift_bin_url}.sig" -o swift.tar.gz.sig
+      gpg --batch --quiet --keyserver keyserver.ubuntu.com --recv-keys "${swift_signing_key}"
+      gpg --batch --verify swift.tar.gz.sig swift.tar.gz
+
+      rm -rf "${swift_toolchain_dir}"
+      mkdir -p "${swift_toolchain_dir}"
+      tar -xzf swift.tar.gz --directory "${swift_toolchain_dir}" --strip-components=1
+
+      rm -rf "${GNUPGHOME}" swift.tar.gz swift.tar.gz.sig
+      unset GNUPGHOME
+
+      export PATH="${swift_toolchain_dir}/usr/bin:${PATH}"
+
+      packaging/release/assemble-install-root.sh --dest "${CRAFT_PART_INSTALL}" --prefix /usr
