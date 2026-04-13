@@ -68,6 +68,27 @@ parts:
         exit 0
       fi
 
+      # The GNOME extension injects SDK build paths under /snap/gnome-46-2404-sdk.
+      # On amd64 those headers conflict with SwiftGlibc during source builds, so
+      # build against the apt-provided development packages instead.
+      export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      export XDG_DATA_DIRS=/usr/share
+      unset \
+        SNAPCRAFT_GNOME_SDK \
+        ACLOCAL_PATH \
+        CFLAGS \
+        CPPFLAGS \
+        CXXFLAGS \
+        GDK_PIXBUF_MODULE_FILE \
+        GETTEXTDATADIRS \
+        GI_TYPELIB_PATH \
+        LDFLAGS \
+        LD_LIBRARY_PATH \
+        LIBRARY_PATH \
+        PKG_CONFIG_LIBDIR \
+        PKG_CONFIG_PATH \
+        PYTHONPATH
+
       swift_branch='swift-6.2.2-release'
       swift_version='swift-6.2.2-RELEASE'
       swift_platform='ubuntu24.04'
