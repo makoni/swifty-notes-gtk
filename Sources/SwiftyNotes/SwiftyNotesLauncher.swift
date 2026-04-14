@@ -1,13 +1,35 @@
 import Adwaita
+import CAdwaita
 import Foundation
 import Glibc
 
+private enum ExternalDocumentOpenError: LocalizedError {
+    case unsupportedLocation(URL)
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedLocation:
+            "Swifty Notes can only open local markdown files."
+        }
+    }
+}
+
+private let applicationHandlesOpenFlag = GApplicationFlags(rawValue: 1 << 2)
+
 @MainActor
-private final class AppController {
-    private let stateStore = WorkspaceStateStore()
-    private let appSettingsStore = AppSettingsStore()
+final class AppController {
+    private let stateStore: WorkspaceStateStore
+    private let appSettingsStore: AppSettingsStore
     private var mainWindow: MainWindow?
     private var externalDocumentWindows: [ObjectIdentifier: ExternalDocumentWindow] = [:]
+
+    init(
+        stateStore: WorkspaceStateStore = WorkspaceStateStore(),
+        appSettingsStore: AppSettingsStore = AppSettingsStore()
+    ) {
+        self.stateStore = stateStore
+        self.appSettingsStore = appSettingsStore
+    }
 
     func activate(app: Application) {
         if let mainWindow {
@@ -48,8 +70,23 @@ private final class AppController {
         (try? appSettingsStore.load()) ?? .default
     }
 
+    func openDocuments(at fileURLs: [URL], application: Application) {
+        guard !fileURLs.isEmpty else {
+            activate(app: application)
+            return
+        }
+
+        for fileURL in fileURLs {
+            do {
+                try openExternalDocument(at: fileURL, application: application)
+            } catch {
+                presentOpenDocumentError(error, for: fileURL, application: application)
+            }
+        }
+    }
+
     private func openExternalDocument(at fileURL: URL, application: Application) throws {
-        let standardizedURL = fileURL.standardizedFileURL
+        let standardizedURL = try normalizedExternalDocumentURL(from: fileURL)
         if let existingWindow = externalDocumentWindows.values.first(where: { $0.fileURL == standardizedURL }) {
             existingWindow.present()
             return
@@ -80,6 +117,37 @@ private final class AppController {
         mainWindow?.pollForExternalChanges()
         return importedNote
     }
+
+    private func normalizedExternalDocumentURL(from fileURL: URL) throws -> URL {
+        guard fileURL.isFileURL else {
+            throw ExternalDocumentOpenError.unsupportedLocation(fileURL)
+        }
+        return fileURL.standardizedFileURL
+    }
+
+    private func presentOpenDocumentError(_ error: Error, for fileURL: URL, application: Application) {
+        let body = """
+        \(displayLocation(for: fileURL))
+
+        \(error.localizedDescription)
+        """
+
+        if let mainWindow {
+            mainWindow.present()
+            mainWindow.presentError(heading: "Could not open markdown file", body: body)
+            return
+        }
+
+        activate(app: application)
+        mainWindow?.presentError(heading: "Could not open markdown file", body: body)
+    }
+
+    private func displayLocation(for fileURL: URL) -> String {
+        if fileURL.isFileURL {
+            return fileURL.standardizedFileURL.path()
+        }
+        return fileURL.absoluteString
+    }
 }
 
 public enum SwiftyNotesLauncher {
@@ -98,15 +166,41 @@ public enum SwiftyNotesLauncher {
         let applicationID = ProcessInfo.processInfo.environment["SWIFTY_NOTES_APP_ID"]?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let app = Application(
-            id: (applicationID?.isEmpty == false) ? applicationID! : AppIdentity.identifier
+            id: (applicationID?.isEmpty == false) ? applicationID! : AppIdentity.identifier,
+            flags: applicationHandlesOpenFlag
         )
         let appController = AppController()
 
         app.onActivate {
             appController.activate(app: app)
         }
+        app.onOpen { fileURLs, _ in
+            appController.openDocuments(at: fileURLs, application: app)
+        }
 
-        app.run()
+        let processArguments = [CommandLine.arguments.first ?? "swiftynotes"] + arguments
+        app.run(arguments: processArguments)
         exit(0)
     }
 }
+
+#if DEBUG
+extension AppController {
+    var debugHasMainWindow: Bool {
+        mainWindow != nil
+    }
+
+    var debugExternalDocumentFileURLs: [URL] {
+        externalDocumentWindows.values
+            .map(\.fileURL)
+            .sorted { $0.path < $1.path }
+    }
+
+    func debugExternalWindowIdentifier(for fileURL: URL) -> ObjectIdentifier? {
+        let standardizedURL = fileURL.standardizedFileURL
+        return externalDocumentWindows.values
+            .first(where: { $0.fileURL == standardizedURL })
+            .map(ObjectIdentifier.init)
+    }
+}
+#endif

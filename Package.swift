@@ -62,7 +62,7 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            revision: "a9046505ba5c0adf7ab34d1fafa20837ec0d4e7e"
+            revision: "f9c30f91cd0fb00b6f4a62e595152c85f0a059dc"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",

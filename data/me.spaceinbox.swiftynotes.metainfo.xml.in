@@ -40,6 +40,7 @@
   </description>
   <provides>
     <binary>swiftynotes</binary>
+    <mediatype>text/markdown</mediatype>
   </provides>
   <screenshots>
     <screenshot type="default">
