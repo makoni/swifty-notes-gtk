@@ -190,6 +190,7 @@ extension MainWindow {
         window.addAction(deleteAction)
         window.addAction(copyNoteIDAction)
         window.addAction(exportAction)
+        window.addAction(openMarkdownFileAction)
         window.addAction(importAction)
         window.addAction(openNotesFolderAction)
         window.addAction(reloadAction)
@@ -198,7 +199,8 @@ extension MainWindow {
 
         let librarySection = GMenuRef()
         librarySection.append("Settings", action: "win.settings")
-        librarySection.append("Import markdown…", action: "win.import-note")
+        librarySection.append("Open Markdown File…", action: "win.open-markdown-file")
+        librarySection.append("Import into Library…", action: "win.import-note")
         librarySection.append("Reload from disk", action: "win.reload-notes")
         librarySection.append("Open notes folder", action: "win.open-notes-folder")
 
@@ -212,7 +214,8 @@ extension MainWindow {
         overflowMenuItemsBySection = [
             "Library": [
                 "Settings",
-                "Import markdown…",
+                "Open Markdown File…",
+                "Import into Library…",
                 "Reload from disk",
                 "Open notes folder"
             ],

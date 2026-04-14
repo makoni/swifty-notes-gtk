@@ -91,7 +91,8 @@ struct MainWindowActionsTests {
         #expect(window.debugOverflowMenuItemsBySection == [
             "Library": [
                 "Settings",
-                "Import markdown…",
+                "Open Markdown File…",
+                "Import into Library…",
                 "Reload from disk",
                 "Open notes folder"
             ],

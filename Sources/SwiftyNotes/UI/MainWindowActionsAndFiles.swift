@@ -243,7 +243,7 @@ extension MainWindow {
 
     func importNote() {
         let dialog = FileDialog()
-        dialog.title = "Import Markdown"
+        dialog.title = "Import into Library"
         dialog.modal = true
         dialog.acceptLabel = "Import"
         dialog.setFilters([
@@ -275,6 +275,40 @@ extension MainWindow {
             case let .failure(error):
                 self.presentError(
                     heading: "Could not open import dialog",
+                    body: error.message
+                )
+            }
+        }
+    }
+
+    func openMarkdownFile() {
+        let dialog = FileDialog()
+        dialog.title = "Open Markdown File"
+        dialog.modal = true
+        dialog.acceptLabel = "Open"
+        dialog.setFilters([
+            FileFilter(name: "Markdown", suffixes: ["md", "markdown", "txt"]),
+            FileFilter(name: "All files", patterns: ["*"])
+        ])
+        activeFileDialog = dialog
+        dialog.openThrowing(parent: window.root ?? window) { [weak self] result in
+            guard let self else { return }
+            self.activeFileDialog = nil
+            switch result {
+            case .success(nil):
+                return
+            case let .success(path?):
+                do {
+                    try self.openExternalDocumentHandler(URL(fileURLWithPath: path))
+                } catch {
+                    self.presentError(
+                        heading: "Could not open markdown file",
+                        body: error.localizedDescription
+                    )
+                }
+            case let .failure(error):
+                self.presentError(
+                    heading: "Could not open file dialog",
                     body: error.message
                 )
             }

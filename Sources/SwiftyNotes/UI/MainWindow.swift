@@ -54,6 +54,7 @@ final class MainWindow {
     let editorScroll = ScrolledWindow()
     let autosaveDelayOverride: Duration?
     var autosaveDelay: Duration
+    let openExternalDocumentHandler: (URL) throws -> Void
     let directoryOpener: (URL) throws -> Void
     let deferredUIActionScheduler: (@escaping @MainActor () -> Void) -> Void
 
@@ -71,6 +72,9 @@ final class MainWindow {
     }
     lazy var exportAction = SimpleAction(name: "export-note") { [weak self] in
         self?.exportSelectedNote()
+    }
+    lazy var openMarkdownFileAction = SimpleAction(name: "open-markdown-file") { [weak self] in
+        self?.openMarkdownFile()
     }
     lazy var importAction = SimpleAction(name: "import-note") { [weak self] in
         self?.importNote()
@@ -131,6 +135,7 @@ final class MainWindow {
         appSettingsStore: AppSettingsStore = AppSettingsStore(),
         appSettings: AppSettings = .default,
         autosaveDelay: Duration? = nil,
+        openExternalDocumentHandler: @escaping (URL) throws -> Void = { _ in },
         directoryOpener: @escaping (URL) throws -> Void = MainWindow.openDirectoryInSystemFileManager,
         deferredUIActionScheduler: @escaping (@escaping @MainActor () -> Void) -> Void = { action in
             MainContext.idle { action() }
@@ -145,6 +150,7 @@ final class MainWindow {
         self.autosave = autosave
         self.autosaveDelayOverride = autosaveDelay
         self.autosaveDelay = autosaveDelay ?? .seconds(appSettings.autosaveDelaySeconds)
+        self.openExternalDocumentHandler = openExternalDocumentHandler
         self.directoryOpener = directoryOpener
         self.deferredUIActionScheduler = deferredUIActionScheduler
 
@@ -357,7 +363,7 @@ final class MainWindow {
             return true
         }
         window.addKeyboardShortcut("<Ctrl>o") { [weak self] in
-            self?.importNote()
+            self?.openMarkdownFile()
             return true
         }
         window.addKeyboardShortcut("<Ctrl><Shift>s") { [weak self] in
