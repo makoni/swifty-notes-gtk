@@ -62,10 +62,20 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description>
+        <p>This update makes split view much more comfortable on tighter window sizes, especially when you want to keep the preview open while editing.</p>
+        <ul>
+          <li>The formatting toolbar now adapts more gracefully as the editor narrows, so actions stay easier to reach instead of disappearing off the edge.</li>
+          <li>Very narrow layouts can now flow the formatting toolbar into two rows, keeping the preview usable without hiding the sidebar.</li>
+          <li>Split view now shares space more gracefully between the editor and preview on smaller screens.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.0.1" date="2026-04-13">
+      <description>
         <p>This update makes command-line workflows friendlier for packaged installs and keeps release builds more consistent across Linux formats.</p>
         <ul>
           <li>The CLI now better fits Flathub installs, with clearer guidance for terminal use and improved note discovery when your notes live in Flatpak storage.</li>
-          <li>Release packaging and version reporting are now aligned more consistently across Flatpak, Snap, Debian, and RPM builds.</li>
+          <li>Release packaging and version reporting are now aligned more consistently across Flatpak, Debian, and RPM builds.</li>
           <li>Project and store presentation were refreshed with updated screenshots, links, and release metadata.</li>
         </ul>
       </description>

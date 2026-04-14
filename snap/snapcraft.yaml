@@ -1,7 +1,7 @@
 name: swifty-notes
 title: Swifty Notes
 base: core24
-version: "1.0.1"
+version: "1.0.2"
 summary: Native GTK markdown notes for Linux
 description: |
   Swifty Notes is a native GTK/libadwaita markdown notes application for Linux.
