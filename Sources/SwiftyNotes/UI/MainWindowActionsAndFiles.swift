@@ -251,31 +251,33 @@ extension MainWindow {
             FileFilter(name: "All files", patterns: ["*"])
         ])
         activeFileDialog = dialog
-        dialog.openThrowing(parent: window.root ?? window) { [weak self] result in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            self.activeFileDialog = nil
-            switch result {
-            case .success(nil):
-                return
-            case let .success(path?):
-                do {
-                    self.clearSearchIfNeeded()
-                    let note = try self.repository.importNote(from: URL(fileURLWithPath: path))
-                    self.state.upsert(note)
-                    self.refreshDirectorySnapshot()
-                    self.renderSelection()
-                    self.persistWorkspaceState()
-                    self.toastOverlay.showToast("Imported \(note.title)")
-                } catch {
-                    self.presentError(
-                        heading: "Could not import note",
-                        body: error.localizedDescription
-                    )
-                }
-            case let .failure(error):
+            let path: String?
+            do {
+                path = try await dialog.openThrowing(parent: self.window.root ?? self.window)
+            } catch {
+                self.activeFileDialog = nil
                 self.presentError(
                     heading: "Could not open import dialog",
-                    body: error.message
+                    body: (error as? GLibError)?.message ?? error.localizedDescription
+                )
+                return
+            }
+            self.activeFileDialog = nil
+            guard let path else { return }
+            do {
+                self.clearSearchIfNeeded()
+                let note = try self.repository.importNote(from: URL(fileURLWithPath: path))
+                self.state.upsert(note)
+                self.refreshDirectorySnapshot()
+                self.renderSelection()
+                self.persistWorkspaceState()
+                self.toastOverlay.showToast("Imported \(note.title)")
+            } catch {
+                self.presentError(
+                    heading: "Could not import note",
+                    body: error.localizedDescription
                 )
             }
         }
@@ -291,25 +293,27 @@ extension MainWindow {
             FileFilter(name: "All files", patterns: ["*"])
         ])
         activeFileDialog = dialog
-        dialog.openThrowing(parent: window.root ?? window) { [weak self] result in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            self.activeFileDialog = nil
-            switch result {
-            case .success(nil):
-                return
-            case let .success(path?):
-                do {
-                    try self.openExternalDocumentHandler(URL(fileURLWithPath: path))
-                } catch {
-                    self.presentError(
-                        heading: "Could not open markdown file",
-                        body: error.localizedDescription
-                    )
-                }
-            case let .failure(error):
+            let path: String?
+            do {
+                path = try await dialog.openThrowing(parent: self.window.root ?? self.window)
+            } catch {
+                self.activeFileDialog = nil
                 self.presentError(
                     heading: "Could not open file dialog",
-                    body: error.message
+                    body: (error as? GLibError)?.message ?? error.localizedDescription
+                )
+                return
+            }
+            self.activeFileDialog = nil
+            guard let path else { return }
+            do {
+                try self.openExternalDocumentHandler(URL(fileURLWithPath: path))
+            } catch {
+                self.presentError(
+                    heading: "Could not open markdown file",
+                    body: error.localizedDescription
                 )
             }
         }
@@ -327,26 +331,28 @@ extension MainWindow {
             FileFilter(name: "All files", patterns: ["*"])
         ])
         activeFileDialog = dialog
-        dialog.saveThrowing(parent: window.root ?? window) { [weak self] result in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            self.activeFileDialog = nil
-            switch result {
-            case .success(nil):
-                return
-            case let .success(path?):
-                do {
-                    try self.repository.export(note: selected, to: URL(fileURLWithPath: path))
-                    self.toastOverlay.showToast("Exported \(selected.title)")
-                } catch {
-                    self.presentError(
-                        heading: "Could not export note",
-                        body: error.localizedDescription
-                    )
-                }
-            case let .failure(error):
+            let path: String?
+            do {
+                path = try await dialog.saveThrowing(parent: self.window.root ?? self.window)
+            } catch {
+                self.activeFileDialog = nil
                 self.presentError(
                     heading: "Could not open export dialog",
-                    body: error.message
+                    body: (error as? GLibError)?.message ?? error.localizedDescription
+                )
+                return
+            }
+            self.activeFileDialog = nil
+            guard let path else { return }
+            do {
+                try self.repository.export(note: selected, to: URL(fileURLWithPath: path))
+                self.toastOverlay.showToast("Exported \(selected.title)")
+            } catch {
+                self.presentError(
+                    heading: "Could not export note",
+                    body: error.localizedDescription
                 )
             }
         }

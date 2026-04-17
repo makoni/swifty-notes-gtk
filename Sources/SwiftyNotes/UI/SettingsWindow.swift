@@ -207,22 +207,26 @@ final class SettingsWindow {
         dialog.title = "Choose Notes Folder"
         dialog.modal = true
         activeFileDialog = dialog
-        dialog.selectFolderThrowing(parent: window) { [weak self, weak dialog] result in
-            guard let self else { return }
+        Task { @MainActor [weak self, weak dialog] in
+            guard let self, let dialog else { return }
+            let path: String?
+            do {
+                path = try await dialog.selectFolderThrowing(parent: self.window)
+            } catch {
+                if self.activeFileDialog === dialog {
+                    self.activeFileDialog = nil
+                }
+                self.presentError(
+                    heading: "Could not choose a notes folder",
+                    body: (error as? GLibError)?.message ?? error.localizedDescription
+                )
+                return
+            }
             if self.activeFileDialog === dialog {
                 self.activeFileDialog = nil
             }
-            switch result {
-            case .success(nil):
-                return
-            case let .success(path?):
-                self.applyNotesFolderChange(URL(fileURLWithPath: path, isDirectory: true))
-            case let .failure(error):
-                self.presentError(
-                    heading: "Could not choose a notes folder",
-                    body: error.message
-                )
-            }
+            guard let path else { return }
+            self.applyNotesFolderChange(URL(fileURLWithPath: path, isDirectory: true))
         }
     }
 

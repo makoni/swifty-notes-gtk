@@ -976,25 +976,27 @@ private extension ExternalDocumentWindow {
             FileFilter(name: "All files", patterns: ["*"])
         ])
         activeFileDialog = dialog
-        dialog.saveThrowing(parent: window.root ?? window) { [weak self] result in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            self.activeFileDialog = nil
-            switch result {
-            case .success(nil):
-                return
-            case let .success(path?):
-                let savedURL = URL(fileURLWithPath: path)
-                if self.saveDocument(
-                    to: savedURL,
-                    successMessage: "Saved as \(savedURL.lastPathComponent)"
-                ) {
-                    self.autosave.cancel()
-                }
-            case let .failure(error):
+            let path: String?
+            do {
+                path = try await dialog.saveThrowing(parent: self.window.root ?? self.window)
+            } catch {
+                self.activeFileDialog = nil
                 self.presentError(
                     heading: "Could not open save dialog",
-                    body: error.message
+                    body: (error as? GLibError)?.message ?? error.localizedDescription
                 )
+                return
+            }
+            self.activeFileDialog = nil
+            guard let path else { return }
+            let savedURL = URL(fileURLWithPath: path)
+            if self.saveDocument(
+                to: savedURL,
+                successMessage: "Saved as \(savedURL.lastPathComponent)"
+            ) {
+                self.autosave.cancel()
             }
         }
     }
