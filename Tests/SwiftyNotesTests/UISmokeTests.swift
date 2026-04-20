@@ -357,10 +357,13 @@ private func runWaylandUIScript(
     export XDG_CONFIG_HOME="$XDG_CONFIG_HOME"
     export NOTES_DIR="$XDG_DATA_HOME/\(AppIdentity.identifier)/notes"
     export SETTINGS_FILE="$XDG_CONFIG_HOME/\(AppIdentity.identifier)/settings.json"
-    export APP_STDERR_LOG="/tmp/swifty-ui-smoke.err"
+    export APP_STDERR_LOG="$XDG_RUNTIME_DIR/app.err"
+    export APP_STDOUT_LOG="$XDG_RUNTIME_DIR/app.out"
+    export WESTON_STDERR_LOG="$XDG_RUNTIME_DIR/weston.err"
+    export WESTON_STDOUT_LOG="$XDG_RUNTIME_DIR/weston.out"
     chmod 700 "$XDG_RUNTIME_DIR"
 
-    weston --backend=headless --renderer=pixman --shell=desktop --socket="$WAYLAND_DISPLAY" --width=1440 --height=1024 --idle-time=0 >/tmp/swifty-ui-smoke-weston.out 2>/tmp/swifty-ui-smoke-weston.err &
+    weston --backend=headless --renderer=pixman --shell=desktop --socket="$WAYLAND_DISPLAY" --width=1440 --height=1024 --idle-time=0 >"$WESTON_STDOUT_LOG" 2>"$WESTON_STDERR_LOG" &
     WESTON_PID=$!
     for _ in $(seq 1 80); do
       [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && break
@@ -368,10 +371,10 @@ private func runWaylandUIScript(
     done
     if [ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
       echo "Weston socket was not created" >&2
-      cat /tmp/swifty-ui-smoke-weston.err >&2 || true
+      cat "$WESTON_STDERR_LOG" >&2 || true
       exit 1
     fi
-    "$APP" >/tmp/swifty-ui-smoke.out 2>/tmp/swifty-ui-smoke.err &
+    "$APP" >"$APP_STDOUT_LOG" 2>"$APP_STDERR_LOG" &
     APP_PID=$!
     cleanup() {
       kill "$APP_PID" 2>/dev/null || true

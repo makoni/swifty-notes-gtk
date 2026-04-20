@@ -1,5 +1,4 @@
 import Adwaita
-import CAdwaita
 import Foundation
 
 @MainActor
@@ -191,18 +190,7 @@ extension MainWindow {
     }
 
     private func measuredNaturalWidth(of widget: Widget) -> Int {
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(
-            widget.widgetPointer,
-            GTK_ORIENTATION_HORIZONTAL,
-            -1,
-            &minimum,
-            &natural,
-            nil,
-            nil
-        )
-        return Int(natural)
+        widget.measure(orientation: GTK_ORIENTATION_HORIZONTAL).natural
     }
 
     private func makeToolbarButtonContent(

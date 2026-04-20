@@ -36,6 +36,13 @@ struct HTMLPreviewDocumentBuilder {
                 let level = Int(String(name.dropFirst())) ?? 1
                 return [.heading(level: level, text: inlineText(from: children))]
             case "p":
+                if let imageGroup = standaloneImageGroup(from: children) {
+                    if imageGroup.count == 1, imageGroup[0].linkDestination == nil {
+                        let image = imageGroup[0]
+                        return [.image(alt: image.alt, source: image.source, title: image.title)]
+                    }
+                    return [.imageGroup(items: imageGroup)]
+                }
                 if let image = standaloneImage(from: children) {
                     return [.image(alt: image.alt, source: image.source, title: image.title)]
                 }
@@ -68,6 +75,11 @@ struct HTMLPreviewDocumentBuilder {
                     source: attributes["src"],
                     title: attributes["title"]
                 )]
+            case "a":
+                if let linkedImage = renderedImageItem(from: node) {
+                    return [.imageGroup(items: [linkedImage])]
+                }
+                return blocks(from: children, listDepth: listDepth)
             default:
                 return blocks(from: children, listDepth: listDepth)
             }
@@ -190,6 +202,55 @@ struct HTMLPreviewDocumentBuilder {
             source: attributes["src"],
             title: attributes["title"]
         )
+    }
+
+    func standaloneImageGroup(from nodes: [HTMLNode]) -> [RenderedImageItem]? {
+        var images: [RenderedImageItem] = []
+
+        for node in nodes {
+            switch node.kind {
+            case let .text(text):
+                if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return nil
+                }
+            case .element:
+                guard let image = renderedImageItem(from: node) else {
+                    return nil
+                }
+                images.append(image)
+            }
+        }
+
+        return images.isEmpty ? nil : images
+    }
+
+    func renderedImageItem(from node: HTMLNode) -> RenderedImageItem? {
+        switch node.kind {
+        case .text:
+            return nil
+        case let .element(name, attributes, children):
+            switch name {
+            case "img":
+                return .init(
+                    alt: attributes["alt"] ?? "",
+                    source: attributes["src"],
+                    title: attributes["title"],
+                    linkDestination: nil
+                )
+            case "a":
+                guard let image = standaloneImageGroup(from: children)?.only else {
+                    return nil
+                }
+                return .init(
+                    alt: image.alt,
+                    source: image.source,
+                    title: image.title,
+                    linkDestination: attributes["href"]
+                )
+            default:
+                return nil
+            }
+        }
     }
 
     func inlineText(from nodes: [HTMLNode]) -> RenderedText {
@@ -337,18 +398,39 @@ struct HTMLPreviewDocumentBuilder {
         var nextImageIndex = 0
 
         for block in blocks {
-            guard case let .image(alt, source, title) = block, nextImageIndex < images.count else {
-                restored.append(block)
-                continue
-            }
+            switch block {
+            case let .image(alt, source, title) where nextImageIndex < images.count:
+                let markdownImage = images[nextImageIndex]
+                restored.append(.image(
+                    alt: alt.isEmpty ? markdownImage.alt : alt,
+                    source: source ?? markdownImage.source,
+                    title: title ?? markdownImage.title
+                ))
+                nextImageIndex += 1
+            case let .imageGroup(items):
+                var restoredItems: [RenderedImageItem] = []
+                restoredItems.reserveCapacity(items.count)
 
-            let markdownImage = images[nextImageIndex]
-            restored.append(.image(
-                alt: alt.isEmpty ? markdownImage.alt : alt,
-                source: source ?? markdownImage.source,
-                title: title ?? markdownImage.title
-            ))
-            nextImageIndex += 1
+                for item in items {
+                    guard nextImageIndex < images.count else {
+                        restoredItems.append(item)
+                        continue
+                    }
+
+                    let markdownImage = images[nextImageIndex]
+                    restoredItems.append(.init(
+                        alt: item.alt.isEmpty ? markdownImage.alt : item.alt,
+                        source: item.source ?? markdownImage.source,
+                        title: item.title ?? markdownImage.title,
+                        linkDestination: item.linkDestination
+                    ))
+                    nextImageIndex += 1
+                }
+
+                restored.append(.imageGroup(items: restoredItems))
+            default:
+                restored.append(block)
+            }
         }
 
         return restored
@@ -382,6 +464,12 @@ struct HTMLPreviewDocumentBuilder {
         let depth: Int
         let checked: Bool
         let text: String
+    }
+}
+
+private extension Array {
+    var only: Element? {
+        count == 1 ? self[0] : nil
     }
 }
 

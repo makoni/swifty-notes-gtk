@@ -221,6 +221,7 @@ final class MainWindow {
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
         editorScroll.hexpand = true
         editorScroll.vexpand = true
+        editorScroll.overlayScrolling = false
         editorContent.hexpand = true
         editorContent.vexpand = true
         installEditorImageDropTarget()

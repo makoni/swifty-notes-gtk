@@ -1,15 +1,22 @@
 import Adwaita
-import CAdwaita
 import Foundation
 
 @MainActor
 final class MarkdownPreview {
+    private enum ResolvedImageSource {
+        case local(URL)
+        case remote(URL)
+    }
+
     let container: Box
     let rootScroll: ScrolledWindow
 
     private enum PreviewMetrics {
         static let listIndentPerLevel = 10
         static let listMarkerSpacing = 4
+        static let badgeImageHeight = 18
+        static let badgeSpacing = 6
+        static let badgeLineSpacing = 4
     }
 
     private static let previewCSS = CSSProvider.loadGlobal("""
@@ -75,13 +82,35 @@ final class MarkdownPreview {
         padding-bottom: 3px;
     }
 
+    .preview-image-link-button {
+        padding: 0;
+        margin: 0;
+        min-width: 0;
+        min-height: 0;
+    }
+
+    .preview-image-group {
+        padding: 0;
+        margin: 0;
+        min-width: 0;
+        min-height: 0;
+        background: transparent;
+    }
+
     """)
 
     private var baseDirectory: URL?
     private weak var window: ApplicationWindow?
+    private let remoteImageLoader: PreviewRemoteImageLoadHandler
+    private var animatedImagePlayers: [PreviewAnimatedImagePlayer] = []
+    private var blockImageRefreshTimerID: UInt32?
+    private var lastRefreshedPreviewWidth: Int = -1
 
-    init() {
+    init(remoteImageLoader: @escaping PreviewRemoteImageLoadHandler = { url, completion in
+        PreviewRemoteImageLoader.shared.loadImage(url, completion: completion)
+    }) {
         _ = Self.previewCSS
+        self.remoteImageLoader = remoteImageLoader
         container = Box(orientation: .vertical, spacing: 20)
         container.setMargins(20)
         container.vexpand = true
@@ -91,6 +120,26 @@ final class MarkdownPreview {
         rootScroll.kineticScrolling = true
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
         rootScroll.setAccessibleLabel("Markdown Preview")
+        rootScroll.overlayScrolling = false
+        rootScroll.onSizeAllocate { [weak self] _, _ in
+            self?.scheduleBlockImageRefresh()
+        }
+    }
+
+    private func scheduleBlockImageRefresh() {
+        let width = rootScroll.width
+        guard width != lastRefreshedPreviewWidth else { return }
+        if let id = blockImageRefreshTimerID {
+            MainContext.cancel(sourceId: id)
+            blockImageRefreshTimerID = nil
+        }
+        blockImageRefreshTimerID = MainContext.timeout(every: .milliseconds(120)) { [weak self] in
+            guard let self else { return false }
+            self.blockImageRefreshTimerID = nil
+            self.lastRefreshedPreviewWidth = self.rootScroll.width
+            self.refreshBlockImageHeights()
+            return false
+        }
     }
 
     var plainText: String {
@@ -100,13 +149,16 @@ final class MarkdownPreview {
             .joined(separator: "\n")
     }
 
+    var debugAnimatedImagePlayerCount: Int {
+        animatedImagePlayers.count
+    }
+
     private static func extractPlainText(from widget: Widget) -> String? {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
-        if g_type_check_instance_is_a(instance, gtk_label_get_type()) != 0 {
-            return Label(borrowing: widget.pointer).text
+        if let label = widget.tryCast(Label.self) {
+            return label.text
         }
-        if g_type_check_instance_is_a(instance, gtk_picture_get_type()) != 0 {
-            return Picture(borrowing: widget.pointer).alternativeText
+        if let picture = widget.tryCast(Picture.self) {
+            return picture.alternativeText
         }
 
         let nestedText = widget.children()
@@ -165,11 +217,18 @@ final class MarkdownPreview {
             return makeTable(headers: headers, rows: rows, alignments: alignments)
         case let .image(alt, source, title):
             return makeImageBlock(alt: alt, source: source, title: title)
+        case let .imageGroup(items):
+            return makeImageGroup(items)
         }
     }
 
     private func clear() {
+        for player in animatedImagePlayers {
+            player.stop()
+        }
+        animatedImagePlayers.removeAll()
         for child in container.children() {
+            child.visible = false
             container.remove(child)
         }
     }
@@ -199,9 +258,15 @@ final class MarkdownPreview {
     private func makeCodeBlock(code: String, language: String?) -> Widget {
         let outer = Box(orientation: .vertical, spacing: 0)
         outer.addCSSClass("card")
+        outer.addCSSClass("preview-code-block")
+        outer.hexpand = true
+        outer.halign = .fill
+        outer.overflow = GTK_OVERFLOW_HIDDEN
 
         let inner = Box(orientation: .vertical, spacing: 10)
         inner.setMargins(14)
+        inner.hexpand = true
+        inner.halign = .fill
 
         if let language, !language.isEmpty {
             let badge = Label(language.uppercased())
@@ -213,10 +278,19 @@ final class MarkdownPreview {
 
         let codeLabel = Label(code)
         codeLabel.selectable = true
-        codeLabel.wrap = true
+        codeLabel.wrap = false
         codeLabel.xalign = 0
+        codeLabel.yalign = 0
         codeLabel.addCSSClass("monospace")
-        inner.append(codeLabel)
+
+        let scroll = ScrolledWindow(child: codeLabel)
+        scroll.setPolicy(horizontal: GTK_POLICY_AUTOMATIC, vertical: GTK_POLICY_NEVER)
+        scroll.propagateNaturalHeight = true
+        scroll.propagateNaturalWidth = false
+        scroll.hexpand = true
+        scroll.halign = .fill
+        scroll.addCSSClass("preview-code-scroll")
+        inner.append(scroll)
 
         outer.append(inner)
         return outer
@@ -324,19 +398,31 @@ final class MarkdownPreview {
     private func makeTable(headers: [RenderedText], rows: [[RenderedText]], alignments: [RenderedTableAlignment]) -> Widget {
         let wrapper = Box(orientation: .vertical, spacing: 0)
         wrapper.addCSSClass("card")
+        wrapper.addCSSClass("preview-table-card")
         wrapper.hexpand = true
+        wrapper.vexpand = false
+        wrapper.halign = .fill
+        wrapper.valign = .start
+        wrapper.overflow = GTK_OVERFLOW_HIDDEN
 
         let inner = Box(orientation: .vertical, spacing: 10)
         inner.setMargins(14)
         inner.hexpand = true
+        inner.vexpand = false
+        inner.halign = .fill
+        inner.valign = .start
 
         let grid = Grid(columnSpacing: 18, rowSpacing: 6)
         grid.columnHomogeneous = false
         grid.hexpand = true
+        grid.vexpand = false
+        grid.halign = .fill
+        grid.valign = .start
 
         for (column, header) in headers.enumerated() {
             let label = makeMarkupLabel("<b>\(header.markup)</b>")
             label.addCSSClass("preview-table-header")
+            applyTableCellWrapping(label)
             applyAlignment(label, alignments: alignments, column: column)
             grid.attach(label, column: column, row: 0)
         }
@@ -351,6 +437,7 @@ final class MarkdownPreview {
                 let label = makeMarkupLabel(cell.markup)
                 label.selectable = true
                 label.addCSSClass("preview-table-cell")
+                applyTableCellWrapping(label)
                 applyAlignment(label, alignments: alignments, column: column)
                 grid.attach(label, column: column, row: rowIndex + 2)
             }
@@ -361,35 +448,23 @@ final class MarkdownPreview {
         return wrapper
     }
 
+    private func applyTableCellWrapping(_ label: Label) {
+        label.maxWidthChars = 40
+    }
+
     private func makeImageBlock(alt: String, source: String?, title: String?) -> Widget {
         let wrapper = Box(orientation: .vertical, spacing: 0)
         wrapper.addCSSClass("card")
 
         let inner = Box(orientation: .vertical, spacing: 10)
         inner.setMargins(14)
+        inner.hexpand = true
 
-        let descriptionParts = [alt, title].compactMap { value -> String? in
-            guard let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-            return value
-        }
-        let description = if descriptionParts.isEmpty {
-            source?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Image"
-        } else {
-            descriptionParts.joined(separator: " — ")
+        if let image = makeBlockImageWidget(alt: alt, source: source, title: title) {
+            inner.append(image)
         }
 
-        if let source,
-           let resolved = resolveImageSource(source) {
-            let picture = Picture(filename: resolved.path())
-            picture.alternativeText = alt.isEmpty ? (title ?? source) : alt
-            picture.canShrink = true
-            picture.contentFit = .contain
-            picture.hexpand = true
-            picture.setSizeRequest(width: -1, height: 260)
-            inner.append(picture)
-        }
-
-        let label = Label(description.isEmpty ? "Image" : description)
+        let label = Label(imageDescription(alt: alt, source: source, title: title))
         label.wrap = true
         label.xalign = 0
         label.addCSSClass(.dimLabel)
@@ -399,10 +474,215 @@ final class MarkdownPreview {
         return wrapper
     }
 
+    private func makeImageGroup(_ items: [RenderedImageItem]) -> Widget {
+        let row = Box(orientation: .horizontal, spacing: PreviewMetrics.badgeSpacing)
+        row.halign = .start
+        row.valign = .start
+        row.hexpand = false
+        row.addCSSClass("preview-image-group")
+        for item in items {
+            row.append(makeLinkedImageWidget(item))
+        }
+        return row
+    }
+
+    private func makeLinkedImageWidget(_ item: RenderedImageItem) -> Widget {
+        let picture = makePictureWidget(
+            alt: item.alt,
+            source: item.source,
+            title: item.title,
+            preferredHeight: PreviewMetrics.badgeImageHeight,
+            expandsHorizontally: false
+        )
+
+        if let source = item.source,
+           let resolved = resolveImageSource(source) {
+            switch resolved {
+            case let .local(localURL):
+                PreviewImagePaintableLoader.loadImage(
+                    at: localURL,
+                    into: picture,
+                    preferredHeight: PreviewMetrics.badgeImageHeight,
+                    constrainWidthToAspectRatio: true
+                )
+            case let .remote(remoteURL):
+                remoteImageLoader(remoteURL) { [picture] localURL in
+                    guard let localURL else { return }
+                    PreviewImagePaintableLoader.loadImage(
+                        at: localURL,
+                        into: picture,
+                        preferredHeight: PreviewMetrics.badgeImageHeight,
+                        constrainWidthToAspectRatio: true
+                    )
+                }
+            }
+        }
+
+        if let link = item.linkDestination?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !link.isEmpty {
+            let button = Button(label: "")
+            button.hasFrame = false
+            button.addCSSClass(.flat)
+            button.addCSSClass("preview-image-link-button")
+            button.halign = .start
+            button.valign = .center
+            button.child = picture
+            button.tooltipText = item.alt.isEmpty ? link : item.alt
+            button.onClicked { [weak window] in
+                let launcher = UriLauncher(uri: link)
+                launcher.launch(parent: window)
+            }
+            return button
+        }
+
+        picture.tooltipText = item.alt.isEmpty ? item.plainText : item.alt
+        return picture
+    }
+
+    private func makeBlockImageWidget(alt: String, source: String?, title: String?) -> Widget? {
+        guard let source,
+              let resolved = resolveImageSource(source) else {
+            return nil
+        }
+
+        let picture = makePictureWidget(
+            alt: alt,
+            source: source,
+            title: title,
+            preferredHeight: nil,
+            expandsHorizontally: true
+        )
+        picture.tooltipText = imageAlternativeText(alt: alt, source: source, title: title)
+
+        let clamp = Clamp()
+        let initialWidth = resolvedBlockImageWidth()
+        clamp.maximumSize = initialWidth
+        clamp.tighteningThreshold = initialWidth
+        clamp.hexpand = true
+        clamp.halign = .fill
+        clamp.child = picture
+        clamp.overflow = GTK_OVERFLOW_HIDDEN
+
+        switch resolved {
+        case let .local(localURL):
+            loadBlockImage(at: localURL, into: picture, clamp: clamp)
+        case let .remote(remoteURL):
+            remoteImageLoader(remoteURL) { [self, picture, clamp] localURL in
+                guard let localURL else { return }
+                loadBlockImage(at: localURL, into: picture, clamp: clamp)
+            }
+        }
+        return clamp
+    }
+
+    private func makePictureWidget(
+        alt: String,
+        source: String?,
+        title: String?,
+        preferredHeight: Int?,
+        expandsHorizontally: Bool
+    ) -> Picture {
+        let picture = Picture()
+        picture.alternativeText = imageAlternativeText(alt: alt, source: source, title: title)
+        picture.canShrink = true
+        picture.contentFit = .contain
+        picture.hexpand = expandsHorizontally
+        picture.vexpand = expandsHorizontally
+        picture.halign = expandsHorizontally ? .fill : .start
+        picture.valign = expandsHorizontally ? .fill : .center
+        if let preferredHeight {
+            picture.setSizeRequest(width: -1, height: preferredHeight)
+        }
+        return picture
+    }
+
+    private func loadBlockImage(at localURL: URL, into picture: Picture, clamp: Clamp) {
+        if isAnimatedGIF(localURL),
+            let player = PreviewAnimatedImagePlayer(
+                localURL: localURL,
+                picture: picture
+            ) {
+            animatedImagePlayers.append(player)
+            updateBlockImageSize(of: picture, clamp: clamp)
+            return
+        }
+        PreviewImagePaintableLoader.loadImage(at: localURL, into: picture) { [weak self, picture, clamp] in
+            self?.updateBlockImageSize(of: picture, clamp: clamp)
+        }
+    }
+
+    private func isAnimatedGIF(_ localURL: URL) -> Bool {
+        localURL.pathExtension.caseInsensitiveCompare("gif") == .orderedSame
+    }
+
+    private func updateBlockImageSize(of picture: Picture, clamp: Clamp) {
+        let availableWidth = resolvedBlockImageWidth()
+
+        guard let intrinsic = picture.intrinsicSize else {
+            applyClampSize(clamp, targetSize: availableWidth)
+            return
+        }
+
+        let intrinsicWidth = intrinsic.width
+        let intrinsicHeight = intrinsic.height
+        let displayWidth = min(intrinsicWidth, availableWidth)
+        let aspectRatio = Double(intrinsicWidth) / Double(intrinsicHeight)
+        let displayHeight = max(Int((Double(displayWidth) / aspectRatio).rounded()), 1)
+
+        let clampChanged = applyClampSize(clamp, targetSize: displayWidth)
+
+        let pictureChanged = picture.sizeRequest.height != displayHeight
+        if pictureChanged {
+            picture.setSizeRequest(width: -1, height: displayHeight)
+        }
+        if clampChanged || pictureChanged {
+            clamp.queueResize()
+        }
+    }
+
+    @discardableResult
+    private func applyClampSize(_ clamp: Clamp, targetSize: Int) -> Bool {
+        guard clamp.maximumSize != targetSize || clamp.tighteningThreshold != targetSize else {
+            return false
+        }
+        clamp.maximumSize = targetSize
+        clamp.tighteningThreshold = targetSize
+        return true
+    }
+
+
+    private func imageAlternativeText(alt: String, source: String?, title: String?) -> String {
+        if !alt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return alt
+        }
+        if let title,
+           !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return title
+        }
+        if let source,
+           !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return source
+        }
+        return "Image"
+    }
+
+    private func imageDescription(alt: String, source: String?, title: String?) -> String {
+        let descriptionParts = [alt, title].compactMap { value -> String? in
+            guard let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+            return value
+        }
+        if descriptionParts.isEmpty {
+            return source?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Image"
+        }
+        return descriptionParts.joined(separator: " — ")
+    }
+
     private func makeMarkupLabel(_ markup: String) -> Label {
         let label = Label("")
         label.markup = markup
         label.wrap = true
+        label.naturalWrapMode = GTK_NATURAL_WRAP_WORD
+        label.pangoWrapMode = PANGO_WRAP_WORD_CHAR
         label.xalign = 0
         label.justify = .left
         label.selectable = true
@@ -431,27 +711,69 @@ final class MarkdownPreview {
         }
     }
 
-    private func resolveImageSource(_ source: String) -> URL? {
-        if source.hasPrefix("http://") || source.hasPrefix("https://") {
-            return nil
+    private func resolveImageSource(_ source: String) -> ResolvedImageSource? {
+        if let remoteURL = URL(string: source),
+           let scheme = remoteURL.scheme?.lowercased(),
+           scheme == "http" || scheme == "https" {
+            return .remote(remoteURL)
         }
         let expanded = (source as NSString).expandingTildeInPath
         if expanded.hasPrefix("/") {
-            return URL(fileURLWithPath: expanded)
+            return .local(URL(fileURLWithPath: expanded))
         }
         if let baseDirectory {
             let noteLocalURL = baseDirectory.appendingPathComponent(expanded)
             if FileManager.default.fileExists(atPath: noteLocalURL.path()) {
-                return noteLocalURL
+                return .local(noteLocalURL)
             }
 
             let sharedNotesURL = baseDirectory.deletingLastPathComponent().appendingPathComponent(expanded)
             if baseDirectory.lastPathComponent != "notes",
                FileManager.default.fileExists(atPath: sharedNotesURL.path()) {
-                return sharedNotesURL
+                return .local(sharedNotesURL)
             }
-            return noteLocalURL
+            return .local(noteLocalURL)
         }
-        return URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(expanded)
+        return .local(URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(expanded))
     }
+
+    private func firstPicture(in widget: Widget) -> Picture? {
+        if let picture = widget.tryCast(Picture.self) {
+            return picture
+        }
+
+        for child in widget.children() {
+            if let picture = firstPicture(in: child) {
+                return picture
+            }
+        }
+        return nil
+    }
+
+
+    private func refreshBlockImageHeights() {
+        for child in container.children() {
+            guard let (clamp, picture) = firstClampWithPicture(in: child) else { continue }
+            updateBlockImageSize(of: picture, clamp: clamp)
+        }
+    }
+
+    private func firstClampWithPicture(in widget: Widget) -> (Clamp, Picture)? {
+        if let clamp = widget.tryCast(Clamp.self),
+           let picture = firstPicture(in: widget) {
+            return (clamp, picture)
+        }
+        for child in widget.children() {
+            if let found = firstClampWithPicture(in: child) { return found }
+        }
+        return nil
+    }
+
+    private func resolvedBlockImageWidth() -> Int {
+        let horizontalInsets = 2 * 20 + 2 * 14
+        let measured = rootScroll.width - horizontalInsets
+        if measured > 0 { return measured }
+        return max(rootScroll.minContentWidth - horizontalInsets, 1)
+    }
+
 }

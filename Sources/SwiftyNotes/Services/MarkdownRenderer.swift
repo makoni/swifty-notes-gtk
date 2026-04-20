@@ -29,6 +29,28 @@ public struct RenderedText: Sendable, Equatable {
     }
 }
 
+public struct RenderedImageItem: Sendable, Equatable {
+    public let alt: String
+    public let source: String?
+    public let title: String?
+    public let linkDestination: String?
+
+    public init(alt: String, source: String?, title: String?, linkDestination: String?) {
+        self.alt = alt
+        self.source = source
+        self.title = title
+        self.linkDestination = linkDestination
+    }
+
+    public var plainText: String {
+        let description = [alt, title, source].compactMap { value in
+            guard let value, !value.isEmpty else { return nil }
+            return value
+        }.joined(separator: " — ")
+        return description.isEmpty ? "Image" : "Image: \(description)"
+    }
+}
+
 public enum RenderedTableAlignment: Sendable, Equatable {
     case leading
     case center
@@ -55,6 +77,7 @@ public enum RenderedBlock: Sendable, Equatable {
     case thematicBreak
     case table(headers: [RenderedText], rows: [[RenderedText]], alignments: [RenderedTableAlignment])
     case image(alt: String, source: String?, title: String?)
+    case imageGroup(items: [RenderedImageItem])
 
     public var style: RenderedBlockStyle {
         switch self {
@@ -72,7 +95,7 @@ public enum RenderedBlock: Sendable, Equatable {
             .thematicBreak
         case .table:
             .table
-        case .image:
+        case .image, .imageGroup:
             .image
         }
     }
@@ -106,6 +129,8 @@ public enum RenderedBlock: Sendable, Equatable {
                 return value
             }.joined(separator: " — ")
             return description.isEmpty ? "Image" : "Image: \(description)"
+        case let .imageGroup(items):
+            return items.map(\.plainText).joined(separator: "\n")
         }
     }
 }

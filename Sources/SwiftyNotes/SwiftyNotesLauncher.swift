@@ -20,20 +20,25 @@ private let applicationHandlesOpenFlag = GApplicationFlags(rawValue: 1 << 2)
 final class AppController {
     private let stateStore: WorkspaceStateStore
     private let appSettingsStore: AppSettingsStore
+    private let allowsWindowPresentation: Bool
     private var mainWindow: MainWindow?
     private var externalDocumentWindows: [ObjectIdentifier: ExternalDocumentWindow] = [:]
 
     init(
         stateStore: WorkspaceStateStore = WorkspaceStateStore(),
-        appSettingsStore: AppSettingsStore = AppSettingsStore()
+        appSettingsStore: AppSettingsStore = AppSettingsStore(),
+        allowsWindowPresentation: Bool = true
     ) {
         self.stateStore = stateStore
         self.appSettingsStore = appSettingsStore
+        self.allowsWindowPresentation = allowsWindowPresentation
     }
 
     func activate(app: Application) {
         if let mainWindow {
-            mainWindow.present()
+            if allowsWindowPresentation {
+                mainWindow.present()
+            }
             return
         }
 
@@ -59,7 +64,9 @@ final class AppController {
             self?.releaseMainWindow()
         }
         mainWindow = window
-        window.present()
+        if allowsWindowPresentation {
+            window.present()
+        }
     }
 
     func releaseMainWindow() {
@@ -88,7 +95,9 @@ final class AppController {
     private func openExternalDocument(at fileURL: URL, application: Application) throws {
         let standardizedURL = try normalizedExternalDocumentURL(from: fileURL)
         if let existingWindow = externalDocumentWindows.values.first(where: { $0.fileURL == standardizedURL }) {
-            existingWindow.present()
+            if allowsWindowPresentation {
+                existingWindow.present()
+            }
             return
         }
 
@@ -108,7 +117,9 @@ final class AppController {
             self.externalDocumentWindows.removeValue(forKey: ObjectIdentifier(externalWindow))
         }
         externalDocumentWindows[ObjectIdentifier(externalWindow)] = externalWindow
-        externalWindow.present()
+        if allowsWindowPresentation {
+            externalWindow.present()
+        }
     }
 
     private func importExternalDocumentIntoLibrary(from fileURL: URL) throws -> Note {
@@ -153,6 +164,7 @@ final class AppController {
 public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
+        ScrollbarGizmoWarningFilter.installIfNeeded()
         if let cliResult = NotesCLI.runIfRequested(arguments: arguments) {
             if !cliResult.stdout.isEmpty, let data = cliResult.stdout.data(using: .utf8) {
                 FileHandle.standardOutput.write(data)

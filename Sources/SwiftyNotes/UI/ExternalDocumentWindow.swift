@@ -1,5 +1,4 @@
 import Adwaita
-import CAdwaita
 import Foundation
 
 private struct ExternalDocumentFileSnapshot: Equatable {
@@ -215,6 +214,7 @@ private extension ExternalDocumentWindow {
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
         editorScroll.hexpand = true
         editorScroll.vexpand = true
+        editorScroll.overlayScrolling = false
         editorContent.hexpand = true
         editorContent.vexpand = true
         contentHost.hexpand = true
@@ -877,18 +877,7 @@ private extension ExternalDocumentWindow {
     }
 
     private func measuredNaturalWidth(of widget: Widget) -> Int {
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(
-            widget.widgetPointer,
-            GTK_ORIENTATION_HORIZONTAL,
-            -1,
-            &minimum,
-            &natural,
-            nil,
-            nil
-        )
-        return Int(natural)
+        widget.measure(orientation: GTK_ORIENTATION_HORIZONTAL).natural
     }
 
     private func makeToolbarButtonContent(

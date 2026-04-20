@@ -26,7 +26,8 @@ struct SwiftyNotesLauncherTests {
                 settingsFileURL: temp
                     .appendingPathComponent("config", isDirectory: true)
                     .appendingPathComponent("settings.json", isDirectory: false)
-            )
+            ),
+            allowsWindowPresentation: false
         )
 
         controller.openDocuments(at: [firstURL, secondURL], application: app)
@@ -58,7 +59,8 @@ struct SwiftyNotesLauncherTests {
                 settingsFileURL: temp
                     .appendingPathComponent("config", isDirectory: true)
                     .appendingPathComponent("settings.json", isDirectory: false)
-            )
+            ),
+            allowsWindowPresentation: false
         )
 
         controller.openDocuments(at: [fileURL], application: app)
