@@ -63,6 +63,16 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description>
+        <p>This update makes the Markdown preview feel richer for notes that mix in online images, badges, and animations.</p>
+        <ul>
+          <li>Images loaded from the web — including animated GIFs and WebP animations — now render directly in the preview instead of showing a placeholder.</li>
+          <li>Rows of inline badges, like CI status or shields.io images, now flow on a single line and remain clickable.</li>
+          <li>HTML <code>&lt;img&gt;</code> tags written directly inside Markdown now render as proper preview images.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.0.2" date="2026-04-15">
+      <description>
         <p>This update makes split view more comfortable on tighter window sizes and adds a more direct way to open and edit Markdown files outside your library.</p>
         <ul>
           <li>You can now open and edit standalone Markdown files without importing them first, including from your file manager’s Open With flow.</li>
