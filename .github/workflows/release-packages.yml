@@ -93,6 +93,7 @@ jobs:
             appstream \
             desktop-file-utils \
             libadwaita-1-dev \
+            libcurl4-openssl-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev
 
