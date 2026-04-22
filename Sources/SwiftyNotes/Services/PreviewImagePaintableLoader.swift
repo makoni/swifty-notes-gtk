@@ -10,34 +10,32 @@ enum PreviewImagePaintableLoader {
         constrainWidthToAspectRatio: Bool = false,
         completion: (@MainActor () -> Void)? = nil
     ) {
-        let lowercasedExtension = localURL.pathExtension.lowercased()
+        // NB: the earlier `Task { @MainActor in await Texture.load(...) }`
+        // path never ran under GLib's main loop — GTK apps can't drain
+        // Swift's DispatchQueue.main. Decode synchronously instead:
+        // `Texture(filename:)` wraps `gdk_texture_new_from_filename` and
+        // gives us a paintable straight away for PNG/JPEG (plus anything
+        // else gdk-pixbuf registered on the host). If the decode fails
+        // (odd format, broken file) fall back to `setFilename`, which
+        // drives GTK's own lazy loader. SVG/SVGZ always takes the
+        // filename path — GdkTexture doesn't rasterize SVG.
+        let ext = localURL.pathExtension.lowercased()
+        let isSVG = (ext == "svg" || ext == "svgz")
+        let filesystemPath = localURL.path(percentEncoded: false)
 
-        if lowercasedExtension == "svg" || lowercasedExtension == "svgz" {
-            picture.setFilename(localURL.path(percentEncoded: false))
-            applyPreferredSizing(
-                to: picture,
-                preferredHeight: preferredHeight,
-                constrainWidthToAspectRatio: constrainWidthToAspectRatio,
-                svgURL: localURL
-            )
-            completion?()
-            return
+        if !isSVG, let texture = Texture(filename: filesystemPath) {
+            picture.setPaintable(texture)
+        } else {
+            picture.setFilename(filesystemPath)
         }
 
-        Task { @MainActor in
-            if let texture = try? await Texture.load(from: localURL) {
-                picture.setPaintable(texture)
-            } else {
-                picture.setFilename(localURL.path(percentEncoded: false))
-            }
-            applyPreferredSizing(
-                to: picture,
-                preferredHeight: preferredHeight,
-                constrainWidthToAspectRatio: constrainWidthToAspectRatio,
-                svgURL: nil
-            )
-            completion?()
-        }
+        applyPreferredSizing(
+            to: picture,
+            preferredHeight: preferredHeight,
+            constrainWidthToAspectRatio: constrainWidthToAspectRatio,
+            svgURL: isSVG ? localURL : nil
+        )
+        completion?()
     }
 
     static func scaledWidth(
