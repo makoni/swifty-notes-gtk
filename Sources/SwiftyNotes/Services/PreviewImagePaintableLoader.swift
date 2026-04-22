@@ -13,7 +13,7 @@ enum PreviewImagePaintableLoader {
         let lowercasedExtension = localURL.pathExtension.lowercased()
 
         if lowercasedExtension == "svg" || lowercasedExtension == "svgz" {
-            picture.setFilename(localURL.path())
+            picture.setFilename(localURL.path(percentEncoded: false))
             applyPreferredSizing(
                 to: picture,
                 preferredHeight: preferredHeight,
@@ -28,7 +28,7 @@ enum PreviewImagePaintableLoader {
             if let texture = try? await Texture.load(from: localURL) {
                 picture.setPaintable(texture)
             } else {
-                picture.setFilename(localURL.path())
+                picture.setFilename(localURL.path(percentEncoded: false))
             }
             applyPreferredSizing(
                 to: picture,

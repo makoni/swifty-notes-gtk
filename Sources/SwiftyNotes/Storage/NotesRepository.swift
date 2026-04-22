@@ -168,7 +168,7 @@ public final class NotesRepository: @unchecked Sendable {
         try queue.sync {
             try ensureNotesDirectoryUnlocked()
             let content = try String(contentsOf: sourceURL, encoding: .utf8)
-            let attributes = try fileManager.attributesOfItem(atPath: sourceURL.path())
+            let attributes = try fileManager.attributesOfItem(atPath: sourceURL.path(percentEncoded: false))
             let createdAt = (attributes[.creationDate] as? Date) ?? Date()
             let note = makeNewNote(content: content, createdAt: createdAt)
             try persistUnlocked(note)
@@ -229,13 +229,13 @@ public final class NotesRepository: @unchecked Sendable {
     public func delete(note: Note) throws {
         try queue.sync {
             let directoryURL = noteDirectoryURL(for: note)
-            if fileManager.fileExists(atPath: directoryURL.path()) {
+            if fileManager.fileExists(atPath: directoryURL.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: directoryURL)
                 return
             }
 
             let markdownURL = noteURL(for: note)
-            if fileManager.fileExists(atPath: markdownURL.path()) {
+            if fileManager.fileExists(atPath: markdownURL.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: markdownURL)
             }
         }
@@ -348,12 +348,12 @@ public final class NotesRepository: @unchecked Sendable {
             note = migratedLegacyNote(note, legacyShowcaseAssetURL: legacyShowcaseAssetURL)
             try persistUnlocked(note)
             try copyLegacyShowcaseAssetUnlockedIfNeeded(from: legacyShowcaseAssetURL, to: note)
-            if fileManager.fileExists(atPath: legacyMarkdownFile.path()) {
+            if fileManager.fileExists(atPath: legacyMarkdownFile.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: legacyMarkdownFile)
             }
         }
 
-        if fileManager.fileExists(atPath: legacyShowcaseAssetURL.path()) {
+        if fileManager.fileExists(atPath: legacyShowcaseAssetURL.path(percentEncoded: false)) {
             try fileManager.removeItem(at: legacyShowcaseAssetURL)
         }
     }
@@ -368,7 +368,7 @@ public final class NotesRepository: @unchecked Sendable {
         return urls.filter { url in
             guard url.hasDirectoryPath else { return false }
             return fileManager.fileExists(
-                atPath: url.appendingPathComponent(Self.noteFilename, isDirectory: false).path()
+                atPath: url.appendingPathComponent(Self.noteFilename, isDirectory: false).path(percentEncoded: false)
             )
         }
     }
@@ -376,11 +376,11 @@ public final class NotesRepository: @unchecked Sendable {
     private func loadNoteUnlocked(from noteDirectoryURL: URL) throws -> Note {
         let markdownURL = noteDirectoryURL.appendingPathComponent(Self.noteFilename, isDirectory: false)
         let metadataURL = noteDirectoryURL.appendingPathComponent(Self.metadataFilename, isDirectory: false)
-        let markdownAttributes = try fileManager.attributesOfItem(atPath: markdownURL.path())
+        let markdownAttributes = try fileManager.attributesOfItem(atPath: markdownURL.path(percentEncoded: false))
         let content = try String(contentsOf: markdownURL, encoding: .utf8)
 
         let metadata: StoredNoteMetadata?
-        if fileManager.fileExists(atPath: metadataURL.path()) {
+        if fileManager.fileExists(atPath: metadataURL.path(percentEncoded: false)) {
             let metadataData = try Data(contentsOf: metadataURL)
             metadata = try metadataDecoder.decode(StoredNoteMetadata.self, from: metadataData)
         } else {
@@ -406,7 +406,7 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func loadLegacyNoteUnlocked(from url: URL) throws -> Note {
-        let attributes = try fileManager.attributesOfItem(atPath: url.path())
+        let attributes = try fileManager.attributesOfItem(atPath: url.path(percentEncoded: false))
         let content = try String(contentsOf: url, encoding: .utf8)
         let filename = url.lastPathComponent
         let id = Self.id(fromLegacyFilename: filename)
@@ -422,7 +422,7 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func migratedLegacyNote(_ note: Note, legacyShowcaseAssetURL: URL) -> Note {
-        guard fileManager.fileExists(atPath: legacyShowcaseAssetURL.path()) else {
+        guard fileManager.fileExists(atPath: legacyShowcaseAssetURL.path(percentEncoded: false)) else {
             return note
         }
 
@@ -479,7 +479,7 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func pruneStagedOrphanedAssetsUnlocked() throws {
-        guard fileManager.fileExists(atPath: notesDirectory.path()) else { return }
+        guard fileManager.fileExists(atPath: notesDirectory.path(percentEncoded: false)) else { return }
         for noteDirectoryURL in try storedNoteDirectoriesUnlocked() {
             try pruneStagedOrphanedAssetsUnlocked(in: noteDirectoryURL)
         }
@@ -495,7 +495,7 @@ public final class NotesRepository: @unchecked Sendable {
 
         for relativePath in stagedAssets where !referencedAssets.contains(relativePath) {
             let assetURL = noteDirectoryURL.appendingPathComponent(relativePath, isDirectory: false)
-            if fileManager.fileExists(atPath: assetURL.path()) {
+            if fileManager.fileExists(atPath: assetURL.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: assetURL)
             }
         }
@@ -505,7 +505,7 @@ public final class NotesRepository: @unchecked Sendable {
 
     private func loadStagedOrphanedAssetsUnlocked(from noteDirectoryURL: URL) throws -> Set<String> {
         let manifestURL = stagedOrphanedAssetsManifestURL(for: noteDirectoryURL)
-        guard fileManager.fileExists(atPath: manifestURL.path()) else { return [] }
+        guard fileManager.fileExists(atPath: manifestURL.path(percentEncoded: false)) else { return [] }
         let data = try Data(contentsOf: manifestURL)
         let manifest = try metadataDecoder.decode(StagedOrphanedAssets.self, from: data)
         return Set(manifest.relativePaths)
@@ -514,7 +514,7 @@ public final class NotesRepository: @unchecked Sendable {
     private func persistStagedOrphanedAssetsUnlocked(_ relativePaths: Set<String>, in noteDirectoryURL: URL) throws {
         let manifestURL = stagedOrphanedAssetsManifestURL(for: noteDirectoryURL)
         if relativePaths.isEmpty {
-            if fileManager.fileExists(atPath: manifestURL.path()) {
+            if fileManager.fileExists(atPath: manifestURL.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: manifestURL)
             }
             return
@@ -529,7 +529,7 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func existingAssetPathsUnlocked(in assetsDirectoryURL: URL) throws -> Set<String> {
-        guard fileManager.fileExists(atPath: assetsDirectoryURL.path()) else { return [] }
+        guard fileManager.fileExists(atPath: assetsDirectoryURL.path(percentEncoded: false)) else { return [] }
         let files = try recursiveRegularFilesUnlocked(in: assetsDirectoryURL)
         let assetRootComponents = assetsDirectoryURL.standardizedFileURL.pathComponents
         return Set(files.map { fileURL in
@@ -546,7 +546,7 @@ public final class NotesRepository: @unchecked Sendable {
     private func persistShowcaseImageUnlockedIfNeeded(for note: Note) throws {
         let assetsDirectoryURL = noteAssetsDirectoryURL(for: note)
         let assetURL = assetsDirectoryURL.appendingPathComponent(MarkdownShowcaseSeed.imageFilename, isDirectory: false)
-        guard !fileManager.fileExists(atPath: assetURL.path()) else { return }
+        guard !fileManager.fileExists(atPath: assetURL.path(percentEncoded: false)) else { return }
         try fileManager.createDirectory(at: assetsDirectoryURL, withIntermediateDirectories: true)
         let data = try MarkdownShowcaseSeed.imageData()
         try data.write(to: assetURL, options: .atomic)
@@ -559,12 +559,12 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func copyLegacyShowcaseAssetUnlockedIfNeeded(from legacyAssetURL: URL, to note: Note) throws {
-        guard fileManager.fileExists(atPath: legacyAssetURL.path()),
+        guard fileManager.fileExists(atPath: legacyAssetURL.path(percentEncoded: false)),
               note.content.contains(MarkdownShowcaseSeed.imageAssetPath) else { return }
 
         let assetsDirectoryURL = noteAssetsDirectoryURL(for: note)
         let destinationURL = assetsDirectoryURL.appendingPathComponent(MarkdownShowcaseSeed.imageFilename, isDirectory: false)
-        guard !fileManager.fileExists(atPath: destinationURL.path()) else { return }
+        guard !fileManager.fileExists(atPath: destinationURL.path(percentEncoded: false)) else { return }
 
         try fileManager.createDirectory(at: assetsDirectoryURL, withIntermediateDirectories: true)
         let data = try Data(contentsOf: legacyAssetURL)
@@ -573,7 +573,7 @@ public final class NotesRepository: @unchecked Sendable {
 
     private func copyAssetsUnlocked(from source: Note, to destination: Note) throws {
         let sourceAssetsDirectoryURL = noteAssetsDirectoryURL(for: source)
-        guard fileManager.fileExists(atPath: sourceAssetsDirectoryURL.path()) else { return }
+        guard fileManager.fileExists(atPath: sourceAssetsDirectoryURL.path(percentEncoded: false)) else { return }
 
         let destinationAssetsDirectoryURL = noteAssetsDirectoryURL(for: destination)
         try fileManager.createDirectory(at: destinationAssetsDirectoryURL, withIntermediateDirectories: true)
@@ -618,8 +618,8 @@ public final class NotesRepository: @unchecked Sendable {
     private func makeSnapshotEntryUnlocked(from noteDirectoryURL: URL) throws -> NotesDirectorySnapshot.Entry {
         let files = try recursiveRegularFilesUnlocked(in: noteDirectoryURL)
             .sorted {
-                $0.path.replacingOccurrences(of: noteDirectoryURL.path() + "/", with: "")
-                    < $1.path.replacingOccurrences(of: noteDirectoryURL.path() + "/", with: "")
+                $0.path.replacingOccurrences(of: noteDirectoryURL.path(percentEncoded: false) + "/", with: "")
+                    < $1.path.replacingOccurrences(of: noteDirectoryURL.path(percentEncoded: false) + "/", with: "")
             }
 
         var modifiedAt: TimeInterval = 0
@@ -627,8 +627,8 @@ public final class NotesRepository: @unchecked Sendable {
         var fingerprint: UInt64 = 14_695_981_039_346_656_037
 
         for fileURL in files {
-            let attributes = try fileManager.attributesOfItem(atPath: fileURL.path())
-            let relativePath = fileURL.path().replacingOccurrences(of: noteDirectoryURL.path() + "/", with: "")
+            let attributes = try fileManager.attributesOfItem(atPath: fileURL.path(percentEncoded: false))
+            let relativePath = fileURL.path(percentEncoded: false).replacingOccurrences(of: noteDirectoryURL.path(percentEncoded: false) + "/", with: "")
             let data = try Data(contentsOf: fileURL)
             modifiedAt = max(modifiedAt, (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)
             totalSize += (attributes[.size] as? NSNumber)?.uint64Value ?? 0
@@ -715,7 +715,7 @@ public final class NotesRepository: @unchecked Sendable {
             let suffix = index == 1 ? "" : "-\(index)"
             let filename = "\(baseName)\(suffix).\(imageExtension)"
             let candidateURL = assetsDirectoryURL.appendingPathComponent(filename, isDirectory: false)
-            if !fileManager.fileExists(atPath: candidateURL.path()) {
+            if !fileManager.fileExists(atPath: candidateURL.path(percentEncoded: false)) {
                 return filename
             }
             index += 1

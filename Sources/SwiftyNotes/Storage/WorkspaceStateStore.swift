@@ -17,7 +17,7 @@ public final class WorkspaceStateStore {
 
     public func load() throws -> WorkspaceState {
         try migrateLegacyStateIfNeeded()
-        guard fileManager.fileExists(atPath: stateFileURL.path()) else {
+        guard fileManager.fileExists(atPath: stateFileURL.path(percentEncoded: false)) else {
             return .default
         }
         let data = try Data(contentsOf: stateFileURL)

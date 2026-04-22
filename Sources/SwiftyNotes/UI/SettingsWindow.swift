@@ -65,7 +65,7 @@ final class SettingsWindow {
     }
 
     var displayedNotesDirectoryPath: String {
-        currentNotesDirectory.path()
+        currentNotesDirectory.path(percentEncoded: false)
     }
 
     var snapshot: Snapshot {
@@ -110,7 +110,7 @@ final class SettingsWindow {
         notesFolderRow.activatableWidget = browseButton
         storageGroup.add(notesFolderRow)
 
-        resetToDefaultRow.subtitle = defaultNotesDirectory.path()
+        resetToDefaultRow.subtitle = defaultNotesDirectory.path(percentEncoded: false)
         resetToDefaultRow.subtitleSelectable = true
         resetToDefaultRow.subtitleLines = 3
         resetButton.valign = .center
@@ -260,7 +260,7 @@ final class SettingsWindow {
 
     private func updateNotesDirectory(_ folderURL: URL) {
         currentNotesDirectory = folderURL.standardizedFileURL
-        notesFolderRow.subtitle = currentNotesDirectory.path()
+        notesFolderRow.subtitle = currentNotesDirectory.path(percentEncoded: false)
         let usesDefaultLocation = currentNotesDirectory == defaultNotesDirectory
         resetButton.sensitive = !usesDefaultLocation
         resetToDefaultRow.sensitive = !usesDefaultLocation

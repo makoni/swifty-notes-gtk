@@ -478,7 +478,7 @@ private enum CLINotesDirectoryResolver {
     ) -> AppSettings? {
         let settingsURL = AppIdentity.applicationDirectory(in: configHome)
             .appendingPathComponent(settingsFilename, isDirectory: false)
-        guard fileManager.fileExists(atPath: settingsURL.path()) else { return nil }
+        guard fileManager.fileExists(atPath: settingsURL.path(percentEncoded: false)) else { return nil }
         return try? AppSettingsStore(settingsFileURL: settingsURL, fileManager: fileManager).load()
     }
 
@@ -494,7 +494,7 @@ private enum CLINotesDirectoryResolver {
             )
             .appendingPathComponent(notesDirectoryName, isDirectory: true)
 
-            guard fileManager.fileExists(atPath: notesDirectory.path()) else { continue }
+            guard fileManager.fileExists(atPath: notesDirectory.path(percentEncoded: false)) else { continue }
             guard let contents = try? fileManager.contentsOfDirectory(
                 at: notesDirectory,
                 includingPropertiesForKeys: [.isDirectoryKey],
@@ -516,7 +516,7 @@ private enum CLINotesDirectoryResolver {
     ) -> Bool {
         if entryURL.hasDirectoryPath {
             return fileManager.fileExists(
-                atPath: entryURL.appendingPathComponent(noteFilename, isDirectory: false).path()
+                atPath: entryURL.appendingPathComponent(noteFilename, isDirectory: false).path(percentEncoded: false)
             )
         }
         return entryURL.pathExtension == "md"

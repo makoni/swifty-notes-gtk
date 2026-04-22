@@ -94,7 +94,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             )
         }
         return AppSettings(
-            customNotesDirectoryPath: standardizedDirectory.path(),
+            customNotesDirectoryPath: standardizedDirectory.path(percentEncoded: false),
             wrapsEditorLines: wrapsEditorLines,
             editorFontSize: editorFontSize,
             editorTabWidth: editorTabWidth,

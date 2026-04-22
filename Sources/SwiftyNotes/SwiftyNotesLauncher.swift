@@ -155,7 +155,7 @@ final class AppController {
 
     private func displayLocation(for fileURL: URL) -> String {
         if fileURL.isFileURL {
-            return fileURL.standardizedFileURL.path()
+            return fileURL.standardizedFileURL.path(percentEncoded: false)
         }
         return fileURL.absoluteString
     }

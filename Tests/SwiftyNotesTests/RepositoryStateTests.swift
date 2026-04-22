@@ -50,6 +50,56 @@ struct RepositoryStateTests {
     }
 
     @Test
+    func repositoryImportsNoteWhenSourcePathContainsSpaces() throws {
+        // Regression test for https://github.com/makoni/swifty-notes-gtk/issues/2
+        // A filename (or any path component) with spaces previously triggered
+        // "file not found" because URL.path() percent-encodes — FileManager
+        // APIs that take an atPath: String must receive the decoded path.
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let spacedDirectory = temp.appendingPathComponent("source folder with spaces", isDirectory: true)
+        let importURL = spacedDirectory.appendingPathComponent("note with spaces.md", isDirectory: false)
+        let exportURL = temp.appendingPathComponent("exported copy.md", isDirectory: false)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try FileManager.default.createDirectory(at: spacedDirectory, withIntermediateDirectories: true)
+        try "# Imported with spaces".write(to: importURL, atomically: true, encoding: .utf8)
+
+        let repository = NotesRepository(notesDirectory: temp.appendingPathComponent("notes", isDirectory: true))
+        let imported = try repository.importNote(from: importURL)
+
+        #expect(imported.content == "# Imported with spaces")
+
+        try repository.export(note: imported, to: exportURL)
+        let exported = try String(contentsOf: exportURL, encoding: .utf8)
+        #expect(exported == "# Imported with spaces")
+    }
+
+    @Test
+    func repositoryOperatesWhenNotesDirectoryPathContainsSpaces() throws {
+        // Regression test for https://github.com/makoni/swifty-notes-gtk/issues/2
+        // If the user points the notes library at e.g. ~/My Notes, every
+        // FileManager call that reads a URL via .path() would fail because
+        // the path comes back percent-encoded.
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let spacedNotesDirectory = temp.appendingPathComponent("My Notes Library", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: spacedNotesDirectory)
+        let created = try repository.createNote(initialContent: "# Hello from a spaced folder")
+
+        let loaded = try repository.loadNotes()
+        #expect(loaded.count == 1)
+        #expect(loaded.first?.id == created.id)
+        #expect(loaded.first?.content == "# Hello from a spaced folder")
+
+        let snapshot = try repository.directorySnapshot()
+        #expect(snapshot.entries.count == 1)
+
+        try repository.delete(note: created)
+        #expect(try repository.loadNotes().isEmpty)
+    }
+
+    @Test
     func repositorySeedsDefaultNotesOnlyForEmptyStorage() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }

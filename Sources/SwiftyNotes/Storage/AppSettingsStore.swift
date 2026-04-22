@@ -17,7 +17,7 @@ public final class AppSettingsStore {
 
     public func load() throws -> AppSettings {
         try migrateLegacySettingsIfNeeded()
-        guard fileManager.fileExists(atPath: settingsFileURL.path()) else {
+        guard fileManager.fileExists(atPath: settingsFileURL.path(percentEncoded: false)) else {
             return .default
         }
         let data = try Data(contentsOf: settingsFileURL)
