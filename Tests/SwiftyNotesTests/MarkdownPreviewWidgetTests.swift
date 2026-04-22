@@ -318,7 +318,7 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        #expect(gtk_widget_has_css_class(child.widgetPointer, "card") != 0)
+        #expect(child.hasCSSClass("card"))
         #expect(labelTexts(in: child).contains("Hero artwork"))
         #expect(abs(Double(narrowSize.height) - (Double(narrowSize.width) * 90.0 / 160.0)) <= 4)
 
@@ -675,9 +675,9 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @MainActor
-    private func firstButton(in widget: Widget) -> Widget? {
-        if widget.isInstance(of: gtk_button_get_type()) {
-            return widget
+    private func firstButton(in widget: Widget) -> Button? {
+        if let button = widget.tryCast(Button.self) {
+            return button
         }
         for child in widget.children() {
             if let button = firstButton(in: child) {
@@ -689,9 +689,8 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func firstHBox(in widget: Widget) -> Box? {
-        if widget.isInstance(of: gtk_box_get_type()),
-           gtk_orientable_get_orientation(OpaquePointer(widget.pointer)) == GTK_ORIENTATION_HORIZONTAL {
-            return Box(borrowing: widget.pointer)
+        if let box = widget.tryCast(Box.self), box.orientation == GTK_ORIENTATION_HORIZONTAL {
+            return box
         }
         for child in widget.children() {
             if let hbox = firstHBox(in: child) {
@@ -727,34 +726,23 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @MainActor
-    private func buttonChild(_ button: Widget) -> Widget? {
-        guard let child = gtk_button_get_child(button.pointer.assumingMemoryBound(to: GtkButton.self)) else {
-            return nil
-        }
-        return Widget(borrowing: UnsafeMutableRawPointer(child))
+    private func buttonChild(_ button: Button) -> Widget? {
+        button.child
     }
 
+    @MainActor
     private func pictureFilePath(_ picture: Picture?) -> String? {
-        guard let picture,
-              let file = gtk_picture_get_file(OpaquePointer(picture.pointer)),
-              let path = g_file_get_path(file) else {
-            return nil
-        }
-        defer { g_free(path) }
-        return String(cString: path)
+        picture?.fileURL?.path(percentEncoded: false)
     }
 
+    @MainActor
     private func pictureHasPaintable(_ picture: Picture?) -> Bool {
-        guard let picture else { return false }
-        return gtk_picture_get_paintable(OpaquePointer(picture.pointer)) != nil
+        picture?.hasPaintable == true
     }
 
+    @MainActor
     private func picturePaintablePointer(_ picture: Picture?) -> UnsafeMutableRawPointer? {
-        guard let picture,
-              let paintable = gtk_picture_get_paintable(OpaquePointer(picture.pointer)) else {
-            return nil
-        }
-        return UnsafeMutableRawPointer(paintable)
+        picture?.paintablePointer
     }
 
     @MainActor

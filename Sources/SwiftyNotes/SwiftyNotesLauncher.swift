@@ -164,7 +164,7 @@ final class AppController {
 public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
-        ScrollbarGizmoWarningFilter.installIfNeeded()
+        MainContext.silenceSpuriousScrollbarWarnings()
         if let cliResult = NotesCLI.runIfRequested(arguments: arguments) {
             if !cliResult.stdout.isEmpty, let data = cliResult.stdout.data(using: .utf8) {
                 FileHandle.standardOutput.write(data)
