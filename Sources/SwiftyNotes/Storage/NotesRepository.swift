@@ -39,6 +39,34 @@ private struct StagedOrphanedAssets: Codable {
     let relativePaths: [String]
 }
 
+public enum NoteExportAssetCollision: Sendable {
+    case fail
+    case merge
+}
+
+public struct NoteExportOutcome: Equatable, Sendable {
+    public let markdownURL: URL
+    public let assetsDestinationURL: URL?
+    public let assetsCopied: Int
+
+    public init(markdownURL: URL, assetsDestinationURL: URL?, assetsCopied: Int) {
+        self.markdownURL = markdownURL
+        self.assetsDestinationURL = assetsDestinationURL
+        self.assetsCopied = assetsCopied
+    }
+}
+
+public enum NoteExportError: Error, LocalizedError {
+    case assetsDestinationExists(URL)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .assetsDestinationExists(url):
+            return "An \"assets\" folder already exists at \(url.path(percentEncoded: false))."
+        }
+    }
+}
+
 private enum NotesRepositoryAssetImportError: LocalizedError {
     case unsupportedImageType(String)
 
@@ -176,11 +204,56 @@ public final class NotesRepository: @unchecked Sendable {
         }
     }
 
-    public func export(note: Note, to destinationURL: URL) throws {
-        try queue.sync {
+    @discardableResult
+    public func export(
+        note: Note,
+        to destinationURL: URL,
+        assetsCollision: NoteExportAssetCollision = .fail
+    ) throws -> NoteExportOutcome {
+        try queue.sync { () throws -> NoteExportOutcome in
             let directory = destinationURL.deletingLastPathComponent()
             try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
             try note.content.data(using: .utf8)?.write(to: destinationURL, options: .atomic)
+
+            let sourceAssetsURL = noteAssetsDirectoryURL(for: note)
+            let sourceFiles = directoryContainsFilesUnlocked(at: sourceAssetsURL)
+                ? (try? recursiveRegularFilesUnlocked(in: sourceAssetsURL)) ?? []
+                : []
+            guard !sourceFiles.isEmpty else {
+                return NoteExportOutcome(
+                    markdownURL: destinationURL,
+                    assetsDestinationURL: nil,
+                    assetsCopied: 0
+                )
+            }
+
+            let destinationAssetsURL = directory.appendingPathComponent(
+                Self.assetsDirectoryName,
+                isDirectory: true
+            )
+            let destinationExists = fileManager.fileExists(
+                atPath: destinationAssetsURL.path(percentEncoded: false)
+            )
+            if destinationExists, case .fail = assetsCollision {
+                throw NoteExportError.assetsDestinationExists(destinationAssetsURL)
+            }
+
+            let copied = try copyAssetsForExportUnlocked(
+                files: sourceFiles,
+                from: sourceAssetsURL,
+                to: destinationAssetsURL
+            )
+            return NoteExportOutcome(
+                markdownURL: destinationURL,
+                assetsDestinationURL: destinationAssetsURL,
+                assetsCopied: copied
+            )
+        }
+    }
+
+    public func hasExportableAssets(note: Note) -> Bool {
+        queue.sync {
+            directoryContainsFilesUnlocked(at: noteAssetsDirectoryURL(for: note))
         }
     }
 
@@ -642,6 +715,41 @@ public final class NotesRepository: @unchecked Sendable {
             fileSize: totalSize,
             contentFingerprint: fingerprint
         )
+    }
+
+    private func directoryContainsFilesUnlocked(at url: URL) -> Bool {
+        guard fileManager.fileExists(atPath: url.path(percentEncoded: false)) else { return false }
+        guard let files = try? recursiveRegularFilesUnlocked(in: url) else { return false }
+        return !files.isEmpty
+    }
+
+    private func copyAssetsForExportUnlocked(
+        files: [URL],
+        from sourceRoot: URL,
+        to destinationRoot: URL
+    ) throws -> Int {
+        try fileManager.createDirectory(at: destinationRoot, withIntermediateDirectories: true)
+        let sourceComponentCount = sourceRoot.standardizedFileURL.pathComponents.count
+        var copied = 0
+        for sourceFile in files {
+            let relativeComponents = sourceFile.standardizedFileURL
+                .pathComponents
+                .dropFirst(sourceComponentCount)
+            guard !relativeComponents.isEmpty else { continue }
+            let targetURL = relativeComponents.reduce(destinationRoot) { partial, component in
+                partial.appendingPathComponent(component, isDirectory: false)
+            }
+            try fileManager.createDirectory(
+                at: targetURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            if fileManager.fileExists(atPath: targetURL.path(percentEncoded: false)) {
+                try fileManager.removeItem(at: targetURL)
+            }
+            try fileManager.copyItem(at: sourceFile, to: targetURL)
+            copied += 1
+        }
+        return copied
     }
 
     private func recursiveRegularFilesUnlocked(in directoryURL: URL) throws -> [URL] {

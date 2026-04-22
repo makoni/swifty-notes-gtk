@@ -100,6 +100,154 @@ struct RepositoryStateTests {
     }
 
     @Test
+    func hasExportableAssetsReturnsTrueOnlyWhenAssetDirectoryContainsFiles() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let empty = try repository.createNote(initialContent: "Empty")
+        #expect(!repository.hasExportableAssets(note: empty))
+
+        let withAssets = try repository.createNote(initialContent: "With assets")
+        let assetsDirectory = repository.noteAssetsDirectoryURL(for: withAssets)
+        try FileManager.default.createDirectory(at: assetsDirectory, withIntermediateDirectories: true)
+        try Data("png-bytes".utf8).write(
+            to: assetsDirectory.appendingPathComponent("pic.png", isDirectory: false),
+            options: .atomic
+        )
+        #expect(repository.hasExportableAssets(note: withAssets))
+    }
+
+    @Test
+    func exportReturnsOutcomeWithoutAssetsForNoteWithoutImages() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp.appendingPathComponent("notes", isDirectory: true))
+        let note = try repository.createNote(initialContent: "# Plain text")
+        let destinationURL = temp.appendingPathComponent("export/plain.md")
+
+        let outcome = try repository.export(note: note, to: destinationURL)
+
+        #expect(outcome.markdownURL == destinationURL)
+        #expect(outcome.assetsDestinationURL == nil)
+        #expect(outcome.assetsCopied == 0)
+        #expect(try String(contentsOf: destinationURL, encoding: .utf8) == "# Plain text")
+    }
+
+    @Test
+    func exportCopiesAssetsFolderAlongsideMarkdown() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp.appendingPathComponent("notes", isDirectory: true))
+        let note = try repository.createNote(initialContent: "# With image\n\n![pic](assets/pic.png)")
+        let assetsDirectory = repository.noteAssetsDirectoryURL(for: note)
+        try FileManager.default.createDirectory(at: assetsDirectory, withIntermediateDirectories: true)
+        try Data("png-bytes".utf8).write(
+            to: assetsDirectory.appendingPathComponent("pic.png", isDirectory: false),
+            options: .atomic
+        )
+        try Data("cover-bytes".utf8).write(
+            to: assetsDirectory.appendingPathComponent("cover.jpg", isDirectory: false),
+            options: .atomic
+        )
+
+        let exportDirectory = temp.appendingPathComponent("export", isDirectory: true)
+        let destinationURL = exportDirectory.appendingPathComponent("my-post.md", isDirectory: false)
+
+        let outcome = try repository.export(note: note, to: destinationURL, assetsCollision: .fail)
+
+        let expectedAssetsURL = exportDirectory.appendingPathComponent("assets", isDirectory: true)
+        #expect(outcome.markdownURL == destinationURL)
+        #expect(outcome.assetsDestinationURL == expectedAssetsURL)
+        #expect(outcome.assetsCopied == 2)
+        #expect(try Data(contentsOf: expectedAssetsURL.appendingPathComponent("pic.png")) == Data("png-bytes".utf8))
+        #expect(try Data(contentsOf: expectedAssetsURL.appendingPathComponent("cover.jpg")) == Data("cover-bytes".utf8))
+    }
+
+    @Test
+    func exportFailsWhenAssetsDestinationAlreadyExists() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp.appendingPathComponent("notes", isDirectory: true))
+        let note = try repository.createNote(initialContent: "# With image")
+        let assetsDirectory = repository.noteAssetsDirectoryURL(for: note)
+        try FileManager.default.createDirectory(at: assetsDirectory, withIntermediateDirectories: true)
+        try Data("new".utf8).write(
+            to: assetsDirectory.appendingPathComponent("pic.png", isDirectory: false),
+            options: .atomic
+        )
+
+        let exportDirectory = temp.appendingPathComponent("export", isDirectory: true)
+        let existingAssetsURL = exportDirectory.appendingPathComponent("assets", isDirectory: true)
+        try FileManager.default.createDirectory(at: existingAssetsURL, withIntermediateDirectories: true)
+        try Data("keep".utf8).write(
+            to: existingAssetsURL.appendingPathComponent("existing.png", isDirectory: false),
+            options: .atomic
+        )
+
+        let destinationURL = exportDirectory.appendingPathComponent("my-post.md", isDirectory: false)
+
+        do {
+            _ = try repository.export(note: note, to: destinationURL, assetsCollision: .fail)
+            Issue.record("Expected assetsDestinationExists error")
+        } catch let error as NoteExportError {
+            guard case let .assetsDestinationExists(url) = error else {
+                Issue.record("Unexpected error case: \(error)")
+                return
+            }
+            #expect(url == existingAssetsURL)
+        }
+
+        // Существующая папка не должна быть тронута при .fail.
+        #expect(try Data(contentsOf: existingAssetsURL.appendingPathComponent("existing.png")) == Data("keep".utf8))
+        #expect(!FileManager.default.fileExists(atPath: existingAssetsURL.appendingPathComponent("pic.png").path(percentEncoded: false)))
+    }
+
+    @Test
+    func exportMergesAssetsIntoExistingDestinationWhenRequested() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp.appendingPathComponent("notes", isDirectory: true))
+        let note = try repository.createNote(initialContent: "# With image")
+        let assetsDirectory = repository.noteAssetsDirectoryURL(for: note)
+        try FileManager.default.createDirectory(at: assetsDirectory, withIntermediateDirectories: true)
+        try Data("new".utf8).write(
+            to: assetsDirectory.appendingPathComponent("pic.png", isDirectory: false),
+            options: .atomic
+        )
+        try Data("fresh".utf8).write(
+            to: assetsDirectory.appendingPathComponent("cover.jpg", isDirectory: false),
+            options: .atomic
+        )
+
+        let exportDirectory = temp.appendingPathComponent("export", isDirectory: true)
+        let existingAssetsURL = exportDirectory.appendingPathComponent("assets", isDirectory: true)
+        try FileManager.default.createDirectory(at: existingAssetsURL, withIntermediateDirectories: true)
+        try Data("old-to-replace".utf8).write(
+            to: existingAssetsURL.appendingPathComponent("pic.png", isDirectory: false),
+            options: .atomic
+        )
+        try Data("keep-me".utf8).write(
+            to: existingAssetsURL.appendingPathComponent("other.png", isDirectory: false),
+            options: .atomic
+        )
+
+        let destinationURL = exportDirectory.appendingPathComponent("my-post.md", isDirectory: false)
+
+        let outcome = try repository.export(note: note, to: destinationURL, assetsCollision: .merge)
+
+        #expect(outcome.assetsDestinationURL == existingAssetsURL)
+        #expect(outcome.assetsCopied == 2)
+        #expect(try Data(contentsOf: existingAssetsURL.appendingPathComponent("pic.png")) == Data("new".utf8))
+        #expect(try Data(contentsOf: existingAssetsURL.appendingPathComponent("cover.jpg")) == Data("fresh".utf8))
+        #expect(try Data(contentsOf: existingAssetsURL.appendingPathComponent("other.png")) == Data("keep-me".utf8))
+    }
+
+    @Test
     func repositorySeedsDefaultNotesOnlyForEmptyStorage() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }

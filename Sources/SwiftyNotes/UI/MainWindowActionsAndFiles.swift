@@ -346,16 +346,62 @@ extension MainWindow {
             }
             self.activeFileDialog = nil
             guard let path else { return }
-            do {
-                try self.repository.export(note: selected, to: URL(fileURLWithPath: path))
-                self.toastOverlay.showToast("Exported \(selected.title)")
-            } catch {
-                self.presentError(
-                    heading: "Could not export note",
-                    body: error.localizedDescription
-                )
-            }
+            self.performExport(
+                of: selected,
+                to: URL(fileURLWithPath: path),
+                assetsCollision: .fail
+            )
         }
+    }
+
+    private func performExport(
+        of note: Note,
+        to destinationURL: URL,
+        assetsCollision: NoteExportAssetCollision
+    ) {
+        do {
+            let outcome = try repository.export(
+                note: note,
+                to: destinationURL,
+                assetsCollision: assetsCollision
+            )
+            toastOverlay.showToast(exportSuccessMessage(for: note, outcome: outcome))
+        } catch let error as NoteExportError {
+            switch error {
+            case .assetsDestinationExists:
+                presentAssetsCollisionConfirmation(for: note, destination: destinationURL)
+            }
+        } catch {
+            presentError(
+                heading: "Could not export note",
+                body: error.localizedDescription
+            )
+        }
+    }
+
+    private func exportSuccessMessage(for note: Note, outcome: NoteExportOutcome) -> String {
+        guard outcome.assetsCopied > 0 else {
+            return "Exported \(note.title)"
+        }
+        let suffix = outcome.assetsCopied == 1 ? "asset" : "assets"
+        return "Exported \(note.title) with \(outcome.assetsCopied) \(suffix)"
+    }
+
+    private func presentAssetsCollisionConfirmation(for note: Note, destination: URL) {
+        let dialog = AlertDialog(
+            heading: "Replace existing assets?",
+            body: "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+        )
+        dialog.addResponse("cancel", label: "Cancel")
+        dialog.addResponse("merge", label: "Merge")
+        dialog.defaultResponse = "merge"
+        dialog.closeResponse = "cancel"
+        dialog.setResponseAppearance("merge", appearance: .destructive)
+        dialog.onResponse { [weak self] response in
+            guard let self, response == "merge" else { return }
+            self.performExport(of: note, to: destination, assetsCollision: .merge)
+        }
+        dialog.present(window)
     }
 
     func openNotesFolder() {
