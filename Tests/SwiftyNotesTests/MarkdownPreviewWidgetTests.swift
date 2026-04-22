@@ -118,14 +118,12 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        var width: Int32 = 0
-        var height: Int32 = 0
-        gtk_widget_get_size_request(child.widgetPointer, &width, &height)
+        let size = child.sizeRequest
         let buttonNaturalHeight = measuredNaturalSize(of: button, orientation: GTK_ORIENTATION_VERTICAL)
 
-        #expect(g_type_check_instance_is_a(child.pointer.assumingMemoryBound(to: GTypeInstance.self), gtk_picture_get_type()) != 0)
-        #expect(width == -1)
-        #expect(height == 18)
+        #expect(child.isInstance(of: Picture.self))
+        #expect(size.width == -1)
+        #expect(size.height == 18)
         #expect(buttonNaturalHeight <= 22)
     }
 
@@ -163,12 +161,10 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        var width: Int32 = 0
-        var height: Int32 = 0
-        gtk_widget_get_size_request(child.widgetPointer, &width, &height)
+        let size = child.sizeRequest
 
-        #expect(width == 108)
-        #expect(height == 18)
+        #expect(size.width == 108)
+        #expect(size.height == 18)
     }
 
     @Test @MainActor
@@ -202,12 +198,10 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(badgeRow.widgetPointer, GTK_ORIENTATION_HORIZONTAL, 18, &minimum, &natural, nil, nil)
+        let measurement = badgeRow.measure(orientation: GTK_ORIENTATION_HORIZONTAL, forSize: 18)
 
-        #expect(minimum > 0)
-        #expect(natural >= minimum)
+        #expect(measurement.minimum > 0)
+        #expect(measurement.natural >= measurement.minimum)
     }
 
     @Test @MainActor
@@ -243,11 +237,9 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(block.widgetPointer, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, nil, nil)
+        let measurement = block.measure(orientation: GTK_ORIENTATION_HORIZONTAL)
 
-        #expect(minimum <= 320)
+        #expect(measurement.minimum <= 320)
     }
 
     @Test @MainActor
@@ -268,11 +260,9 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(block.widgetPointer, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, nil, nil)
+        let measurement = block.measure(orientation: GTK_ORIENTATION_HORIZONTAL)
 
-        #expect(minimum <= 320)
+        #expect(measurement.minimum <= 320)
     }
 
     @Test @MainActor
@@ -293,11 +283,9 @@ struct MarkdownPreviewWidgetTests {
             return
         }
 
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(block.widgetPointer, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, nil, nil)
+        let measurement = block.measure(orientation: GTK_ORIENTATION_HORIZONTAL)
 
-        #expect(minimum <= 320)
+        #expect(measurement.minimum <= 320)
     }
 
     @Test @MainActor
@@ -675,11 +663,9 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func firstPicture(in widget: Widget) -> Picture? {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
-        if g_type_check_instance_is_a(instance, gtk_picture_get_type()) != 0 {
-            return Picture(borrowing: widget.pointer)
+        if let picture = widget.tryCast(Picture.self) {
+            return picture
         }
-
         for child in widget.children() {
             if let picture = firstPicture(in: child) {
                 return picture
@@ -690,11 +676,9 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func firstButton(in widget: Widget) -> Widget? {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
-        if g_type_check_instance_is_a(instance, gtk_button_get_type()) != 0 {
+        if widget.isInstance(of: gtk_button_get_type()) {
             return widget
         }
-
         for child in widget.children() {
             if let button = firstButton(in: child) {
                 return button
@@ -705,14 +689,10 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func firstHBox(in widget: Widget) -> Box? {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
-        if g_type_check_instance_is_a(instance, gtk_box_get_type()) != 0 {
-            let box = Box(borrowing: widget.pointer)
-            if gtk_orientable_get_orientation(OpaquePointer(widget.pointer)) == GTK_ORIENTATION_HORIZONTAL {
-                return box
-            }
+        if widget.isInstance(of: gtk_box_get_type()),
+           gtk_orientable_get_orientation(OpaquePointer(widget.pointer)) == GTK_ORIENTATION_HORIZONTAL {
+            return Box(borrowing: widget.pointer)
         }
-
         for child in widget.children() {
             if let hbox = firstHBox(in: child) {
                 return hbox
@@ -723,11 +703,9 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func firstClamp(in widget: Widget) -> Clamp? {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
-        if g_type_check_instance_is_a(instance, adw_clamp_get_type()) != 0 {
-            return Clamp(borrowing: widget.pointer)
+        if let clamp = widget.tryCast(Clamp.self) {
+            return clamp
         }
-
         for child in widget.children() {
             if let clamp = firstClamp(in: child) {
                 return clamp
@@ -738,10 +716,9 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func clamps(in widget: Widget) -> [Clamp] {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
         var results: [Clamp] = []
-        if g_type_check_instance_is_a(instance, adw_clamp_get_type()) != 0 {
-            results.append(Clamp(borrowing: widget.pointer))
+        if let clamp = widget.tryCast(Clamp.self) {
+            results.append(clamp)
         }
         for child in widget.children() {
             results.append(contentsOf: clamps(in: child))
@@ -781,11 +758,8 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @MainActor
-    private func measuredNaturalSize(of widget: Widget, orientation: GtkOrientation, forSize: Int32 = -1) -> Int {
-        var minimum: Int32 = 0
-        var natural: Int32 = 0
-        gtk_widget_measure(widget.widgetPointer, orientation, forSize, &minimum, &natural, nil, nil)
-        return Int(natural)
+    private func measuredNaturalSize(of widget: Widget, orientation: GtkOrientation, forSize: Int = -1) -> Int {
+        widget.measure(orientation: orientation, forSize: forSize).natural
     }
 
     @MainActor
@@ -813,16 +787,15 @@ struct MarkdownPreviewWidgetTests {
             clamp.maximumSize,
             measuredNaturalSize(of: clamp, orientation: GTK_ORIENTATION_HORIZONTAL)
         )
-        let effectiveHeight = measuredNaturalSize(of: clamp, orientation: GTK_ORIENTATION_VERTICAL, forSize: Int32(effectiveWidth))
+        let effectiveHeight = measuredNaturalSize(of: clamp, orientation: GTK_ORIENTATION_VERTICAL, forSize: effectiveWidth)
         return (effectiveWidth, effectiveHeight)
     }
 
     @MainActor
     private func labelTexts(in widget: Widget) -> [String] {
-        let instance = widget.pointer.assumingMemoryBound(to: GTypeInstance.self)
         var texts: [String] = []
-        if g_type_check_instance_is_a(instance, gtk_label_get_type()) != 0 {
-            texts.append(Label(borrowing: widget.pointer).text)
+        if let label = widget.tryCast(Label.self) {
+            texts.append(label.text)
         }
         for child in widget.children() {
             texts.append(contentsOf: labelTexts(in: child))
