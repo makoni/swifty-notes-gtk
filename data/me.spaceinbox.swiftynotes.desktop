@@ -9,3 +9,8 @@ Categories=Utility;TextEditor;GTK;GNOME;
 Keywords=notes;markdown;editor;text;cli;automation;
 MimeType=text/markdown;
 StartupNotify=true
+Actions=new-window;
+
+[Desktop Action new-window]
+Name=New Window
+Exec=swiftynotes
