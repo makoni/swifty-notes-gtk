@@ -13,8 +13,6 @@ private enum ExternalDocumentOpenError: LocalizedError {
     }
 }
 
-private let applicationHandlesOpenFlag = GApplicationFlags(rawValue: 1 << 2)
-
 @MainActor
 final class AppController {
     private let stateStore: WorkspaceStateStore
@@ -178,7 +176,7 @@ public enum SwiftyNotesLauncher {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let app = Application(
             id: (applicationID?.isEmpty == false) ? applicationID! : AppIdentity.identifier,
-            flags: applicationHandlesOpenFlag,
+            flags: .handlesOpen,
         )
         let appController = AppController()
 
