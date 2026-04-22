@@ -8,22 +8,20 @@ enum PreviewImagePaintableLoader {
         into picture: Picture,
         preferredHeight: Int? = nil,
         constrainWidthToAspectRatio: Bool = false,
-        completion: (@MainActor () -> Void)? = nil
+        completion: (@MainActor () -> Void)? = nil,
     ) {
         // NB: the earlier `Task { @MainActor in await Texture.load(...) }`
         // path never ran under GLib's main loop — GTK apps can't drain
-        // Swift's DispatchQueue.main. Decode synchronously instead:
-        // `Texture(filename:)` wraps `gdk_texture_new_from_filename` and
-        // gives us a paintable straight away for PNG/JPEG (plus anything
-        // else gdk-pixbuf registered on the host). If the decode fails
-        // (odd format, broken file) fall back to `setFilename`, which
-        // drives GTK's own lazy loader. SVG/SVGZ always takes the
-        // filename path — GdkTexture doesn't rasterize SVG.
+        // Swift's DispatchQueue.main. Decode synchronously instead.
+        // `Texture.loadSynchronously(from:)` goes through GdkPixbuf so we
+        // pick up any raster format the host registered (PNG, JPEG, WebP,
+        // GIF, TIFF, BMP). SVG/SVGZ still takes the filename path — GTK
+        // rasterizes it lazily via the `GFile` side of the Picture.
         let ext = localURL.pathExtension.lowercased()
         let isSVG = (ext == "svg" || ext == "svgz")
         let filesystemPath = localURL.path(percentEncoded: false)
 
-        if !isSVG, let texture = Texture(filename: filesystemPath) {
+        if !isSVG, let texture = try? Texture.loadSynchronously(from: localURL) {
             picture.setPaintable(texture)
         } else {
             picture.setFilename(filesystemPath)
@@ -33,7 +31,7 @@ enum PreviewImagePaintableLoader {
             to: picture,
             preferredHeight: preferredHeight,
             constrainWidthToAspectRatio: constrainWidthToAspectRatio,
-            svgURL: isSVG ? localURL : nil
+            svgURL: isSVG ? localURL : nil,
         )
         completion?()
     }
@@ -41,7 +39,7 @@ enum PreviewImagePaintableLoader {
     static func scaledWidth(
         intrinsicWidth: Double,
         intrinsicHeight: Double,
-        preferredHeight: Int
+        preferredHeight: Int,
     ) -> Int? {
         guard intrinsicWidth > 0, intrinsicHeight > 0, preferredHeight > 0 else {
             return nil
@@ -55,7 +53,7 @@ private extension PreviewImagePaintableLoader {
         to picture: Picture,
         preferredHeight: Int?,
         constrainWidthToAspectRatio: Bool,
-        svgURL: URL?
+        svgURL: URL?,
     ) {
         guard let preferredHeight, preferredHeight > 0 else { return }
         guard constrainWidthToAspectRatio else {
@@ -68,8 +66,9 @@ private extension PreviewImagePaintableLoader {
            let width = scaledWidth(
                intrinsicWidth: dimensions.width,
                intrinsicHeight: dimensions.height,
-               preferredHeight: preferredHeight
-           ) {
+               preferredHeight: preferredHeight,
+           )
+        {
             picture.setSizeRequest(width: width, height: preferredHeight)
             return
         }
@@ -78,8 +77,9 @@ private extension PreviewImagePaintableLoader {
            let width = scaledWidth(
                intrinsicWidth: Double(size.width),
                intrinsicHeight: Double(size.height),
-               preferredHeight: preferredHeight
-           ) {
+               preferredHeight: preferredHeight,
+           )
+        {
             picture.setSizeRequest(width: width, height: preferredHeight)
             return
         }
@@ -93,7 +93,8 @@ private extension PreviewImagePaintableLoader {
               let data = try? Data(contentsOf: localURL),
               let content = String(data: data.prefix(4096), encoding: .utf8),
               let width = extractSVGDimension(named: "width", from: content),
-              let height = extractSVGDimension(named: "height", from: content) else {
+              let height = extractSVGDimension(named: "height", from: content)
+        else {
             return nil
         }
         return (width, height)
@@ -104,9 +105,10 @@ private extension PreviewImagePaintableLoader {
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(
                   in: content,
-                  range: NSRange(content.startIndex..., in: content)
+                  range: NSRange(content.startIndex..., in: content),
               ),
-              let valueRange = Range(match.range(at: 1), in: content) else {
+              let valueRange = Range(match.range(at: 1), in: content)
+        else {
             return nil
         }
         return Double(content[valueRange])

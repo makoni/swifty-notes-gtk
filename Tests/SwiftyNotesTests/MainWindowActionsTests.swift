@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import SwiftyNotes
 import Adwaita
-import CAdwaita
 
 struct MainWindowActionsTests {
     @Test @MainActor

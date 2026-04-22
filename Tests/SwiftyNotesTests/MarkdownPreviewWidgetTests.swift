@@ -1,16 +1,16 @@
-import Foundation
-import Testing
-@testable import SwiftyNotes
 import Adwaita
+import Foundation
+@testable import SwiftyNotes
+import Testing
 
-// Widget-backed MarkdownPreview tests live in their own suite so the CI step
-// that runs them gets a dedicated process. When they share a process with
-// MainWindow*Tests the teardown of those suites leaves GLib idle callbacks
-// referencing freed GObjects, which crash the next widget test that pumps
-// the main context.
+/// Widget-backed MarkdownPreview tests live in their own suite so the CI step
+/// that runs them gets a dedicated process. When they share a process with
+/// MainWindow*Tests the teardown of those suites leaves GLib idle callbacks
+/// referencing freed GObjects, which crash the next widget test that pumps
+/// the main context.
 struct MarkdownPreviewWidgetTests {
     @Test @MainActor
-    func previewLoadsRemoteImageWhenLoaderProvidesLocalFileAfterAsynchronousCompletion() async throws {
+    func `preview loads remote image when loader provides local file after asynchronous completion`() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -30,7 +30,7 @@ struct MarkdownPreviewWidgetTests {
         })
 
         preview.render(blocks: [
-            .image(alt: "Swift badge", source: remoteSource, title: nil)
+            .image(alt: "Swift badge", source: remoteSource, title: nil),
         ])
 
         let picture = firstPicture(in: preview.container)
@@ -49,7 +49,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewLoadsRemoteLinkedImageGroupWhenLoaderProvidesLocalFileAfterAsynchronousCompletion() async throws {
+    func `preview loads remote linked image group when loader provides local file after asynchronous completion`() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -74,9 +74,9 @@ struct MarkdownPreviewWidgetTests {
                     alt: "Documentation",
                     source: remoteSource,
                     title: nil,
-                    linkDestination: "https://spaceinbox.me/docs/swift-adwaita/documentation/adwaita"
-                )
-            ])
+                    linkDestination: "https://spaceinbox.me/docs/swift-adwaita/documentation/adwaita",
+                ),
+            ]),
         ])
 
         let picture = firstPicture(in: preview.container)
@@ -95,7 +95,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewRendersLinkedBadgeGroupsWithoutFixedWidthPadding() throws {
+    func `preview renders linked badge groups without fixed width padding`() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.remote-preview-badge-layout")
         try app.register()
 
@@ -106,13 +106,14 @@ struct MarkdownPreviewWidgetTests {
                     alt: "Swift badge",
                     source: "https://img.shields.io/badge/Swift-6.0+-F05138.svg",
                     title: nil,
-                    linkDestination: "https://swift.org"
-                )
-            ])
+                    linkDestination: "https://swift.org",
+                ),
+            ]),
         ])
 
         guard let button = firstButton(in: preview.container),
-              let child = buttonChild(button) else {
+              let child = buttonChild(button)
+        else {
             Issue.record("Expected linked badge button content")
             return
         }
@@ -127,7 +128,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewScalesLinkedBadgeSVGToPreferredHeight() throws {
+    func `preview scales linked badge SVG to preferred height`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -149,13 +150,14 @@ struct MarkdownPreviewWidgetTests {
                     alt: "Badge",
                     source: badgeURL.path(),
                     title: nil,
-                    linkDestination: "https://example.invalid"
-                )
-            ])
+                    linkDestination: "https://example.invalid",
+                ),
+            ]),
         ])
 
         guard let button = firstButton(in: preview.container),
-              let child = buttonChild(button) else {
+              let child = buttonChild(button)
+        else {
             Issue.record("Expected linked badge button content")
             return
         }
@@ -167,7 +169,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewMeasuresBadgeGroupAtConstrainedHeightWithoutWarnings() throws {
+    func `preview measures badge group at constrained height without warnings`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -188,8 +190,8 @@ struct MarkdownPreviewWidgetTests {
                 .init(alt: "CI", source: badgeURL.path(), title: nil, linkDestination: "https://example.invalid/ci"),
                 .init(alt: "Swift", source: badgeURL.path(), title: nil, linkDestination: "https://example.invalid/swift"),
                 .init(alt: "Docs", source: badgeURL.path(), title: nil, linkDestination: "https://example.invalid/docs"),
-                .init(alt: "License", source: badgeURL.path(), title: nil, linkDestination: "https://example.invalid/license")
-            ])
+                .init(alt: "License", source: badgeURL.path(), title: nil, linkDestination: "https://example.invalid/license"),
+            ]),
         ])
 
         guard let badgeRow = firstHBox(in: preview.container) else {
@@ -204,13 +206,13 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewTableHorizontalMinimumFitsInsideNarrowPreview() throws {
+    func `preview table horizontal minimum fits inside narrow preview`() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.table-horizontal-shrink")
         try app.register()
 
         let wideCell = RenderedText(
             markup: "ListStore, StringList, FilterListModel, SortListModel, MapListModel, FlattenListModel, TreeListModel, SelectionFilterModel",
-            plainText: "ListStore, StringList, FilterListModel, SortListModel, MapListModel, FlattenListModel, TreeListModel, SelectionFilterModel"
+            plainText: "ListStore, StringList, FilterListModel, SortListModel, MapListModel, FlattenListModel, TreeListModel, SelectionFilterModel",
         )
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
         preview.render(blocks: [
@@ -218,15 +220,15 @@ struct MarkdownPreviewWidgetTests {
                 headers: [
                     RenderedText(markup: "Protocol", plainText: "Protocol"),
                     RenderedText(markup: "Purpose", plainText: "Purpose"),
-                    RenderedText(markup: "Conforming Types", plainText: "Conforming Types")
+                    RenderedText(markup: "Conforming Types", plainText: "Conforming Types"),
                 ],
                 rows: [[
                     RenderedText(markup: "ListModelConvertible", plainText: "ListModelConvertible"),
                     RenderedText(markup: "Pass models to list views", plainText: "Pass models to list views"),
-                    wideCell
+                    wideCell,
                 ]],
-                alignments: [.leading, .leading, .leading]
-            )
+                alignments: [.leading, .leading, .leading],
+            ),
         ])
 
         let children = preview.container.children()
@@ -242,14 +244,14 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewListItemHorizontalMinimumFitsInsideNarrowPreview() throws {
+    func `preview list item horizontal minimum fits inside narrow preview`() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.list-item-horizontal-shrink")
         try app.register()
 
         let longContent = "Zero raw pointers in public API — all OpaquePointer/gpointer hidden behind Swift types, SignalName, PropertyName, CSSClass, IconName"
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
         preview.render(blocks: [
-            .listItem(text: .plain(longContent), depth: 0, marker: "-")
+            .listItem(text: .plain(longContent), depth: 0, marker: "-"),
         ])
 
         let children = preview.container.children()
@@ -265,14 +267,14 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewCodeBlockHorizontalMinimumFitsInsideNarrowPreview() throws {
+    func `preview code block horizontal minimum fits inside narrow preview`() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-horizontal-shrink")
         try app.register()
 
         let longLine = "flatpak-builder --force-clean --user --install build-dir flatpak/io.github.makoni.SwiftAdwaitaDemo.yml"
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
         preview.render(blocks: [
-            .codeBlock(code: longLine + "\nflatpak run io.github.makoni.SwiftAdwaitaDemo", language: "bash")
+            .codeBlock(code: longLine + "\nflatpak run io.github.makoni.SwiftAdwaitaDemo", language: "bash"),
         ])
 
         let children = preview.container.children()
@@ -288,7 +290,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewRendersStandaloneImageInResponsiveCardWithCaption() throws {
+    func `preview renders standalone image in responsive card with caption`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -308,7 +310,7 @@ struct MarkdownPreviewWidgetTests {
             preview: narrowPreview,
             imageURL: imageURL,
             application: app,
-            windowWidth: 760
+            windowWidth: 760,
         )
         let children = narrowPreview.container.children()
         #expect(children.count == 1)
@@ -328,7 +330,7 @@ struct MarkdownPreviewWidgetTests {
             preview: widePreview,
             imageURL: imageURL,
             application: app,
-            windowWidth: 1080
+            windowWidth: 1080,
         )
         #expect(wideSize.height == narrowSize.height)
         #expect(wideSize.width == narrowSize.width)
@@ -336,7 +338,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewRendersRemoteWebPImageAfterAsynchronousCompletion() async throws {
+    func `preview renders remote web P image after asynchronous completion`() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -353,7 +355,7 @@ struct MarkdownPreviewWidgetTests {
         })
 
         preview.render(blocks: [
-            .image(alt: "WebP image", source: "https://example.invalid/test.webp", title: nil)
+            .image(alt: "WebP image", source: "https://example.invalid/test.webp", title: nil),
         ])
 
         let picture = firstPicture(in: preview.container)
@@ -374,7 +376,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func presentedPreviewAllocatesRemoteWebPImageAfterAsynchronousCompletion() async throws {
+    func `presented preview allocates remote web P image after asynchronous completion`() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -406,7 +408,7 @@ struct MarkdownPreviewWidgetTests {
         pumpMainContext(for: .milliseconds(40))
 
         preview.render(blocks: [
-            .image(alt: "WebP image", source: "https://example.invalid/test.webp", title: nil)
+            .image(alt: "WebP image", source: "https://example.invalid/test.webp", title: nil),
         ])
         pumpMainContext(for: .milliseconds(40))
 
@@ -419,7 +421,8 @@ struct MarkdownPreviewWidgetTests {
         pumpMainContext(for: .milliseconds(80))
 
         guard let picture = firstPicture(in: preview.container),
-              let clamp = firstClamp(in: preview.container) else {
+              let clamp = firstClamp(in: preview.container)
+        else {
             Issue.record("Expected remote WEBP preview widgets")
             return
         }
@@ -432,7 +435,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewRendersRemoteGIFImageAfterAsynchronousCompletion() async throws {
+    func `preview renders remote GIF image after asynchronous completion`() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -449,7 +452,7 @@ struct MarkdownPreviewWidgetTests {
         })
 
         preview.render(blocks: [
-            .image(alt: "GIF image", source: "https://example.invalid/test.gif", title: nil)
+            .image(alt: "GIF image", source: "https://example.invalid/test.gif", title: nil),
         ])
 
         let picture = firstPicture(in: preview.container)
@@ -472,7 +475,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func presentedPreviewAllocatesRemoteGIFImageAfterAsynchronousCompletion() throws {
+    func `presented preview allocates remote GIF image after asynchronous completion`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -504,7 +507,7 @@ struct MarkdownPreviewWidgetTests {
         pumpMainContext(for: .milliseconds(40))
 
         preview.render(blocks: [
-            .image(alt: "GIF image", source: "https://example.invalid/test.gif", title: nil)
+            .image(alt: "GIF image", source: "https://example.invalid/test.gif", title: nil),
         ])
         pumpMainContext(for: .milliseconds(40))
 
@@ -517,7 +520,8 @@ struct MarkdownPreviewWidgetTests {
         pumpMainContext(for: .milliseconds(120))
 
         guard let picture = firstPicture(in: preview.container),
-              let clamp = firstClamp(in: preview.container) else {
+              let clamp = firstClamp(in: preview.container)
+        else {
             Issue.record("Expected remote GIF preview widgets")
             return
         }
@@ -531,7 +535,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func presentedPreviewAllocatesStandaloneRemoteImagesAfterBadgeRows() throws {
+    func `presented preview allocates standalone remote images after badge rows`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -599,7 +603,7 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
-    func previewAutoPlaysRemoteGIFImageAfterAsynchronousCompletion() async throws {
+    func `preview auto plays remote GIF image after asynchronous completion`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -616,7 +620,7 @@ struct MarkdownPreviewWidgetTests {
         })
 
         preview.render(blocks: [
-            .image(alt: "GIF image", source: "https://example.invalid/test.gif", title: nil)
+            .image(alt: "GIF image", source: "https://example.invalid/test.gif", title: nil),
         ])
 
         let picture = firstPicture(in: preview.container)
@@ -631,13 +635,13 @@ struct MarkdownPreviewWidgetTests {
         pumpMainContext(for: .milliseconds(20))
 
         #expect(preview.debugAnimatedImagePlayerCount == 1)
-        let initialPaintable = picturePaintablePointer(picture)
-        #expect(initialPaintable != nil)
-        #expect(waitForPaintableChange(in: picture, from: initialPaintable, timeout: .milliseconds(250)))
+        let initialIdentity = picturePaintableIdentity(picture)
+        #expect(initialIdentity != nil)
+        #expect(waitForPaintableChange(in: picture, from: initialIdentity, timeout: .milliseconds(250)))
     }
 
     @Test @MainActor
-    func animatedGIFPlayerAdvancesFrames() async throws {
+    func `animated GIF player advances frames`() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -649,15 +653,15 @@ struct MarkdownPreviewWidgetTests {
         let player = PreviewAnimatedImagePlayer(localURL: animatedGIFURL, picture: picture, autoSchedule: false)
 
         #expect(player != nil)
-        let initialPaintable = picturePaintablePointer(picture)
-        #expect(initialPaintable != nil)
+        let initialIdentity = picturePaintableIdentity(picture)
+        #expect(initialIdentity != nil)
 
         try await Task.sleep(for: .milliseconds(120))
         player?.advanceFrame()
 
-        let advancedPaintable = picturePaintablePointer(picture)
-        #expect(advancedPaintable != nil)
-        #expect(initialPaintable != advancedPaintable)
+        let advancedIdentity = picturePaintableIdentity(picture)
+        #expect(advancedIdentity != nil)
+        #expect(initialIdentity != advancedIdentity)
     }
 
     @MainActor
@@ -740,8 +744,8 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @MainActor
-    private func picturePaintablePointer(_ picture: Picture?) -> UnsafeMutableRawPointer? {
-        picture?.paintablePointer
+    private func picturePaintableIdentity(_ picture: Picture?) -> Picture.PaintableIdentity? {
+        picture?.paintableIdentity
     }
 
     @MainActor
@@ -754,14 +758,14 @@ struct MarkdownPreviewWidgetTests {
         preview: MarkdownPreview,
         imageURL: URL,
         application: Application,
-        windowWidth: Int
+        windowWidth: Int,
     ) -> (width: Int, height: Int) {
         let window = ApplicationWindow(application: application)
         window.setDefaultSize(width: windowWidth, height: 760)
         window.setContent(preview.rootScroll)
         preview.attach(to: window)
         preview.render(blocks: [
-            .image(alt: "Hero artwork", source: imageURL.path(), title: nil)
+            .image(alt: "Hero artwork", source: imageURL.path(), title: nil),
         ])
         window.present()
         pumpMainContext(for: .milliseconds(120))
@@ -772,7 +776,7 @@ struct MarkdownPreviewWidgetTests {
         }
         let effectiveWidth = min(
             clamp.maximumSize,
-            measuredNaturalSize(of: clamp, orientation: .horizontal)
+            measuredNaturalSize(of: clamp, orientation: .horizontal),
         )
         let effectiveHeight = measuredNaturalSize(of: clamp, orientation: .vertical, forSize: effectiveWidth)
         return (effectiveWidth, effectiveHeight)
@@ -806,53 +810,44 @@ struct MarkdownPreviewWidgetTests {
 
     @MainActor
     private func pumpMainContext(for duration: Duration) {
-        let interval = duration.components
-        let totalNanoseconds = (interval.seconds * 1_000_000_000) + Int64(interval.attoseconds / 1_000_000_000)
-        let deadline = Date().addingTimeInterval(Double(totalNanoseconds) / 1_000_000_000)
-        while Date() < deadline {
-            while g_main_context_iteration(nil, 0) != 0 {}
-            g_usleep(1_000)
-        }
-        while g_main_context_iteration(nil, 0) != 0 {}
+        MainContext.pump(for: duration)
     }
 
     @MainActor
     private func waitForPaintable(
         _ picture: Picture?,
-        timeout: Duration
+        timeout: Duration,
     ) async -> Bool {
-        let interval = timeout.components
-        let totalNanoseconds = (interval.seconds * 1_000_000_000) + Int64(interval.attoseconds / 1_000_000_000)
-        let deadline = Date().addingTimeInterval(Double(totalNanoseconds) / 1_000_000_000)
-        while Date() < deadline {
-            while g_main_context_iteration(nil, 0) != 0 {}
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            MainContext.drainPending()
             if pictureHasPaintable(picture) {
                 return true
             }
             try? await Task.sleep(for: .milliseconds(20))
         }
-        while g_main_context_iteration(nil, 0) != 0 {}
+        MainContext.drainPending()
         return pictureHasPaintable(picture)
     }
 
     @MainActor
     private func waitForPaintableChange(
         in picture: Picture,
-        from initialPaintable: UnsafeMutableRawPointer?,
-        timeout: Duration
+        from initialIdentity: Picture.PaintableIdentity?,
+        timeout: Duration,
     ) -> Bool {
-        let interval = timeout.components
-        let totalNanoseconds = (interval.seconds * 1_000_000_000) + Int64(interval.attoseconds / 1_000_000_000)
-        let deadline = Date().addingTimeInterval(Double(totalNanoseconds) / 1_000_000_000)
-        while Date() < deadline {
-            while g_main_context_iteration(nil, 0) != 0 {}
-            if picturePaintablePointer(picture) != initialPaintable {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            MainContext.drainPending()
+            if picturePaintableIdentity(picture) != initialIdentity {
                 return true
             }
-            g_usleep(1_000)
+            MainContext.pump(for: .milliseconds(2))
         }
-        while g_main_context_iteration(nil, 0) != 0 {}
-        return picturePaintablePointer(picture) != initialPaintable
+        MainContext.drainPending()
+        return picturePaintableIdentity(picture) != initialIdentity
     }
 }
 

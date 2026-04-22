@@ -1,5 +1,4 @@
 import Adwaita
-import CAdwaita
 import Foundation
 import Glibc
 
@@ -27,7 +26,7 @@ final class AppController {
     init(
         stateStore: WorkspaceStateStore = WorkspaceStateStore(),
         appSettingsStore: AppSettingsStore = AppSettingsStore(),
-        allowsWindowPresentation: Bool = true
+        allowsWindowPresentation: Bool = true,
     ) {
         self.stateStore = stateStore
         self.appSettingsStore = appSettingsStore
@@ -49,7 +48,7 @@ final class AppController {
             state: AppState(persistedState: workspaceState),
             stateStore: stateStore,
             repository: NotesRepository(
-                notesDirectory: appSettings.resolvedNotesDirectory()
+                notesDirectory: appSettings.resolvedNotesDirectory(),
             ),
             renderer: MarkdownRenderer(),
             autosave: AutosaveCoordinator(),
@@ -57,8 +56,8 @@ final class AppController {
             appSettings: appSettings,
             openExternalDocumentHandler: { [weak self, weak app] fileURL in
                 guard let self, let app else { return }
-                try self.openExternalDocument(at: fileURL, application: app)
-            }
+                try openExternalDocument(at: fileURL, application: app)
+            },
         )
         window.window.onDestroy { [weak self] in
             self?.releaseMainWindow()
@@ -109,12 +108,12 @@ final class AppController {
             appSettings: currentAppSettings(),
             importIntoLibrary: { [weak self] fileURL in
                 guard let self else { throw CocoaError(.userCancelled) }
-                return try self.importExternalDocumentIntoLibrary(from: fileURL)
-            }
+                return try importExternalDocumentIntoLibrary(from: fileURL)
+            },
         )
         externalWindow.window.onDestroy { [weak self, weak externalWindow] in
             guard let self, let externalWindow else { return }
-            self.externalDocumentWindows.removeValue(forKey: ObjectIdentifier(externalWindow))
+            externalDocumentWindows.removeValue(forKey: ObjectIdentifier(externalWindow))
         }
         externalDocumentWindows[ObjectIdentifier(externalWindow)] = externalWindow
         if allowsWindowPresentation {
@@ -179,7 +178,7 @@ public enum SwiftyNotesLauncher {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let app = Application(
             id: (applicationID?.isEmpty == false) ? applicationID! : AppIdentity.identifier,
-            flags: applicationHandlesOpenFlag
+            flags: applicationHandlesOpenFlag,
         )
         let appController = AppController()
 
@@ -197,22 +196,22 @@ public enum SwiftyNotesLauncher {
 }
 
 #if DEBUG
-extension AppController {
-    var debugHasMainWindow: Bool {
-        mainWindow != nil
-    }
+    extension AppController {
+        var debugHasMainWindow: Bool {
+            mainWindow != nil
+        }
 
-    var debugExternalDocumentFileURLs: [URL] {
-        externalDocumentWindows.values
-            .map(\.fileURL)
-            .sorted { $0.path < $1.path }
-    }
+        var debugExternalDocumentFileURLs: [URL] {
+            externalDocumentWindows.values
+                .map(\.fileURL)
+                .sorted { $0.path < $1.path }
+        }
 
-    func debugExternalWindowIdentifier(for fileURL: URL) -> ObjectIdentifier? {
-        let standardizedURL = fileURL.standardizedFileURL
-        return externalDocumentWindows.values
-            .first(where: { $0.fileURL == standardizedURL })
-            .map(ObjectIdentifier.init)
+        func debugExternalWindowIdentifier(for fileURL: URL) -> ObjectIdentifier? {
+            let standardizedURL = fileURL.standardizedFileURL
+            return externalDocumentWindows.values
+                .first(where: { $0.fileURL == standardizedURL })
+                .map(ObjectIdentifier.init)
+        }
     }
-}
 #endif
