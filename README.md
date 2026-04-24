@@ -4,7 +4,7 @@
 
 Native GTK markdown notes for Linux, written in Swift with `swift-adwaita`.
 
-<a href="https://flathub.org/en/apps/me.spaceinbox.actioneer"><img height="56" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/></a> <a href="https://snapcraft.io/swifty-notes"><img alt="Get it from the Snap Store" src=https://snapcraft.io/en/dark/install.svg /></a> 
+<a href="https://flathub.org/en/apps/me.spaceinbox.swiftynotes"><img height="56" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/></a> <a href="https://snapcraft.io/swifty-notes"><img alt="Get it from the Snap Store" src=https://snapcraft.io/en/dark/install.svg /></a> 
 
 <img alt="Swift Adwaita" src="https://spaceinbox.me/images/swifty-notes-demo.gif">
 
