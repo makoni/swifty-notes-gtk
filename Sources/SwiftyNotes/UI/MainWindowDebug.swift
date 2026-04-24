@@ -56,6 +56,18 @@ import Foundation
             button.emitClicked()
         }
 
+        var debugTableSizePicker: TableSizePicker? {
+            tableSizePicker
+        }
+
+        /// Drives the table picker from tests: ensures the popover has
+        /// been built and simulates a click on the chosen grid cell.
+        func debugPickTableSize(rows: Int, cols: Int) {
+            presentTableSizePicker()
+            guard rows > 0, cols > 0 else { return }
+            tableSizePicker?.debugClick(row: rows - 1, col: cols - 1)
+        }
+
         func debugSetSearchQuery(_ text: String) {
             sidebar.searchEntry.text = text
             sidebar.searchEntry.emitSearchChanged()

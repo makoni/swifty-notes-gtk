@@ -48,7 +48,7 @@ extension MainWindow {
         editorBlockFormattingGroup.addCSSClass("linked")
 
         let inlineActions: [MarkdownFormattingAction] = [.heading, .bold, .italic, .code, .link]
-        let blockActions: [MarkdownFormattingAction] = [.quote, .bulletList, .numberedList, .taskList]
+        let blockActions: [MarkdownFormattingAction] = [.quote, .bulletList, .numberedList, .taskList, .table]
 
         for action in inlineActions {
             let button = makeEditorFormattingButton(for: action)
@@ -67,7 +67,27 @@ extension MainWindow {
 
     func applyEditorFormatting(_ action: MarkdownFormattingAction) {
         guard state.selectedNote != nil else { return }
+        if action == .table {
+            presentTableSizePicker()
+            return
+        }
         editor.applyFormatting(action)
+    }
+
+    func presentTableSizePicker() {
+        guard let button = editorFormattingButtons[.table] else { return }
+        let picker = ensureTableSizePicker()
+        picker.popover.present(from: button)
+    }
+
+    private func ensureTableSizePicker() -> TableSizePicker {
+        if let picker = tableSizePicker { return picker }
+        let picker = TableSizePicker()
+        picker.onSelect = { [weak self] rows, cols in
+            self?.editor.insertTable(rows: rows, cols: cols)
+        }
+        tableSizePicker = picker
+        return picker
     }
 
     func updateEditorFormattingToolbarLayout(forWidth width: Int) {

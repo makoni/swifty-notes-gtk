@@ -388,6 +388,7 @@ struct MainWindowCoreTests {
             .bulletList: "Bullets",
             .numberedList: "1.",
             .taskList: "[ ]",
+            .table: "Table",
         ]
         #expect(window.debugEditorFormattingToolbarSnapshot == .init(
             isCompact: false,
@@ -407,6 +408,7 @@ struct MainWindowCoreTests {
             .bulletList: nil,
             .numberedList: nil,
             .taskList: "[ ]",
+            .table: nil,
         ]
         #expect(window.debugEditorFormattingToolbarSnapshot == .init(
             isCompact: true,
@@ -456,6 +458,7 @@ struct MainWindowCoreTests {
             .bulletList: nil,
             .numberedList: nil,
             .taskList: "[ ]",
+            .table: nil,
         ]
         #expect(window.debugEditorFormattingToolbarSnapshot == .init(
             isCompact: true,
@@ -628,6 +631,48 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorText == "Hello **world**")
         #expect(window.debugSelectedNoteContent == "Hello **world**")
         #expect(window.debugEditorSelectionRange == 6 ..< 15)
+    }
+
+    @Test @MainActor
+    func `main window formatting toolbar insert table writes scaffold at the cursor and selects the first header cell`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.formattinginsert-table")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("")
+        window.debugSelectEditorRange(0 ..< 0)
+
+        window.debugPickTableSize(rows: 2, cols: 3)
+
+        let expected = """
+        | Column 1 | Column 2 | Column 3 |
+        | -------- | -------- | -------- |
+        |          |          |          |
+        |          |          |          |
+        """ + "\n"
+        #expect(window.debugEditorText == expected)
+        #expect(window.debugSelectedNoteContent == expected)
+        // "Column 1" is selected so the user can start typing straight away.
+        let selection = window.debugEditorSelectionRange
+        let headerStart = try expected.distance(
+            from: expected.startIndex,
+            to: #require(expected.range(of: "Column 1")?.lowerBound),
+        )
+        #expect(selection == headerStart ..< (headerStart + "Column 1".count))
     }
 
     @Test @MainActor

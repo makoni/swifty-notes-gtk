@@ -8,9 +8,33 @@ extension MarkdownEditor {
         let edit = MarkdownFormatting.edit(
             for: action,
             in: buffer.text,
-            selection: selection
+            selection: selection,
         )
         apply(edit)
+        focus()
+    }
+
+    /// Inserts a markdown table scaffold at the cursor and selects the
+    /// first header-cell placeholder so the user can start typing the
+    /// column name immediately. Honors the "smart" insert rules in
+    /// ``MarkdownTableScaffold/insertion(into:at:rows:cols:)`` — blank
+    /// lines are preserved, non-empty lines get a line break so the
+    /// scaffold lands on its own fresh line.
+    func insertTable(rows: Int, cols: Int) {
+        guard rows > 0, cols > 0 else { return }
+        let insertion = MarkdownTableScaffold.insertion(
+            into: buffer.text,
+            at: selectedRange().lowerBound,
+            rows: rows,
+            cols: cols,
+        )
+        apply(
+            MarkdownFormattingEdit(
+                replacementRange: insertion.replacementRange,
+                replacementText: insertion.replacementText,
+                selectedRange: insertion.selectedRange,
+            ),
+        )
         focus()
     }
 
@@ -43,7 +67,7 @@ extension MarkdownEditor {
     private func normalize(range: Range<Int>) -> Range<Int> {
         let lower = normalize(offset: range.lowerBound)
         let upper = max(lower, normalize(offset: range.upperBound))
-        return lower..<upper
+        return lower ..< upper
     }
 
     private func normalize(offset: Int) -> Int {

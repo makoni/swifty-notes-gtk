@@ -140,6 +140,7 @@ final class ExternalDocumentWindow {
     private var isEditorFormattingToolbarCompact = false
     private var isEditorFormattingToolbarUsingTwoRows = false
     private var editorFormattingNonCompactNaturalWidth: Int = 0
+    private var tableSizePicker: TableSizePicker?
     private(set) var overflowMenuSectionTitles: [String] = []
     private(set) var overflowMenuItemsBySection: [String: [String]] = [:]
 
@@ -179,6 +180,7 @@ final class ExternalDocumentWindow {
     }
 
     func present() {
+        MainWindow.registerBundledIconSearchPath(for: window.display)
         window.present()
         guard !hasPresented else { return }
         hasPresented = true
@@ -745,7 +747,7 @@ private extension ExternalDocumentWindow {
         editorBlockFormattingGroup.addCSSClass("linked")
 
         let inlineActions: [MarkdownFormattingAction] = [.heading, .bold, .italic, .code, .link]
-        let blockActions: [MarkdownFormattingAction] = [.quote, .bulletList, .numberedList, .taskList]
+        let blockActions: [MarkdownFormattingAction] = [.quote, .bulletList, .numberedList, .taskList, .table]
 
         for action in inlineActions {
             let button = makeEditorFormattingButton(for: action)
@@ -763,7 +765,27 @@ private extension ExternalDocumentWindow {
     }
 
     func applyEditorFormatting(_ action: MarkdownFormattingAction) {
+        if action == .table {
+            presentTableSizePicker()
+            return
+        }
         editor.applyFormatting(action)
+    }
+
+    private func presentTableSizePicker() {
+        guard let button = editorFormattingButtons[.table] else { return }
+        let picker = ensureTableSizePicker()
+        picker.popover.present(from: button)
+    }
+
+    private func ensureTableSizePicker() -> TableSizePicker {
+        if let picker = tableSizePicker { return picker }
+        let picker = TableSizePicker()
+        picker.onSelect = { [weak self] rows, cols in
+            self?.editor.insertTable(rows: rows, cols: cols)
+        }
+        tableSizePicker = picker
+        return picker
     }
 
     func updateEditorFormattingToolbarLayout(forWidth width: Int) {

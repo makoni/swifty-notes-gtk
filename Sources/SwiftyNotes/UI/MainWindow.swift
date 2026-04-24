@@ -127,6 +127,9 @@ final class MainWindow {
     /// collapse the toolbar into its compact layout based on the actual
     /// pixel width the toolbar needs rather than a hard-coded constant.
     var editorFormattingNonCompactNaturalWidth: Int = 0
+    /// Lazily built on first table-button click; re-used across the
+    /// window's lifetime so the popover's widget tree doesn't churn.
+    var tableSizePicker: TableSizePicker?
     var noteContextMenu: Popover?
     var noteContextMenuRequestID: UInt = 0
     var noteContextHandlers: [String: @MainActor () -> Void] = [:]
@@ -188,6 +191,7 @@ final class MainWindow {
     }
 
     func present() {
+        Self.registerBundledIconSearchPath(for: window.display)
         window.present()
         restorePreviewPaneLayout()
         loadInitialNotes()
@@ -420,6 +424,25 @@ final class MainWindow {
     static let minimumEditorWidth = 360
     static let editorFormattingCompactWidthThreshold = 520
     static let previewAnimationDuration = 220
+
+    private static var registeredIconSearchPaths: Set<String> = []
+
+    /// Registers the app's bundled icon directory with the display's
+    /// icon theme so custom symbolic icons (for example `table-symbolic`,
+    /// which doesn't ship in every system Adwaita release) resolve from
+    /// the Flatpak / SwiftPM resource bundle. Idempotent per display.
+    static func registerBundledIconSearchPath(for display: Display) {
+        guard let iconsURL = Bundle.module.resourceURL?
+            .appendingPathComponent("icons", isDirectory: true),
+            FileManager.default.fileExists(atPath: iconsURL.path)
+        else { return }
+
+        let path = iconsURL.path
+        let key = "\(ObjectIdentifier(display)):\(path)"
+        guard !registeredIconSearchPaths.contains(key) else { return }
+        registeredIconSearchPaths.insert(key)
+        display.iconTheme.addSearchPath(path)
+    }
 
     struct DirectoryOpenFailure: LocalizedError {
         let message: String

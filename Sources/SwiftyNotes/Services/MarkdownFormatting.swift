@@ -10,6 +10,7 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
     case bulletList
     case numberedList
     case taskList
+    case table
 
     var accessibilityLabel: String {
         switch self {
@@ -31,6 +32,8 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
             "Numbered List"
         case .taskList:
             "Task List"
+        case .table:
+            "Insert Table"
         }
     }
 
@@ -54,6 +57,8 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
             "Prefix the selected lines as a numbered list"
         case .taskList:
             "Prefix the selected lines as a task list"
+        case .table:
+            "Insert a markdown table"
         }
     }
 
@@ -71,6 +76,8 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
             "view-list-bullet-symbolic"
         case .numberedList:
             "view-list-ordered-symbolic"
+        case .table:
+            "table-symbolic"
         default:
             nil
         }
@@ -90,6 +97,8 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
             "1."
         case .taskList:
             "[ ]"
+        case .table:
+            "Table"
         default:
             nil
         }
@@ -106,7 +115,7 @@ enum MarkdownFormatting {
     static func edit(
         for action: MarkdownFormattingAction,
         in text: String,
-        selection: Range<Int>
+        selection: Range<Int>,
     ) -> MarkdownFormattingEdit {
         let normalizedSelection = normalize(selection, in: text)
         switch action {
@@ -128,6 +137,17 @@ enum MarkdownFormatting {
             return toggleLines(in: text, selection: normalizedSelection, action: action)
         case .taskList:
             return toggleLines(in: text, selection: normalizedSelection, action: action)
+        case .table:
+            // Tables are inserted via ``MarkdownTableScaffold.insertion`` —
+            // they aren't a simple text toggle and carry their own row/col
+            // dimensions. This branch stays as a safe no-op for callers
+            // that reach for the generic edit helper by mistake.
+            assertionFailure("MarkdownFormattingAction.table must be routed through MarkdownTableScaffold.insertion(...)")
+            return MarkdownFormattingEdit(
+                replacementRange: normalizedSelection,
+                replacementText: substring(in: text, range: normalizedSelection),
+                selectedRange: normalizedSelection,
+            )
         }
     }
 
@@ -136,14 +156,14 @@ enum MarkdownFormatting {
         selection: Range<Int>,
         prefix: String,
         suffix: String,
-        placeholder: String
+        placeholder: String,
     ) -> MarkdownFormattingEdit {
         let selectedText = substring(in: text, range: selection)
         if let unwrappedText = unwrapInline(selectedText, prefix: prefix, suffix: suffix) {
             return MarkdownFormattingEdit(
                 replacementRange: selection,
                 replacementText: unwrappedText,
-                selectedRange: selection.lowerBound..<(selection.lowerBound + unwrappedText.count)
+                selectedRange: selection.lowerBound ..< (selection.lowerBound + unwrappedText.count),
             )
         }
 
@@ -152,20 +172,20 @@ enum MarkdownFormatting {
         return MarkdownFormattingEdit(
             replacementRange: selection,
             replacementText: replacementText,
-            selectedRange: selection.lowerBound..<(selection.lowerBound + replacementText.count)
+            selectedRange: selection.lowerBound ..< (selection.lowerBound + replacementText.count),
         )
     }
 
     private static func toggleCode(
         in text: String,
-        selection: Range<Int>
+        selection: Range<Int>,
     ) -> MarkdownFormattingEdit {
         let selectedText = substring(in: text, range: selection)
         if let unwrappedText = unwrapCode(selectedText) {
             return MarkdownFormattingEdit(
                 replacementRange: selection,
                 replacementText: unwrappedText,
-                selectedRange: selection.lowerBound..<(selection.lowerBound + unwrappedText.count)
+                selectedRange: selection.lowerBound ..< (selection.lowerBound + unwrappedText.count),
             )
         }
 
@@ -174,7 +194,7 @@ enum MarkdownFormatting {
             return MarkdownFormattingEdit(
                 replacementRange: selection,
                 replacementText: replacementText,
-                selectedRange: selection.lowerBound..<(selection.lowerBound + replacementText.count)
+                selectedRange: selection.lowerBound ..< (selection.lowerBound + replacementText.count),
             )
         }
         return toggleInline(in: text, selection: selection, prefix: "`", suffix: "`", placeholder: "code")
@@ -182,14 +202,14 @@ enum MarkdownFormatting {
 
     private static func toggleLink(
         in text: String,
-        selection: Range<Int>
+        selection: Range<Int>,
     ) -> MarkdownFormattingEdit {
         let selectedText = substring(in: text, range: selection)
         if let label = unwrapLink(selectedText) {
             return MarkdownFormattingEdit(
                 replacementRange: selection,
                 replacementText: label,
-                selectedRange: selection.lowerBound..<(selection.lowerBound + label.count)
+                selectedRange: selection.lowerBound ..< (selection.lowerBound + label.count),
             )
         }
 
@@ -199,14 +219,14 @@ enum MarkdownFormatting {
         return MarkdownFormattingEdit(
             replacementRange: selection,
             replacementText: replacementText,
-            selectedRange: selection.lowerBound..<(selection.lowerBound + replacementText.count)
+            selectedRange: selection.lowerBound ..< (selection.lowerBound + replacementText.count),
         )
     }
 
     private static func toggleLines(
         in text: String,
         selection: Range<Int>,
-        action: MarkdownFormattingAction
+        action: MarkdownFormattingAction,
     ) -> MarkdownFormattingEdit {
         let lineRange = linesCovered(by: selection, in: text)
         let block = substring(in: text, range: lineRange)
@@ -222,7 +242,7 @@ enum MarkdownFormatting {
         return MarkdownFormattingEdit(
             replacementRange: lineRange,
             replacementText: replacementLines,
-            selectedRange: lineRange.lowerBound..<(lineRange.lowerBound + replacementLines.count)
+            selectedRange: lineRange.lowerBound ..< (lineRange.lowerBound + replacementLines.count),
         )
     }
 
@@ -233,7 +253,7 @@ enum MarkdownFormatting {
         let lastSelectedOffset = upperBound > lowerBound ? upperBound - 1 : upperBound
         let start = lineStart(containing: lowerBound, in: text)
         let end = lineEnd(containing: lastSelectedOffset, in: text)
-        return start..<end
+        return start ..< end
     }
 
     private static func lineStart(containing offset: Int, in text: String) -> Int {
@@ -256,14 +276,14 @@ enum MarkdownFormatting {
         let normalized = normalize(range, in: text)
         let start = index(at: normalized.lowerBound, in: text)
         let end = index(at: normalized.upperBound, in: text)
-        return String(text[start..<end])
+        return String(text[start ..< end])
     }
 
     private static func normalize(_ range: Range<Int>, in text: String) -> Range<Int> {
         let count = text.count
         let lower = max(0, min(range.lowerBound, count))
         let upper = max(lower, min(range.upperBound, count))
-        return lower..<upper
+        return lower ..< upper
     }
 
     private static func index(at offset: Int, in text: String) -> String.Index {
@@ -278,7 +298,7 @@ enum MarkdownFormatting {
             return nil
         }
 
-        if prefix == "*", suffix == "*", (text.hasPrefix("**") || text.hasSuffix("**")) {
+        if prefix == "*", suffix == "*", text.hasPrefix("**") || text.hasSuffix("**") {
             return nil
         }
 
@@ -300,10 +320,10 @@ enum MarkdownFormatting {
             return nil
         }
 
-        let label = String(text[text.index(after: text.startIndex)..<separatorRange.lowerBound])
+        let label = String(text[text.index(after: text.startIndex) ..< separatorRange.lowerBound])
         let urlStart = separatorRange.upperBound
         guard urlStart <= text.index(before: text.endIndex) else { return nil }
-        let url = String(text[urlStart..<text.index(before: text.endIndex)])
+        let url = String(text[urlStart ..< text.index(before: text.endIndex)])
         guard !label.isEmpty, !url.isEmpty else { return nil }
         return label
     }
@@ -325,7 +345,7 @@ enum MarkdownFormatting {
         case .taskList:
             if case .taskList = line.kind { return true }
             return false
-        case .bold, .italic, .code, .link:
+        case .bold, .italic, .code, .link, .table:
             return false
         }
     }
@@ -334,14 +354,14 @@ enum MarkdownFormatting {
         line: ParsedBlockLine,
         action: MarkdownFormattingAction,
         index: Int,
-        shouldRemove: Bool
+        shouldRemove: Bool,
     ) -> String {
         let baseContent = line.content
         if shouldRemove {
             return line.indentation + baseContent
         }
 
-        let prefix: String = switch action {
+        let prefix = switch action {
         case .heading:
             "# "
         case .quote:
@@ -352,7 +372,7 @@ enum MarkdownFormatting {
             "\(index + 1). "
         case .taskList:
             "- [ ] "
-        case .bold, .italic, .code, .link:
+        case .bold, .italic, .code, .link, .table:
             ""
         }
         return line.indentation + prefix + baseContent
@@ -367,7 +387,7 @@ enum MarkdownFormatting {
             return ParsedBlockLine(
                 indentation: indentation,
                 content: String(match.2),
-                kind: .heading(level: match.1.count)
+                kind: .heading(level: match.1.count),
             )
         }
 
@@ -375,7 +395,7 @@ enum MarkdownFormatting {
             return ParsedBlockLine(
                 indentation: indentation,
                 content: String(match.1),
-                kind: .quote
+                kind: .quote,
             )
         }
 
@@ -383,7 +403,7 @@ enum MarkdownFormatting {
             return ParsedBlockLine(
                 indentation: indentation,
                 content: String(match.2),
-                kind: .taskList(checked: match.1.lowercased() == "x")
+                kind: .taskList(checked: match.1.lowercased() == "x"),
             )
         }
 
@@ -391,7 +411,7 @@ enum MarkdownFormatting {
             return ParsedBlockLine(
                 indentation: indentation,
                 content: String(match.2),
-                kind: .bulletList
+                kind: .bulletList,
             )
         }
 
@@ -399,14 +419,14 @@ enum MarkdownFormatting {
             return ParsedBlockLine(
                 indentation: indentation,
                 content: String(match.2),
-                kind: .numberedList
+                kind: .numberedList,
             )
         }
 
         return ParsedBlockLine(
             indentation: indentation,
             content: trimmed,
-            kind: .none
+            kind: .none,
         )
     }
 }
