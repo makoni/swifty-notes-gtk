@@ -97,6 +97,24 @@ final class MarkdownPreview {
         background: transparent;
     }
 
+    /* Let the card (`.preview-code-block`) own the background so the
+       SWIFT-style language badge and the syntax-highlighted code share
+       one visual surface. SourceBuffer's style-scheme would otherwise
+       paint the code area in its own scheme background, producing a
+       darker inset rectangle. We keep the scheme's token colours for
+       highlighting but blank out every background layer. */
+    .preview-code-sourceview,
+    .preview-code-sourceview text,
+    .preview-code-sourceview text selection {
+        background: transparent;
+        background-color: transparent;
+    }
+
+    .preview-code-scroll {
+        background: transparent;
+        background-color: transparent;
+    }
+
     """)
 
     private var baseDirectory: URL?
