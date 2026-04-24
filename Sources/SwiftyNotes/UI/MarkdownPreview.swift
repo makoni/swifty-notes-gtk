@@ -157,6 +157,9 @@ final class MarkdownPreview {
         if let label = widget.tryCast(Label.self) {
             return label.text
         }
+        if let sourceView = widget.tryCast(SourceView.self) {
+            return sourceView.buffer.text
+        }
         if let picture = widget.tryCast(Picture.self) {
             return picture.alternativeText
         }
