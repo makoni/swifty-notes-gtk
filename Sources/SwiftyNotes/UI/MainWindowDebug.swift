@@ -60,12 +60,26 @@ import Foundation
             tableSizePicker
         }
 
-        /// Drives the table picker from tests: ensures the popover has
+        /// Drives the table picker from tests: ensures the picker has
         /// been built and simulates a click on the chosen grid cell.
+        ///
+        /// Skips the `popover.present(from:)` call on purpose — under
+        /// headless test harnesses the host button isn't attached to a
+        /// live root, which makes actually presenting the popover flaky
+        /// (and sometimes crashes during teardown on certain GTK /
+        /// platform combinations). The click path covered here is the
+        /// one that mutates the editor, which is what the test is about.
         func debugPickTableSize(rows: Int, cols: Int) {
-            presentTableSizePicker()
             guard rows > 0, cols > 0 else { return }
-            tableSizePicker?.debugClick(row: rows - 1, col: cols - 1)
+            let picker = tableSizePicker ?? {
+                let fresh = TableSizePicker()
+                fresh.onSelect = { [weak self] rows, cols in
+                    self?.editor.insertTable(rows: rows, cols: cols)
+                }
+                tableSizePicker = fresh
+                return fresh
+            }()
+            picker.debugClick(row: rows - 1, col: cols - 1)
         }
 
         func debugSetSearchQuery(_ text: String) {
