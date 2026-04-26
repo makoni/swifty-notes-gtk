@@ -177,6 +177,50 @@ struct SettingsStoreTests {
     }
 
     @Test
+    func `normalize against filesystem keeps custom notes directory when the folder exists`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let settings = AppSettings(customNotesDirectoryPath: temp.path(percentEncoded: false))
+        let normalized = settings.normalizedAgainstFilesystem()
+
+        #expect(normalized.customNotesDirectoryPath == temp.path(percentEncoded: false))
+    }
+
+    @Test
+    func `normalize against filesystem clears stale custom notes directory pointing at a missing folder`() {
+        let missingPath = "/tmp/swifty-notes-test-\(UUID().uuidString)/notes"
+        let settings = AppSettings(customNotesDirectoryPath: missingPath, editorFontSize: 18)
+
+        let normalized = settings.normalizedAgainstFilesystem()
+
+        #expect(normalized.customNotesDirectoryPath == nil)
+        #expect(normalized.editorFontSize == 18)
+    }
+
+    @Test
+    func `normalize against filesystem clears custom notes directory that points at a regular file instead of a folder`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: false)
+        try "x".write(to: temp, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let settings = AppSettings(customNotesDirectoryPath: temp.path(percentEncoded: false))
+        let normalized = settings.normalizedAgainstFilesystem()
+
+        #expect(normalized.customNotesDirectoryPath == nil)
+    }
+
+    @Test
+    func `normalize against filesystem is a no-op when no custom notes directory is configured`() {
+        let settings = AppSettings()
+
+        let normalized = settings.normalizedAgainstFilesystem()
+
+        #expect(normalized == settings)
+    }
+
+    @Test
     func `notes directory error message rewrites cocoa file write codes into user-friendly text`() {
         let permissionError = NSError(domain: NSCocoaErrorDomain, code: 512)
         let writeNoPermissionError = NSError(domain: NSCocoaErrorDomain, code: 513)

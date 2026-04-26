@@ -113,6 +113,38 @@ public struct AppSettings: Codable, Equatable, Sendable {
         )
     }
 
+    /// Drops `customNotesDirectoryPath` if the directory it points to no
+    /// longer exists on disk (or no longer is a directory).
+    ///
+    /// Used at launch to recover from settings that reference a since-removed
+    /// location. The common case is an XDG Document Portal bind-mount path
+    /// (`/run/user/UID/doc/HASH/...`) saved in an older Flatpak build before
+    /// the `home` filesystem permission was granted — those mounts are
+    /// per-session and disappear (or get a different HASH) between runs,
+    /// which would otherwise leave the user stuck on a notes folder that
+    /// doesn't exist anymore.
+    public func normalizedAgainstFilesystem(
+        fileManager: FileManager = .default,
+    ) -> AppSettings {
+        guard let customPath = customNotesDirectoryPath, !customPath.isEmpty else {
+            return self
+        }
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: customPath, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            return self
+        }
+        return AppSettings(
+            customNotesDirectoryPath: nil,
+            wrapsEditorLines: wrapsEditorLines,
+            editorFontSize: editorFontSize,
+            editorTabWidth: editorTabWidth,
+            editorIndentStyle: editorIndentStyle,
+            autosaveDelaySeconds: autosaveDelaySeconds,
+            appearanceMode: appearanceMode,
+        )
+    }
+
     private enum CodingKeys: String, CodingKey {
         case customNotesDirectoryPath
         case wrapsEditorLines

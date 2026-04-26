@@ -71,7 +71,16 @@ final class AppController {
     }
 
     private func currentAppSettings() -> AppSettings {
-        (try? appSettingsStore.load()) ?? .default
+        let loaded = (try? appSettingsStore.load()) ?? .default
+        let normalized = loaded.normalizedAgainstFilesystem()
+        if normalized != loaded {
+            // Persist the recovery so the user doesn't see the
+            // missing-folder errors on every launch. Best-effort; if the
+            // save fails we still hand back the in-memory normalized
+            // settings so the rest of startup uses a valid notes folder.
+            try? appSettingsStore.save(normalized)
+        }
+        return normalized
     }
 
     func openDocuments(at fileURLs: [URL], application: Application) {
