@@ -178,7 +178,7 @@ public enum SwiftyNotesLauncher {
                 override: environment["SWIFTY_NOTES_APP_ID"],
                 env: environment,
             ),
-            flags: .handlesOpen,
+            flags: resolveApplicationFlags(env: environment),
         )
         let appController = AppController()
 
@@ -196,32 +196,39 @@ public enum SwiftyNotesLauncher {
 
     /// Resolves the GApplication identifier to register on the session bus.
     ///
-    /// Priority:
-    /// 1. An explicit ``SWIFTY_NOTES_APP_ID`` override (handy for dev /
-    ///    parallel installs where you want to side-step the canonical id).
-    /// 2. Inside a strict-confined Snap, prefix the canonical id with the
-    ///    snap instance name and an underscore — e.g. on the
-    ///    ``swifty-notes`` snap the registered id becomes
-    ///    ``swifty-notes_me.spaceinbox.swiftynotes``. The default snapd
-    ///    AppArmor template only allows ``dbus (bind)`` for names that
-    ///    start with ``@{SNAP_INSTANCE_NAME}_`` (or match it exactly), so
-    ///    keeping the canonical reverse-DNS id would surface as
-    ///    ``AccessDenied: not allowed to own the service`` and abort
-    ///    ``g_application_register()``. Same trick the Actioneer snap uses.
-    /// 3. Otherwise (Flatpak, native, dev) fall back to the canonical id.
-    static func resolveApplicationID(override: String?, env: [String: String]) -> String {
+    /// Honors an explicit ``SWIFTY_NOTES_APP_ID`` override and otherwise
+    /// returns ``AppIdentity.identifier`` — the canonical reverse-DNS app
+    /// id used everywhere (Flatpak, native, snap). Snap-specific name
+    /// shaping is intentionally not done here; instead, see
+    /// ``resolveApplicationFlags(env:)`` which adds ``.nonUnique`` under
+    /// strict-confined Snap so the id is never bound on the bus at all.
+    static func resolveApplicationID(override: String?, env _: [String: String]) -> String {
         if let override = override?.trimmingCharacters(in: .whitespacesAndNewlines), !override.isEmpty {
             return override
         }
-        if let snapInstanceName = env["SNAP_INSTANCE_NAME"]?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !snapInstanceName.isEmpty {
-            return "\(snapInstanceName)_\(AppIdentity.identifier)"
-        }
-        if let snapName = env["SNAP_NAME"]?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !snapName.isEmpty {
-            return "\(snapName)_\(AppIdentity.identifier)"
-        }
         return AppIdentity.identifier
+    }
+
+    /// Picks ``ApplicationFlags`` based on the process environment.
+    ///
+    /// Strict-confined Snap installs cannot own a session-bus name —
+    /// snapd's default AppArmor profile permits no ``dbus (bind)`` rules
+    /// on the session bus other than tray-icon names. Trying to register
+    /// a GApplication id there aborts startup with ``AccessDenied: ...
+    /// due to AppArmor policy``. Adding ``.nonUnique`` skips the bus
+    /// registration entirely, at the cost of single-instance behavior in
+    /// the Snap build only — a second launch spawns a second process
+    /// instead of focusing the running one. Flatpak and native installs
+    /// keep the default behavior. Same approach the Actioneer snap uses.
+    static func resolveApplicationFlags(env: [String: String]) -> ApplicationFlags {
+        var flags: ApplicationFlags = .handlesOpen
+        let snapInstance = env["SNAP_INSTANCE_NAME"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let snapName = env["SNAP_NAME"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let snap = env["SNAP"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if (snapInstance?.isEmpty == false) || (snapName?.isEmpty == false) || (snap?.isEmpty == false) {
+            flags.insert(.nonUnique)
+        }
+        return flags
     }
 }
 

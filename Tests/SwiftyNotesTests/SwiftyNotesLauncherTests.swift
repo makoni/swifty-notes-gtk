@@ -40,7 +40,7 @@ struct SwiftyNotesLauncherTests {
     }
 
     @Test
-    func `application id falls back to AppIdentity outside snap and explicit override`() {
+    func `application id falls back to AppIdentity outside override`() {
         let resolved = SwiftyNotesLauncher.resolveApplicationID(
             override: nil,
             env: ["PATH": "/usr/bin"],
@@ -61,7 +61,7 @@ struct SwiftyNotesLauncherTests {
     }
 
     @Test
-    func `application id under strict snap is prefixed with snap instance name to satisfy AppArmor binding`() {
+    func `application id stays canonical even under snap environment`() {
         let resolved = SwiftyNotesLauncher.resolveApplicationID(
             override: nil,
             env: [
@@ -69,28 +69,41 @@ struct SwiftyNotesLauncherTests {
                 "SNAP_NAME": "swifty-notes",
             ],
         )
-        #expect(resolved == "swifty-notes_\(AppIdentity.identifier)")
+        #expect(resolved == AppIdentity.identifier)
     }
 
     @Test
-    func `application id under snap prefers SNAP_INSTANCE_NAME over SNAP_NAME for parallel installs`() {
-        let resolved = SwiftyNotesLauncher.resolveApplicationID(
-            override: nil,
-            env: [
-                "SNAP_INSTANCE_NAME": "swifty-notes_test",
-                "SNAP_NAME": "swifty-notes",
-            ],
-        )
-        #expect(resolved == "swifty-notes_test_\(AppIdentity.identifier)")
-    }
-
-    @Test
-    func `application id ignores empty whitespace override and falls back to default behavior`() {
+    func `application id ignores empty whitespace override`() {
         let resolved = SwiftyNotesLauncher.resolveApplicationID(
             override: "   ",
-            env: ["SNAP_NAME": "swifty-notes"],
+            env: [:],
         )
-        #expect(resolved == "swifty-notes_\(AppIdentity.identifier)")
+        #expect(resolved == AppIdentity.identifier)
+    }
+
+    @Test
+    func `application flags default to handlesOpen outside a snap environment`() {
+        let flags = SwiftyNotesLauncher.resolveApplicationFlags(env: ["PATH": "/usr/bin"])
+        #expect(flags == .handlesOpen)
+    }
+
+    @Test
+    func `application flags add nonUnique under strict-confined snap to skip session-bus binding`() {
+        let flags = SwiftyNotesLauncher.resolveApplicationFlags(env: [
+            "SNAP": "/snap/swifty-notes/current",
+            "SNAP_NAME": "swifty-notes",
+            "SNAP_INSTANCE_NAME": "swifty-notes",
+        ])
+        #expect(flags.contains(.handlesOpen))
+        #expect(flags.contains(.nonUnique))
+    }
+
+    @Test
+    func `application flags add nonUnique even when only SNAP env is set`() {
+        let flags = SwiftyNotesLauncher.resolveApplicationFlags(env: [
+            "SNAP": "/snap/swifty-notes/current",
+        ])
+        #expect(flags.contains(.nonUnique))
     }
 
     @Test @MainActor
