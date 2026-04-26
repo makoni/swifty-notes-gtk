@@ -1,20 +1,6 @@
 import Adwaita
 import Foundation
 
-struct ToolbarButtonContentConfiguration {
-    let primaryText: String
-    let iconName: String?
-    let prefersCompactLabel: Bool
-    let hidesLabelWhenCompact: Bool
-
-    func displayedText(isCompact: Bool) -> String? {
-        if isCompact, hidesLabelWhenCompact {
-            return nil
-        }
-        return primaryText
-    }
-}
-
 @MainActor
 final class MainWindow {
     let window: ApplicationWindow
@@ -37,13 +23,7 @@ final class MainWindow {
     let previewModeToggle = ToggleButton(label: "Preview")
     let viewModeSwitcher = Box(orientation: .horizontal, spacing: 0)
     let editorContent = Box(orientation: .vertical, spacing: 0)
-    let editorFormattingBar = Box(orientation: .vertical, spacing: 6)
-    let editorFormattingBarScroll = ScrolledWindow()
-    let editorFormattingPrimaryRow = Box(orientation: .horizontal, spacing: 8)
-    let editorFormattingSecondaryRow = Box(orientation: .horizontal, spacing: 8)
-    let editorInlineFormattingGroup = Box(orientation: .horizontal, spacing: 0)
-    let editorBlockFormattingGroup = Box(orientation: .horizontal, spacing: 0)
-    let editorFormattingGroupSeparator = Separator(orientation: .vertical)
+    let editorFormattingToolbar = EditorFormattingToolbar()
     let newNoteButton = Button(icon: .custom("list-add-symbolic"))
     let saveNoteButton = Button(icon: .custom("document-save-symbolic"))
     let deleteNoteButton = Button(icon: .userTrash)
@@ -126,17 +106,16 @@ final class MainWindow {
     var previewAnimationID: SourceID?
     var isPreviewPaneAttached = false
     var suppressViewModeToggleChange = false
-    var editorFormattingButtons: [MarkdownFormattingAction: Button] = [:]
-    var editorFormattingButtonConfigurations: [MarkdownFormattingAction: ToolbarButtonContentConfiguration] = [:]
-    var isEditorFormattingToolbarCompact = false
-    var isEditorFormattingToolbarUsingTwoRows = false
-    /// Natural horizontal size of the formatting toolbar with full labels
-    /// shown in a single row, measured on-demand via a dry-run. Cached
-    /// after the first successful measurement (zero means "not measured
-    /// yet — fall back to the static threshold"). Used to decide when to
-    /// collapse the toolbar into its compact layout based on the actual
-    /// pixel width the toolbar needs rather than a hard-coded constant.
-    var editorFormattingNonCompactNaturalWidth: Int = 0
+    /// Convenience accessor used by debug tests; delegates to the toolbar.
+    var editorFormattingButtons: [MarkdownFormattingAction: Button] {
+        editorFormattingToolbar.buttons
+    }
+    var isEditorFormattingToolbarCompact: Bool {
+        editorFormattingToolbar.isCompact
+    }
+    var isEditorFormattingToolbarUsingTwoRows: Bool {
+        editorFormattingToolbar.isUsingTwoRows
+    }
     /// Lazily built on first table-button click; re-used across the
     /// window's lifetime so the popover's widget tree doesn't churn.
     var tableSizePicker: TableSizePicker?
@@ -231,7 +210,9 @@ final class MainWindow {
         viewModeSwitcher.append(editorModeToggle)
         viewModeSwitcher.append(splitModeToggle)
         viewModeSwitcher.append(previewModeToggle)
-        configureEditorFormattingToolbar()
+        editorFormattingToolbar.onAction = { [weak self] action in
+            self?.applyEditorFormatting(action)
+        }
         configureToolbarAccessibility()
         configureToolbarTooltips()
 
@@ -256,7 +237,7 @@ final class MainWindow {
         editorContent.vexpand = true
         installEditorImageDropTarget()
 
-        editorContent.append(editorFormattingBarScroll)
+        editorContent.append(editorFormattingToolbar.scrolled)
         editorContent.append(Separator())
         editorContent.append(editorScroll)
         editorPreviewPane.startChild = editorContent
@@ -322,12 +303,6 @@ final class MainWindow {
             guard let self, !self.suppressViewModeToggleChange, previewModeToggle.active else { return }
             setViewMode(.preview, animated: false)
         }
-        for (action, button) in editorFormattingButtons {
-            button.onClicked { [weak self] in
-                self?.applyEditorFormatting(action)
-            }
-        }
-
         newNoteButton.onClicked { [weak self] in
             self?.requestCreateNote()
         }
@@ -364,7 +339,7 @@ final class MainWindow {
             self?.handlePreviewPaneMoved()
         }
 
-        editorFormattingBarScroll.onSizeAllocate { [weak self] width, _ in
+        editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in
             self?.updateEditorFormattingToolbarLayout(forWidth: width)
         }
 

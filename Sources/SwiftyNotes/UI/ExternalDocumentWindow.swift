@@ -88,13 +88,7 @@ final class ExternalDocumentWindow {
     let viewModeSwitcher = Box(orientation: .horizontal, spacing: 0)
     let contentHost = Box(orientation: .vertical, spacing: 0)
     let editorContent = Box(orientation: .vertical, spacing: 0)
-    let editorFormattingBar = Box(orientation: .vertical, spacing: 6)
-    let editorFormattingBarScroll = ScrolledWindow()
-    let editorFormattingPrimaryRow = Box(orientation: .horizontal, spacing: 8)
-    let editorFormattingSecondaryRow = Box(orientation: .horizontal, spacing: 8)
-    let editorInlineFormattingGroup = Box(orientation: .horizontal, spacing: 0)
-    let editorBlockFormattingGroup = Box(orientation: .horizontal, spacing: 0)
-    let editorFormattingGroupSeparator = Separator(orientation: .vertical)
+    let editorFormattingToolbar = EditorFormattingToolbar()
     let saveButton = Button(icon: .custom("document-save-symbolic"))
     let menuButton = MenuButton(icon: .custom("open-menu-symbolic"))
     let toastOverlay = ToastOverlay()
@@ -145,11 +139,15 @@ final class ExternalDocumentWindow {
     private var hasPresented = false
     private var viewMode: EditorViewMode = .split
     private var preferredPreviewWidth = WorkspaceState.defaultPreviewWidth
-    private var editorFormattingButtons: [MarkdownFormattingAction: Button] = [:]
-    private var editorFormattingButtonConfigurations: [MarkdownFormattingAction: ToolbarButtonContentConfiguration] = [:]
-    private var isEditorFormattingToolbarCompact = false
-    private var isEditorFormattingToolbarUsingTwoRows = false
-    private var editorFormattingNonCompactNaturalWidth: Int = 0
+    private var editorFormattingButtons: [MarkdownFormattingAction: Button] {
+        editorFormattingToolbar.buttons
+    }
+    private var isEditorFormattingToolbarCompact: Bool {
+        editorFormattingToolbar.isCompact
+    }
+    private var isEditorFormattingToolbarUsingTwoRows: Bool {
+        editorFormattingToolbar.isUsingTwoRows
+    }
     private var tableSizePicker: TableSizePicker?
     private(set) var overflowMenuSectionTitles: [String] = []
     private(set) var overflowMenuItemsBySection: [String: [String]] = [:]
@@ -215,7 +213,9 @@ private extension ExternalDocumentWindow {
         viewModeSwitcher.append(editorModeToggle)
         viewModeSwitcher.append(splitModeToggle)
         viewModeSwitcher.append(previewModeToggle)
-        configureEditorFormattingToolbar()
+        editorFormattingToolbar.onAction = { [weak self] action in
+            self?.applyEditorFormatting(action)
+        }
         configureToolbarAccessibility()
         configureToolbarTooltips()
 
@@ -235,7 +235,7 @@ private extension ExternalDocumentWindow {
         contentHost.hexpand = true
         contentHost.vexpand = true
 
-        editorContent.append(editorFormattingBarScroll)
+        editorContent.append(editorFormattingToolbar.scrolled)
         editorContent.append(Separator())
         editorContent.append(editorScroll)
         editorPreviewPane.startChild = editorContent
@@ -271,11 +271,7 @@ private extension ExternalDocumentWindow {
             setViewMode(.preview, animated: false)
         }
 
-        for (action, button) in editorFormattingButtons {
-            button.onClicked { [weak self] in
-                self?.applyEditorFormatting(action)
-            }
-        }
+
 
         saveButton.onClicked { [weak self] in
             self?.saveDocumentNow()
@@ -303,7 +299,7 @@ private extension ExternalDocumentWindow {
             self?.handlePreviewPaneMoved()
         }
 
-        editorFormattingBarScroll.onSizeAllocate { [weak self] width, _ in
+        editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in
             self?.updateEditorFormattingToolbarLayout(forWidth: width)
         }
 
@@ -681,50 +677,6 @@ private extension ExternalDocumentWindow {
         )
     }
 
-    func configureEditorFormattingToolbar() {
-        guard editorFormattingButtons.isEmpty else { return }
-
-        editorFormattingBar.addCSSClass(.toolbar)
-        editorFormattingBar.marginStart = 8
-        editorFormattingBar.marginEnd = 8
-        editorFormattingBar.marginTop = 8
-        editorFormattingBar.marginBottom = 8
-        editorFormattingBar.hexpand = false
-        editorFormattingBar.halign = .start
-
-        editorFormattingPrimaryRow.halign = .start
-        editorFormattingSecondaryRow.halign = .start
-        editorFormattingSecondaryRow.visible = false
-
-        editorFormattingBar.append(editorFormattingPrimaryRow)
-        editorFormattingBar.append(editorFormattingSecondaryRow)
-
-        editorFormattingBarScroll.child = editorFormattingBar
-        editorFormattingBarScroll.setPolicy(horizontal: .automatic, vertical: .never)
-        editorFormattingBarScroll.hexpand = true
-        editorFormattingBarScroll.minContentWidth = 0
-
-        editorInlineFormattingGroup.addCSSClass("linked")
-        editorBlockFormattingGroup.addCSSClass("linked")
-
-        let inlineActions: [MarkdownFormattingAction] = [.heading, .bold, .italic, .code, .link]
-        let blockActions: [MarkdownFormattingAction] = [.quote, .bulletList, .numberedList, .taskList, .table]
-
-        for action in inlineActions {
-            let button = makeEditorFormattingButton(for: action)
-            editorInlineFormattingGroup.append(button)
-            editorFormattingButtons[action] = button
-        }
-
-        for action in blockActions {
-            let button = makeEditorFormattingButton(for: action)
-            editorBlockFormattingGroup.append(button)
-            editorFormattingButtons[action] = button
-        }
-
-        layoutEditorFormattingRows(useTwoRows: false)
-    }
-
     func applyEditorFormatting(_ action: MarkdownFormattingAction) {
         if action == .table {
             presentTableSizePicker()
@@ -734,7 +686,7 @@ private extension ExternalDocumentWindow {
     }
 
     private func presentTableSizePicker() {
-        guard let button = editorFormattingButtons[.table] else { return }
+        guard let button = editorFormattingToolbar.buttons[.table] else { return }
         let picker = ensureTableSizePicker()
         picker.popover.present(from: button)
     }
@@ -750,91 +702,18 @@ private extension ExternalDocumentWindow {
     }
 
     func updateEditorFormattingToolbarLayout(forWidth width: Int) {
-        guard width > 0 else { return }
-
-        let effectiveCompactThreshold = resolvedCompactThreshold()
-        let shouldUseCompactMode = width < effectiveCompactThreshold
-        if isEditorFormattingToolbarCompact != shouldUseCompactMode {
-            isEditorFormattingToolbarCompact = shouldUseCompactMode
-            refreshEditorFormattingToolbarButtons()
-        }
-
-        let shouldUseTwoRows: Bool
-        if shouldUseCompactMode {
-            layoutEditorFormattingRows(useTwoRows: false)
-            shouldUseTwoRows = measuredNaturalWidth(of: editorFormattingBar) > width
-        } else {
-            shouldUseTwoRows = false
-        }
-
-        if isEditorFormattingToolbarUsingTwoRows != shouldUseTwoRows {
-            isEditorFormattingToolbarUsingTwoRows = shouldUseTwoRows
-        }
-        layoutEditorFormattingRows(useTwoRows: shouldUseTwoRows)
-        editorFormattingBarScroll.horizontalAdjustment.value = 0
-    }
-
-    private func resolvedCompactThreshold() -> Int {
-        ensureEditorFormattingNonCompactNaturalWidthCached()
-        let measured = editorFormattingNonCompactNaturalWidth
-        if measured > 0 {
-            return measured + 24
-        }
-        return MainWindow.editorFormattingCompactWidthThreshold
-    }
-
-    private func ensureEditorFormattingNonCompactNaturalWidthCached() {
-        guard editorFormattingNonCompactNaturalWidth == 0 else { return }
-
-        let savedCompact = isEditorFormattingToolbarCompact
-        let savedTwoRows = isEditorFormattingToolbarUsingTwoRows
-
-        if savedCompact {
-            isEditorFormattingToolbarCompact = false
-            refreshEditorFormattingToolbarButtons()
-        }
-        if savedTwoRows {
-            layoutEditorFormattingRows(useTwoRows: false)
-        }
-
-        let measured = measuredNaturalWidth(of: editorFormattingBar)
-        if measured > 0 {
-            editorFormattingNonCompactNaturalWidth = measured
-        }
-
-        if isEditorFormattingToolbarCompact != savedCompact {
-            isEditorFormattingToolbarCompact = savedCompact
-            refreshEditorFormattingToolbarButtons()
-        }
-        if isEditorFormattingToolbarUsingTwoRows != savedTwoRows {
-            layoutEditorFormattingRows(useTwoRows: savedTwoRows)
-        }
+        editorFormattingToolbar.updateLayout(
+            forWidth: width,
+            fallbackThreshold: MainWindow.editorFormattingCompactWidthThreshold,
+        )
     }
 
     func refreshEditorFormattingToolbarLayout() {
         updateEditorFormattingToolbarLayout(forWidth: resolvedEditorFormattingToolbarWidth())
     }
 
-    private func makeEditorFormattingButton(for action: MarkdownFormattingAction) -> Button {
-        let button = Button()
-        button.tooltipText = action.tooltip
-        button.setAccessibleLabel(action.accessibilityLabel)
-        let configuration = ToolbarButtonContentConfiguration(
-            primaryText: action.shortLabel ?? action.accessibilityLabel,
-            iconName: action.iconName,
-            prefersCompactLabel: action.iconName != nil && action.shortLabel == nil,
-            hidesLabelWhenCompact: action.iconName != nil,
-        )
-        editorFormattingButtonConfigurations[action] = configuration
-        button.child = makeToolbarButtonContent(
-            configuration: configuration,
-            isCompact: isEditorFormattingToolbarCompact,
-        )
-        return button
-    }
-
     private func setToggleContent(_ toggle: ToggleButton, label: String, iconName: String) {
-        toggle.child = makeToolbarButtonContent(
+        toggle.child = ToolbarButtonContent.make(
             configuration: ToolbarButtonContentConfiguration(
                 primaryText: label,
                 iconName: iconName,
@@ -856,7 +735,7 @@ private extension ExternalDocumentWindow {
         }
 
         let allocatedWidth = max(
-            editorFormattingBarScroll.width,
+            editorFormattingToolbar.scrolled.width,
             editorContent.width,
             editorPreviewPane.width,
             contentHost.width,
@@ -865,77 +744,6 @@ private extension ExternalDocumentWindow {
             return allocatedWidth
         }
         return currentPreviewContainerWidth
-    }
-
-    private func layoutEditorFormattingRows(useTwoRows: Bool) {
-        detachEditorFormattingWidgetIfNeeded(editorInlineFormattingGroup)
-        detachEditorFormattingWidgetIfNeeded(editorFormattingGroupSeparator)
-        detachEditorFormattingWidgetIfNeeded(editorBlockFormattingGroup)
-
-        editorFormattingPrimaryRow.append(editorInlineFormattingGroup)
-        if useTwoRows {
-            editorFormattingSecondaryRow.append(editorBlockFormattingGroup)
-            editorFormattingSecondaryRow.visible = true
-        } else {
-            editorFormattingPrimaryRow.append(editorFormattingGroupSeparator)
-            editorFormattingPrimaryRow.append(editorBlockFormattingGroup)
-            editorFormattingSecondaryRow.visible = false
-        }
-    }
-
-    private func refreshEditorFormattingToolbarButtons() {
-        for (action, button) in editorFormattingButtons {
-            guard let configuration = editorFormattingButtonConfigurations[action] else { continue }
-            button.child = makeToolbarButtonContent(
-                configuration: configuration,
-                isCompact: isEditorFormattingToolbarCompact,
-            )
-        }
-    }
-
-    private func detachEditorFormattingWidgetIfNeeded(_ widget: Widget) {
-        if widget.parent?.isSame(as: editorFormattingPrimaryRow) == true {
-            editorFormattingPrimaryRow.remove(widget)
-        } else if widget.parent?.isSame(as: editorFormattingSecondaryRow) == true {
-            editorFormattingSecondaryRow.remove(widget)
-        }
-    }
-
-    private func measuredNaturalWidth(of widget: Widget) -> Int {
-        widget.measure(orientation: .horizontal).natural
-    }
-
-    private func makeToolbarButtonContent(
-        configuration: ToolbarButtonContentConfiguration,
-        isCompact: Bool,
-    ) -> Widget {
-        let labelText = configuration.displayedText(isCompact: isCompact)
-        let showsLabel = labelText != nil
-        let box = Box(orientation: .horizontal, spacing: showsLabel && configuration.iconName != nil ? 6 : 0)
-        let horizontalMargin = showsLabel ? (configuration.prefersCompactLabel ? 2 : 4) : 6
-        box.marginStart = horizontalMargin
-        box.marginEnd = horizontalMargin
-
-        if let iconName = configuration.iconName {
-            let image: Image
-            if let bundledPath = MainWindow.bundledIconFilePath(for: iconName) {
-                image = Image(filename: bundledPath)
-            } else {
-                image = Image(iconName: iconName)
-            }
-            image.pixelSize = 16
-            box.append(image)
-        }
-
-        if let labelText {
-            let label = Label(labelText)
-            label.xalign = 0
-            if configuration.prefersCompactLabel {
-                label.addCSSClass(.caption)
-            }
-            box.append(label)
-        }
-        return box
     }
 }
 

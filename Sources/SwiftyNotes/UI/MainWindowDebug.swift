@@ -231,29 +231,12 @@ import Foundation
 
         /// The pixel width at which the formatting toolbar will flip between
         /// its full-label and compact-icon layouts for the current widget
-        /// tree. Exposes the dynamic threshold (measured natural width of the
-        /// toolbar in full-label mode + padding allowance) so tests don't
-        /// have to duplicate the measurement logic.
+        /// tree. Delegates to the toolbar so tests don't have to duplicate
+        /// the measurement logic.
         var debugEditorFormattingToolbarCompactThreshold: Int {
-            // Accessing this forces the natural-width cache to populate if
-            // the widget tree has been laid out at least once.
-            ensureDebugFormattingToolbarNaturalWidthCached()
-            let measured = editorFormattingNonCompactNaturalWidth
-            if measured > 0 {
-                return measured + 24
-            }
-            return Self.editorFormattingCompactWidthThreshold
-        }
-
-        private func ensureDebugFormattingToolbarNaturalWidthCached() {
-            guard editorFormattingNonCompactNaturalWidth == 0 else { return }
-            // Running a dry-run measurement via the same path production
-            // uses. If the widget isn't realized this is a no-op and the
-            // cache stays at zero.
-            let measured = editorFormattingBar.measure(orientation: .horizontal).natural
-            if measured > 0 {
-                editorFormattingNonCompactNaturalWidth = measured
-            }
+            editorFormattingToolbar.compactThreshold(
+                fallback: Self.editorFormattingCompactWidthThreshold,
+            )
         }
 
         var debugNoteContextMenuLabels: [String] {
