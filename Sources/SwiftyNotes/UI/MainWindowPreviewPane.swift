@@ -136,13 +136,7 @@ extension MainWindow {
 
     func syncPreviewScroll() {
         guard state.viewMode == .split, isPreviewPaneAttached else { return }
-        guard preview.rootScroll.parent != nil, preview.rootScroll.width > 0, preview.rootScroll.height > 0 else { return }
-        let source = editorScroll.verticalAdjustment
-        let destination = preview.rootScroll.verticalAdjustment
-        let sourceMax = max(source.upper - source.pageSize - source.lower, 0)
-        let destinationMax = max(destination.upper - destination.pageSize - destination.lower, 0)
-        let progress = sourceMax > 0 ? (source.value - source.lower) / sourceMax : 0
-        destination.value = destination.lower + (destinationMax * progress)
+        PreviewScrollSync.sync(editor: editorScroll, preview: preview.rootScroll)
     }
 
     func configureActionsAndMenu() {
