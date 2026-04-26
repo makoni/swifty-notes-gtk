@@ -604,16 +604,7 @@ extension MainWindow {
             MainContext.cancel(sourceId: externalChangeMonitorID)
             self.externalChangeMonitorID = nil
         }
-        if let previewRefreshID {
-            MainContext.cancel(sourceId: previewRefreshID)
-            self.previewRefreshID = nil
-        }
-        if let previewRefreshRetryID {
-            MainContext.cancel(sourceId: previewRefreshRetryID)
-            self.previewRefreshRetryID = nil
-        }
-        pendingPreviewBlocks = nil
-        pendingPreviewBaseDirectory = nil
+        previewRefreshScheduler.cancel()
     }
 
     func pollForExternalChanges() {

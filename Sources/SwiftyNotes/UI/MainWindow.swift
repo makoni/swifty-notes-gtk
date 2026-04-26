@@ -108,10 +108,20 @@ final class MainWindow {
     var externalChangeMonitorID: SourceID?
     var externalReloadDeferred = false
     var suppressEditorChange = false
-    var previewRefreshID: SourceID?
-    var previewRefreshRetryID: SourceID?
-    var pendingPreviewBlocks: [RenderedBlock]?
-    var pendingPreviewBaseDirectory: URL?
+    lazy var previewRefreshScheduler = PreviewRefreshScheduler(
+        render: { [weak self] blocks, baseDirectory in
+            self?.preview.render(blocks: blocks, baseDirectory: baseDirectory)
+        },
+        fallbackBaseDirectory: { [weak self] in
+            self?.repository.notesDirectoryURL ?? FileManager.default.temporaryDirectory
+        },
+        shouldDeferRender: { [weak self] in
+            self?.shouldDeferPreviewRender() ?? false
+        },
+        onRendered: { [weak self] in
+            self?.syncPreviewScroll()
+        },
+    )
     var isRestoringPreviewPaneLayout = false
     var previewAnimationID: SourceID?
     var isPreviewPaneAttached = false

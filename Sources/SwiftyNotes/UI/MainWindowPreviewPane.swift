@@ -100,50 +100,11 @@ extension MainWindow {
     }
 
     func schedulePreviewRefresh(blocks: [RenderedBlock], baseDirectory: URL) {
-        if let previewRefreshID {
-            MainContext.cancel(sourceId: previewRefreshID)
-            self.previewRefreshID = nil
-        }
-        pendingPreviewBlocks = blocks
-        pendingPreviewBaseDirectory = baseDirectory
-        previewRefreshID = MainContext.timeout(every: .milliseconds(1)) { [weak self] in
-            guard let self else { return false }
-            flushPendingPreviewRefresh()
-            return false
-        }
+        previewRefreshScheduler.schedule(blocks: blocks, baseDirectory: baseDirectory)
     }
 
     func flushPendingPreviewRefresh() {
-        guard previewRefreshID != nil || pendingPreviewBlocks != nil || pendingPreviewBaseDirectory != nil else {
-            return
-        }
-        if let previewRefreshID {
-            MainContext.cancel(sourceId: previewRefreshID)
-            self.previewRefreshID = nil
-        }
-        if shouldDeferPreviewRender() {
-            if previewRefreshRetryID == nil {
-                previewRefreshRetryID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
-                    guard let self else { return false }
-                    previewRefreshRetryID = nil
-                    flushPendingPreviewRefresh()
-                    return false
-                }
-            }
-            return
-        }
-        if let previewRefreshRetryID {
-            MainContext.cancel(sourceId: previewRefreshRetryID)
-            self.previewRefreshRetryID = nil
-        }
-        let blocks = pendingPreviewBlocks ?? []
-        let baseDirectory = pendingPreviewBaseDirectory ?? repository.notesDirectoryURL
-        pendingPreviewBlocks = nil
-        pendingPreviewBaseDirectory = nil
-        preview.render(blocks: blocks, baseDirectory: baseDirectory)
-        MainContext.idle { [weak self] in
-            self?.syncPreviewScroll()
-        }
+        previewRefreshScheduler.flush()
     }
 
     func shouldDeferPreviewRender() -> Bool {
