@@ -1,4 +1,4 @@
-name: swifty-notes
+name: swiftynotes
 title: Swifty Notes
 base: core24
 version: "1.1.2"
@@ -24,25 +24,15 @@ platforms:
   arm64:
 
 apps:
-  swifty-notes:
+  swiftynotes:
     command: usr/bin/swiftynotes
-    common-id: me.spaceinbox.swifty-notes
-    desktop: usr/share/applications/me.spaceinbox.swifty-notes.desktop
+    common-id: me.spaceinbox.swiftynotes
+    desktop: usr/share/applications/me.spaceinbox.swiftynotes.desktop
     extensions:
       - gnome
-    environment:
-      # Snap interface policy auto-allows the strict-confined app to own
-      # the session-bus name "<reverse-DNS>.<snap-name>". The canonical
-      # GApplication id used everywhere else (Flatpak, native installs)
-      # is "me.spaceinbox.swiftynotes" — the dash-stripped form does not
-      # match the snap name "swifty-notes", so AppArmor blocks it. The
-      # post-build patches below rename the desktop/metainfo/icon to the
-      # snap-only "me.spaceinbox.swifty-notes" id, and this env override
-      # makes GApplication register that matching id at runtime.
-      SWIFTY_NOTES_APP_ID: me.spaceinbox.swifty-notes
 
 parts:
-  swifty-notes:
+  swiftynotes:
     plugin: nil
     source: .
     build-packages:
@@ -72,49 +62,10 @@ parts:
     override-build: |
       set -eux
 
-      # Renames the canonical "me.spaceinbox.swiftynotes" identity files
-      # (desktop entry, AppStream metainfo, hicolor icons, GTK Settings
-      # schema) to "me.spaceinbox.swifty-notes" so the snap's D-Bus name,
-      # desktop id, metainfo id and icon basename all share the same
-      # snap-name suffix that AppArmor's auto-allow rule expects. Run
-      # against the install root after the prebuilt or in-place build
-      # has finished populating it. Idempotent.
-      patch_app_id_for_snap() {
-        local install_root="$1"
-        local old_id="me.spaceinbox.swiftynotes"
-        local new_id="me.spaceinbox.swifty-notes"
-
-        if [ -f "${install_root}/usr/share/applications/${old_id}.desktop" ]; then
-          sed -i \
-            -e "s|^Icon=${old_id}\$|Icon=${new_id}|" \
-            -e "s|^StartupWMClass=${old_id}\$|StartupWMClass=${new_id}|" \
-            "${install_root}/usr/share/applications/${old_id}.desktop"
-          mv "${install_root}/usr/share/applications/${old_id}.desktop" \
-             "${install_root}/usr/share/applications/${new_id}.desktop"
-        fi
-
-        if [ -f "${install_root}/usr/share/metainfo/${old_id}.metainfo.xml" ]; then
-          sed -i \
-            -e "s|<id>${old_id}</id>|<id>${new_id}</id>|" \
-            -e "s|<launchable type=\"desktop-id\">${old_id}.desktop</launchable>|<launchable type=\"desktop-id\">${new_id}.desktop</launchable>|" \
-            "${install_root}/usr/share/metainfo/${old_id}.metainfo.xml"
-          mv "${install_root}/usr/share/metainfo/${old_id}.metainfo.xml" \
-             "${install_root}/usr/share/metainfo/${new_id}.metainfo.xml"
-        fi
-
-        find "${install_root}/usr/share/icons" -name "${old_id}.*" -type f 2>/dev/null | while read -r icon_path; do
-          local icon_dir
-          icon_dir="$(dirname "${icon_path}")"
-          local extension="${icon_path##*.}"
-          mv "${icon_path}" "${icon_dir}/${new_id}.${extension}"
-        done
-      }
-
       prebuilt_install_root='packaging/out/install-root-usr'
       if [ -x "${prebuilt_install_root}/usr/bin/swiftynotes" ] && [ -x "${prebuilt_install_root}/usr/libexec/swifty-notes/swiftynotes" ]; then
         mkdir -p "${CRAFT_PART_INSTALL}"
         cp -a "${prebuilt_install_root}/." "${CRAFT_PART_INSTALL}/"
-        patch_app_id_for_snap "${CRAFT_PART_INSTALL}"
         exit 0
       fi
 
@@ -178,4 +129,3 @@ parts:
       export PATH="${swift_toolchain_dir}/usr/bin:${PATH}"
 
       packaging/release/assemble-install-root.sh --dest "${CRAFT_PART_INSTALL}" --prefix /usr
-      patch_app_id_for_snap "${CRAFT_PART_INSTALL}"
