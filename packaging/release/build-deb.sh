@@ -69,7 +69,7 @@ Section: utils
 Priority: optional
 Architecture: ${architecture}
 Maintainer: Sergey Armodin <makoni@users.noreply.github.com>
-Depends: libc6, libgcc-s1, libstdc++6, libgtk-4-1, libadwaita-1-0, libgtksourceview-5-0
+Depends: libc6, libgcc-s1, libstdc++6, libgtk-4-1, libadwaita-1-0, libgtksourceview-5-0, libspelling-1-0
 Description: Native GTK markdown notes for Linux
  Swifty Notes is a native GTK/libadwaita markdown notes application for Linux.
  It keeps notes in plain files, supports a native Markdown preview, autosave,

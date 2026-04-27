@@ -59,6 +59,7 @@ jobs:
             libadwaita-1-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
+            libspelling-1-dev \
             xvfb
 
       - name: Verify project
@@ -95,7 +96,8 @@ jobs:
             libadwaita-1-dev \
             libcurl4-openssl-dev \
             libgtk-4-dev \
-            libgtksourceview-5-dev
+            libgtksourceview-5-dev \
+            libspelling-1-dev
 
       - name: Verify project
         run: |

@@ -35,6 +35,7 @@ jobs:
             libadwaita-1-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
+            libspelling-1-dev \
             webp-pixbuf-loader \
             xvfb
 
@@ -70,6 +71,7 @@ jobs:
             libadwaita-1-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
+            libspelling-1-dev \
             python3-pyatspi \
             weston
 
