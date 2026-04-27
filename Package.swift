@@ -76,11 +76,19 @@ let package = Package(
         )
     ],
     targets: [
+        .systemLibrary(
+            name: "CSpelling",
+            pkgConfig: "libspelling-1",
+            providers: [
+                .apt(["libspelling-1-dev"])
+            ]
+        ),
         .target(
             name: "SwiftyNotes",
             dependencies: [
                 .product(name: "Adwaita", package: "swift-adwaita"),
-                .product(name: "Markdown", package: "swift-markdown")
+                .product(name: "Markdown", package: "swift-markdown"),
+                "CSpelling"
             ],
             resources: [
                 .process("Resources"),

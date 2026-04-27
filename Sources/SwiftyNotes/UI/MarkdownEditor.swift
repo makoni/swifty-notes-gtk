@@ -8,6 +8,10 @@ struct MarkdownEditor {
     private let fontCSSProvider = CSSProvider()
     private let fontCSSClass = "markdown-editor-font-\(UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: ""))"
     private(set) var currentFontSize = AppSettings.defaultEditorFontSize
+    /// `nil` if libspelling-1 reports no spell-check provider on this
+    /// system (no Enchant backends, no dictionaries) — the editor still
+    /// works, it just won't underline misspellings.
+    private let spellChecking: SpellChecking?
 
     init() {
         if let language = SourceLanguageManager.default.language(id: .markdown) {
@@ -37,6 +41,7 @@ struct MarkdownEditor {
         view.setAccessibleLabel("Markdown Editor")
         view.addCSSClass(fontCSSClass)
         fontCSSProvider.addToDefaultDisplay()
+        spellChecking = SpellChecking(view: view, buffer: buffer)
         applySettings(.default)
     }
 

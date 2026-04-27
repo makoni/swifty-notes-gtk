@@ -1,0 +1,5 @@
+module CSpelling [system] {
+    header "shim.h"
+    link "spelling-1"
+    export *
+}
