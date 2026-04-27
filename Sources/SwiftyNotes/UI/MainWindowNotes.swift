@@ -15,6 +15,12 @@ extension MainWindow {
         }
     }
 
+    func requestActivateSidebarRow(at index: Int) {
+        deferredUIActionScheduler { [weak self] in
+            self?.activateSidebarRow(at: index)
+        }
+    }
+
     func loadInitialNotes() {
         do {
             var notes = try repository.loadNotes()
@@ -23,6 +29,7 @@ extension MainWindow {
                 notes = try repository.loadNotes()
             }
             state.setNotes(notes)
+            state.setFolders(try repository.listFolders())
             directorySnapshot = try repository.directorySnapshot()
             renderSelection()
             flushPendingPreviewRefresh()
@@ -36,12 +43,47 @@ extension MainWindow {
         }
     }
 
+    /// Reloads the folder list from disk. Call after any folder mutation
+    /// (create / rename / delete / move) so the sidebar's `state.folders`
+    /// matches the on-disk truth. Errors are suppressed here — load
+    /// failures show up as a stale tree that the next load picks up.
+    func refreshFolderList() {
+        if let folders = try? repository.listFolders() {
+            state.setFolders(folders)
+        }
+    }
+
     func selectNote(at index: Int) {
         guard displayedNotes.indices.contains(index) else { return }
         state.select(noteID: displayedNotes[index].id)
         renderSelection()
         persistWorkspaceState()
     }
+
+    /// Routed from the sidebar's `row-activated` signal. The row may be a
+    /// folder (toggle expand) or a note (select it).
+    func activateSidebarRow(at index: Int) {
+        guard let item = sidebar.item(at: index) else { return }
+        switch item {
+        case let .folder(folder):
+            toggleFolder(at: folder.path)
+        case let .note(noteItem):
+            state.select(noteID: noteItem.note.id)
+            renderSelection()
+            persistWorkspaceState()
+        }
+    }
+
+    func toggleFolder(at path: String) {
+        let isExpanded = state.expandedFolders.contains(path)
+        state.setFolderExpanded(path, expanded: !isExpanded)
+        refreshSidebar()
+        persistWorkspaceState()
+    }
+
+    /// Folder context menu — populated in the folder-CRUD UI step. Until
+    /// then this just no-ops so the right-click handler can stay wired up.
+    func presentFolderContextMenu(forFolderPath _: String, x _: Int, y _: Int) {}
 
     func createNote() {
         do {
@@ -107,6 +149,7 @@ extension MainWindow {
             try repository.delete(note: note)
             let notes = try repository.loadNotes()
             state.setNotes(notes)
+            refreshFolderList()
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
@@ -145,22 +188,39 @@ extension MainWindow {
 
     func refreshSidebar() {
         dismissNoteContextMenu()
-        displayedNotes = state.sortMode.sort(notes: state.notes.filter { $0.matches(searchQuery: state.searchQuery) })
+        let items = SidebarTreeFlattener.flatten(
+            notes: state.notes,
+            folders: state.folders,
+            expandedFolders: state.expandedFolders,
+            searchQuery: state.searchQuery,
+            sortMode: state.sortMode,
+        )
+        displayedNotes = items.compactMap { item in
+            if case let .note(noteItem) = item { return noteItem.note }
+            return nil
+        }
         sidebar.render(
-            notes: displayedNotes,
-            selectedID: state.selectedNoteID,
+            items: items,
+            selectedNoteID: state.selectedNoteID,
             totalCount: state.notes.count,
             searchQuery: state.searchQuery,
             sortMode: state.sortMode,
         )
-        for (index, note) in displayedNotes.enumerated() {
+        for (index, item) in items.enumerated() {
             guard let row = sidebar.list.rowAt(index) else { continue }
-            row.onRightClick { [weak self] x, y in
-                guard let self else { return }
-                state.select(noteID: note.id)
-                renderSelection()
-                persistWorkspaceState()
-                presentNoteContextMenu(forNoteID: note.id, x: Int(x), y: Int(y))
+            switch item {
+            case let .note(noteItem):
+                row.onRightClick { [weak self] x, y in
+                    guard let self else { return }
+                    state.select(noteID: noteItem.note.id)
+                    renderSelection()
+                    persistWorkspaceState()
+                    presentNoteContextMenu(forNoteID: noteItem.note.id, x: Int(x), y: Int(y))
+                }
+            case let .folder(folder):
+                row.onRightClick { [weak self] x, y in
+                    self?.presentFolderContextMenu(forFolderPath: folder.path, x: Int(x), y: Int(y))
+                }
             }
         }
     }

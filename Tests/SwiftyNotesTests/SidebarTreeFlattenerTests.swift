@@ -1,0 +1,139 @@
+import Foundation
+@testable import SwiftyNotes
+import Testing
+
+@MainActor
+struct SidebarTreeFlattenerTests {
+    private static func note(_ title: String, in folderPath: String = "", createdAt: Date = Date()) -> Note {
+        Note(
+            id: UUID(),
+            filename: "\(UUID().uuidString.lowercased())/note.md",
+            folderPath: folderPath,
+            createdAt: createdAt,
+            updatedAt: createdAt,
+            content: "# \(title)\n",
+        )
+    }
+
+    @Test
+    func `root only notes flatten to a flat list`() {
+        let alpha = Self.note("Alpha", createdAt: Date(timeIntervalSince1970: 200))
+        let beta = Self.note("Beta", createdAt: Date(timeIntervalSince1970: 100))
+
+        let items = SidebarTreeFlattener.flatten(
+            notes: [alpha, beta],
+            folders: [],
+            expandedFolders: [],
+            searchQuery: "",
+            sortMode: .newestFirst,
+        )
+        #expect(items.count == 2)
+        if case let .note(first) = items[0] { #expect(first.note.id == alpha.id) }
+        if case let .note(second) = items[1] { #expect(second.note.id == beta.id) }
+    }
+
+    @Test
+    func `folder children stay hidden until the folder is expanded`() {
+        let inside = Self.note("Inside", in: "Work")
+        let items = SidebarTreeFlattener.flatten(
+            notes: [inside],
+            folders: ["Work"],
+            expandedFolders: [],
+            searchQuery: "",
+            sortMode: .newestFirst,
+        )
+        #expect(items.count == 1)
+        guard case let .folder(folder) = items[0] else {
+            Issue.record("Expected a folder row")
+            return
+        }
+        #expect(folder.path == "Work")
+        #expect(folder.isExpanded == false)
+        #expect(folder.hasChildren)
+        #expect(folder.noteCount == 1)
+    }
+
+    @Test
+    func `expanded folder reveals nested folders and notes at the right depth`() {
+        let root = Self.note("Root")
+        let work = Self.note("Work Note", in: "Work")
+        let project = Self.note("Project Note", in: "Work/Projects")
+
+        let items = SidebarTreeFlattener.flatten(
+            notes: [root, work, project],
+            folders: ["Work", "Work/Projects"],
+            expandedFolders: ["Work", "Work/Projects"],
+            searchQuery: "",
+            sortMode: .newestFirst,
+        )
+
+        #expect(items.count == 5)
+        // Order: Work folder (depth 0), Work/Projects folder (depth 1),
+        // Project Note (depth 1), Work Note (depth 0), Root note (depth 0).
+        guard case let .folder(workFolder) = items[0] else {
+            Issue.record("Expected Work folder first")
+            return
+        }
+        #expect(workFolder.path == "Work")
+        #expect(workFolder.depth == 0)
+        guard case let .folder(projectsFolder) = items[1] else {
+            Issue.record("Expected Projects folder second")
+            return
+        }
+        #expect(projectsFolder.path == "Work/Projects")
+        #expect(projectsFolder.depth == 1)
+        guard case let .note(projectNote) = items[2] else {
+            Issue.record("Expected project note third")
+            return
+        }
+        // Project note sits inside Work/Projects (depth 1) so it indents to depth 2.
+        #expect(projectNote.depth == 2)
+        guard case let .note(workNote) = items[3] else {
+            Issue.record("Expected work note fourth")
+            return
+        }
+        // Work note sits inside Work (depth 0) so it indents to depth 1.
+        #expect(workNote.depth == 1)
+        guard case let .note(rootNote) = items[4] else {
+            Issue.record("Expected root note last")
+            return
+        }
+        #expect(rootNote.depth == 0)
+    }
+
+    @Test
+    func `search collapses to flat matching notes ignoring folders`() {
+        let workNote = Self.note("Find me", in: "Work")
+        let other = Self.note("Skip", in: "Personal")
+
+        let items = SidebarTreeFlattener.flatten(
+            notes: [workNote, other],
+            folders: ["Work", "Personal"],
+            expandedFolders: ["Work"],
+            searchQuery: "find",
+            sortMode: .newestFirst,
+        )
+        #expect(items.count == 1)
+        if case let .note(noteItem) = items[0] {
+            #expect(noteItem.note.id == workNote.id)
+            #expect(noteItem.depth == 0)
+        }
+    }
+
+    @Test
+    func `empty folders still surface as collapsed rows so the user can rename or delete them`() {
+        let items = SidebarTreeFlattener.flatten(
+            notes: [],
+            folders: ["Work"],
+            expandedFolders: [],
+            searchQuery: "",
+            sortMode: .newestFirst,
+        )
+        #expect(items.count == 1)
+        if case let .folder(folder) = items[0] {
+            #expect(folder.path == "Work")
+            #expect(folder.hasChildren == false)
+            #expect(folder.noteCount == 0)
+        }
+    }
+}

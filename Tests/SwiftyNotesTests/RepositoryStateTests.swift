@@ -681,6 +681,40 @@ struct RepositoryStateTests {
     }
 
     @Test
+    func `workspace state round trips expanded folders and dedupes them`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let store = WorkspaceStateStore(
+            stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+        )
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let saved = WorkspaceState(
+            expandedFolders: ["Work", "Work/Drafts", "Work", "  ", "Personal"],
+        )
+        try store.save(saved)
+
+        let loaded = try store.load()
+        #expect(loaded.expandedFolders == ["Work", "Work/Drafts", "Personal"])
+    }
+
+    @Test
+    func `workspace state decodes older payload without expanded folders field`() throws {
+        let data = Data("""
+        {
+          "selectedNoteID": null,
+          "isPreviewVisible": true,
+          "searchQuery": "legacy",
+          "sortMode": "newestFirst",
+          "windowWidth": 1200,
+          "windowHeight": 800
+        }
+        """.utf8)
+
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: data)
+        #expect(decoded.expandedFolders.isEmpty)
+    }
+
+    @Test
     func `workspace state decodes older payload without preview width`() throws {
         let data = Data("""
         {

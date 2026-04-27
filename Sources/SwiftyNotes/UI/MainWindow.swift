@@ -269,7 +269,7 @@ final class MainWindow {
 
     func wireSignals() {
         sidebar.list.onRowActivated { [weak self] row in
-            self?.requestSelectNote(at: Int(row.index))
+            self?.requestActivateSidebarRow(at: Int(row.index))
         }
 
         sidebar.searchEntry.onSearchChanged { [weak self] in

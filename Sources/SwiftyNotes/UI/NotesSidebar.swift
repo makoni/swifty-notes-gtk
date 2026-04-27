@@ -13,11 +13,16 @@ struct NotesSidebar {
     private let sortPopover: Popover
     private let sortOptionButtons: [NotesSortMode: Button]
     private let sortState: SortState
+    private let renderState: RenderState
 
     private static let sortModes = NotesSortMode.allCases
 
     private final class SortState {
         var currentMode: NotesSortMode = .newestFirst
+    }
+
+    private final class RenderState {
+        var items: [SidebarItem] = []
     }
 
     init() {
@@ -47,6 +52,7 @@ struct NotesSidebar {
 
         sortPopover = Popover()
         sortState = SortState()
+        renderState = RenderState()
 
         var sortButtons: [NotesSortMode: Button] = [:]
         let sortMenuBox = Box(orientation: .vertical, spacing: 2)
@@ -86,44 +92,134 @@ struct NotesSidebar {
         setSortMode(.newestFirst)
     }
 
-    func render(notes: [Note], selectedID: UUID?, totalCount: Int, searchQuery: String, sortMode: NotesSortMode) {
+    /// Cached layout of the most recent ``render(items:...)`` call so callers
+    /// can map a ListBox row index back to the underlying folder or note.
+    var renderedItems: [SidebarItem] { renderState.items }
+
+    func render(
+        items: [SidebarItem],
+        selectedNoteID: UUID?,
+        totalCount: Int,
+        searchQuery: String,
+        sortMode: NotesSortMode,
+    ) {
         setSortMode(sortMode)
         list.removeAll()
-        for (index, note) in notes.enumerated() {
-            let row = ListBoxRow()
-            row.activatable = true
-            row.selectable = true
-            row.setAccessibleLabel(note.title)
+        renderState.items = items
 
-            let rowBox = Box(orientation: .vertical, spacing: 2)
-            rowBox.setMargins(8)
-
-            let title = Label(note.title)
-            title.xalign = 0
-            rowBox.append(title)
-
-            let subtitle = Label(Self.displayDate(note.createdAt))
-            subtitle.xalign = 0
-            subtitle.addCSSClass(.dimLabel)
-            rowBox.append(subtitle)
-
-            row.child = rowBox
+        for (index, item) in items.enumerated() {
+            let row = Self.makeRow(for: item)
             list.append(row)
-            if note.id == selectedID {
+            if case let .note(noteItem) = item, noteItem.note.id == selectedNoteID {
                 list.selectRow(at: index)
             }
+        }
+
+        let visibleNoteCount = items.reduce(into: 0) { count, item in
+            if case .note = item { count += 1 }
         }
 
         if totalCount == 0 {
             titleLabel.text = "Notes"
             emptyLabel.text = "No notes yet. Create one with +."
-        } else if notes.isEmpty {
+        } else if visibleNoteCount == 0 && items.isEmpty {
             titleLabel.text = "Notes"
             emptyLabel.text = "No notes match “\(searchQuery)”."
         } else {
-            titleLabel.text = searchQuery.isEmpty ? "Notes (\(totalCount))" : "Notes (\(notes.count)/\(totalCount))"
+            titleLabel.text = searchQuery.isEmpty
+                ? "Notes (\(totalCount))"
+                : "Notes (\(visibleNoteCount)/\(totalCount))"
         }
-        emptyLabel.visible = notes.isEmpty
+        emptyLabel.visible = items.isEmpty
+    }
+
+    func item(at index: Int) -> SidebarItem? {
+        renderState.items.indices.contains(index) ? renderState.items[index] : nil
+    }
+
+    /// Index of the row that represents the given note, or `nil` if the
+    /// note is not currently visible (e.g. its folder is collapsed).
+    func indexOfNote(id: UUID) -> Int? {
+        renderState.items.firstIndex { item in
+            if case let .note(noteItem) = item { return noteItem.note.id == id }
+            return false
+        }
+    }
+
+    private static func makeRow(for item: SidebarItem) -> ListBoxRow {
+        switch item {
+        case let .folder(folder):
+            makeFolderRow(folder)
+        case let .note(noteItem):
+            makeNoteRow(noteItem)
+        }
+    }
+
+    private static func makeNoteRow(_ noteItem: SidebarNote) -> ListBoxRow {
+        let row = ListBoxRow()
+        row.activatable = true
+        row.selectable = true
+        row.setAccessibleLabel(noteItem.note.title)
+
+        let rowBox = Box(orientation: .vertical, spacing: 2)
+        rowBox.setMargins(8)
+        rowBox.marginStart = 8 + indentation(forDepth: noteItem.depth)
+
+        let title = Label(noteItem.note.title)
+        title.xalign = 0
+        rowBox.append(title)
+
+        let subtitle = Label(displayDate(noteItem.note.createdAt))
+        subtitle.xalign = 0
+        subtitle.addCSSClass(.dimLabel)
+        rowBox.append(subtitle)
+
+        row.child = rowBox
+        return row
+    }
+
+    private static func makeFolderRow(_ folder: SidebarFolder) -> ListBoxRow {
+        let row = ListBoxRow()
+        row.activatable = true
+        row.selectable = false
+        row.setAccessibleLabel("Folder \(folder.path)")
+        row.addCSSClass("dim-label")
+
+        let rowBox = Box(orientation: .horizontal, spacing: 6)
+        rowBox.setMargins(6)
+        rowBox.marginStart = 6 + indentation(forDepth: folder.depth)
+
+        let chevron = Image(iconName: folder.isExpanded
+            ? "pan-down-symbolic"
+            : "pan-end-symbolic")
+        chevron.pixelSize = 12
+        if !folder.hasChildren {
+            chevron.opacity = 0.35
+        }
+        rowBox.append(chevron)
+
+        let folderIcon = Image(iconName: "folder-symbolic")
+        folderIcon.pixelSize = 14
+        rowBox.append(folderIcon)
+
+        let title = Label(folder.displayName)
+        title.xalign = 0
+        title.hexpand = true
+        rowBox.append(title)
+
+        if folder.noteCount > 0 {
+            let badge = Label("\(folder.noteCount)")
+            badge.addCSSClass(.dimLabel)
+            badge.addCSSClass(.caption)
+            rowBox.append(badge)
+        }
+
+        row.child = rowBox
+        return row
+    }
+
+    private static func indentation(forDepth depth: Int) -> Int {
+        depth * 14
     }
 
     func setSortMode(_ sortMode: NotesSortMode) {
@@ -159,7 +255,7 @@ struct NotesSidebar {
         Self.sortModes.firstIndex(of: sortState.currentMode) ?? 0
     }
 
-    private static func displayDate(_ date: Date) -> String {
+    static func displayDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short

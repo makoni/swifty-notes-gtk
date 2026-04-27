@@ -535,6 +535,7 @@ extension MainWindow {
             repository = NotesRepository(notesDirectory: targetDirectory)
             let notes = try repository.loadNotes()
             state.setNotes(notes)
+            refreshFolderList()
             directorySnapshot = try repository.directorySnapshot()
             deferredExternalSnapshot = nil
             externalReloadDeferred = false
@@ -574,6 +575,7 @@ extension MainWindow {
         do {
             let notes = try repository.loadNotes()
             state.setNotes(notes)
+            refreshFolderList()
             directorySnapshot = try repository.directorySnapshot()
             deferredExternalSnapshot = nil
             externalReloadDeferred = false

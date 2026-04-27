@@ -3,6 +3,8 @@ import Foundation
 @MainActor
 public final class AppState {
     public private(set) var notes: [Note] = []
+    public private(set) var folders: [String] = []
+    public private(set) var expandedFolders: Set<String> = []
     public private(set) var selectedNoteID: UUID?
     public var isSidebarVisible: Bool
     public var viewMode: EditorViewMode
@@ -35,6 +37,7 @@ public final class AppState {
         lastTableRows = persistedState.lastTableRows
         lastTableCols = persistedState.lastTableCols
         lastTableAlignments = persistedState.lastTableAlignments
+        expandedFolders = Set(persistedState.expandedFolders)
     }
 
     public func setLastTableSize(rows: Int, cols: Int, alignments: [MarkdownTableAlignment]) {
@@ -54,6 +57,26 @@ public final class AppState {
             return
         }
         selectedNoteID = notes.first?.id
+    }
+
+    public func setFolders(_ folders: [String]) {
+        self.folders = folders
+        let valid = Set(folders)
+        // Prune entries whose folder no longer exists so the persisted set
+        // doesn't keep growing across renames/deletes.
+        expandedFolders.formIntersection(valid)
+    }
+
+    public func setFolderExpanded(_ folderPath: String, expanded: Bool) {
+        if expanded {
+            expandedFolders.insert(folderPath)
+        } else {
+            expandedFolders.remove(folderPath)
+        }
+    }
+
+    public func setExpandedFolders(_ folders: Set<String>) {
+        expandedFolders = folders
     }
 
     public func select(noteID: UUID?) {
@@ -115,6 +138,7 @@ public final class AppState {
             lastTableRows: lastTableRows,
             lastTableCols: lastTableCols,
             lastTableAlignments: lastTableAlignments,
+            expandedFolders: expandedFolders.sorted(),
         )
     }
 

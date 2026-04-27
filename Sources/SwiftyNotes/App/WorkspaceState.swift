@@ -67,6 +67,11 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
     public var lastTableRows: Int
     public var lastTableCols: Int
     public var lastTableAlignments: [MarkdownTableAlignment]
+    /// Folder paths the sidebar tree should restore as expanded.
+    /// Empty by default; sidebar guarantees the entries are valid folders
+    /// before opening them, so stale entries from renamed/deleted folders
+    /// silently no-op.
+    public var expandedFolders: [String]
 
     public var isPreviewVisible: Bool {
         viewMode.isPreviewVisible
@@ -85,6 +90,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         lastTableRows: Int = WorkspaceState.defaultLastTableRows,
         lastTableCols: Int = WorkspaceState.defaultLastTableCols,
         lastTableAlignments: [MarkdownTableAlignment] = [],
+        expandedFolders: [String] = [],
     ) {
         self.selectedNoteID = selectedNoteID
         self.isSidebarVisible = isSidebarVisible
@@ -97,6 +103,19 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         self.lastTableRows = max(1, lastTableRows)
         self.lastTableCols = max(1, lastTableCols)
         self.lastTableAlignments = lastTableAlignments
+        self.expandedFolders = Self.deduplicatedFolderPaths(expandedFolders)
+    }
+
+    private static func deduplicatedFolderPaths(_ paths: [String]) -> [String] {
+        var seen: Set<String> = []
+        var result: [String] = []
+        for path in paths {
+            let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !seen.contains(trimmed) else { continue }
+            seen.insert(trimmed)
+            result.append(trimmed)
+        }
+        return result
     }
 
     public static let `default` = WorkspaceState()
@@ -114,6 +133,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         case lastTableRows
         case lastTableCols
         case lastTableAlignments
+        case expandedFolders
     }
 
     public init(from decoder: any Decoder) throws {
@@ -133,6 +153,9 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         lastTableRows = try max(1, container.decodeIfPresent(Int.self, forKey: .lastTableRows) ?? WorkspaceState.defaultLastTableRows)
         lastTableCols = try max(1, container.decodeIfPresent(Int.self, forKey: .lastTableCols) ?? WorkspaceState.defaultLastTableCols)
         lastTableAlignments = try container.decodeIfPresent([MarkdownTableAlignment].self, forKey: .lastTableAlignments) ?? []
+        expandedFolders = Self.deduplicatedFolderPaths(
+            try container.decodeIfPresent([String].self, forKey: .expandedFolders) ?? [],
+        )
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -149,5 +172,6 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         try container.encode(lastTableRows, forKey: .lastTableRows)
         try container.encode(lastTableCols, forKey: .lastTableCols)
         try container.encode(lastTableAlignments, forKey: .lastTableAlignments)
+        try container.encode(expandedFolders, forKey: .expandedFolders)
     }
 }
