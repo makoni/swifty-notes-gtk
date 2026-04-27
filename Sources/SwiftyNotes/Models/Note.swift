@@ -3,6 +3,10 @@ import Foundation
 public struct Note: Identifiable, Sendable, Equatable {
     public let id: UUID
     public let filename: String
+    /// Folder the note lives in, expressed as a slash-separated relative path
+    /// under the notes directory ("" means root). Path components are sanitized
+    /// folder names — never absolute, never starts or ends with `/`.
+    public let folderPath: String
     public let createdAt: Date
     public var updatedAt: Date
     public var content: String
@@ -10,12 +14,14 @@ public struct Note: Identifiable, Sendable, Equatable {
     public init(
         id: UUID,
         filename: String,
+        folderPath: String = "",
         createdAt: Date,
         updatedAt: Date,
         content: String,
     ) {
         self.id = id
         self.filename = filename
+        self.folderPath = folderPath
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.content = content

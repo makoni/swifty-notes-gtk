@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Glibc)
+import Glibc
+#endif
 
 public struct NotesDirectorySnapshot: Sendable, Equatable {
     public struct Entry: Sendable, Equatable {
@@ -74,6 +77,32 @@ private enum NotesRepositoryAssetImportError: LocalizedError {
         switch self {
         case let .unsupportedImageType(filename):
             "Unsupported image type for \(filename)."
+        }
+    }
+}
+
+public enum NotesRepositoryFolderError: Error, LocalizedError, Equatable {
+    case invalidName(String)
+    case nameTooLong(String, limit: Int)
+    case pathTooLong(String, limit: Int)
+    case alreadyExists(String)
+    case notFound(String)
+    case wouldNestInsideSelf(source: String, destination: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .invalidName(name):
+            "\"\(name)\" is not a valid folder name."
+        case let .nameTooLong(name, limit):
+            "Folder name \"\(name)\" exceeds the file system limit of \(limit) bytes."
+        case let .pathTooLong(path, limit):
+            "Path \"\(path)\" exceeds the file system limit of \(limit) bytes."
+        case let .alreadyExists(path):
+            "A folder or note already exists at \"\(path)\"."
+        case let .notFound(path):
+            "Folder \"\(path)\" was not found."
+        case let .wouldNestInsideSelf(source, destination):
+            "Cannot move \"\(source)\" into its own descendant \"\(destination)\"."
         }
     }
 }
@@ -159,7 +188,9 @@ public final class NotesRepository: @unchecked Sendable {
     public func loadNotes() throws -> [Note] {
         try queue.sync {
             try ensureNotesDirectoryUnlocked()
-            let notes = try storedNoteDirectoriesUnlocked().map(loadNoteUnlocked(from:))
+            let notes = try storedNoteEntriesUnlocked().map { entry in
+                try loadNoteUnlocked(from: entry.directoryURL, folderPath: entry.folderPath)
+            }
             for note in notes {
                 try repairShowcaseImageUnlockedIfNeeded(for: note)
             }
@@ -172,12 +203,133 @@ public final class NotesRepository: @unchecked Sendable {
         }
     }
 
-    public func createNote(initialContent: String = "") throws -> Note {
+    /// All folder paths under the notes directory. Empty array means no
+    /// folders have been created yet — every note is at the root.
+    public func listFolders() throws -> [String] {
         try queue.sync {
             try ensureNotesDirectoryUnlocked()
-            let note = makeNewNote(content: initialContent)
+            return try storedFolderPathsUnlocked().sorted()
+        }
+    }
+
+    public func createNote(initialContent: String = "", in folderPath: String = "") throws -> Note {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let normalizedFolder = try normalizedExistingFolderPathUnlocked(folderPath)
+            let note = makeNewNote(content: initialContent, folderPath: normalizedFolder)
             try persistUnlocked(note)
             return note
+        }
+    }
+
+    public func createFolder(at path: String) throws {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let trimmed = Self.trimmedFolderPath(path)
+            guard !trimmed.isEmpty else {
+                throw NotesRepositoryFolderError.invalidName(path)
+            }
+            try validateFolderPathComponents(trimmed)
+            let url = folderURL(for: trimmed)
+            try validateAbsolutePathLength(url)
+            if fileManager.fileExists(atPath: url.path(percentEncoded: false)) {
+                throw NotesRepositoryFolderError.alreadyExists(trimmed)
+            }
+            try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+    }
+
+    public func renameFolder(at path: String, to newName: String) throws {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let source = Self.trimmedFolderPath(path)
+            guard !source.isEmpty else {
+                throw NotesRepositoryFolderError.invalidName(path)
+            }
+            let trimmedNewName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+            try validateFolderName(trimmedNewName)
+            let parent = Self.parentFolderPath(of: source)
+            let destination = parent.isEmpty ? trimmedNewName : "\(parent)/\(trimmedNewName)"
+            let sourceURL = folderURL(for: source)
+            let destinationURL = folderURL(for: destination)
+            try ensureFolderExistsUnlocked(at: source)
+            try validateAbsolutePathLength(destinationURL)
+            if destination != source,
+               fileManager.fileExists(atPath: destinationURL.path(percentEncoded: false)) {
+                throw NotesRepositoryFolderError.alreadyExists(destination)
+            }
+            try fileManager.moveItem(at: sourceURL, to: destinationURL)
+        }
+    }
+
+    public func deleteFolderRecursively(at path: String) throws {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let trimmed = Self.trimmedFolderPath(path)
+            guard !trimmed.isEmpty else {
+                throw NotesRepositoryFolderError.invalidName(path)
+            }
+            try ensureFolderExistsUnlocked(at: trimmed)
+            try fileManager.removeItem(at: folderURL(for: trimmed))
+        }
+    }
+
+    public func moveFolder(at path: String, to newParentPath: String) throws {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let source = Self.trimmedFolderPath(path)
+            guard !source.isEmpty else {
+                throw NotesRepositoryFolderError.invalidName(path)
+            }
+            let parent = Self.trimmedFolderPath(newParentPath)
+            try ensureFolderExistsUnlocked(at: source)
+            if !parent.isEmpty {
+                try ensureFolderExistsUnlocked(at: parent)
+            }
+            if parent == source || Self.isPath(parent, descendantOf: source) {
+                throw NotesRepositoryFolderError.wouldNestInsideSelf(source: source, destination: parent)
+            }
+            let lastComponent = (source as NSString).lastPathComponent
+            let destination = parent.isEmpty ? lastComponent : "\(parent)/\(lastComponent)"
+            if destination == source { return }
+            let destinationURL = folderURL(for: destination)
+            try validateAbsolutePathLength(destinationURL)
+            if fileManager.fileExists(atPath: destinationURL.path(percentEncoded: false)) {
+                throw NotesRepositoryFolderError.alreadyExists(destination)
+            }
+            try fileManager.moveItem(at: folderURL(for: source), to: destinationURL)
+        }
+    }
+
+    @discardableResult
+    public func move(note: Note, to folderPath: String) throws -> Note {
+        try queue.sync {
+            try ensureNotesDirectoryUnlocked()
+            let normalizedFolder = try normalizedExistingFolderPathUnlocked(folderPath)
+            if normalizedFolder == note.folderPath { return note }
+            let sourceURL = noteDirectoryURL(for: note)
+            guard fileManager.fileExists(atPath: sourceURL.path(percentEncoded: false)) else {
+                throw NotesRepositoryFolderError.notFound(note.folderPath)
+            }
+            let directoryName = noteDirectoryName(for: note)
+            let destinationParent = normalizedFolder.isEmpty ? notesDirectory : folderURL(for: normalizedFolder)
+            let destinationURL = destinationParent.appendingPathComponent(directoryName, isDirectory: true)
+            try validateAbsolutePathLength(destinationURL)
+            if fileManager.fileExists(atPath: destinationURL.path(percentEncoded: false)) {
+                throw NotesRepositoryFolderError.alreadyExists(
+                    Self.joinedFolderPath(parent: normalizedFolder, child: directoryName)
+                )
+            }
+            try fileManager.createDirectory(at: destinationParent, withIntermediateDirectories: true)
+            try fileManager.moveItem(at: sourceURL, to: destinationURL)
+            return Note(
+                id: note.id,
+                filename: note.filename,
+                folderPath: normalizedFolder,
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt,
+                content: note.content,
+            )
         }
     }
 
@@ -288,6 +440,7 @@ public final class NotesRepository: @unchecked Sendable {
             let updated = Note(
                 id: note.id,
                 filename: Self.noteRelativePath(forDirectoryNamed: noteDirectoryName(for: note)),
+                folderPath: note.folderPath,
                 createdAt: note.createdAt,
                 updatedAt: Date(),
                 content: note.content,
@@ -316,8 +469,8 @@ public final class NotesRepository: @unchecked Sendable {
     public func directorySnapshot() throws -> NotesDirectorySnapshot {
         try queue.sync {
             try ensureNotesDirectoryUnlocked()
-            let entries = try storedNoteDirectoriesUnlocked()
-                .map(makeSnapshotEntryUnlocked(from:))
+            let entries = try storedNoteEntriesUnlocked()
+                .map { try makeSnapshotEntryUnlocked(from: $0.directoryURL, folderPath: $0.folderPath) }
                 .sorted { $0.filename < $1.filename }
             return NotesDirectorySnapshot(entries: entries)
         }
@@ -332,7 +485,14 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     public func noteDirectoryURL(for note: Note) -> URL {
-        notesDirectory.appendingPathComponent(noteDirectoryName(for: note), isDirectory: true)
+        let parent: URL = note.folderPath.isEmpty
+            ? notesDirectory
+            : folderURL(for: note.folderPath)
+        return parent.appendingPathComponent(noteDirectoryName(for: note), isDirectory: true)
+    }
+
+    public func folderURL(for folderPath: String) -> URL {
+        notesDirectory.appendingPathComponent(folderPath, isDirectory: true)
     }
 
     public func noteAssetsDirectoryURL(for note: Note) -> URL {
@@ -343,7 +503,7 @@ public final class NotesRepository: @unchecked Sendable {
     public func seedMarkdownShowcaseIfNeeded(createdAt: Date = Date()) throws -> Note? {
         try queue.sync { () throws -> Note? in
             try ensureNotesDirectoryUnlocked()
-            if try !storedNoteDirectoriesUnlocked().isEmpty {
+            if try !storedNoteEntriesUnlocked().isEmpty {
                 return nil
             }
 
@@ -358,7 +518,7 @@ public final class NotesRepository: @unchecked Sendable {
     public func seedDefaultNotesIfNeeded(createdAt: Date = Date()) throws -> [Note] {
         try queue.sync { () throws -> [Note] in
             try ensureNotesDirectoryUnlocked()
-            if try !storedNoteDirectoriesUnlocked().isEmpty {
+            if try !storedNoteEntriesUnlocked().isEmpty {
                 return []
             }
 
@@ -430,22 +590,70 @@ public final class NotesRepository: @unchecked Sendable {
         }
     }
 
-    private func storedNoteDirectoriesUnlocked() throws -> [URL] {
-        let urls = try fileManager.contentsOfDirectory(
-            at: notesDirectory,
+    private struct StoredNoteEntry {
+        let directoryURL: URL
+        let folderPath: String
+    }
+
+    private func storedNoteEntriesUnlocked() throws -> [StoredNoteEntry] {
+        var entries: [StoredNoteEntry] = []
+        try walkNoteDirectoriesUnlocked(at: notesDirectory, folderPath: "") { url, folderPath in
+            entries.append(StoredNoteEntry(directoryURL: url, folderPath: folderPath))
+        }
+        return entries
+    }
+
+    private func storedFolderPathsUnlocked() throws -> [String] {
+        var folders: [String] = []
+        try walkFolderDirectoriesUnlocked(at: notesDirectory, folderPath: "") { folderPath in
+            folders.append(folderPath)
+        }
+        return folders
+    }
+
+    private func walkNoteDirectoriesUnlocked(
+        at directoryURL: URL,
+        folderPath: String,
+        visit: (URL, String) -> Void,
+    ) throws {
+        let children = try fileManager.contentsOfDirectory(
+            at: directoryURL,
             includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles],
         )
-
-        return urls.filter { url in
-            guard url.hasDirectoryPath else { return false }
-            return fileManager.fileExists(
-                atPath: url.appendingPathComponent(Self.noteFilename, isDirectory: false).path(percentEncoded: false),
-            )
+        for child in children where child.hasDirectoryPath {
+            let noteFile = child.appendingPathComponent(Self.noteFilename, isDirectory: false)
+            if fileManager.fileExists(atPath: noteFile.path(percentEncoded: false)) {
+                visit(child, folderPath)
+            } else {
+                let subPath = Self.joinedFolderPath(parent: folderPath, child: child.lastPathComponent)
+                try walkNoteDirectoriesUnlocked(at: child, folderPath: subPath, visit: visit)
+            }
         }
     }
 
-    private func loadNoteUnlocked(from noteDirectoryURL: URL) throws -> Note {
+    private func walkFolderDirectoriesUnlocked(
+        at directoryURL: URL,
+        folderPath: String,
+        visit: (String) -> Void,
+    ) throws {
+        let children = try fileManager.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles],
+        )
+        for child in children where child.hasDirectoryPath {
+            let noteFile = child.appendingPathComponent(Self.noteFilename, isDirectory: false)
+            if fileManager.fileExists(atPath: noteFile.path(percentEncoded: false)) {
+                continue
+            }
+            let subPath = Self.joinedFolderPath(parent: folderPath, child: child.lastPathComponent)
+            visit(subPath)
+            try walkFolderDirectoriesUnlocked(at: child, folderPath: subPath, visit: visit)
+        }
+    }
+
+    private func loadNoteUnlocked(from noteDirectoryURL: URL, folderPath: String = "") throws -> Note {
         let markdownURL = noteDirectoryURL.appendingPathComponent(Self.noteFilename, isDirectory: false)
         let metadataURL = noteDirectoryURL.appendingPathComponent(Self.metadataFilename, isDirectory: false)
         let markdownAttributes = try fileManager.attributesOfItem(atPath: markdownURL.path(percentEncoded: false))
@@ -471,6 +679,7 @@ public final class NotesRepository: @unchecked Sendable {
         return Note(
             id: id,
             filename: Self.noteRelativePath(forDirectoryNamed: directoryName),
+            folderPath: folderPath,
             createdAt: createdAt,
             updatedAt: updatedAt,
             content: content,
@@ -508,6 +717,7 @@ public final class NotesRepository: @unchecked Sendable {
         return Note(
             id: note.id,
             filename: Self.noteRelativePath(forDirectoryNamed: note.stableID),
+            folderPath: note.folderPath,
             createdAt: note.createdAt,
             updatedAt: note.updatedAt,
             content: note.content
@@ -553,8 +763,8 @@ public final class NotesRepository: @unchecked Sendable {
 
     private func pruneStagedOrphanedAssetsUnlocked() throws {
         guard fileManager.fileExists(atPath: notesDirectory.path(percentEncoded: false)) else { return }
-        for noteDirectoryURL in try storedNoteDirectoriesUnlocked() {
-            try pruneStagedOrphanedAssetsUnlocked(in: noteDirectoryURL)
+        for entry in try storedNoteEntriesUnlocked() {
+            try pruneStagedOrphanedAssetsUnlocked(in: entry.directoryURL)
         }
     }
 
@@ -688,7 +898,10 @@ public final class NotesRepository: @unchecked Sendable {
         try data.write(to: destinationURL, options: .atomic)
     }
 
-    private func makeSnapshotEntryUnlocked(from noteDirectoryURL: URL) throws -> NotesDirectorySnapshot.Entry {
+    private func makeSnapshotEntryUnlocked(
+        from noteDirectoryURL: URL,
+        folderPath: String,
+    ) throws -> NotesDirectorySnapshot.Entry {
         let files = try recursiveRegularFilesUnlocked(in: noteDirectoryURL)
             .sorted {
                 $0.path.replacingOccurrences(of: noteDirectoryURL.path(percentEncoded: false) + "/", with: "")
@@ -710,7 +923,7 @@ public final class NotesRepository: @unchecked Sendable {
         }
 
         return .init(
-            filename: noteDirectoryURL.lastPathComponent,
+            filename: Self.joinedFolderPath(parent: folderPath, child: noteDirectoryURL.lastPathComponent),
             modifiedAt: modifiedAt,
             fileSize: totalSize,
             contentFingerprint: fingerprint,
@@ -769,11 +982,12 @@ public final class NotesRepository: @unchecked Sendable {
         return files
     }
 
-    private func makeNewNote(content: String, createdAt: Date = Date()) -> Note {
+    private func makeNewNote(content: String, createdAt: Date = Date(), folderPath: String = "") -> Note {
         let id = UUID()
         return Note(
             id: id,
             filename: Self.noteRelativePath(forDirectoryNamed: id.uuidString.lowercased()),
+            folderPath: folderPath,
             createdAt: createdAt,
             updatedAt: createdAt,
             content: content,
@@ -790,6 +1004,95 @@ public final class NotesRepository: @unchecked Sendable {
 
     private static func noteRelativePath(forDirectoryNamed directoryName: String) -> String {
         "\(directoryName)/\(noteFilename)"
+    }
+
+    static func trimmedFolderPath(_ rawPath: String) -> String {
+        rawPath
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+
+    static func parentFolderPath(of folderPath: String) -> String {
+        let components = folderPath.split(separator: "/", omittingEmptySubsequences: true)
+        guard components.count > 1 else { return "" }
+        return components.dropLast().joined(separator: "/")
+    }
+
+    static func joinedFolderPath(parent: String, child: String) -> String {
+        parent.isEmpty ? child : "\(parent)/\(child)"
+    }
+
+    static func isPath(_ candidate: String, descendantOf ancestor: String) -> Bool {
+        guard !ancestor.isEmpty else { return !candidate.isEmpty }
+        return candidate == ancestor || candidate.hasPrefix("\(ancestor)/")
+    }
+
+    private func normalizedExistingFolderPathUnlocked(_ rawPath: String) throws -> String {
+        let trimmed = Self.trimmedFolderPath(rawPath)
+        guard !trimmed.isEmpty else { return "" }
+        try ensureFolderExistsUnlocked(at: trimmed)
+        return trimmed
+    }
+
+    private func ensureFolderExistsUnlocked(at folderPath: String) throws {
+        let url = folderURL(for: folderPath)
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw NotesRepositoryFolderError.notFound(folderPath)
+        }
+    }
+
+    private func validateFolderPathComponents(_ folderPath: String) throws {
+        let components = folderPath.split(separator: "/", omittingEmptySubsequences: true)
+        guard !components.isEmpty else {
+            throw NotesRepositoryFolderError.invalidName(folderPath)
+        }
+        for component in components {
+            try validateFolderName(String(component))
+        }
+    }
+
+    private func validateFolderName(_ name: String) throws {
+        guard !name.isEmpty,
+              name != ".",
+              name != "..",
+              !name.contains("/"),
+              !name.contains("\0")
+        else {
+            throw NotesRepositoryFolderError.invalidName(name)
+        }
+        let limit = pathconfNameMax(at: notesDirectory)
+        let utf8Length = name.lengthOfBytes(using: .utf8)
+        if utf8Length > limit {
+            throw NotesRepositoryFolderError.nameTooLong(name, limit: limit)
+        }
+    }
+
+    private func validateAbsolutePathLength(_ url: URL) throws {
+        let absolutePath = url.path(percentEncoded: false)
+        let limit = pathconfPathMax(at: notesDirectory)
+        if absolutePath.lengthOfBytes(using: .utf8) > limit {
+            throw NotesRepositoryFolderError.pathTooLong(absolutePath, limit: limit)
+        }
+    }
+
+    private func pathconfNameMax(at url: URL) -> Int {
+        pathconfValue(at: url, name: Int32(_PC_NAME_MAX), fallback: 255)
+    }
+
+    private func pathconfPathMax(at url: URL) -> Int {
+        pathconfValue(at: url, name: Int32(_PC_PATH_MAX), fallback: 4096)
+    }
+
+    private func pathconfValue(at url: URL, name: Int32, fallback: Int) -> Int {
+        #if canImport(Glibc)
+        let value = url.path(percentEncoded: false).withCString { cString in
+            Glibc.pathconf(cString, name)
+        }
+        if value > 0 { return Int(value) }
+        #endif
+        return fallback
     }
 
     private static func relativeAssetPath(for filename: String) -> String {
