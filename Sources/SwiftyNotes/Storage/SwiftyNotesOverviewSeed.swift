@@ -13,16 +13,21 @@ enum SwiftyNotesOverviewSeed {
     - Native editor, preview, and window chrome
     - Three focused working modes: `Editor`, `Split`, and `Preview`
     - Formatting toolbar for headings, emphasis, links, lists, quotes, and task items
+    - Folder tree with drag-and-drop, nested subfolders, rename, and recursive delete
     - Autosave, search, sorting, and workspace restore
     - CLI access to the same notes directory for scripts and AI agents
 
     ## Storage Model
 
+    Each note lives in its own UUID-named directory. Folders are real
+    subdirectories inside your notes location, so the on-disk layout
+    mirrors the sidebar tree exactly — no hidden index files, no DB.
+
     | File | Purpose |
     | --- | --- |
-    | `note.md` | The markdown content |
-    | `meta.json` | Stable ID and timestamps |
-    | `assets/` | Imported images for the note |
+    | `<folder>/<UUID>/note.md` | The markdown content |
+    | `<folder>/<UUID>/meta.json` | Stable ID and timestamps |
+    | `<folder>/<UUID>/assets/` | Imported images for the note |
 
     ## Great for
 

@@ -93,9 +93,12 @@ From a source checkout:
 
 ```bash
 swift run swiftynotes -- cli list
+swift run swiftynotes -- cli list --folder Work
+swift run swiftynotes -- cli folders
 swift run swiftynotes -- cli get <note-id>
 swift run swiftynotes -- cli get <note-id> --raw
 swift run swiftynotes -- cli create --content '# Title\n\nBody'
+swift run swiftynotes -- cli create --content '# Draft' --folder Work/Drafts
 swift run swiftynotes -- cli update <note-id> --stdin
 ```
 
@@ -103,9 +106,12 @@ If you installed from Flathub, use the Flatpak form:
 
 ```bash
 flatpak run me.spaceinbox.swiftynotes cli list
+flatpak run me.spaceinbox.swiftynotes cli list --folder Work
+flatpak run me.spaceinbox.swiftynotes cli folders
 flatpak run me.spaceinbox.swiftynotes cli get <note-id>
 flatpak run me.spaceinbox.swiftynotes cli get <note-id> --raw
 flatpak run me.spaceinbox.swiftynotes cli create --content '# Title\n\nBody'
+flatpak run me.spaceinbox.swiftynotes cli create --content '# Draft' --folder Work/Drafts
 flatpak run me.spaceinbox.swiftynotes cli update <note-id> --stdin
 ```
 
