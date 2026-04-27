@@ -174,6 +174,8 @@ struct MainWindowActionsTests {
             editorIndentStyle: .tabs,
             autosaveDelaySeconds: 5,
             appearanceMode: .dark,
+            spellCheckEnabled: true,
+            spellCheckLanguage: nil,
         ))
     }
 
@@ -279,6 +281,8 @@ struct MainWindowActionsTests {
             editorIndentStyle: .tabs,
             autosaveDelaySeconds: 9,
             appearanceMode: .dark,
+            spellCheckEnabled: true,
+            spellCheckLanguage: nil,
         ))
 
         let stored = try settingsStore.load()

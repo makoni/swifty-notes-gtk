@@ -43,6 +43,12 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var editorIndentStyle: EditorIndentStyle
     public var autosaveDelaySeconds: Int
     public var appearanceMode: AppearanceMode
+    public var spellCheckEnabled: Bool
+    /// IETF-style language tag (`en_US`, `de_DE`, ...) for the
+    /// spell-check dictionary. `nil` keeps the libspelling default,
+    /// which follows the system locale and the first installed
+    /// dictionary that matches it.
+    public var spellCheckLanguage: String?
 
     public init(
         customNotesDirectoryPath: String? = nil,
@@ -52,6 +58,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
         editorIndentStyle: EditorIndentStyle = .spaces,
         autosaveDelaySeconds: Int = AppSettings.defaultAutosaveDelaySeconds,
         appearanceMode: AppearanceMode = .system,
+        spellCheckEnabled: Bool = true,
+        spellCheckLanguage: String? = nil,
     ) {
         self.customNotesDirectoryPath = customNotesDirectoryPath?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -61,6 +69,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.editorIndentStyle = editorIndentStyle
         self.autosaveDelaySeconds = Self.clampedAutosaveDelaySeconds(autosaveDelaySeconds)
         self.appearanceMode = appearanceMode
+        self.spellCheckEnabled = spellCheckEnabled
+        self.spellCheckLanguage = spellCheckLanguage?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nilIfEmpty
     }
 
     public static let `default` = AppSettings()
@@ -91,6 +103,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 editorIndentStyle: editorIndentStyle,
                 autosaveDelaySeconds: autosaveDelaySeconds,
                 appearanceMode: appearanceMode,
+                spellCheckEnabled: spellCheckEnabled,
+                spellCheckLanguage: spellCheckLanguage,
             )
         }
         return AppSettings(
@@ -101,6 +115,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
             editorIndentStyle: editorIndentStyle,
             autosaveDelaySeconds: autosaveDelaySeconds,
             appearanceMode: appearanceMode,
+            spellCheckEnabled: spellCheckEnabled,
+            spellCheckLanguage: spellCheckLanguage,
         )
     }
 
@@ -142,6 +158,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
             editorIndentStyle: editorIndentStyle,
             autosaveDelaySeconds: autosaveDelaySeconds,
             appearanceMode: appearanceMode,
+            spellCheckEnabled: spellCheckEnabled,
+            spellCheckLanguage: spellCheckLanguage,
         )
     }
 
@@ -153,6 +171,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case editorIndentStyle
         case autosaveDelaySeconds
         case appearanceMode
+        case spellCheckEnabled
+        case spellCheckLanguage
     }
 
     public init(from decoder: any Decoder) throws {
@@ -165,6 +185,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
             editorIndentStyle: container.decodeIfPresent(EditorIndentStyle.self, forKey: .editorIndentStyle) ?? .spaces,
             autosaveDelaySeconds: container.decodeIfPresent(Int.self, forKey: .autosaveDelaySeconds) ?? Self.defaultAutosaveDelaySeconds,
             appearanceMode: container.decodeIfPresent(AppearanceMode.self, forKey: .appearanceMode) ?? .system,
+            spellCheckEnabled: container.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled) ?? true,
+            spellCheckLanguage: container.decodeIfPresent(String.self, forKey: .spellCheckLanguage),
         )
     }
 
@@ -178,5 +200,11 @@ public struct AppSettings: Codable, Equatable, Sendable {
 
     private static func clampedAutosaveDelaySeconds(_ value: Int) -> Int {
         min(max(value, 1), 60)
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }

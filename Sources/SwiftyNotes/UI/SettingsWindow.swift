@@ -11,6 +11,8 @@ final class SettingsWindow {
         let editorIndentStyle: EditorIndentStyle
         let autosaveDelaySeconds: Int
         let appearanceMode: AppearanceMode
+        let spellCheckEnabled: Bool
+        let spellCheckLanguage: String?
     }
 
     let window: ApplicationWindow
@@ -24,6 +26,9 @@ final class SettingsWindow {
     private let indentStyleRow = ComboRow(title: "Indent style")
     private let autosaveDelayRow = SpinRow(title: "Autosave delay", min: 1, max: 60, step: 1)
     private let appearanceRow = ComboRow(title: "Appearance")
+    private let spellCheckEnabledRow = SwitchRow(title: "Enable spell-check")
+    private let spellCheckLanguageRow = ComboRow(title: "Spell-check language")
+    private let spellCheckLanguages: [SpellChecking.LanguageOption]
     private let browseButton = Button(label: "Browse…")
     private let resetButton = Button(label: "Reset")
     private let openButton = Button(label: "Open")
@@ -53,6 +58,7 @@ final class SettingsWindow {
         self.applyNotesDirectoryChange = applyNotesDirectoryChange
         self.applySettingsChange = applySettingsChange
         self.openDirectory = openDirectory
+        spellCheckLanguages = SpellChecking.availableLanguages()
 
         window.title = "Settings"
         window.iconName = AppIdentity.identifier
@@ -77,6 +83,8 @@ final class SettingsWindow {
             editorIndentStyle: currentSettings.editorIndentStyle,
             autosaveDelaySeconds: currentSettings.autosaveDelaySeconds,
             appearanceMode: currentSettings.appearanceMode,
+            spellCheckEnabled: currentSettings.spellCheckEnabled,
+            spellCheckLanguage: currentSettings.spellCheckLanguage,
         )
     }
 
@@ -186,12 +194,33 @@ final class SettingsWindow {
         }
         appearanceGroup.add(appearanceRow)
 
+        let spellCheckGroup = PreferencesGroup(
+            title: "Spell check",
+            description: "Underline misspellings while you type and offer corrections in the right-click menu.",
+        )
+        spellCheckEnabledRow.subtitle = "Highlight misspellings inline using libspelling and the system dictionaries."
+        spellCheckEnabledRow.onNotify(.active) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        spellCheckGroup.add(spellCheckEnabledRow)
+
+        if !spellCheckLanguages.isEmpty {
+            spellCheckLanguageRow.subtitle = "Choose a dictionary, or follow the system locale."
+            let displayNames = ["Follow system locale"] + spellCheckLanguages.map(\.displayName)
+            spellCheckLanguageRow.setModel(StringList(displayNames))
+            spellCheckLanguageRow.onNotify(.selected) { [weak self] in
+                self?.handleInlinePreferenceChange()
+            }
+            spellCheckGroup.add(spellCheckLanguageRow)
+        }
+
         let content = Box(orientation: .vertical, spacing: 24)
         content.setMargins(24)
         content.append(storageGroup)
         content.append(editorGroup)
         content.append(savingGroup)
         content.append(appearanceGroup)
+        content.append(spellCheckGroup)
 
         let scrolled = ScrolledWindow(child: content)
         scrolled.setPolicy(horizontal: .never, vertical: .automatic)
@@ -273,6 +302,19 @@ final class SettingsWindow {
         indentStyleRow.selected = EditorIndentStyle.allCases.firstIndex(of: currentSettings.editorIndentStyle) ?? 0
         autosaveDelayRow.value = Double(currentSettings.autosaveDelaySeconds)
         appearanceRow.selected = AppearanceMode.allCases.firstIndex(of: currentSettings.appearanceMode) ?? 0
+        spellCheckEnabledRow.active = currentSettings.spellCheckEnabled
+        spellCheckLanguageRow.sensitive = currentSettings.spellCheckEnabled
+        if !spellCheckLanguages.isEmpty {
+            // Index 0 represents the "follow system locale" option (no
+            // explicit language). Subsequent indices map onto entries in
+            // ``spellCheckLanguages`` (see buildUI for the model setup).
+            if let language = currentSettings.spellCheckLanguage,
+               let index = spellCheckLanguages.firstIndex(where: { $0.code == language }) {
+                spellCheckLanguageRow.selected = index + 1
+            } else {
+                spellCheckLanguageRow.selected = 0
+            }
+        }
         isUpdatingControls = false
     }
 
@@ -285,6 +327,19 @@ final class SettingsWindow {
         let appearanceMode = AppearanceMode.allCases[
             min(max(appearanceRow.selected, 0), AppearanceMode.allCases.count - 1),
         ]
+        let resolvedSpellCheckLanguage: String?
+        if !spellCheckLanguages.isEmpty {
+            let languageIndex = spellCheckLanguageRow.selected
+            if languageIndex <= 0 {
+                resolvedSpellCheckLanguage = nil
+            } else {
+                let offset = languageIndex - 1
+                let clamped = min(max(offset, 0), spellCheckLanguages.count - 1)
+                resolvedSpellCheckLanguage = spellCheckLanguages[clamped].code
+            }
+        } else {
+            resolvedSpellCheckLanguage = currentSettings.spellCheckLanguage
+        }
         let updatedSettings = AppSettings(
             customNotesDirectoryPath: currentSettings.customNotesDirectoryPath,
             wrapsEditorLines: wrapLinesRow.active,
@@ -293,6 +348,8 @@ final class SettingsWindow {
             editorIndentStyle: indentStyle,
             autosaveDelaySeconds: Int(autosaveDelayRow.value.rounded()),
             appearanceMode: appearanceMode,
+            spellCheckEnabled: spellCheckEnabledRow.active,
+            spellCheckLanguage: resolvedSpellCheckLanguage,
         )
 
         do {

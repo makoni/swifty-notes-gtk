@@ -40,6 +40,14 @@ final class SpellChecking {
         set { swifty_notes_spelling_set_enabled(adapterPointer, newValue ? 1 : 0) }
     }
 
+    /// Re-scans the entire buffer. Call after the buffer text has been
+    /// replaced wholesale (for example when the user switches to a
+    /// different note); incremental tracking is for keystrokes, not
+    /// for full-buffer swaps.
+    func invalidateAll() {
+        swifty_notes_spelling_invalidate_all(adapterPointer)
+    }
+
     /// IETF-style language tag (`en_US`, `de_DE`, ...). `nil` keeps the
     /// adapter on the default language picked by the checker, which
     /// follows the system locale.
@@ -51,5 +59,32 @@ final class SpellChecking {
         set {
             swifty_notes_spelling_set_language(adapterPointer, newValue)
         }
+    }
+
+    /// One language entry exposed by the system's spell-check provider.
+    struct LanguageOption: Hashable {
+        /// IETF code such as `en_US`, suitable for `language` setter.
+        let code: String
+        /// Localized display name like "English (United States)".
+        let displayName: String
+    }
+
+    /// Lists every language the system's spell-check provider can offer.
+    /// Empty when no provider / no dictionaries are installed.
+    static func availableLanguages() -> [LanguageOption] {
+        var collected: [LanguageOption] = []
+        withUnsafeMutablePointer(to: &collected) { pointer in
+            swifty_notes_spelling_for_each_language({ codePointer, namePointer, userData in
+                guard let codePointer, let namePointer, let userData else { return }
+                let listPointer = userData.assumingMemoryBound(to: [LanguageOption].self)
+                listPointer.pointee.append(
+                    LanguageOption(
+                        code: String(cString: codePointer),
+                        displayName: String(cString: namePointer),
+                    ),
+                )
+            }, UnsafeMutableRawPointer(pointer))
+        }
+        return collected.sorted { $0.displayName.localizedCompare($1.displayName) == .orderedAscending }
     }
 }
