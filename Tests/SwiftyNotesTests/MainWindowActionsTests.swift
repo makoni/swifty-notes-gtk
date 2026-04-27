@@ -105,6 +105,7 @@ struct MainWindowActionsTests {
         #expect(window.debugNoteContextMenuLabels == [
             "Rename note…",
             "Duplicate note",
+            "Move to…",
             "Export note…",
             "Copy note ID",
             "Delete…",
