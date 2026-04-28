@@ -25,8 +25,16 @@ enum NotesCLI {
         arguments: [String],
         stdin: Data? = nil,
     ) -> NotesCLIExecutionResult? {
-        guard arguments.first == "cli" else { return nil }
-        return run(arguments: Array(arguments.dropFirst()), stdin: stdin)
+        // Drop a leading "--" — some SwiftPM versions forward it to the
+        // child process when invoked as `swift run swiftynotes -- cli ...`.
+        // Older swift used to consume it, newer ones pass it through, and
+        // we want both forms to dispatch to the CLI.
+        var trimmed = arguments
+        if trimmed.first == "--" {
+            trimmed.removeFirst()
+        }
+        guard trimmed.first == "cli" else { return nil }
+        return run(arguments: Array(trimmed.dropFirst()), stdin: stdin)
     }
 
     private static func run(

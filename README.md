@@ -92,19 +92,19 @@ The same executable exposes a CLI.
 From a source checkout:
 
 ```bash
-swift run swiftynotes -- cli list
-swift run swiftynotes -- cli list --folder Work
-swift run swiftynotes -- cli folders
-swift run swiftynotes -- cli folders create Work/Drafts
-swift run swiftynotes -- cli folders rename Work/Drafts Outbox
-swift run swiftynotes -- cli folders move Outbox --to Personal
-swift run swiftynotes -- cli folders rm Personal/Outbox --yes
-swift run swiftynotes -- cli get <note-id>
-swift run swiftynotes -- cli get <note-id> --raw
-swift run swiftynotes -- cli create --content '# Title\n\nBody'
-swift run swiftynotes -- cli create --content '# Draft' --folder Work/Drafts
-swift run swiftynotes -- cli move <note-id> --folder Personal
-swift run swiftynotes -- cli update <note-id> --stdin
+swift run swiftynotes cli list
+swift run swiftynotes cli list --folder Work
+swift run swiftynotes cli folders
+swift run swiftynotes cli folders create Work/Drafts
+swift run swiftynotes cli folders rename Work/Drafts Outbox
+swift run swiftynotes cli folders move Outbox --to Personal
+swift run swiftynotes cli folders rm Personal/Outbox --yes
+swift run swiftynotes cli get <note-id>
+swift run swiftynotes cli get <note-id> --raw
+swift run swiftynotes cli create --content '# Title\n\nBody'
+swift run swiftynotes cli create --content '# Draft' --folder Work/Drafts
+swift run swiftynotes cli move <note-id> --folder Personal
+swift run swiftynotes cli update <note-id> --stdin
 ```
 
 If you installed from Flathub, use the Flatpak form:

@@ -10,6 +10,21 @@ struct CLITests {
     }
 
     @Test
+    func `cli run if requested tolerates a leading dash dash from swift run`() {
+        // `swift run swiftynotes -- cli list` forwards "--" to the binary
+        // in some SwiftPM versions; the dispatch should still route to the
+        // CLI rather than fall through to the GUI launcher.
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try? FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+        let result = NotesCLI.runIfRequested(arguments: [
+            "--", "cli", "list", "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(result?.exitCode == 0)
+    }
+
+    @Test
     func `cli supports stdin and content file sources`() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
