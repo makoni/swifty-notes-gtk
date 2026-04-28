@@ -32,18 +32,8 @@ extension MainWindow {
                 self?.folderContextMenu = nil
             }
         }
-        // Present from MainContext.idle so the originating right-click
-        // gesture can complete its press → release transition first;
-        // presenting synchronously inside the gesture handler leaves the
-        // row stuck in the GTK_STATE_FLAG_ACTIVE state and cascades
-        // "Broken accounting of active state" warnings the next time the
-        // sidebar tears its rows down for a re-render.
+        guard popover.present(from: row, x: x, y: y) else { return }
         folderContextMenu = popover
-        MainContext.idle { [weak self, weak popover, weak row] in
-            guard let popover, let row, row.root != nil else { return }
-            guard self?.folderContextMenu === popover else { return }
-            _ = popover.present(from: row, x: x, y: y)
-        }
     }
 
     func dismissFolderContextMenu() {
