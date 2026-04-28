@@ -4,10 +4,11 @@ import Foundation
 @MainActor
 extension MainWindow {
     func presentFolderContextMenu(forFolderPath folderPath: String, x: Int, y: Int) {
-        // Re-use the note context menu plumbing — both menus close as soon as
-        // either one opens, so a stale folder popover never lingers behind a
-        // newly opened note popover.
+        // Both context menus dismiss as soon as either opens so a stale
+        // popover never lingers across re-renders.
         dismissNoteContextMenu()
+        dismissFolderContextMenu()
+
         let folderRowIndex = sidebar.renderedItems.firstIndex { item in
             if case let .folder(folder) = item { return folder.path == folderPath }
             return false
@@ -22,11 +23,36 @@ extension MainWindow {
         popover.position = .bottom
         popover.autohide = true
         popover.child = makeFolderContextPopoverContent(forFolderPath: folderPath)
-        popover.onClosed { [weak popover] in
-            guard let popover, popover.root != nil else { return }
+        popover.onClosed { [weak self, weak popover] in
+            guard let popover else { return }
+            if popover.root != nil {
+                popover.unparent()
+            }
+            if self?.folderContextMenu === popover {
+                self?.folderContextMenu = nil
+            }
+        }
+        // Present from MainContext.idle so the originating right-click
+        // gesture can complete its press → release transition first;
+        // presenting synchronously inside the gesture handler leaves the
+        // row stuck in the GTK_STATE_FLAG_ACTIVE state and cascades
+        // "Broken accounting of active state" warnings the next time the
+        // sidebar tears its rows down for a re-render.
+        folderContextMenu = popover
+        MainContext.idle { [weak self, weak popover, weak row] in
+            guard let popover, let row, row.root != nil else { return }
+            guard self?.folderContextMenu === popover else { return }
+            _ = popover.present(from: row, x: x, y: y)
+        }
+    }
+
+    func dismissFolderContextMenu() {
+        guard let popover = folderContextMenu else { return }
+        folderContextMenu = nil
+        popover.popdown()
+        if popover.root != nil {
             popover.unparent()
         }
-        _ = popover.present(from: row, x: x, y: y)
     }
 
     private func makeFolderContextPopoverContent(forFolderPath folderPath: String) -> Widget {
@@ -77,9 +103,11 @@ extension MainWindow {
     }
 
     private func runAfterFolderContextMenuClosure(_ action: @escaping @MainActor () -> Void) {
-        // Folder popovers close on autohide once a button click bubbles up,
-        // but the action needs to run after the popover unparents to avoid
-        // GTK warnings about presenting a dialog from a closing widget.
+        // Tear the popover down before the action runs so refreshSidebar
+        // (which the action may trigger) doesn't have to walk over a row
+        // that still owns a parented popover. Deferring through MainContext.idle
+        // also lets the click-release transition complete first.
+        dismissFolderContextMenu()
         MainContext.idle(action)
     }
 

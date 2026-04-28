@@ -87,6 +87,7 @@ final class MainWindow {
     var directorySnapshot = NotesDirectorySnapshot()
     var sidebarHoverExpandTimer: SourceID?
     var sidebarHoverExpandFolder: String?
+    var folderContextMenu: Popover?
     var deferredExternalSnapshot: NotesDirectorySnapshot?
     var externalChangeMonitorID: SourceID?
     var externalReloadDeferred = false

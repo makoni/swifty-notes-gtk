@@ -184,6 +184,7 @@ extension MainWindow {
 
     func refreshSidebar() {
         dismissNoteContextMenu()
+        dismissFolderContextMenu()
         let items = SidebarTreeFlattener.flatten(
             notes: state.notes,
             folders: state.folders,
