@@ -52,6 +52,7 @@ parts:
       - libgtk-4-dev
       - libgtksourceview-5-dev
       - libadwaita-1-dev
+      - libspelling-1-dev
       - libncurses-dev
       - libpython3-dev
       - libsqlite3-0
