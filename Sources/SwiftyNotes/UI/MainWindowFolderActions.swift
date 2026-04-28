@@ -128,7 +128,7 @@ extension MainWindow {
     func presentNewFolderDialog(parentPath: String) {
         let dialog = AlertDialog(
             heading: parentPath.isEmpty ? "New folder" : "New subfolder in \"\(parentPath)\"",
-            body: "Folder names cannot contain slashes.",
+            body: "Folder names cannot contain slashes (/) — Create stays disabled until the name is valid.",
         )
         let entry = Entry()
         entry.placeholderText = "Folder name"
@@ -141,13 +141,12 @@ extension MainWindow {
         dialog.setResponseAppearance("create", appearance: .suggested)
         dialog.setResponseEnabled("create", enabled: false)
         entry.onChanged {
-            let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            dialog.setResponseEnabled("create", enabled: !trimmed.isEmpty)
+            dialog.setResponseEnabled("create", enabled: FolderNameValidation.isAcceptable(entry.text))
         }
         dialog.onResponse { [weak self] response in
             guard let self, response == "create" else { return }
+            guard FolderNameValidation.isAcceptable(entry.text) else { return }
             let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
             let path = parentPath.isEmpty ? trimmed : "\(parentPath)/\(trimmed)"
             createFolder(at: path, expandAfter: parentPath)
         }
@@ -177,7 +176,7 @@ extension MainWindow {
         let currentName = (folderPath as NSString).lastPathComponent
         let dialog = AlertDialog(
             heading: "Rename folder",
-            body: "Renaming \"\(folderPath)\".",
+            body: "Renaming \"\(folderPath)\". Folder names cannot contain slashes (/).",
         )
         let entry = Entry()
         entry.text = currentName
@@ -193,13 +192,15 @@ extension MainWindow {
         // until the user actually types something different.
         dialog.setResponseEnabled("rename", enabled: false)
         entry.onChanged {
-            let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            dialog.setResponseEnabled("rename", enabled: !trimmed.isEmpty && trimmed != currentName)
+            dialog.setResponseEnabled(
+                "rename",
+                enabled: FolderNameValidation.isAcceptable(entry.text, currentName: currentName),
+            )
         }
         dialog.onResponse { [weak self] response in
             guard let self, response == "rename" else { return }
+            guard FolderNameValidation.isAcceptable(entry.text, currentName: currentName) else { return }
             let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty, trimmed != currentName else { return }
             renameFolder(at: folderPath, to: trimmed)
         }
         dialog.present(window)
