@@ -194,16 +194,69 @@ public final class NotesRepository: @unchecked Sendable {
             let notes = try storedNoteEntriesUnlocked().map { entry in
                 try loadNoteUnlocked(from: entry.directoryURL, folderPath: entry.folderPath)
             }
-            for note in notes {
+            let deduplicated = try resolveDuplicateIDsUnlocked(notes)
+            for note in deduplicated {
                 try repairShowcaseImageUnlockedIfNeeded(for: note)
             }
-            return notes.sorted {
+            return deduplicated.sorted {
                 if $0.createdAt == $1.createdAt {
                     return $0.stableID > $1.stableID
                 }
                 return $0.createdAt > $1.createdAt
             }
         }
+    }
+
+    /// Two on-disk note directories can end up sharing the same `id` if a
+    /// user clones a UUID directory (or merges vaults). Without resolution
+    /// every lookup by id picks the first match deterministically and the
+    /// later copies become unreachable through the GUI/CLI. We mint a
+    /// fresh UUID for the later occurrences and rewrite their `meta.json`
+    /// so subsequent reloads are stable.
+    private func resolveDuplicateIDsUnlocked(_ notes: [Note]) throws -> [Note] {
+        let stableOrdered = notes.sorted { lhs, rhs in
+            if lhs.folderPath == rhs.folderPath {
+                return lhs.filename < rhs.filename
+            }
+            return lhs.folderPath < rhs.folderPath
+        }
+        var seen: Set<UUID> = []
+        var resolved: [Note] = []
+        resolved.reserveCapacity(stableOrdered.count)
+        for note in stableOrdered {
+            if seen.contains(note.id) {
+                let renumbered = Note(
+                    id: UUID(),
+                    filename: note.filename,
+                    folderPath: note.folderPath,
+                    createdAt: note.createdAt,
+                    updatedAt: note.updatedAt,
+                    content: note.content,
+                )
+                try persistMetadataUnlocked(renumbered)
+                seen.insert(renumbered.id)
+                resolved.append(renumbered)
+            } else {
+                seen.insert(note.id)
+                resolved.append(note)
+            }
+        }
+        return resolved
+    }
+
+    /// Writes only the `meta.json` for the note. Used by the duplicate-id
+    /// resolver — we only need to persist the new id, not the markdown.
+    private func persistMetadataUnlocked(_ note: Note) throws {
+        let metadataURL = noteDirectoryURL(for: note)
+            .appendingPathComponent(Self.metadataFilename, isDirectory: false)
+        let metadata = StoredNoteMetadata(
+            schemaVersion: Self.storageSchemaVersion,
+            id: note.id,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+        )
+        let data = try metadataEncoder.encode(metadata)
+        try data.write(to: metadataURL, options: .atomic)
     }
 
     /// All folder paths under the notes directory. Empty array means no

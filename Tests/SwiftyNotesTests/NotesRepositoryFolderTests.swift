@@ -9,6 +9,51 @@ struct NotesRepositoryFolderTests {
         return (NotesRepository(notesDirectory: directory), directory)
     }
 
+    /// Writes a note + meta.json directly to disk to simulate state the
+    /// public API would otherwise reject (e.g. a manually-cloned UUID
+    /// directory). Mirrors the on-disk layout the repository expects.
+    fileprivate static func writeRawNote(
+        at root: URL,
+        folder: String,
+        id: UUID,
+        content: String,
+    ) throws {
+        let directoryName = id.uuidString.lowercased()
+        let noteDirectory = root
+            .appendingPathComponent(folder, isDirectory: true)
+            .appendingPathComponent(directoryName, isDirectory: true)
+        try FileManager.default.createDirectory(at: noteDirectory, withIntermediateDirectories: true)
+        try content.write(
+            to: noteDirectory.appendingPathComponent("note.md", isDirectory: false),
+            atomically: true,
+            encoding: .utf8,
+        )
+        let timestamp = "2026-01-01T00:00:00.000Z"
+        let metadata = """
+        {
+          "schemaVersion" : 1,
+          "id" : "\(id.uuidString)",
+          "createdAt" : "\(timestamp)",
+          "updatedAt" : "\(timestamp)"
+        }
+        """
+        try metadata.write(
+            to: noteDirectory.appendingPathComponent("meta.json", isDirectory: false),
+            atomically: true,
+            encoding: .utf8,
+        )
+    }
+
+    fileprivate static func readMetaID(directory: URL, folder: String, uuidName: String) throws -> UUID {
+        let url = directory
+            .appendingPathComponent(folder, isDirectory: true)
+            .appendingPathComponent(uuidName, isDirectory: true)
+            .appendingPathComponent("meta.json", isDirectory: false)
+        struct StoredMeta: Decodable { let id: UUID }
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(StoredMeta.self, from: data).id
+    }
+
     @Test
     func `loadNotes finds notes nested across folders and reports their folder paths`() throws {
         let (repository, directory) = Self.makeRepository()
@@ -240,6 +285,48 @@ struct NotesRepositoryFolderTests {
         #expect(throws: NotesRepositoryFolderError.self) {
             _ = try repository.createNote(initialContent: "stranger", in: "Work/\(hostDirectoryName)/Sub")
         }
+    }
+
+    @Test
+    func `loadNotes assigns a fresh UUID to a duplicate id and rewrites its meta json`() throws {
+        let (repository, directory) = Self.makeRepository()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try repository.createFolder(at: "First")
+        try repository.createFolder(at: "Second")
+
+        let sharedID = UUID()
+        try Self.writeRawNote(at: directory, folder: "First", id: sharedID, content: "first body")
+        try Self.writeRawNote(at: directory, folder: "Second", id: sharedID, content: "second body")
+
+        let notes = try repository.loadNotes()
+        #expect(notes.count == 2)
+        let ids = Set(notes.map(\.id))
+        #expect(ids.count == 2, "Duplicate ids should have been resolved into two distinct ids")
+        #expect(ids.contains(sharedID), "First-encountered note should keep the original id")
+
+        // The losing note's meta.json must reflect the new id on disk so
+        // the next load doesn't immediately re-collide.
+        let firstMetaID = try Self.readMetaID(directory: directory, folder: "First", uuidName: sharedID.uuidString.lowercased())
+        let secondMetaID = try Self.readMetaID(directory: directory, folder: "Second", uuidName: sharedID.uuidString.lowercased())
+        #expect(firstMetaID != secondMetaID)
+        #expect([firstMetaID, secondMetaID].contains(sharedID))
+    }
+
+    @Test
+    func `loadNotes is stable on reload after a duplicate id has been resolved`() throws {
+        let (repository, directory) = Self.makeRepository()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try repository.createFolder(at: "First")
+        try repository.createFolder(at: "Second")
+        let sharedID = UUID()
+        try Self.writeRawNote(at: directory, folder: "First", id: sharedID, content: "x")
+        try Self.writeRawNote(at: directory, folder: "Second", id: sharedID, content: "y")
+
+        let firstPass = try repository.loadNotes().map(\.id).sorted { $0.uuidString < $1.uuidString }
+        let secondPass = try repository.loadNotes().map(\.id).sorted { $0.uuidString < $1.uuidString }
+        #expect(firstPass == secondPass)
     }
 
     @Test
