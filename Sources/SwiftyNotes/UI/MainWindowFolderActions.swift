@@ -132,6 +132,7 @@ extension MainWindow {
         )
         let entry = Entry()
         entry.placeholderText = "Folder name"
+        entry.activatesDefault = true
         dialog.extraChild = entry
         dialog.addResponse("cancel", label: "Cancel")
         dialog.addResponse("create", label: "Create")
@@ -139,9 +140,9 @@ extension MainWindow {
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("create", appearance: .suggested)
         dialog.setResponseEnabled("create", enabled: false)
-        entry.onChanged { [weak dialog, weak entry] in
-            let trimmed = entry?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            dialog?.setResponseEnabled("create", enabled: !trimmed.isEmpty)
+        entry.onChanged {
+            let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            dialog.setResponseEnabled("create", enabled: !trimmed.isEmpty)
         }
         dialog.onResponse { [weak self] response in
             guard let self, response == "create" else { return }
@@ -180,6 +181,7 @@ extension MainWindow {
         )
         let entry = Entry()
         entry.text = currentName
+        entry.activatesDefault = true
         entry.selectAll()
         dialog.extraChild = entry
         dialog.addResponse("cancel", label: "Cancel")
@@ -190,9 +192,9 @@ extension MainWindow {
         // Same name as the current one is a no-op, so keep Rename disabled
         // until the user actually types something different.
         dialog.setResponseEnabled("rename", enabled: false)
-        entry.onChanged { [weak dialog, weak entry] in
-            let trimmed = entry?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            dialog?.setResponseEnabled("rename", enabled: !trimmed.isEmpty && trimmed != currentName)
+        entry.onChanged {
+            let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            dialog.setResponseEnabled("rename", enabled: !trimmed.isEmpty && trimmed != currentName)
         }
         dialog.onResponse { [weak self] response in
             guard let self, response == "rename" else { return }
