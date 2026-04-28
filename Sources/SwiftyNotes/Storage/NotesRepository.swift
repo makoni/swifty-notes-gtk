@@ -88,6 +88,7 @@ public enum NotesRepositoryFolderError: Error, LocalizedError, Equatable {
     case alreadyExists(String)
     case notFound(String)
     case wouldNestInsideSelf(source: String, destination: String)
+    case cannotNestInsideNote(notePath: String)
 
     public var errorDescription: String? {
         switch self {
@@ -103,6 +104,8 @@ public enum NotesRepositoryFolderError: Error, LocalizedError, Equatable {
             "Folder \"\(path)\" was not found."
         case let .wouldNestInsideSelf(source, destination):
             "Cannot move \"\(source)\" into its own descendant \"\(destination)\"."
+        case let .cannotNestInsideNote(notePath):
+            "Cannot place a folder or note inside the note directory at \"\(notePath)\"."
         }
     }
 }
@@ -235,6 +238,7 @@ public final class NotesRepository: @unchecked Sendable {
             if fileManager.fileExists(atPath: url.path(percentEncoded: false)) {
                 throw NotesRepositoryFolderError.alreadyExists(trimmed)
             }
+            try ensureNoNoteAncestorUnlocked(trimmed)
             try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         }
     }
@@ -1031,6 +1035,7 @@ public final class NotesRepository: @unchecked Sendable {
         let trimmed = Self.trimmedFolderPath(rawPath)
         guard !trimmed.isEmpty else { return "" }
         try ensureFolderExistsUnlocked(at: trimmed)
+        try ensureNoNoteAncestorUnlocked(trimmed)
         return trimmed
     }
 
@@ -1040,6 +1045,24 @@ public final class NotesRepository: @unchecked Sendable {
         guard fileManager.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw NotesRepositoryFolderError.notFound(folderPath)
+        }
+    }
+
+    /// Walks every prefix of `folderPath` (including the path itself) and
+    /// rejects if any of them is a note directory — i.e. contains `note.md`.
+    /// Without this guard a path like `Work/<UUID>/Sub` happily creates a
+    /// directory inside a note, where the walker would never find anything
+    /// stored there because it stops at the first `note.md`.
+    private func ensureNoNoteAncestorUnlocked(_ folderPath: String) throws {
+        let trimmed = Self.trimmedFolderPath(folderPath)
+        guard !trimmed.isEmpty else { return }
+        var current = ""
+        for component in trimmed.split(separator: "/", omittingEmptySubsequences: true).map(String.init) {
+            current = Self.joinedFolderPath(parent: current, child: component)
+            let noteFile = folderURL(for: current).appendingPathComponent(Self.noteFilename, isDirectory: false)
+            if fileManager.fileExists(atPath: noteFile.path(percentEncoded: false)) {
+                throw NotesRepositoryFolderError.cannotNestInsideNote(notePath: current)
+            }
         }
     }
 

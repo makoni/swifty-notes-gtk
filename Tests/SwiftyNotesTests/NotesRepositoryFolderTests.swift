@@ -185,6 +185,64 @@ struct NotesRepositoryFolderTests {
     }
 
     @Test
+    func `createFolder rejects a path that traverses an existing note directory`() throws {
+        let (repository, directory) = Self.makeRepository()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try repository.createFolder(at: "Work")
+        let note = try repository.createNote(initialContent: "x", in: "Work")
+        let noteDirectoryName = (note.filename as NSString).deletingLastPathComponent
+
+        // Trying to create a subfolder inside the note's UUID directory must
+        // fail — placing anything under <folder>/<UUID>/ produces orphan
+        // content the walker never finds because the walker stops at any
+        // directory that contains a note.md.
+        let target = "Work/\(noteDirectoryName)/Sub"
+        #expect(throws: NotesRepositoryFolderError.self) {
+            try repository.createFolder(at: target)
+        }
+    }
+
+    @Test
+    func `move note rejects a destination folder that is itself a note directory`() throws {
+        let (repository, directory) = Self.makeRepository()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try repository.createFolder(at: "Work")
+        let host = try repository.createNote(initialContent: "host", in: "Work")
+        let stranger = try repository.createNote(initialContent: "stranger", in: "Work")
+        let hostDirectoryName = (host.filename as NSString).deletingLastPathComponent
+        let noteDirectoryPath = "Work/\(hostDirectoryName)"
+
+        #expect(throws: NotesRepositoryFolderError.self) {
+            _ = try repository.move(note: stranger, to: noteDirectoryPath)
+        }
+    }
+
+    @Test
+    func `createNote rejects a folder path that lives inside an existing note directory`() throws {
+        let (repository, directory) = Self.makeRepository()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try repository.createFolder(at: "Work")
+        let host = try repository.createNote(initialContent: "host", in: "Work")
+        let hostDirectoryName = (host.filename as NSString).deletingLastPathComponent
+
+        // Pre-create the rogue subfolder on disk (simulating a manual mkdir
+        // or a CLI bypass) so ensureFolderExists passes and we exercise the
+        // ancestor-check path.
+        let rogue = directory
+            .appendingPathComponent("Work", isDirectory: true)
+            .appendingPathComponent(hostDirectoryName, isDirectory: true)
+            .appendingPathComponent("Sub", isDirectory: true)
+        try FileManager.default.createDirectory(at: rogue, withIntermediateDirectories: true)
+
+        #expect(throws: NotesRepositoryFolderError.self) {
+            _ = try repository.createNote(initialContent: "stranger", in: "Work/\(hostDirectoryName)/Sub")
+        }
+    }
+
+    @Test
     func `validation rejects names containing path separators`() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
