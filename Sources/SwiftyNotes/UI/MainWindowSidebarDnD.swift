@@ -83,7 +83,7 @@ extension MainWindow {
                   let payload = SidebarDragPayload.parse(raw)
             else { return false }
             cancelHoverExpand(folder: destinationFolder)
-            return handleSidebarDrop(payload: payload, into: destinationFolder)
+            return acceptSidebarDrop(payload: payload, into: destinationFolder)
         }
         row.addController(target)
     }
@@ -100,17 +100,24 @@ extension MainWindow {
                   let raw = text,
                   let payload = SidebarDragPayload.parse(raw)
             else { return false }
-            return handleSidebarDrop(payload: payload, into: "")
+            return acceptSidebarDrop(payload: payload, into: "")
         }
         sidebar.list.addController(target)
     }
 
-    private func handleSidebarDrop(payload: SidebarDragPayload, into folderPath: String) -> Bool {
+    /// Validates the drop and, if valid, schedules the move on the next
+    /// idle tick. Running the move synchronously inside the drop handler
+    /// tears the source row down before GTK's drag gesture finishes its
+    /// release transition, which leaves rows stuck in GTK_STATE_FLAG_ACTIVE
+    /// and produces a "Broken accounting of active state" warning cascade.
+    private func acceptSidebarDrop(payload: SidebarDragPayload, into folderPath: String) -> Bool {
         switch payload {
         case let .note(uuid):
             guard let note = state.notes.first(where: { $0.id == uuid }) else { return false }
             if note.folderPath == folderPath { return false }
-            moveNote(note, to: folderPath)
+            MainContext.idle { [weak self] in
+                self?.moveNote(note, to: folderPath)
+            }
             return true
         case let .folder(sourcePath):
             if sourcePath == folderPath { return false }
@@ -118,7 +125,9 @@ extension MainWindow {
             // Reject when the drop target is already the source's parent —
             // moving Work into "" when Work is already at root is a no-op.
             if NotesRepository.parentFolderPath(of: sourcePath) == folderPath { return false }
-            moveDraggedFolder(sourcePath: sourcePath, into: folderPath)
+            MainContext.idle { [weak self] in
+                self?.moveDraggedFolder(sourcePath: sourcePath, into: folderPath)
+            }
             return true
         }
     }
