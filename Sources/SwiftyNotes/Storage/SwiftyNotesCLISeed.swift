@@ -43,6 +43,11 @@ enum SwiftyNotesCLISeed {
     swiftynotes cli create --content '# Title\n\nBody'
     swiftynotes cli create --content '# Draft' --folder Work/Drafts
     swiftynotes cli update <note-id> --stdin
+    swiftynotes cli move <note-id> --folder Personal
+    swiftynotes cli folders create Work/Drafts
+    swiftynotes cli folders rename Work/Drafts Outbox
+    swiftynotes cli folders move Outbox --to Personal
+    swiftynotes cli folders rm Personal/Outbox --yes
     ```
 
     ## Typical Workflow
@@ -51,6 +56,7 @@ enum SwiftyNotesCLISeed {
     2. Use `get --raw` when you need the markdown exactly as stored.
     3. Pipe fresh markdown into `update --stdin` to replace a note in one step.
     4. Use `create --content` for quick capture from shell scripts.
+    5. Use `move` and `folders` subcommands to reorganize the vault from scripts.
 
     ## Helpful Tips
 
@@ -59,6 +65,8 @@ enum SwiftyNotesCLISeed {
     - Pass `--notes-dir /path/to/notes` to target a custom notes folder.
     - Pass `--folder PATH` to `create` to drop the new note into a folder (intermediate folders are created automatically).
     - Pass `--folder PATH` to `list` to scope the result to that folder and every descendant folder.
+    - Use `move <note-id> --folder PATH` (or `--folder ""` for root) to relocate a note.
+    - Manage folders themselves through `folders create | rm | rename | move` subcommands. Recursive deletes require `-y`/`--yes` so scripts opt in explicitly.
     - Run `folders` to print every folder path in the vault as a JSON array.
     - IDs are lowercase UUID strings and stay stable across GUI and CLI usage.
     - `update` replaces the full markdown body, so generate the final document before sending it.

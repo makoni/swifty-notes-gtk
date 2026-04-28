@@ -95,10 +95,15 @@ From a source checkout:
 swift run swiftynotes -- cli list
 swift run swiftynotes -- cli list --folder Work
 swift run swiftynotes -- cli folders
+swift run swiftynotes -- cli folders create Work/Drafts
+swift run swiftynotes -- cli folders rename Work/Drafts Outbox
+swift run swiftynotes -- cli folders move Outbox --to Personal
+swift run swiftynotes -- cli folders rm Personal/Outbox --yes
 swift run swiftynotes -- cli get <note-id>
 swift run swiftynotes -- cli get <note-id> --raw
 swift run swiftynotes -- cli create --content '# Title\n\nBody'
 swift run swiftynotes -- cli create --content '# Draft' --folder Work/Drafts
+swift run swiftynotes -- cli move <note-id> --folder Personal
 swift run swiftynotes -- cli update <note-id> --stdin
 ```
 
@@ -108,10 +113,15 @@ If you installed from Flathub, use the Flatpak form:
 flatpak run me.spaceinbox.swiftynotes cli list
 flatpak run me.spaceinbox.swiftynotes cli list --folder Work
 flatpak run me.spaceinbox.swiftynotes cli folders
+flatpak run me.spaceinbox.swiftynotes cli folders create Work/Drafts
+flatpak run me.spaceinbox.swiftynotes cli folders rename Work/Drafts Outbox
+flatpak run me.spaceinbox.swiftynotes cli folders move Outbox --to Personal
+flatpak run me.spaceinbox.swiftynotes cli folders rm Personal/Outbox --yes
 flatpak run me.spaceinbox.swiftynotes cli get <note-id>
 flatpak run me.spaceinbox.swiftynotes cli get <note-id> --raw
 flatpak run me.spaceinbox.swiftynotes cli create --content '# Title\n\nBody'
 flatpak run me.spaceinbox.swiftynotes cli create --content '# Draft' --folder Work/Drafts
+flatpak run me.spaceinbox.swiftynotes cli move <note-id> --folder Personal
 flatpak run me.spaceinbox.swiftynotes cli update <note-id> --stdin
 ```
 

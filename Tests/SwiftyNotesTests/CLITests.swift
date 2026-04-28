@@ -151,6 +151,162 @@ struct CLITests {
     }
 
     @Test
+    func `cli move relocates a note and creates intermediate folders`() throws {
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+
+        let createResult = NotesCLI.runIfRequested(arguments: [
+            "cli", "create", "--notes-dir", notesDirectory.path(), "--content", "hi",
+        ])
+        let created = try decodeDocument(from: createResult?.stdout ?? "")
+
+        let moveResult = NotesCLI.runIfRequested(arguments: [
+            "cli", "move", created.id,
+            "--notes-dir", notesDirectory.path(),
+            "--folder", "Work/Drafts",
+        ])
+        #expect(moveResult?.exitCode == 0)
+        let moved = try decodeDocument(from: moveResult?.stdout ?? "")
+        #expect(moved.id == created.id)
+        #expect(moved.folder == "Work/Drafts")
+
+        // Move back to root via --folder ""
+        let backResult = NotesCLI.runIfRequested(arguments: [
+            "cli", "move", created.id,
+            "--notes-dir", notesDirectory.path(),
+            "--folder", "",
+        ])
+        #expect(backResult?.exitCode == 0)
+        let back = try decodeDocument(from: backResult?.stdout ?? "")
+        #expect(back.folder == "")
+    }
+
+    @Test
+    func `cli folders create makes a new folder and reflects it in folders output`() throws {
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+
+        let result = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "create", "Work/Drafts",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(result?.exitCode == 0)
+        let foldersResult = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "--notes-dir", notesDirectory.path(),
+        ])
+        let folders = try cliJSONDecoder().decode([String].self, from: Data((foldersResult?.stdout ?? "").utf8))
+        #expect(folders.contains("Work"))
+        #expect(folders.contains("Work/Drafts"))
+    }
+
+    @Test
+    func `cli folders rm refuses non empty folders without yes flag`() throws {
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+
+        _ = NotesCLI.runIfRequested(arguments: [
+            "cli", "create", "--notes-dir", notesDirectory.path(),
+            "--folder", "Work", "--content", "x",
+        ])
+
+        let refused = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "rm", "Work",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(refused?.exitCode == 2)
+        #expect(refused?.stderr.contains("--yes") == true)
+
+        let confirmed = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "rm", "Work", "--yes",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(confirmed?.exitCode == 0)
+
+        let listAfter = NotesCLI.runIfRequested(arguments: [
+            "cli", "list", "--notes-dir", notesDirectory.path(),
+        ])
+        let summaries = try decodeSummaries(from: listAfter?.stdout ?? "")
+        #expect(summaries.isEmpty)
+    }
+
+    @Test
+    func `cli folders rm allows deleting an empty folder without yes`() throws {
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+
+        _ = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "create", "Empty",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        let result = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "rm", "Empty",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(result?.exitCode == 0)
+    }
+
+    @Test
+    func `cli folders rename moves the folder and notes follow`() throws {
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+
+        _ = NotesCLI.runIfRequested(arguments: [
+            "cli", "create", "--notes-dir", notesDirectory.path(),
+            "--folder", "Old", "--content", "x",
+        ])
+        let result = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "rename", "Old", "New",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(result?.exitCode == 0)
+
+        let listed = NotesCLI.runIfRequested(arguments: [
+            "cli", "list", "--notes-dir", notesDirectory.path(),
+        ])
+        let summaries = try decodeSummaries(from: listed?.stdout ?? "")
+        #expect(summaries.first?.folder == "New")
+    }
+
+    @Test
+    func `cli folders move relocates a folder under a new parent`() throws {
+        let temp = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let notesDirectory = temp.appendingPathComponent("notes", isDirectory: true)
+
+        _ = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "create", "Inbox",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        _ = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "create", "Archive",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        let result = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "move", "Inbox", "--to", "Archive",
+            "--notes-dir", notesDirectory.path(),
+        ])
+        #expect(result?.exitCode == 0)
+
+        let foldersResult = NotesCLI.runIfRequested(arguments: [
+            "cli", "folders", "--notes-dir", notesDirectory.path(),
+        ])
+        let folders = try cliJSONDecoder().decode([String].self, from: Data((foldersResult?.stdout ?? "").utf8))
+        #expect(folders.contains("Archive/Inbox"))
+        #expect(!folders.contains("Inbox"))
+    }
+
+    @Test
     func `cli executable round trips notes across processes`() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }

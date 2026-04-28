@@ -12,7 +12,12 @@ private enum CLIHelpTopic {
     case get
     case create
     case update
+    case move
     case folders
+    case foldersCreate
+    case foldersRm
+    case foldersRename
+    case foldersMove
 }
 
 enum NotesCLI {
@@ -63,6 +68,38 @@ enum NotesCLI {
             case .folders:
                 let folders = try repository.listFolders()
                 output = try encodeJSON(folders)
+            case let .move(noteID, folderPath):
+                let normalizedFolder = NotesRepository.trimmedFolderPath(folderPath)
+                if !normalizedFolder.isEmpty {
+                    try ensureFolderExists(normalizedFolder, repository: repository)
+                }
+                let note = try loadNote(id: noteID, repository: repository)
+                let moved = try repository.move(note: note, to: normalizedFolder)
+                output = try encodeJSON(CLINoteDocument(note: moved))
+            case let .foldersCreate(path):
+                try repository.createFolder(at: path)
+                output = try encodeJSON(CLIFolderOperation(action: "created", path: NotesRepository.trimmedFolderPath(path), to: nil))
+            case let .foldersRm(path, yes):
+                let trimmed = NotesRepository.trimmedFolderPath(path)
+                guard !trimmed.isEmpty else {
+                    throw NotesCLIError.usage("`folders rm` cannot delete the root.")
+                }
+                try assertFolderRemovable(trimmed, repository: repository, yes: yes)
+                try repository.deleteFolderRecursively(at: trimmed)
+                output = try encodeJSON(CLIFolderOperation(action: "deleted", path: trimmed, to: nil))
+            case let .foldersRename(path, newName):
+                let trimmed = NotesRepository.trimmedFolderPath(path)
+                try repository.renameFolder(at: trimmed, to: newName)
+                let parent = NotesRepository.parentFolderPath(of: trimmed)
+                let renamedPath = parent.isEmpty ? newName : "\(parent)/\(newName)"
+                output = try encodeJSON(CLIFolderOperation(action: "renamed", path: trimmed, to: renamedPath))
+            case let .foldersMove(path, newParent):
+                let trimmedPath = NotesRepository.trimmedFolderPath(path)
+                let trimmedParent = NotesRepository.trimmedFolderPath(newParent)
+                try repository.moveFolder(at: trimmedPath, to: trimmedParent)
+                let lastComponent = (trimmedPath as NSString).lastPathComponent
+                let movedPath = trimmedParent.isEmpty ? lastComponent : "\(trimmedParent)/\(lastComponent)"
+                output = try encodeJSON(CLIFolderOperation(action: "moved", path: trimmedPath, to: movedPath))
             }
 
             return .init(
@@ -104,6 +141,30 @@ enum NotesCLI {
         }
     }
 
+    /// Refuses to recursively delete a folder that still contains notes or
+    /// subfolders unless the caller passed `--yes`. Mirrors apt-style
+    /// "interactive by default, scriptable with -y" semantics.
+    private static func assertFolderRemovable(
+        _ folderPath: String,
+        repository: NotesRepository,
+        yes: Bool,
+    ) throws {
+        let nestedNotes = try repository.loadNotes().count(where: { note in
+            note.folderPath == folderPath || note.folderPath.hasPrefix("\(folderPath)/")
+        })
+        let nestedFolders = try repository.listFolders().count(where: { entry in
+            entry != folderPath && entry.hasPrefix("\(folderPath)/")
+        })
+        guard nestedNotes > 0 || nestedFolders > 0 else { return }
+        if yes { return }
+        var parts: [String] = []
+        if nestedNotes > 0 { parts.append(nestedNotes == 1 ? "1 note" : "\(nestedNotes) notes") }
+        if nestedFolders > 0 { parts.append(nestedFolders == 1 ? "1 subfolder" : "\(nestedFolders) subfolders") }
+        throw NotesCLIError.usage(
+            "\"\(folderPath)\" contains \(parts.joined(separator: " and ")). Pass --yes to delete it recursively.",
+        )
+    }
+
     private static func encodeJSON(_ value: some Encodable) throws -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -132,7 +193,9 @@ enum NotesCLI {
               get       Print one note as JSON or raw markdown
               create    Create a new note
               update    Replace a note's markdown content
-              folders   List the folder paths in the vault as JSON
+              move      Move a note to another folder
+              folders   List folders, or manage them via subcommands
+                        (folders create/rm/rename/move)
               help      Show general or command-specific help
 
             Global options:
@@ -151,9 +214,12 @@ enum NotesCLI {
               swiftynotes cli list
               swiftynotes cli list --folder Work
               swiftynotes cli folders
+              swiftynotes cli folders create Work/Drafts
+              swiftynotes cli folders rm Work/Drafts --yes
               swiftynotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554
               swiftynotes cli get 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --raw
               swiftynotes cli create --content '# Title\n\nBody' --folder Work/Drafts
+              swiftynotes cli move 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --folder Personal
               swiftynotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --stdin
 
             Run `swiftynotes cli help <command>` for details on a specific command.
@@ -245,19 +311,102 @@ enum NotesCLI {
               swiftynotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --content '# Updated'
               cat note.md | swiftynotes cli update 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --stdin
             """
+        case .move:
+            """
+            Usage:
+              swiftynotes cli move <note-id> --folder PATH [--notes-dir PATH]
+
+            Move a note to another folder. Use --folder "" to move to the root.
+
+            Notes:
+              - Intermediate folders are created automatically when missing.
+              - Output is the moved note as JSON.
+
+            Examples:
+              swiftynotes cli move 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --folder Work/Drafts
+              swiftynotes cli move 657aa2f6-0f4e-4a9c-944a-76fc94f40554 --folder ""
+            """
         case .folders:
             """
             Usage:
-              swiftynotes cli folders [--notes-dir PATH]
+              swiftynotes cli folders [<subcommand>] [<args>] [--notes-dir PATH]
 
-            Print every folder path in the vault as a JSON array.
+            With no subcommand prints every folder path in the vault as a JSON
+            array (empty folders included).
+
+            Subcommands:
+              create <path>                Create a folder. Errors if it already exists.
+              rm <path> [-y|--yes]         Recursively delete a folder. Refuses unless
+                                           the folder is empty or --yes is supplied.
+              rename <path> <new-name>     Rename a folder, keeping its contents.
+              move <path> --to <parent>    Move a folder under another parent
+                                           (use "" for root).
+
+            Examples:
+              swiftynotes cli folders
+              swiftynotes cli folders create Work/Drafts
+              swiftynotes cli folders rm Work/Drafts --yes
+              swiftynotes cli folders rename Work/Drafts Outbox
+              swiftynotes cli folders move Outbox --to Personal
+            """
+        case .foldersCreate:
+            """
+            Usage:
+              swiftynotes cli folders create <path> [--notes-dir PATH]
+
+            Creates a folder, creating intermediate parents as needed.
+            Fails when the path already exists or traverses a note directory.
 
             Output:
-              A sorted JSON array of folder paths relative to the notes directory.
-              Empty folders are included.
+              {"action":"created","path":"<path>"}
 
             Example:
-              swiftynotes cli folders
+              swiftynotes cli folders create Work/Drafts
+            """
+        case .foldersRm:
+            """
+            Usage:
+              swiftynotes cli folders rm <path> [-y|--yes] [--notes-dir PATH]
+
+            Recursively deletes a folder. Without --yes the command refuses
+            to delete a folder that still contains notes or subfolders, so
+            scripts have to opt in to the destructive behaviour explicitly.
+
+            Output:
+              {"action":"deleted","path":"<path>"}
+
+            Examples:
+              swiftynotes cli folders rm Work/Drafts            # only if empty
+              swiftynotes cli folders rm Work --yes             # delete recursively
+            """
+        case .foldersRename:
+            """
+            Usage:
+              swiftynotes cli folders rename <path> <new-name> [--notes-dir PATH]
+
+            Renames the folder at <path> to <new-name> (single component).
+            Nested notes and subfolders keep their relative layout.
+
+            Output:
+              {"action":"renamed","path":"<path>","to":"<parent>/<new-name>"}
+
+            Example:
+              swiftynotes cli folders rename Work/Drafts Outbox
+            """
+        case .foldersMove:
+            """
+            Usage:
+              swiftynotes cli folders move <path> --to <parent> [--notes-dir PATH]
+
+            Moves the folder at <path> under <parent>. Use --to "" for the root.
+            Nested notes and subfolders move with the folder.
+
+            Output:
+              {"action":"moved","path":"<path>","to":"<parent>/<last>"}
+
+            Examples:
+              swiftynotes cli folders move Outbox --to Personal
+              swiftynotes cli folders move Personal/Outbox --to ""
             """
         }
     }
@@ -294,7 +443,12 @@ private struct ParsedInvocation {
         case get(UUID, raw: Bool)
         case create(String, folderPath: String)
         case update(UUID, String)
+        case move(UUID, folderPath: String)
         case folders
+        case foldersCreate(path: String)
+        case foldersRm(path: String, yes: Bool)
+        case foldersRename(path: String, newName: String)
+        case foldersMove(path: String, newParent: String)
     }
 
     let notesDirectory: URL?
@@ -324,10 +478,13 @@ private struct ParsedInvocation {
                 command = .help(.folders)
                 return
             }
-            guard args.isEmpty else {
-                throw NotesCLIError.usage("`folders` does not accept positional arguments.\n\n\(NotesCLI.help(for: .folders))")
+            command = try Self.parseFolders(args)
+        case "move":
+            if Self.containsHelpFlag(args) {
+                command = .help(.move)
+                return
             }
-            command = .folders
+            command = try Self.parseMove(args)
         case "get":
             if Self.containsHelpFlag(args) {
                 command = .help(.get)
@@ -368,11 +525,128 @@ private struct ParsedInvocation {
             return .help(.create)
         case "update":
             return .help(.update)
+        case "move":
+            return .help(.move)
         case "folders":
             return .help(.folders)
         default:
             throw NotesCLIError.usage("Unknown command for help: \(topic)\n\n\(NotesCLI.help(for: .general))")
         }
+    }
+
+    private static func parseFolders(_ arguments: [String]) throws -> Command {
+        guard let first = arguments.first else { return .folders }
+        let rest = Array(arguments.dropFirst())
+        switch first {
+        case "create":
+            if Self.containsHelpFlag(rest) { return .help(.foldersCreate) }
+            return try Self.parseFoldersCreate(rest)
+        case "rm", "delete":
+            if Self.containsHelpFlag(rest) { return .help(.foldersRm) }
+            return try Self.parseFoldersRm(rest)
+        case "rename":
+            if Self.containsHelpFlag(rest) { return .help(.foldersRename) }
+            return try Self.parseFoldersRename(rest)
+        case "move":
+            if Self.containsHelpFlag(rest) { return .help(.foldersMove) }
+            return try Self.parseFoldersMove(rest)
+        default:
+            throw NotesCLIError.usage("Unknown folders subcommand: \(first)\n\n\(NotesCLI.help(for: .folders))")
+        }
+    }
+
+    private static func parseFoldersCreate(_ arguments: [String]) throws -> Command {
+        guard let path = arguments.first, arguments.count == 1 else {
+            throw NotesCLIError.usage("`folders create` requires exactly one folder path.\n\n\(NotesCLI.help(for: .foldersCreate))")
+        }
+        return .foldersCreate(path: path)
+    }
+
+    private static func parseFoldersRm(_ arguments: [String]) throws -> Command {
+        var path: String?
+        var yes = false
+        for token in arguments {
+            switch token {
+            case "-y", "--yes":
+                yes = true
+            default:
+                guard path == nil else {
+                    throw NotesCLIError.usage("`folders rm` accepts exactly one folder path.\n\n\(NotesCLI.help(for: .foldersRm))")
+                }
+                path = token
+            }
+        }
+        guard let path else {
+            throw NotesCLIError.usage("`folders rm` requires a folder path.\n\n\(NotesCLI.help(for: .foldersRm))")
+        }
+        return .foldersRm(path: path, yes: yes)
+    }
+
+    private static func parseFoldersRename(_ arguments: [String]) throws -> Command {
+        guard arguments.count == 2 else {
+            throw NotesCLIError.usage("`folders rename` requires <path> <new-name>.\n\n\(NotesCLI.help(for: .foldersRename))")
+        }
+        return .foldersRename(path: arguments[0], newName: arguments[1])
+    }
+
+    private static func parseFoldersMove(_ arguments: [String]) throws -> Command {
+        var path: String?
+        var newParent: String?
+        var index = 0
+        while index < arguments.count {
+            let token = arguments[index]
+            if token == "--to" {
+                let nextIndex = index + 1
+                guard nextIndex < arguments.count else {
+                    throw NotesCLIError.usage("Missing value for --to.\n\n\(NotesCLI.help(for: .foldersMove))")
+                }
+                newParent = arguments[nextIndex]
+                index += 2
+                continue
+            }
+            guard path == nil else {
+                throw NotesCLIError.usage("`folders move` accepts exactly one folder path.\n\n\(NotesCLI.help(for: .foldersMove))")
+            }
+            path = token
+            index += 1
+        }
+        guard let path, let newParent else {
+            throw NotesCLIError.usage("`folders move <path> --to <parent>` requires both a path and a parent.\n\n\(NotesCLI.help(for: .foldersMove))")
+        }
+        return .foldersMove(path: path, newParent: newParent)
+    }
+
+    private static func parseMove(_ arguments: [String]) throws -> Command {
+        var noteID: UUID?
+        var folderPath: String?
+        var index = 0
+        while index < arguments.count {
+            let token = arguments[index]
+            if token == "--folder" {
+                let nextIndex = index + 1
+                guard nextIndex < arguments.count else {
+                    throw NotesCLIError.usage("Missing value for --folder.\n\n\(NotesCLI.help(for: .move))")
+                }
+                folderPath = arguments[nextIndex]
+                index += 2
+                continue
+            }
+            guard noteID == nil else {
+                throw NotesCLIError.usage("`move` expects exactly one note ID.\n\n\(NotesCLI.help(for: .move))")
+            }
+            guard let parsed = UUID(uuidString: token) else {
+                throw NotesCLIError.usage("Invalid note ID: \(token)\n\n\(NotesCLI.help(for: .move))")
+            }
+            noteID = parsed
+            index += 1
+        }
+        guard let noteID else {
+            throw NotesCLIError.usage("`move` requires a note ID.\n\n\(NotesCLI.help(for: .move))")
+        }
+        guard let folderPath else {
+            throw NotesCLIError.usage("`move` requires --folder PATH (use --folder \"\" to move to the root).\n\n\(NotesCLI.help(for: .move))")
+        }
+        return .move(noteID, folderPath: folderPath)
     }
 
     private static func parseList(_ arguments: [String]) throws -> Command {
@@ -736,6 +1010,12 @@ private struct CLINoteSummary: Codable {
         createdAt = note.createdAt
         updatedAt = note.updatedAt
     }
+}
+
+private struct CLIFolderOperation: Codable {
+    let action: String
+    let path: String
+    let to: String?
 }
 
 private struct CLINoteDocument: Codable {
