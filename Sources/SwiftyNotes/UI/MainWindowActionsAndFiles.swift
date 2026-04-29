@@ -1,14 +1,14 @@
 import Adwaita
 import Foundation
 
-private enum DroppedImageImportError: LocalizedError {
+enum DroppedImageImportError: Error, LocalizedError, Equatable {
     case noSelectedNote
     case unsupportedFile(String)
 
     var errorDescription: String? {
         switch self {
         case .noSelectedNote:
-            "Open or create a note before dropping images."
+            "Open or create a note before dropping or pasting images."
         case let .unsupportedFile(filename):
             "Unsupported image type for \(filename)."
         }
@@ -248,6 +248,26 @@ extension MainWindow {
         refreshDirectorySnapshot()
         editor.buffer.insertAtCursor(snippets.joined(separator: "\n"))
         toastOverlay.showToast(sourceURLs.count == 1 ? "Image added to note" : "Images added to note")
+    }
+
+    /// Saves clipboard image bytes into the active note's `assets/`
+    /// folder under a `pasted.png` / `pasted-2.png` filename and inserts
+    /// a `![](path)` reference at the cursor. Used by the Ctrl+V paste
+    /// handler — the GUI layer is responsible for decoding the
+    /// `GdkClipboard` texture into PNG bytes before calling this.
+    func importPastedImage(pngData: Data) throws {
+        guard let selected = currentEditedNoteSnapshot() else {
+            throw DroppedImageImportError.noSelectedNote
+        }
+        let relativePath = try repository.importImageAsset(
+            data: pngData,
+            baseName: "pasted",
+            fileExtension: "png",
+            for: selected,
+        )
+        refreshDirectorySnapshot()
+        editor.buffer.insertAtCursor("![](\(relativePath))")
+        toastOverlay.showToast("Image pasted into note")
     }
 
     func importNote() {

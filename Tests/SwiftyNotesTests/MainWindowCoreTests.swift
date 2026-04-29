@@ -235,6 +235,81 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
+    func `main window imports pasted image into selected note assets and markdown`() throws {
+        // Clipboard paste mirrors the drop-target import: the bytes the
+        // clipboard handed us land in the note's `assets/` folder under
+        // a unique `pasted.png` / `pasted-2.png` filename, and a
+        // `![](path)` reference is inserted at the cursor. No alt text —
+        // the clipboard never gives us a filename to lift one from.
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let existing = try repository.createNote(initialContent: "# Pasted\n\nBody")
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.paste-image")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        window.debugLoadInitialNotes()
+        #expect(window.debugSelectedNoteStableID() == existing.stableID)
+
+        let pngBytes = Data("pasted-image".utf8)
+        try window.importPastedImage(pngData: pngBytes)
+        #expect(window.debugSelectedNoteContent?.contains("![](assets/pasted.png)") == true)
+
+        // A second paste collides on filename and gets the standard `-2`
+        // suffix, same as the URL-based drop-import path.
+        try window.importPastedImage(pngData: Data("second-paste".utf8))
+        #expect(window.debugSelectedNoteContent?.contains("![](assets/pasted-2.png)") == true)
+
+        window.saveSelectedNoteNow()
+        let reloaded = try repository.loadNotes()
+        #expect(reloaded[0].content.contains("![](assets/pasted.png)"))
+        #expect(reloaded[0].content.contains("![](assets/pasted-2.png)"))
+        let assetsDir = repository.noteAssetsDirectoryURL(for: reloaded[0])
+        #expect(try Data(contentsOf: assetsDir.appendingPathComponent("pasted.png")) == pngBytes)
+        #expect(try Data(contentsOf: assetsDir.appendingPathComponent("pasted-2.png")) == Data("second-paste".utf8))
+    }
+
+    @Test @MainActor
+    func `main window paste image throws when no note is selected`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.paste-image-no-note")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        // Deliberately skip `debugLoadInitialNotes()` — no note selected.
+        #expect {
+            try window.importPastedImage(pngData: Data("any".utf8))
+        } throws: { error in
+            (error as? DroppedImageImportError) == .noSelectedNote
+        }
+    }
+
+    @Test @MainActor
     func `main window create note request creates note after main loop drain`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
