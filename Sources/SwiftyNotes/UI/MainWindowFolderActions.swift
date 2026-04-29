@@ -146,12 +146,10 @@ extension MainWindow {
         dialog.onResponse { [weak self] response in
             guard let self, response == "create" else { return }
             guard FolderNameValidation.isAcceptablePath(entry.text) else { return }
-            // Strip surrounding whitespace and any leading/trailing slashes so
-            // the resulting path is normalised (matches NotesRepository's own
-            // trimmedFolderPath behaviour).
-            let typed = entry.text
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            // Normalize so each component has no surrounding whitespace —
+            // user-typed "Work / Drafts" lands on disk as "Work/Drafts".
+            let typed = FolderNameValidation.normalizePath(entry.text)
+            guard !typed.isEmpty else { return }
             let path = parentPath.isEmpty ? typed : "\(parentPath)/\(typed)"
             createFolder(at: path, expandAfter: parentPath)
         }
