@@ -128,10 +128,10 @@ extension MainWindow {
     func presentNewFolderDialog(parentPath: String) {
         let dialog = AlertDialog(
             heading: parentPath.isEmpty ? "New folder" : "New subfolder in \"\(parentPath)\"",
-            body: "Folder names cannot contain slashes (/) — Create stays disabled until the name is valid.",
+            body: "Use / to create nested folders in one step, e.g. Work/Drafts.",
         )
         let entry = Entry()
-        entry.placeholderText = "Folder name"
+        entry.placeholderText = parentPath.isEmpty ? "Folder name or Work/Drafts" : "Folder name"
         entry.activatesDefault = true
         dialog.extraChild = entry
         dialog.addResponse("cancel", label: "Cancel")
@@ -141,13 +141,18 @@ extension MainWindow {
         dialog.setResponseAppearance("create", appearance: .suggested)
         dialog.setResponseEnabled("create", enabled: false)
         entry.onChanged {
-            dialog.setResponseEnabled("create", enabled: FolderNameValidation.isAcceptable(entry.text))
+            dialog.setResponseEnabled("create", enabled: FolderNameValidation.isAcceptablePath(entry.text))
         }
         dialog.onResponse { [weak self] response in
             guard let self, response == "create" else { return }
-            guard FolderNameValidation.isAcceptable(entry.text) else { return }
-            let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            let path = parentPath.isEmpty ? trimmed : "\(parentPath)/\(trimmed)"
+            guard FolderNameValidation.isAcceptablePath(entry.text) else { return }
+            // Strip surrounding whitespace and any leading/trailing slashes so
+            // the resulting path is normalised (matches NotesRepository's own
+            // trimmedFolderPath behaviour).
+            let typed = entry.text
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            let path = parentPath.isEmpty ? typed : "\(parentPath)/\(typed)"
             createFolder(at: path, expandAfter: parentPath)
         }
         dialog.present(window)
@@ -194,12 +199,12 @@ extension MainWindow {
         entry.onChanged {
             dialog.setResponseEnabled(
                 "rename",
-                enabled: FolderNameValidation.isAcceptable(entry.text, currentName: currentName),
+                enabled: FolderNameValidation.isAcceptableName(entry.text, currentName: currentName),
             )
         }
         dialog.onResponse { [weak self] response in
             guard let self, response == "rename" else { return }
-            guard FolderNameValidation.isAcceptable(entry.text, currentName: currentName) else { return }
+            guard FolderNameValidation.isAcceptableName(entry.text, currentName: currentName) else { return }
             let trimmed = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
             renameFolder(at: folderPath, to: trimmed)
         }
