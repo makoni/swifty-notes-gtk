@@ -9,6 +9,8 @@ import Foundation
 enum SidebarItem: Equatable {
     case folder(SidebarFolder)
     case note(SidebarNote)
+    case trashHeader(SidebarTrashHeader)
+    case trashedNote(SidebarTrashedNote)
 
     var depth: Int {
         switch self {
@@ -16,6 +18,10 @@ enum SidebarItem: Equatable {
             folder.depth
         case let .note(note):
             note.depth
+        case .trashHeader:
+            0
+        case .trashedNote:
+            1
         }
     }
 }
@@ -36,6 +42,17 @@ struct SidebarNote: Equatable {
     let depth: Int
 }
 
+@MainActor
+struct SidebarTrashHeader: Equatable {
+    let isExpanded: Bool
+    let count: Int
+}
+
+@MainActor
+struct SidebarTrashedNote: Equatable {
+    let note: Note
+}
+
 /// Flattens the (notes + folders + expanded set) into the visual list a
 /// sidebar can render row-by-row.
 ///
@@ -50,6 +67,8 @@ enum SidebarTreeFlattener {
         expandedFolders: Set<String>,
         searchQuery: String,
         sortMode: NotesSortMode,
+        trashedNotes: [Note] = [],
+        trashExpanded: Bool = false,
     ) -> [SidebarItem] {
         let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let sortedNotes = sortMode.sort(notes: notes)
@@ -75,6 +94,23 @@ enum SidebarTreeFlattener {
             notesByFolder: notesByFolder,
             into: &result,
         )
+
+        // Trash sits at the bottom of the sidebar, always shown so
+        // the user has a discoverable signpost for soft-deleted
+        // notes — even when it's empty, surfacing the slot tells
+        // them where things land if they delete something later.
+        result.append(.trashHeader(SidebarTrashHeader(
+            isExpanded: trashExpanded,
+            count: trashedNotes.count,
+        )))
+        if trashExpanded {
+            let sortedTrashed = trashedNotes.sorted {
+                ($0.deletedAt ?? Date.distantPast) > ($1.deletedAt ?? Date.distantPast)
+            }
+            for note in sortedTrashed {
+                result.append(.trashedNote(SidebarTrashedNote(note: note)))
+            }
+        }
         return result
     }
 

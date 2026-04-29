@@ -152,7 +152,75 @@ struct NotesSidebar {
             makeFolderRow(folder)
         case let .note(noteItem):
             makeNoteRow(noteItem)
+        case let .trashHeader(header):
+            makeTrashHeaderRow(header)
+        case let .trashedNote(trashedNote):
+            makeTrashedNoteRow(trashedNote)
         }
+    }
+
+    private static func makeTrashHeaderRow(_ header: SidebarTrashHeader) -> ListBoxRow {
+        let row = ListBoxRow()
+        row.activatable = true
+        row.selectable = false
+        row.setAccessibleLabel("Trash")
+        row.addCSSClass("dim-label")
+
+        let rowBox = Box(orientation: .horizontal, spacing: 6)
+        rowBox.setMargins(6)
+        rowBox.marginStart = 6
+
+        let chevron = Image(iconName: header.isExpanded
+            ? "pan-down-symbolic"
+            : "pan-end-symbolic")
+        chevron.pixelSize = 12
+        rowBox.append(chevron)
+
+        let icon = Image(iconName: "user-trash-symbolic")
+        icon.pixelSize = 14
+        rowBox.append(icon)
+
+        let title = Label("Trash")
+        title.xalign = 0
+        title.hexpand = true
+        rowBox.append(title)
+
+        let badge = Label("\(header.count)")
+        badge.addCSSClass(.dimLabel)
+        badge.addCSSClass(.caption)
+        rowBox.append(badge)
+
+        row.child = rowBox
+        return row
+    }
+
+    private static func makeTrashedNoteRow(_ trashedNote: SidebarTrashedNote) -> ListBoxRow {
+        let row = ListBoxRow()
+        row.activatable = true
+        row.selectable = true
+        row.setAccessibleLabel(trashedNote.note.title)
+
+        let rowBox = Box(orientation: .vertical, spacing: 2)
+        rowBox.setMargins(8)
+        rowBox.marginStart = 8 + indentation(forDepth: 1)
+
+        rowBox.append(makeTitleLabel(for: trashedNote.note))
+
+        let subtitle = Label(trashedNoteSubtitle(for: trashedNote.note))
+        subtitle.xalign = 0
+        subtitle.addCSSClass(.dimLabel)
+        rowBox.append(subtitle)
+
+        row.child = rowBox
+        row.opacity = 0.7
+        return row
+    }
+
+    private static func trashedNoteSubtitle(for note: Note) -> String {
+        guard let deletedAt = note.deletedAt else {
+            return "Deleted"
+        }
+        return "Deleted \(displayDate(deletedAt))"
     }
 
     private static func makeNoteRow(_ noteItem: SidebarNote) -> ListBoxRow {

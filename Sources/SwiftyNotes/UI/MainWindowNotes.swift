@@ -78,7 +78,28 @@ extension MainWindow {
             state.select(noteID: noteItem.note.id)
             renderSelection()
             persistWorkspaceState()
+        case .trashHeader:
+            isTrashExpanded.toggle()
+            refreshSidebar()
+        case let .trashedNote(trashedNote):
+            // Selecting a trashed note shows it in the preview pane
+            // read-only by clearing the active selection — the user
+            // is only viewing it from the Trash, not editing.
+            state.select(noteID: nil)
+            previewTrashedNote(trashedNote.note)
+            refreshSidebar()
         }
+    }
+
+    func previewTrashedNote(_ note: Note) {
+        suppressEditorChange = true
+        editor.setText(note.content)
+        suppressEditorChange = false
+        let renderer = MarkdownRenderer()
+        let blocks = renderer.blocks(for: note.content)
+        schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
+        saveNoteButton.visible = false
+        deleteNoteButton.visible = false
     }
 
     func toggleFolder(at path: String) {
@@ -214,6 +235,32 @@ extension MainWindow {
         dialog.present(window)
     }
 
+    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, x _: Int, y _: Int) {
+        guard let trashed = state.trashedNotes.first(where: { $0.id == noteID }) else { return }
+        let dialog = AlertDialog(
+            heading: "“\(trashed.title)” is in the Trash",
+            body: "Choose an action.",
+        )
+        dialog.addResponse("cancel", label: "Cancel")
+        dialog.addResponse("restore", label: "Restore")
+        dialog.addResponse("delete", label: "Delete forever")
+        dialog.defaultResponse = "cancel"
+        dialog.closeResponse = "cancel"
+        dialog.setResponseAppearance("delete", appearance: .destructive)
+        dialog.onResponse { [weak self] response in
+            guard let self else { return }
+            switch response {
+            case "restore":
+                restoreFromTrash(noteID: noteID)
+            case "delete":
+                permanentlyDeleteFromTrash(noteID: noteID)
+            default:
+                break
+            }
+        }
+        dialog.present(window)
+    }
+
     func emptyTrash() {
         do {
             try repository.emptyTrash()
@@ -262,6 +309,8 @@ extension MainWindow {
             expandedFolders: state.expandedFolders,
             searchQuery: state.searchQuery,
             sortMode: state.sortMode,
+            trashedNotes: state.trashedNotes,
+            trashExpanded: isTrashExpanded,
         )
         displayedNotes = items.compactMap { item in
             if case let .note(noteItem) = item { return noteItem.note }
@@ -288,6 +337,15 @@ extension MainWindow {
             case let .folder(folder):
                 row.onRightClick { [weak self] x, y in
                     self?.presentFolderContextMenu(forFolderPath: folder.path, x: Int(x), y: Int(y))
+                }
+            case .trashHeader:
+                row.onRightClick { [weak self] _, _ in
+                    self?.presentEmptyTrashConfirmation()
+                }
+            case let .trashedNote(trashedNote):
+                let noteID = trashedNote.note.id
+                row.onRightClick { [weak self] x, y in
+                    self?.presentTrashedNoteContextMenu(forNoteID: noteID, x: Int(x), y: Int(y))
                 }
             }
         }

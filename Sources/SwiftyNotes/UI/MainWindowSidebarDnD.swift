@@ -44,12 +44,17 @@ extension MainWindow {
         for (index, item) in sidebar.renderedItems.enumerated() {
             guard let row = sidebar.list.rowAt(index) else { continue }
 
+            // Trash header / trashed-note rows aren't part of the
+            // user's draggable tree — they live in their own pseudo
+            // section and the right-click menu handles their actions.
             let payload: SidebarDragPayload
             switch item {
             case let .note(noteItem):
                 payload = .note(noteItem.note.id)
             case let .folder(folder):
                 payload = .folder(path: folder.path)
+            case .trashHeader, .trashedNote:
+                continue
             }
             attachDragSource(to: row, payload: payload)
 
