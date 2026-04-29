@@ -23,12 +23,19 @@ extension MainWindow {
 
     func loadInitialNotes() {
         do {
+            // Run the trash auto-prune sweep before loading notes so
+            // the next user-visible state is already cleaned up.
+            // Errors here are non-fatal — a stale entry sticks
+            // around until the next launch.
+            try? repository.pruneTrashIfNeeded(retention: state.trashRetention, now: Date())
+
             var notes = try repository.loadNotes()
             if notes.isEmpty {
                 _ = try repository.seedDefaultNotesIfNeeded()
                 notes = try repository.loadNotes()
             }
             state.setNotes(notes)
+            state.setTrashedNotes(try repository.trashedNotes())
             state.setFolders(try repository.listFolders())
             directorySnapshot = try repository.directorySnapshot()
             renderSelection()
@@ -120,24 +127,11 @@ extension MainWindow {
 
     func presentDeleteConfirmationForSelectedNote() {
         guard let selected = state.selectedNote else { return }
-        presentDeleteConfirmation(for: selected)
-    }
-
-    func presentDeleteConfirmation(for note: Note) {
-        let dialog = AlertDialog(
-            heading: "Delete note?",
-            body: "\"\(note.title)\" will be permanently removed.",
-        )
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("delete", label: "Delete")
-        dialog.defaultResponse = "cancel"
-        dialog.closeResponse = "cancel"
-        dialog.setResponseAppearance("delete", appearance: .destructive)
-        dialog.onResponse { [weak self] response in
-            guard let self, response == "delete" else { return }
-            delete(note: note)
-        }
-        dialog.present(window)
+        // Soft-delete is reversible from the Trash, so don't gate it
+        // on a confirmation dialog any more — the toast's Undo
+        // action covers accidental clicks, and the user can always
+        // restore from Trash if they miss the toast.
+        delete(note: selected)
     }
 
     func delete(note: Note) {
@@ -145,14 +139,91 @@ extension MainWindow {
             try repository.delete(note: note)
             let notes = try repository.loadNotes()
             state.setNotes(notes)
+            state.setTrashedNotes(try repository.trashedNotes())
             refreshFolderList()
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note deleted")
+            let toast = Toast(title: "Moved \"\(note.title)\" to Trash")
+            toast.timeout = 5
+            toast.buttonLabel = "Undo"
+            toast.onButtonClicked { [weak self] in
+                self?.restoreFromTrash(noteID: note.id)
+            }
+            toastOverlay.dismissAll()
+            toastOverlay.addToast(toast)
         } catch {
             presentError(
                 heading: "Could not delete note",
+                body: error.localizedDescription,
+            )
+        }
+    }
+
+    func restoreFromTrash(noteID: UUID) {
+        do {
+            try repository.restore(noteWithID: noteID)
+            state.setNotes(try repository.loadNotes())
+            state.setTrashedNotes(try repository.trashedNotes())
+            refreshFolderList()
+            refreshDirectorySnapshot()
+            renderSelection()
+            persistWorkspaceState()
+            toastOverlay.showToast("Note restored")
+        } catch {
+            presentError(
+                heading: "Could not restore note",
+                body: error.localizedDescription,
+            )
+        }
+    }
+
+    func permanentlyDeleteFromTrash(noteID: UUID) {
+        do {
+            try repository.permanentlyDelete(noteWithID: noteID)
+            state.setTrashedNotes(try repository.trashedNotes())
+            refreshSidebar()
+            persistWorkspaceState()
+            toastOverlay.showToast("Note permanently deleted")
+        } catch {
+            presentError(
+                heading: "Could not permanently delete note",
+                body: error.localizedDescription,
+            )
+        }
+    }
+
+    func presentEmptyTrashConfirmation() {
+        let count = state.trashedNotes.count
+        guard count > 0 else { return }
+        let dialog = AlertDialog(
+            heading: "Empty Trash?",
+            body: count == 1
+                ? "1 note will be permanently deleted. This action can't be undone."
+                : "\(count) notes will be permanently deleted. This action can't be undone.",
+        )
+        dialog.addResponse("cancel", label: "Cancel")
+        dialog.addResponse("empty", label: "Empty Trash")
+        dialog.defaultResponse = "cancel"
+        dialog.closeResponse = "cancel"
+        dialog.setResponseAppearance("empty", appearance: .destructive)
+        dialog.onResponse { [weak self] response in
+            guard let self, response == "empty" else { return }
+            emptyTrash()
+        }
+        dialog.present(window)
+    }
+
+    func emptyTrash() {
+        do {
+            try repository.emptyTrash()
+            state.setTrashedNotes([])
+            refreshSidebar()
+            persistWorkspaceState()
+            toastOverlay.showToast("Trash emptied")
+        } catch {
+            presentError(
+                heading: "Could not empty Trash",
                 body: error.localizedDescription,
             )
         }

@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 public final class AppState {
     public private(set) var notes: [Note] = []
+    public private(set) var trashedNotes: [Note] = []
     public private(set) var folders: [String] = []
     public private(set) var expandedFolders: Set<String> = []
     public private(set) var selectedNoteID: UUID?
@@ -16,6 +17,7 @@ public final class AppState {
     public var lastTableRows: Int
     public var lastTableCols: Int
     public var lastTableAlignments: [MarkdownTableAlignment]
+    public var trashRetention: TrashRetention = .days(30)
 
     public var isPreviewVisible: Bool {
         viewMode.isPreviewVisible
@@ -57,6 +59,10 @@ public final class AppState {
             return
         }
         selectedNoteID = notes.first?.id
+    }
+
+    public func setTrashedNotes(_ notes: [Note]) {
+        trashedNotes = notes
     }
 
     public func setFolders(_ folders: [String]) {
