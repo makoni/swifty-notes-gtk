@@ -149,9 +149,20 @@ struct HTMLPreviewDocumentBuilder {
                 "-"
             }
 
-            let text = inlineText(from: inlineNodes)
-            if !text.plainText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                output.append(.listItem(text: text, depth: listDepth, marker: marker))
+            // Trim the trailing whitespace/newline that swift-markdown's
+            // HTMLFormatter leaves on tight `<li>foo\n</li>` text nodes —
+            // an unstripped `\n` makes a wrapping Pango label render a
+            // spurious empty second line, which doubles the row height
+            // and is what made every bullet list look "loose" in the
+            // preview. List item text is always inline content, so a
+            // bilateral whitespace trim is safe here.
+            let rawText = inlineText(from: inlineNodes)
+            let trimmed = RenderedText(
+                markup: rawText.markup.trimmingCharacters(in: .whitespacesAndNewlines),
+                plainText: rawText.plainText.trimmingCharacters(in: .whitespacesAndNewlines),
+            )
+            if !trimmed.plainText.isEmpty {
+                output.append(.listItem(text: trimmed, depth: listDepth, marker: marker))
             }
             output.append(contentsOf: nestedBlocks)
             ordinal += 1

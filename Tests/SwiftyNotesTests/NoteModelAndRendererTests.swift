@@ -381,6 +381,35 @@ struct NoteModelAndRendererTests {
     }
 
     @Test
+    func `renderer trims trailing whitespace from list item text so wrapping labels don't grow an empty second line`() {
+        // swift-markdown's HTMLFormatter emits tight list items as
+        // `<li>First\n</li>` with a literal trailing newline. A
+        // GtkLabel with `wrap=true` renders that `\n` as an empty
+        // second line, doubling the row height — that's what made
+        // every bullet/numbered list in the preview look airy. The
+        // renderer must strip that whitespace before handing the
+        // text off to the preview.
+        let renderer = MarkdownRenderer()
+        let blocks = renderer.blocks(for: """
+        - First
+        - Second
+        - Third
+        """, darkAppearance: false)
+
+        #expect(blocks.count == 3)
+        for block in blocks {
+            guard case let .listItem(text, _, _) = block else {
+                Issue.record("Expected list item, got \(block)")
+                continue
+            }
+            #expect(!text.plainText.hasSuffix("\n"))
+            #expect(!text.plainText.hasSuffix(" "))
+            #expect(!text.markup.hasSuffix("\n"))
+            #expect(!text.markup.hasSuffix(" "))
+        }
+    }
+
+    @Test
     func `renderer builds aligned table block`() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
