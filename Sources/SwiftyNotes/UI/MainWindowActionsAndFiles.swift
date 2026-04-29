@@ -237,26 +237,46 @@ extension MainWindow {
             guard let self else { return }
             // The paste-clipboard signal fires before GTK does the
             // actual paste, so we have one synchronous chance to
-            // intercept it for image content. The async texture read
-            // that follows lands several main-loop turns later — by
-            // which point the default text-paste path has already
-            // run. Probe the formats up front and short-circuit only
-            // when we know we'll be handling the paste ourselves.
+            // intercept it. Probe the clipboard formats up front and
+            // short-circuit only when we know we'll be handling the
+            // paste ourselves — the async reads that follow land
+            // several main-loop turns later, by which point the
+            // default text-paste path would have already run.
             let clipboard = editor.view.clipboard
-            guard clipboard.containsImage else { return }
-            editor.view.stopSignalEmission(named: "paste-clipboard")
-            clipboard.readTexture { [weak self] texture in
-                guard let self,
-                      let texture,
-                      let pngData = texture.encodedPNGData()
-                else { return }
-                do {
-                    try importPastedImage(pngData: pngData)
-                } catch {
-                    presentError(
-                        heading: "Could not paste image",
-                        body: error.localizedDescription,
-                    )
+            if clipboard.containsImage {
+                editor.view.stopSignalEmission(named: "paste-clipboard")
+                clipboard.readTexture { [weak self] texture in
+                    guard let self,
+                          let texture,
+                          let pngData = texture.encodedPNGData()
+                    else { return }
+                    do {
+                        try importPastedImage(pngData: pngData)
+                    } catch {
+                        presentError(
+                            heading: "Could not paste image",
+                            body: error.localizedDescription,
+                        )
+                    }
+                }
+            } else if clipboard.containsFiles {
+                // Nautilus and other file managers put copied items on
+                // the clipboard as a `GdkFileList`. Reuse the existing
+                // drop-import path so behaviour stays identical
+                // (uniqueness, sanitization, orphan-tracking) — the
+                // only difference between drop and paste is the
+                // trigger.
+                editor.view.stopSignalEmission(named: "paste-clipboard")
+                clipboard.readFiles { [weak self] urls in
+                    guard let self, !urls.isEmpty else { return }
+                    do {
+                        try importDroppedImages(from: urls)
+                    } catch {
+                        presentError(
+                            heading: "Could not paste files",
+                            body: error.localizedDescription,
+                        )
+                    }
                 }
             }
         }
