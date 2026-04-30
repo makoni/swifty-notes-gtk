@@ -83,8 +83,9 @@ extension MainWindow {
             renderSelection()
             persistWorkspaceState()
         case .trashHeader:
-            isTrashExpanded.toggle()
+            state.isTrashExpanded.toggle()
             refreshSidebar()
+            persistWorkspaceState()
         case let .trashedNote(trashedNote):
             // Show the trashed note read-only without touching the
             // selectedNoteID — the user is browsing the bin, not
@@ -470,7 +471,7 @@ extension MainWindow {
             searchQuery: state.searchQuery,
             sortMode: state.sortMode,
             trashedNotes: state.trashedNotes,
-            trashExpanded: isTrashExpanded,
+            trashExpanded: state.isTrashExpanded,
         )
         displayedNotes = items.compactMap { item in
             if case let .note(noteItem) = item { return noteItem.note }

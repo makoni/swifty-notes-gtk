@@ -91,7 +91,6 @@ final class MainWindow {
 
     var displayedNotes: [Note] = []
     var directorySnapshot = NotesDirectorySnapshot()
-    var isTrashExpanded = false
     var trashContextMenu: Popover?
     /// Non-nil while the user is previewing a note from the Trash.
     /// Used to gate the read-only-editor + banner state and to wire

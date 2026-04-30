@@ -791,6 +791,24 @@ struct RepositoryStateTests {
 
         let decoded = try JSONDecoder().decode(WorkspaceState.self, from: data)
         #expect(decoded.expandedFolders.isEmpty)
+        // Legacy payloads predate the persisted Trash-expanded
+        // sidebar state and should default to collapsed.
+        #expect(decoded.isTrashExpanded == false)
+    }
+
+    @Test
+    func `workspace state round trips isTrashExpanded`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let store = WorkspaceStateStore(
+            stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+        )
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try store.save(WorkspaceState(isTrashExpanded: true))
+        #expect(try store.load().isTrashExpanded == true)
+
+        try store.save(WorkspaceState(isTrashExpanded: false))
+        #expect(try store.load().isTrashExpanded == false)
     }
 
     @Test

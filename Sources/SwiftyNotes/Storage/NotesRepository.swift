@@ -333,6 +333,11 @@ public final class NotesRepository: @unchecked Sendable {
         }
     }
 
+    /// Soft-deletes every note inside the folder (so each one can
+    /// still be restored from Trash with its original folder path),
+    /// then removes the folder structure itself. Symmetric with
+    /// per-note ``delete(note:)`` — the user is never one wrong click
+    /// away from permanently losing nested notes.
     public func deleteFolderRecursively(at path: String) throws {
         try queue.sync {
             try ensureNotesDirectoryUnlocked()
@@ -341,7 +346,21 @@ public final class NotesRepository: @unchecked Sendable {
                 throw NotesRepositoryFolderError.invalidName(path)
             }
             try ensureFolderExistsUnlocked(at: trimmed)
-            try fileManager.removeItem(at: folderURL(for: trimmed))
+            let folderURL = folderURL(for: trimmed)
+            var notesToTrash: [(URL, String)] = []
+            try walkNoteDirectoriesUnlocked(at: folderURL, folderPath: trimmed) { url, parentFolder in
+                notesToTrash.append((url, parentFolder))
+            }
+            for (noteDirURL, parentFolder) in notesToTrash {
+                let note = try loadNoteUnlocked(from: noteDirURL, folderPath: parentFolder)
+                try moveToTrashUnlocked(note: note)
+            }
+            // Wipe whatever is left of the folder tree (sub-folders
+            // emptied by the moves above, plus any non-note files
+            // the user may have dropped in there).
+            if fileManager.fileExists(atPath: folderURL.path(percentEncoded: false)) {
+                try fileManager.removeItem(at: folderURL)
+            }
         }
     }
 

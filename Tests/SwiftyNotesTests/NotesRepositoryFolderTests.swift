@@ -139,14 +139,14 @@ struct NotesRepositoryFolderTests {
     }
 
     @Test
-    func `deleteFolderRecursively removes nested notes and folders`() throws {
+    func `deleteFolderRecursively soft-deletes nested notes into Trash and removes folder structure`() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
         try repository.createFolder(at: "Top")
         try repository.createFolder(at: "Top/Inner")
-        _ = try repository.createNote(initialContent: "x", in: "Top")
-        _ = try repository.createNote(initialContent: "y", in: "Top/Inner")
+        let topNote = try repository.createNote(initialContent: "x", in: "Top")
+        let innerNote = try repository.createNote(initialContent: "y", in: "Top/Inner")
         let outsider = try repository.createNote(initialContent: "outside")
 
         try repository.deleteFolderRecursively(at: "Top")
@@ -154,6 +154,39 @@ struct NotesRepositoryFolderTests {
         #expect(remaining.count == 1)
         #expect(remaining.first?.id == outsider.id)
         #expect(try repository.listFolders().isEmpty)
+
+        // Both nested notes land in Trash with originalFolderPath
+        // pointing at where they came from, so a restore puts them
+        // back in the same sub-folder (recreated on demand).
+        let trashed = try repository.trashedNotes()
+        #expect(trashed.count == 2)
+        let topTrashed = trashed.first { $0.id == topNote.id }
+        let innerTrashed = trashed.first { $0.id == innerNote.id }
+        #expect(topTrashed?.originalFolderPath == "Top")
+        #expect(innerTrashed?.originalFolderPath == "Top/Inner")
+    }
+
+    @Test
+    func `deleteFolderRecursively followed by restore puts nested notes back in their original folders`() throws {
+        let (repository, directory) = Self.makeRepository()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try repository.createFolder(at: "Top")
+        try repository.createFolder(at: "Top/Inner")
+        let topNote = try repository.createNote(initialContent: "x", in: "Top")
+        let innerNote = try repository.createNote(initialContent: "y", in: "Top/Inner")
+
+        try repository.deleteFolderRecursively(at: "Top")
+        try repository.restore(noteWithID: topNote.id)
+        try repository.restore(noteWithID: innerNote.id)
+
+        let restored = try repository.loadNotes()
+        #expect(restored.count == 2)
+        #expect(restored.first { $0.id == topNote.id }?.folderPath == "Top")
+        #expect(restored.first { $0.id == innerNote.id }?.folderPath == "Top/Inner")
+        let folders = Set(try repository.listFolders())
+        #expect(folders.contains("Top"))
+        #expect(folders.contains("Top/Inner"))
     }
 
     @Test

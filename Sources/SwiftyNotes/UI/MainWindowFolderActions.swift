@@ -261,7 +261,10 @@ extension MainWindow {
             if nestedFolders > 0 {
                 parts.append(nestedFolders == 1 ? "1 subfolder" : "\(nestedFolders) subfolders")
             }
-            return "\"\(folderPath)\" contains \(parts.joined(separator: " and ")). They will be permanently deleted."
+            let suffix = nestedNotes > 0
+                ? " The notes will move to Trash so you can restore them."
+                : ""
+            return "\"\(folderPath)\" contains \(parts.joined(separator: " and "))." + suffix
         }()
 
         let dialog = AlertDialog(
@@ -363,6 +366,7 @@ extension MainWindow {
             try repository.deleteFolderRecursively(at: folderPath)
             let notes = try repository.loadNotes()
             state.setNotes(notes)
+            state.setTrashedNotes(try repository.trashedNotes())
             refreshFolderList()
             // Drop any expanded entries that pointed inside the removed branch.
             let surviving = state.expandedFolders.filter { entry in

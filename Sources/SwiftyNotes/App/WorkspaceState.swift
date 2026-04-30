@@ -72,6 +72,10 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
     /// before opening them, so stale entries from renamed/deleted folders
     /// silently no-op.
     public var expandedFolders: [String]
+    /// Whether the Trash row in the sidebar is expanded. Persisted so
+    /// users who keep the bin open between sessions don't have to keep
+    /// re-expanding it.
+    public var isTrashExpanded: Bool
 
     public var isPreviewVisible: Bool {
         viewMode.isPreviewVisible
@@ -91,6 +95,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         lastTableCols: Int = WorkspaceState.defaultLastTableCols,
         lastTableAlignments: [MarkdownTableAlignment] = [],
         expandedFolders: [String] = [],
+        isTrashExpanded: Bool = false,
     ) {
         self.selectedNoteID = selectedNoteID
         self.isSidebarVisible = isSidebarVisible
@@ -104,6 +109,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         self.lastTableCols = max(1, lastTableCols)
         self.lastTableAlignments = lastTableAlignments
         self.expandedFolders = Self.deduplicatedFolderPaths(expandedFolders)
+        self.isTrashExpanded = isTrashExpanded
     }
 
     private static func deduplicatedFolderPaths(_ paths: [String]) -> [String] {
@@ -134,6 +140,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         case lastTableCols
         case lastTableAlignments
         case expandedFolders
+        case isTrashExpanded
     }
 
     public init(from decoder: any Decoder) throws {
@@ -156,6 +163,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         expandedFolders = Self.deduplicatedFolderPaths(
             try container.decodeIfPresent([String].self, forKey: .expandedFolders) ?? [],
         )
+        isTrashExpanded = try container.decodeIfPresent(Bool.self, forKey: .isTrashExpanded) ?? false
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -173,5 +181,6 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         try container.encode(lastTableCols, forKey: .lastTableCols)
         try container.encode(lastTableAlignments, forKey: .lastTableAlignments)
         try container.encode(expandedFolders, forKey: .expandedFolders)
+        try container.encode(isTrashExpanded, forKey: .isTrashExpanded)
     }
 }
