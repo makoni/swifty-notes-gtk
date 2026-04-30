@@ -45,15 +45,15 @@
   <screenshots>
     <screenshot type="default">
       <caption>Main window with sidebar, editor, and native Markdown preview.</caption>
-      <image type="source" width="3416" height="2104">@SCREENSHOT_MAIN_URL@</image>
+      <image type="source" width="2000" height="1240">@SCREENSHOT_MAIN_URL@</image>
     </screenshot>
     <screenshot>
       <caption>Markdown writing workflow with the formatting toolbar and live native preview.</caption>
-      <image type="source" width="3416" height="2104">@SCREENSHOT_EDITOR_URL@</image>
+      <image type="source" width="2000" height="1240">@SCREENSHOT_EDITOR_URL@</image>
     </screenshot>
     <screenshot>
       <caption>Desktop and CLI workflows share the same notes for automation-friendly editing.</caption>
-      <image type="source" width="3416" height="2104">@SCREENSHOT_CLI_URL@</image>
+      <image type="source" width="2000" height="1240">@SCREENSHOT_CLI_URL@</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>

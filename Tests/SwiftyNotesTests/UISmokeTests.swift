@@ -21,22 +21,28 @@ struct UISmokeTests {
         require_named(frame, "A screenshot-ready note that shows off the native preview, spacing, and typography.")
 
         wait_until(lambda: os.path.isdir(NOTES_DIR), "notes dir created")
-        note_dirs = wait_until(
-            lambda: sorted(
-                name for name in os.listdir(NOTES_DIR)
-                if os.path.isdir(os.path.join(NOTES_DIR, name))
-                and os.path.isfile(os.path.join(NOTES_DIR, name, "note.md"))
-            ) or None,
-            "seeded note directory written"
-        )
-        assert len(note_dirs) == 3, note_dirs
-        contents = [
-            open(os.path.join(NOTES_DIR, note_dir, "note.md"), "r", encoding="utf-8").read()
-            for note_dir in note_dirs
-        ]
+        # Default seed places explanatory guides under a "Guides"
+        # sub-folder, so walk recursively to pick up note.md files
+        # nested one level deep too.
+        def collect_seeded_notes():
+            paths = []
+            for root, dirs, files in os.walk(NOTES_DIR):
+                if ".trash" in dirs:
+                    dirs.remove(".trash")
+                if "note.md" in files:
+                    paths.append(os.path.join(root, "note.md"))
+            return sorted(paths) or None
+        note_files = wait_until(collect_seeded_notes, "seeded note files written")
+        assert len(note_files) == 3, note_files
+        contents = [open(path, "r", encoding="utf-8").read() for path in note_files]
         assert any("Markdown Showcase" in content for content in contents)
         assert any("About Swifty Notes" in content for content in contents)
         assert any("Using Swifty Notes CLI" in content for content in contents)
+        # The two guide notes live in the Guides folder, the showcase
+        # stays at root — assert the layout so a regression that flat-
+        # tens the seed surfaces immediately.
+        assert any("/Guides/" in path for path in note_files), note_files
+        assert sum(1 for path in note_files if "/Guides/" in path) == 2, note_files
         """)
         expectUIScriptSucceeded(result)
     }
