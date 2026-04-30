@@ -86,6 +86,7 @@ final class MainWindow {
     var displayedNotes: [Note] = []
     var directorySnapshot = NotesDirectorySnapshot()
     var isTrashExpanded = false
+    var trashContextMenu: Popover?
     var sidebarHoverExpandTimer: SourceID?
     var sidebarHoverExpandFolder: String?
     var folderContextMenu: Popover?

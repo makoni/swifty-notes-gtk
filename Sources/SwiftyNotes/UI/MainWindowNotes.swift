@@ -235,30 +235,74 @@ extension MainWindow {
         dialog.present(window)
     }
 
-    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, x _: Int, y _: Int) {
-        guard let trashed = state.trashedNotes.first(where: { $0.id == noteID }) else { return }
-        let dialog = AlertDialog(
-            heading: "“\(trashed.title)” is in the Trash",
-            body: "Choose an action.",
-        )
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("restore", label: "Restore")
-        dialog.addResponse("delete", label: "Delete forever")
-        dialog.defaultResponse = "cancel"
-        dialog.closeResponse = "cancel"
-        dialog.setResponseAppearance("delete", appearance: .destructive)
-        dialog.onResponse { [weak self] response in
-            guard let self else { return }
-            switch response {
-            case "restore":
-                restoreFromTrash(noteID: noteID)
-            case "delete":
-                permanentlyDeleteFromTrash(noteID: noteID)
-            default:
-                break
-            }
+    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, fromRow row: ListBoxRow, x: Int, y: Int) {
+        dismissTrashContextMenu()
+        let popover = Popover()
+        popover.hasArrow = true
+        popover.position = .bottom
+        popover.autohide = true
+
+        let content = Box(orientation: .vertical, spacing: 2)
+        content.setMargins(4)
+        let restoreButton = makeNoteContextButton(label: "Restore") { [weak self] in
+            self?.dismissTrashContextMenu()
+            self?.restoreFromTrash(noteID: noteID)
         }
-        dialog.present(window)
+        let deleteButton = makeNoteContextButton(label: "Delete forever", destructive: true) { [weak self] in
+            self?.dismissTrashContextMenu()
+            self?.permanentlyDeleteFromTrash(noteID: noteID)
+        }
+        content.append(restoreButton)
+        content.append(deleteButton)
+        popover.child = content
+        popover.onClosed { [weak self, weak popover] in
+            guard let self, let popover else { return }
+            if popover.root != nil { popover.unparent() }
+            if trashContextMenu === popover { trashContextMenu = nil }
+        }
+        guard popover.present(from: row, x: x, y: y) else {
+            popover.unparent()
+            return
+        }
+        trashContextMenu = popover
+    }
+
+    func presentTrashHeaderContextMenu(fromRow row: ListBoxRow, x: Int, y: Int) {
+        dismissTrashContextMenu()
+        let count = state.trashedNotes.count
+        guard count > 0 else { return }
+
+        let popover = Popover()
+        popover.hasArrow = true
+        popover.position = .bottom
+        popover.autohide = true
+
+        let content = Box(orientation: .vertical, spacing: 2)
+        content.setMargins(4)
+        let label = count == 1 ? "Empty Trash (1 note)…" : "Empty Trash (\(count) notes)…"
+        let emptyButton = makeNoteContextButton(label: label, destructive: true) { [weak self] in
+            self?.dismissTrashContextMenu()
+            self?.presentEmptyTrashConfirmation()
+        }
+        content.append(emptyButton)
+        popover.child = content
+        popover.onClosed { [weak self, weak popover] in
+            guard let self, let popover else { return }
+            if popover.root != nil { popover.unparent() }
+            if trashContextMenu === popover { trashContextMenu = nil }
+        }
+        guard popover.present(from: row, x: x, y: y) else {
+            popover.unparent()
+            return
+        }
+        trashContextMenu = popover
+    }
+
+    func dismissTrashContextMenu() {
+        guard let popover = trashContextMenu else { return }
+        trashContextMenu = nil
+        popover.popdown()
+        if popover.root != nil { popover.unparent() }
     }
 
     func emptyTrash() {
@@ -339,13 +383,15 @@ extension MainWindow {
                     self?.presentFolderContextMenu(forFolderPath: folder.path, x: Int(x), y: Int(y))
                 }
             case .trashHeader:
-                row.onRightClick { [weak self] _, _ in
-                    self?.presentEmptyTrashConfirmation()
+                row.onRightClick { [weak self, weak row] x, y in
+                    guard let self, let row else { return }
+                    presentTrashHeaderContextMenu(fromRow: row, x: Int(x), y: Int(y))
                 }
             case let .trashedNote(trashedNote):
                 let noteID = trashedNote.note.id
-                row.onRightClick { [weak self] x, y in
-                    self?.presentTrashedNoteContextMenu(forNoteID: noteID, x: Int(x), y: Int(y))
+                row.onRightClick { [weak self, weak row] x, y in
+                    guard let self, let row else { return }
+                    presentTrashedNoteContextMenu(forNoteID: noteID, fromRow: row, x: Int(x), y: Int(y))
                 }
             }
         }
