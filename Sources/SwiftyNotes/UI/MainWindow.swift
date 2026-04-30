@@ -33,6 +33,12 @@ final class MainWindow {
     let splitView = OverlaySplitView()
     let editorPreviewPane = Paned(orientation: .horizontal)
     let editorScroll = ScrolledWindow()
+    /// Banner shown above the editor when the user is previewing a
+    /// note from the Trash. Carries a Restore action and signals that
+    /// editing is disabled until the note is restored — without it
+    /// edits to a "previewed" trashed note silently saved into the
+    /// previously-active regular note instead.
+    let trashedNoteBanner = Banner(title: "This note is in the Trash")
     let autosaveDelayOverride: Duration?
     var autosaveDelay: Duration
     let openExternalDocumentHandler: (URL) throws -> Void
@@ -87,6 +93,10 @@ final class MainWindow {
     var directorySnapshot = NotesDirectorySnapshot()
     var isTrashExpanded = false
     var trashContextMenu: Popover?
+    /// Non-nil while the user is previewing a note from the Trash.
+    /// Used to gate the read-only-editor + banner state and to wire
+    /// the banner's Restore button back to the right note.
+    var previewedTrashedNoteID: UUID?
     var sidebarHoverExpandTimer: SourceID?
     var sidebarHoverExpandFolder: String?
     var folderContextMenu: Popover?
@@ -248,6 +258,14 @@ final class MainWindow {
         installEditorImageDropTarget()
         installEditorClipboardImagePaste()
 
+        trashedNoteBanner.buttonLabel = "Restore"
+        trashedNoteBanner.revealed = false
+        trashedNoteBanner.onButtonClicked { [weak self] in
+            guard let self, let id = previewedTrashedNoteID else { return }
+            restoreFromTrash(noteID: id)
+        }
+
+        editorContent.append(trashedNoteBanner)
         editorContent.append(editorFormattingToolbar.scrolled)
         editorContent.append(Separator())
         editorContent.append(editorScroll)

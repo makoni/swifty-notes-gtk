@@ -75,6 +75,10 @@ extension MainWindow {
         case let .folder(folder):
             toggleFolder(at: folder.path)
         case let .note(noteItem):
+            // Coming back to a regular note ends any trash-preview
+            // mode that may have been active so the editor goes
+            // editable again and the banner hides.
+            clearTrashedNotePreviewMode()
             state.select(noteID: noteItem.note.id)
             renderSelection()
             persistWorkspaceState()
@@ -93,14 +97,40 @@ extension MainWindow {
     }
 
     func previewTrashedNote(_ note: Note) {
+        // Mark the editor as showing a trashed note. Three knobs
+        // make this safe:
+        //   1. `previewedTrashedNoteID` is set so any subsequent
+        //      change handler can tell we're in trash-preview mode
+        //      (and skip the autosave path that would otherwise
+        //      route edits to the previously-active regular note).
+        //   2. `editor.view.editable = false` blocks keystrokes —
+        //      typing into a soft-deleted note would silently
+        //      rewrite a different note's content, which is the
+        //      bug this whole mode-switch closes.
+        //   3. Banner above the editor announces the read-only
+        //      state and offers a Restore action that brings the
+        //      note back and re-enables editing.
+        previewedTrashedNoteID = note.id
         suppressEditorChange = true
         editor.setText(note.content)
         suppressEditorChange = false
+        editor.view.editable = false
+        editor.view.opacity = 0.85
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: note.content)
         schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
         saveNoteButton.visible = false
         deleteNoteButton.visible = false
+        trashedNoteBanner.title = "“\(note.title)” is in the Trash"
+        trashedNoteBanner.revealed = true
+    }
+
+    func clearTrashedNotePreviewMode() {
+        guard previewedTrashedNoteID != nil else { return }
+        previewedTrashedNoteID = nil
+        editor.view.editable = true
+        editor.view.opacity = 1.0
+        trashedNoteBanner.revealed = false
     }
 
     func toggleFolder(at path: String) {
@@ -196,6 +226,7 @@ extension MainWindow {
             if state.notes.contains(where: { $0.id == noteID }) {
                 state.select(noteID: noteID)
             }
+            clearTrashedNotePreviewMode()
             renderSelection()
             persistWorkspaceState()
             toastOverlay.showToast("Note restored")
@@ -229,6 +260,13 @@ extension MainWindow {
         do {
             try repository.permanentlyDelete(noteWithID: noteID)
             state.setTrashedNotes(try repository.trashedNotes())
+            // If the user was previewing this exact note, drop back
+            // to the regular editor view (the note is gone — there's
+            // nothing to preview any more).
+            if previewedTrashedNoteID == noteID {
+                clearTrashedNotePreviewMode()
+                renderSelection()
+            }
             refreshSidebar()
             persistWorkspaceState()
             toastOverlay.showToast("Note permanently deleted")
@@ -355,6 +393,10 @@ extension MainWindow {
         do {
             try repository.emptyTrash()
             state.setTrashedNotes([])
+            if previewedTrashedNoteID != nil {
+                clearTrashedNotePreviewMode()
+                renderSelection()
+            }
             refreshSidebar()
             persistWorkspaceState()
             toastOverlay.showToast("Trash emptied")
