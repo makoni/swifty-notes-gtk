@@ -189,6 +189,13 @@ extension MainWindow {
             state.setTrashedNotes(try repository.trashedNotes())
             refreshFolderList()
             refreshDirectorySnapshot()
+            // Open the restored note immediately — the user pressed
+            // "Restore" with the intention of getting back to that
+            // note, so jump them straight to it instead of leaving
+            // whichever note was previously selected on screen.
+            if state.notes.contains(where: { $0.id == noteID }) {
+                state.select(noteID: noteID)
+            }
             renderSelection()
             persistWorkspaceState()
             toastOverlay.showToast("Note restored")
@@ -198,6 +205,24 @@ extension MainWindow {
                 body: error.localizedDescription,
             )
         }
+    }
+
+    func presentPermanentDeleteConfirmation(forNoteID noteID: UUID) {
+        guard let trashed = state.trashedNotes.first(where: { $0.id == noteID }) else { return }
+        let dialog = AlertDialog(
+            heading: "Delete “\(trashed.title)” forever?",
+            body: "This permanently removes the note from disk. This action can't be undone.",
+        )
+        dialog.addResponse("cancel", label: "Cancel")
+        dialog.addResponse("delete", label: "Delete forever")
+        dialog.defaultResponse = "cancel"
+        dialog.closeResponse = "cancel"
+        dialog.setResponseAppearance("delete", appearance: .destructive)
+        dialog.onResponse { [weak self] response in
+            guard let self, response == "delete" else { return }
+            permanentlyDeleteFromTrash(noteID: noteID)
+        }
+        dialog.present(window)
     }
 
     func permanentlyDeleteFromTrash(noteID: UUID) {
@@ -236,7 +261,7 @@ extension MainWindow {
         dialog.present(window)
     }
 
-    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, x: Int, y: Int) {
+    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, x _: Int, y _: Int) {
         dismissNoteContextMenu()
         dismissFolderContextMenu()
         dismissTrashContextMenu()
@@ -251,7 +276,7 @@ extension MainWindow {
 
         let popover = Popover()
         popover.hasArrow = true
-        popover.position = .bottom
+        popover.position = .top
         popover.autohide = true
 
         let content = Box(orientation: .vertical, spacing: 2)
@@ -260,9 +285,9 @@ extension MainWindow {
             self?.dismissTrashContextMenu()
             self?.restoreFromTrash(noteID: noteID)
         }
-        let deleteButton = makeNoteContextButton(label: "Delete forever", destructive: true) { [weak self] in
+        let deleteButton = makeNoteContextButton(label: "Delete forever…", destructive: true) { [weak self] in
             self?.dismissTrashContextMenu()
-            self?.permanentlyDeleteFromTrash(noteID: noteID)
+            self?.presentPermanentDeleteConfirmation(forNoteID: noteID)
         }
         content.append(restoreButton)
         content.append(deleteButton)
@@ -272,11 +297,20 @@ extension MainWindow {
             if popover.root != nil { popover.unparent() }
             if trashContextMenu === popover { trashContextMenu = nil }
         }
-        guard popover.present(from: row, x: x, y: y) else { return }
+        // Anchor to the whole row (no x/y) and ask for `.top` so the
+        // popover lands ABOVE the row deterministically — Trash sits
+        // at the very bottom of the sidebar, so the previous
+        // position=.bottom + click-point anchor either overlapped
+        // the row (when click was near its top) or ate up the
+        // narrow strip below the row before GTK auto-flipped above
+        // anyway. `.top` plus full-row anchor keeps every right-
+        // click landing in the same predictable place above the
+        // row the user clicked.
+        guard popover.present(from: row) else { return }
         trashContextMenu = popover
     }
 
-    func presentTrashHeaderContextMenu(x: Int, y: Int) {
+    func presentTrashHeaderContextMenu(x _: Int, y _: Int) {
         dismissNoteContextMenu()
         dismissFolderContextMenu()
         dismissTrashContextMenu()
@@ -293,7 +327,7 @@ extension MainWindow {
 
         let popover = Popover()
         popover.hasArrow = true
-        popover.position = .bottom
+        popover.position = .top
         popover.autohide = true
 
         let content = Box(orientation: .vertical, spacing: 2)
@@ -310,7 +344,7 @@ extension MainWindow {
             if popover.root != nil { popover.unparent() }
             if trashContextMenu === popover { trashContextMenu = nil }
         }
-        guard popover.present(from: row, x: x, y: y) else { return }
+        guard popover.present(from: row) else { return }
         trashContextMenu = popover
     }
 
