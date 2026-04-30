@@ -27,7 +27,7 @@ extension MainWindow {
             // the next user-visible state is already cleaned up.
             // Errors here are non-fatal — a stale entry sticks
             // around until the next launch.
-            try? repository.pruneTrashIfNeeded(retention: state.trashRetention, now: Date())
+            try? repository.pruneTrashIfNeeded(retention: appSettings.trashRetention, now: Date())
 
             var notes = try repository.loadNotes()
             if notes.isEmpty {

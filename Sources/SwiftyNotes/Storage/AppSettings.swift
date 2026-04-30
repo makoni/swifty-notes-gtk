@@ -49,6 +49,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// which follows the system locale and the first installed
     /// dictionary that matches it.
     public var spellCheckLanguage: String?
+    public var trashRetention: TrashRetention
 
     public init(
         customNotesDirectoryPath: String? = nil,
@@ -60,6 +61,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         appearanceMode: AppearanceMode = .system,
         spellCheckEnabled: Bool = true,
         spellCheckLanguage: String? = nil,
+        trashRetention: TrashRetention = .days(30),
     ) {
         self.customNotesDirectoryPath = customNotesDirectoryPath?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -73,6 +75,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.spellCheckLanguage = spellCheckLanguage?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nilIfEmpty
+        self.trashRetention = trashRetention
     }
 
     public static let `default` = AppSettings()
@@ -105,6 +108,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 appearanceMode: appearanceMode,
                 spellCheckEnabled: spellCheckEnabled,
                 spellCheckLanguage: spellCheckLanguage,
+                trashRetention: trashRetention,
             )
         }
         return AppSettings(
@@ -117,6 +121,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             appearanceMode: appearanceMode,
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
+            trashRetention: trashRetention,
         )
     }
 
@@ -160,6 +165,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             appearanceMode: appearanceMode,
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
+            trashRetention: trashRetention,
         )
     }
 
@@ -173,6 +179,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case appearanceMode
         case spellCheckEnabled
         case spellCheckLanguage
+        case trashRetention
     }
 
     public init(from decoder: any Decoder) throws {
@@ -187,6 +194,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             appearanceMode: container.decodeIfPresent(AppearanceMode.self, forKey: .appearanceMode) ?? .system,
             spellCheckEnabled: container.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled) ?? true,
             spellCheckLanguage: container.decodeIfPresent(String.self, forKey: .spellCheckLanguage),
+            trashRetention: container.decodeIfPresent(TrashRetention.self, forKey: .trashRetention) ?? .days(30),
         )
     }
 

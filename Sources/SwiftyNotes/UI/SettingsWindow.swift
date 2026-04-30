@@ -20,6 +20,7 @@ final class SettingsWindow {
     private let notesFolderRow = ActionRow(title: "Notes folder")
     private let resetToDefaultRow = ActionRow(title: "Use default location")
     private let openCurrentFolderRow = ActionRow(title: "Open current folder")
+    private let trashRetentionRow = ComboRow(title: "Empty Trash automatically")
     private let wrapLinesRow = SwitchRow(title: "Wrap long lines")
     private let fontSizeRow = SpinRow(title: "Editor font size", min: 10, max: 32, step: 1)
     private let tabWidthRow = SpinRow(title: "Tab width", min: 1, max: 8, step: 1)
@@ -29,6 +30,13 @@ final class SettingsWindow {
     private let spellCheckEnabledRow = SwitchRow(title: "Enable spell-check")
     private let spellCheckLanguageRow = ComboRow(title: "Spell-check language")
     private let spellCheckLanguages: [SpellChecking.LanguageOption]
+    private let trashRetentionOptions: [(retention: TrashRetention, displayName: String)] = [
+        (.never, "Never"),
+        (.days(7), "After 7 days"),
+        (.days(30), "After 30 days"),
+        (.days(90), "After 90 days"),
+        (.days(365), "After a year"),
+    ]
     private let browseButton = Button(label: "Browse…")
     private let resetButton = Button(label: "Reset")
     private let openButton = Button(label: "Open")
@@ -137,6 +145,13 @@ final class SettingsWindow {
         openCurrentFolderRow.addSuffix(openButton)
         openCurrentFolderRow.activatableWidget = openButton
         storageGroup.add(openCurrentFolderRow)
+
+        trashRetentionRow.subtitle = "Permanently delete trashed notes after this much time has passed."
+        trashRetentionRow.setModel(StringList(trashRetentionOptions.map(\.displayName)))
+        trashRetentionRow.onNotify(.selected) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        storageGroup.add(trashRetentionRow)
 
         let editorGroup = PreferencesGroup(
             title: "Editor",
@@ -304,6 +319,9 @@ final class SettingsWindow {
         appearanceRow.selected = AppearanceMode.allCases.firstIndex(of: currentSettings.appearanceMode) ?? 0
         spellCheckEnabledRow.active = currentSettings.spellCheckEnabled
         spellCheckLanguageRow.sensitive = currentSettings.spellCheckEnabled
+        trashRetentionRow.selected = trashRetentionOptions.firstIndex {
+            $0.retention == currentSettings.trashRetention
+        } ?? trashRetentionOptions.firstIndex { $0.retention == .days(30) } ?? 0
         if !spellCheckLanguages.isEmpty {
             // Index 0 represents the "follow system locale" option (no
             // explicit language). Subsequent indices map onto entries in
@@ -340,6 +358,11 @@ final class SettingsWindow {
         } else {
             resolvedSpellCheckLanguage = currentSettings.spellCheckLanguage
         }
+        let trashRetentionIndex = min(
+            max(trashRetentionRow.selected, 0),
+            trashRetentionOptions.count - 1,
+        )
+        let trashRetention = trashRetentionOptions[trashRetentionIndex].retention
         let updatedSettings = AppSettings(
             customNotesDirectoryPath: currentSettings.customNotesDirectoryPath,
             wrapsEditorLines: wrapLinesRow.active,
@@ -350,6 +373,7 @@ final class SettingsWindow {
             appearanceMode: appearanceMode,
             spellCheckEnabled: spellCheckEnabledRow.active,
             spellCheckLanguage: resolvedSpellCheckLanguage,
+            trashRetention: trashRetention,
         )
 
         do {

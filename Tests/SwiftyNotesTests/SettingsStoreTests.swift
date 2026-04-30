@@ -56,6 +56,29 @@ struct SettingsStoreTests {
         #expect(settings.editorIndentStyle == .spaces)
         #expect(settings.autosaveDelaySeconds == 2)
         #expect(settings.appearanceMode == .system)
+        // Legacy settings without `trashRetention` fall back to the
+        // 30-day default — the same as a fresh install.
+        #expect(settings.trashRetention == .days(30))
+    }
+
+    @Test
+    func `app settings store round trips trash retention`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let settingsFileURL = temp
+            .appendingPathComponent("config", isDirectory: true)
+            .appendingPathComponent("settings.json", isDirectory: false)
+        let store = AppSettingsStore(settingsFileURL: settingsFileURL)
+
+        try store.save(AppSettings(trashRetention: .never))
+        #expect(try store.load().trashRetention == .never)
+
+        try store.save(AppSettings(trashRetention: .days(7)))
+        #expect(try store.load().trashRetention == .days(7))
+
+        try store.save(AppSettings(trashRetention: .days(365)))
+        #expect(try store.load().trashRetention == .days(365))
     }
 
     @Test

@@ -17,7 +17,6 @@ public final class AppState {
     public var lastTableRows: Int
     public var lastTableCols: Int
     public var lastTableAlignments: [MarkdownTableAlignment]
-    public var trashRetention: TrashRetention = .days(30)
 
     public var isPreviewVisible: Bool {
         viewMode.isPreviewVisible
