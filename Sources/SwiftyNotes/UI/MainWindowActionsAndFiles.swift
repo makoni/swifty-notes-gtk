@@ -246,6 +246,11 @@ extension MainWindow {
     func installEditorClipboardImagePaste() {
         editor.view.onPasteClipboard { [weak self] in
             guard let self else { return }
+            // Trash-preview is read-only; let GTK's `editable = false`
+            // drop the default paste, and skip our own intercepts so
+            // we don't route content through importPasted* / a custom
+            // text-insert either.
+            guard self.previewedTrashedNoteID == nil else { return }
             // The paste-clipboard signal fires before GTK does the
             // actual paste, so we have one synchronous chance to
             // intercept it. Probe the clipboard formats up front and
@@ -289,8 +294,75 @@ extension MainWindow {
                         )
                     }
                 }
+            } else {
+                // Text paste: snapshot the cursor context now (the
+                // async readText runs several main-loop turns later
+                // and the user might have moved the cursor by then),
+                // suppress GTK's default paste, and decide wrap vs.
+                // plain insert from the helper.
+                let selection = self.selectedTextInBuffer()
+                let textBefore = self.textBeforeCursor()
+                editor.view.stopSignalEmission(named: "paste-clipboard")
+                clipboard.readText { [weak self] text in
+                    guard let self, let text else { return }
+                    self.handleClipboardTextPaste(
+                        clipboardText: text,
+                        selectedText: selection,
+                        textBefore: textBefore,
+                    )
+                }
             }
         }
+    }
+
+    /// Substring of the editor buffer up to the start of the current
+    /// selection (or the cursor when there is no selection). Used to
+    /// give ``MarkdownLinkPaste/isInCodeContext(textBefore:)`` enough
+    /// context to spot fenced/inline code spans.
+    func textBeforeCursor() -> String {
+        let offset = editor.buffer.selectedRange.lowerBound
+        let fullText = editor.buffer.text
+        guard offset > 0 else { return "" }
+        let clamped = min(offset, fullText.count)
+        return String(fullText.prefix(clamped))
+    }
+
+    func selectedTextInBuffer() -> String {
+        let range = editor.buffer.selectedRange
+        guard !range.isEmpty else { return "" }
+        let fullText = editor.buffer.text
+        let clampedUpper = min(range.upperBound, fullText.count)
+        let clampedLower = min(range.lowerBound, clampedUpper)
+        let lower = fullText.index(fullText.startIndex, offsetBy: clampedLower)
+        let upper = fullText.index(fullText.startIndex, offsetBy: clampedUpper)
+        return String(fullText[lower..<upper])
+    }
+
+    func handleClipboardTextPaste(
+        clipboardText: String,
+        selectedText: String,
+        textBefore: String,
+    ) {
+        let inCode = MarkdownLinkPaste.isInCodeContext(textBefore: textBefore)
+        let action = MarkdownLinkPaste.transform(
+            clipboardText: clipboardText,
+            selectedText: selectedText,
+            isInCodeContext: inCode,
+        )
+        let textToInsert: String
+        switch action {
+        case let .wrap(wrapped):
+            textToInsert = wrapped
+        case .passThrough:
+            textToInsert = clipboardText
+        }
+        // Replicate GTK's default behaviour of replacing any active
+        // selection on paste — we fully own this branch now.
+        let selectionRange = editor.buffer.selectedRange
+        if !selectionRange.isEmpty {
+            editor.buffer.delete(range: selectionRange)
+        }
+        editor.buffer.insertAtCursor(textToInsert)
     }
 
     func importDroppedImages(from sourceURLs: [URL]) throws {

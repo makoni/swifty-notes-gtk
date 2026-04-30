@@ -283,6 +283,147 @@ struct MainWindowCoreTests {
     }
 
     @Test @MainActor
+    func `main window paste URL with no selection wraps it as a markdown link`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "Cursor here: ")
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.paste-url-bare")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("Cursor here: ")
+        window.debugSelectEditorRange(13 ..< 13)
+
+        window.handleClipboardTextPaste(
+            clipboardText: "https://example.com",
+            selectedText: "",
+            textBefore: "Cursor here: ",
+        )
+
+        #expect(window.debugEditorText == "Cursor here: [https://example.com](https://example.com)")
+    }
+
+    @Test @MainActor
+    func `main window paste URL with selection wraps the selection as link text`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "click here please")
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.paste-url-selection")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("click here please")
+        window.debugSelectEditorRange(0 ..< 10) // "click here"
+
+        window.handleClipboardTextPaste(
+            clipboardText: "https://example.com",
+            selectedText: "click here",
+            textBefore: "",
+        )
+
+        #expect(window.debugEditorText == "[click here](https://example.com) please")
+    }
+
+    @Test @MainActor
+    func `main window paste plain text inserts text without wrapping`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "")
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.paste-plain")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("Prefix: ")
+        window.debugSelectEditorRange(8 ..< 8)
+
+        window.handleClipboardTextPaste(
+            clipboardText: "just some words",
+            selectedText: "",
+            textBefore: "Prefix: ",
+        )
+
+        #expect(window.debugEditorText == "Prefix: just some words")
+    }
+
+    @Test @MainActor
+    func `main window paste URL inside code block keeps URL raw`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "")
+
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.paste-url-codeblock")
+        try app.register()
+
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(
+                stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+            ),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+
+        window.debugLoadInitialNotes()
+        let prefix = "```\ncurl "
+        window.debugSetEditorText(prefix)
+        window.debugSelectEditorRange(prefix.count ..< prefix.count)
+
+        window.handleClipboardTextPaste(
+            clipboardText: "https://example.com",
+            selectedText: "",
+            textBefore: prefix,
+        )
+
+        #expect(window.debugEditorText == "```\ncurl https://example.com")
+    }
+
+    @Test @MainActor
     func `main window paste image throws when no note is selected`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
