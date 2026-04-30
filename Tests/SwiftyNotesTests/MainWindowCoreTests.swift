@@ -1068,7 +1068,10 @@ struct MainWindowCoreTests {
         #expect(saved[0].content == "# Saved Title\n\nSaved body")
         #expect(saved[0].title == "Saved Title")
         #expect(!window.debugEditorModified)
-        #expect(window.debugDisplayedNoteTitles.first == "Saved Title")
+        // The seeded "Guides" folder is expanded by default, so its
+        // children (About / CLI guide) sort above root-level notes
+        // in the sidebar; assert presence rather than first-position.
+        #expect(window.debugDisplayedNoteTitles.contains("Saved Title"))
     }
 
     @Test @MainActor
