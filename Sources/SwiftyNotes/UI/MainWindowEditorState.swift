@@ -42,6 +42,12 @@ extension MainWindow {
     /// `taskIndex` is the 0-based document-order index the renderer
     /// stamped on each task item.
     func handleTaskCheckboxToggle(at taskIndex: Int) {
+        // Trash-preview keeps `state.selectedNoteID` pinned to the
+        // previously-active regular note, so a checkbox click in the
+        // preview of a trashed note would otherwise rewrite the
+        // visible buffer (which holds the trashed note's content)
+        // and save it back into the regular note's file.
+        guard previewedTrashedNoteID == nil else { return }
         guard state.selectedNote != nil else { return }
         let original = editor.buffer.text
         let toggled = TaskListToggle.toggle(in: original, atTaskIndex: taskIndex)

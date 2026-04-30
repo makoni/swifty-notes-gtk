@@ -354,7 +354,13 @@ final class MainWindow {
         }
 
         editor.view.onChanged { [weak self] in
-            guard let self, !self.suppressEditorChange, let noteToSave = currentEditedNoteSnapshot() else { return }
+            guard let self, !self.suppressEditorChange else { return }
+            // Belt-and-suspenders: every known buffer mutation in
+            // trash-preview mode is gated upstream, but if a future
+            // path adds a programmatic write we don't want it to
+            // silently rewrite the wrong note via this autosave.
+            guard self.previewedTrashedNoteID == nil else { return }
+            guard let noteToSave = currentEditedNoteSnapshot() else { return }
             state.upsert(noteToSave)
             refreshSidebar()
             refreshPreview()

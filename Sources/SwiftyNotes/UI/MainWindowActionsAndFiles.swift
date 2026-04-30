@@ -294,6 +294,13 @@ extension MainWindow {
     }
 
     func importDroppedImages(from sourceURLs: [URL]) throws {
+        // The drop target is attached to `editor.view` directly, so
+        // GTK's `editable = false` doesn't block it — the trashed-note
+        // preview would otherwise let a drop write image markdown
+        // into the regular note that's still pinned in `state`.
+        guard previewedTrashedNoteID == nil else {
+            throw DroppedImageImportError.noSelectedNote
+        }
         guard let selected = currentEditedNoteSnapshot() else {
             throw DroppedImageImportError.noSelectedNote
         }
@@ -317,6 +324,12 @@ extension MainWindow {
     /// handler — the GUI layer is responsible for decoding the
     /// `GdkClipboard` texture into PNG bytes before calling this.
     func importPastedImage(pngData: Data) throws {
+        // Same reasoning as `importDroppedImages` — the paste-clipboard
+        // intercept fires before GTK's editable check, so we have to
+        // refuse pastes ourselves while previewing a trashed note.
+        guard previewedTrashedNoteID == nil else {
+            throw DroppedImageImportError.noSelectedNote
+        }
         guard let selected = currentEditedNoteSnapshot() else {
             throw DroppedImageImportError.noSelectedNote
         }
