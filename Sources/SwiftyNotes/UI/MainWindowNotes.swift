@@ -261,7 +261,7 @@ extension MainWindow {
         dialog.present(window)
     }
 
-    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, x _: Int, y _: Int) {
+    func presentTrashedNoteContextMenu(forNoteID noteID: UUID, x: Int, y: Int) {
         dismissNoteContextMenu()
         dismissFolderContextMenu()
         dismissTrashContextMenu()
@@ -297,20 +297,16 @@ extension MainWindow {
             if popover.root != nil { popover.unparent() }
             if trashContextMenu === popover { trashContextMenu = nil }
         }
-        // Anchor to the whole row (no x/y) and ask for `.top` so the
-        // popover lands ABOVE the row deterministically — Trash sits
-        // at the very bottom of the sidebar, so the previous
-        // position=.bottom + click-point anchor either overlapped
-        // the row (when click was near its top) or ate up the
-        // narrow strip below the row before GTK auto-flipped above
-        // anyway. `.top` plus full-row anchor keeps every right-
-        // click landing in the same predictable place above the
-        // row the user clicked.
-        guard popover.present(from: row) else { return }
+        // Anchor at the click point with `position = .top` — the
+        // popover lands above and its arrow points DOWN at the
+        // exact spot the user right-clicked. Anchoring to the whole
+        // row instead made the arrow point at the row's top edge,
+        // which (with rows stacked flush) read as "the row above".
+        guard popover.present(from: row, x: x, y: y) else { return }
         trashContextMenu = popover
     }
 
-    func presentTrashHeaderContextMenu(x _: Int, y _: Int) {
+    func presentTrashHeaderContextMenu(x: Int, y: Int) {
         dismissNoteContextMenu()
         dismissFolderContextMenu()
         dismissTrashContextMenu()
@@ -344,7 +340,7 @@ extension MainWindow {
             if popover.root != nil { popover.unparent() }
             if trashContextMenu === popover { trashContextMenu = nil }
         }
-        guard popover.present(from: row) else { return }
+        guard popover.present(from: row, x: x, y: y) else { return }
         trashContextMenu = popover
     }
 
