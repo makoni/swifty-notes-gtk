@@ -54,7 +54,7 @@ let package = Package(
         ),
         .executable(
             name: "swiftynotes",
-            targets: ["swiftynotes"]
+            targets: ["SwiftyNotesApp"]
         )
     ],
     dependencies: [
@@ -62,7 +62,7 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            revision: "0c4bcc4bd657949a8a5ca7d56df1a13028abe397"
+            minimumVersion: Version(1, 3, 0)
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",
@@ -96,9 +96,15 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "swiftynotes",
+            // Target name (and `path:`) must not case-collide with the
+            // SwiftyNotes library target on case-insensitive filesystems
+            // (default APFS); SwiftPM normalises target names and would
+            // otherwise merge the two. The user-visible binary product
+            // name `swiftynotes` is unchanged — see `.executable(...)`
+            // in `products` above.
+            name: "SwiftyNotesApp",
             dependencies: ["SwiftyNotes"],
-            path: "Sources/swiftynotes"
+            path: "Sources/SwiftyNotesApp"
         ),
         .testTarget(
             name: "SwiftyNotesTests",
