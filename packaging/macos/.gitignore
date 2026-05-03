@@ -1,0 +1,17 @@
+# Xcode per-user state — never commit
+**/xcuserdata/
+**/*.xcuserstate
+
+# SwiftPM resolved package versions for the Xcode project (Linux SPM
+# uses Package.resolved at the repo root; this is the duplicate Xcode
+# writes inside the .xcodeproj which we don't track).
+**/Package.resolved
+**/swiftpm/
+
+# DerivedData / build artifacts (defaults are user-specific anyway)
+**/build/
+**/DerivedData/
+
+# macOS Finder
+.DS_Store
+**/.DS_Store

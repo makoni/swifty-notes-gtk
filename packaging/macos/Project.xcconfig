@@ -1,0 +1,74 @@
+// xcconfig for the Swifty Notes macOS Xcode project.
+//
+// Xcode's build system has no native pkg-config integration, so the
+// Homebrew GTK4 / libadwaita / gtksourceview / libspelling / glib include
+// and library paths are listed explicitly. Mirror what `pkg-config
+// --cflags --libs libadwaita-1 gtksourceview-5 libspelling-1` returns on
+// Apple Silicon. For Intel Macs replace `/opt/homebrew` → `/usr/local`.
+
+// macOS 13 is the minimum that satisfies `Duration.components` and
+// `MainActor.assumeIsolated` used inside swift-adwaita's `MainContext`,
+// and matches the `platforms:` clause in this project's Package.swift.
+MACOSX_DEPLOYMENT_TARGET = 13.0
+
+// Match the swift-tools-version declared in Package.swift.
+SWIFT_VERSION = 6.0
+
+// We hand-write Info.plist for the LSEnvironment block (Xcode's
+// generated INFOPLIST_KEY_* settings can't express nested dictionaries).
+INFOPLIST_FILE = Info.plist
+GENERATE_INFOPLIST_FILE = NO
+INFOPLIST_KEY_NSMainStoryboardFile =
+INFOPLIST_KEY_NSPrincipalClass = NSApplication
+
+// The Xcode target itself is named `swiftynotes` to mirror the project
+// folder, but the produced app bundle is `SwiftyNotes.app` (and its
+// executable is `SwiftyNotes`) so it does not name-collide with the SPM
+// `swiftynotes` executable product when both share the build/products
+// directory. The user-facing app name is `CFBundleDisplayName` =
+// "Swifty Notes" set in Info.plist.
+PRODUCT_NAME = SwiftyNotes
+
+// libadwaita uses dlopen for GModule plugins and links against arbitrary
+// Homebrew dylibs. App Sandbox + Hardened Runtime would block that
+// without a wide entitlements set; keep both off for the developer build
+// loop. Re-enable for App Store / notarized distribution and add the
+// `com.apple.security.cs.disable-library-validation` entitlement.
+ENABLE_APP_SANDBOX = NO
+ENABLE_HARDENED_RUNTIME = NO
+
+// Homebrew install prefix on Apple Silicon.
+HOMEBREW_PREFIX = /opt/homebrew
+
+// Headers — union of `pkg-config --cflags libadwaita-1 gtksourceview-5
+// libspelling-1`. Verbose so contributors can see what each path is for.
+HEADER_SEARCH_PATHS = $(inherited) \
+    $(HOMEBREW_PREFIX)/include \
+    $(HOMEBREW_PREFIX)/include/libadwaita-1 \
+    $(HOMEBREW_PREFIX)/include/libspelling-1 \
+    $(HOMEBREW_PREFIX)/include/gtk-4.0 \
+    $(HOMEBREW_PREFIX)/include/gtksourceview-5 \
+    $(HOMEBREW_PREFIX)/include/glib-2.0 \
+    $(HOMEBREW_PREFIX)/lib/glib-2.0/include \
+    $(HOMEBREW_PREFIX)/include/pango-1.0 \
+    $(HOMEBREW_PREFIX)/include/cairo \
+    $(HOMEBREW_PREFIX)/include/gdk-pixbuf-2.0 \
+    $(HOMEBREW_PREFIX)/include/graphene-1.0 \
+    $(HOMEBREW_PREFIX)/lib/graphene-1.0/include \
+    $(HOMEBREW_PREFIX)/include/harfbuzz \
+    $(HOMEBREW_PREFIX)/include/fribidi \
+    $(HOMEBREW_PREFIX)/include/appstream
+
+LIBRARY_SEARCH_PATHS = $(inherited) $(HOMEBREW_PREFIX)/lib
+
+// Linker flags — libraries declared in `Sources/CAdwaita/module.modulemap`,
+// `Sources/CGtkSource/module.modulemap`, and `Sources/CSpelling/module.modulemap`.
+OTHER_LDFLAGS = $(inherited) \
+    -ladwaita-1 \
+    -lgtk-4 \
+    -lgtksourceview-5 \
+    -lspelling-1 \
+    -lgobject-2.0 \
+    -lglib-2.0 \
+    -lgio-2.0 \
+    -lgdk_pixbuf-2.0
