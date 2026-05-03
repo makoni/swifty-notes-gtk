@@ -62,7 +62,10 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            minimumVersion: Version(1, 3, 0)
+            // Pinned to the swift-adwaita 1.3.0 release commit (the macOS
+            // support release). Bump deliberately when validating a newer
+            // upstream rather than via SemVer auto-resolution.
+            revision: "41822ceb073962bf195d31ce1cca110c017dcc0b"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",
