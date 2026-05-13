@@ -72,6 +72,20 @@
         </ul>
       </description>
     </release>
+    <release version="1.1.5" date="2026-04-30">
+      <description>
+        <p>This update brings note recovery, smarter paste, list-rendering polish, and richer out-of-the-box spell-check.</p>
+        <ul>
+          <li>New Trash: deleting a note moves it into a sidebar Trash section instead of erasing it for good. Restore from the right-click menu, the toast's Undo button, or empty the bin manually. A new "Empty Trash automatically" preference in Settings → Storage prunes trashed notes after Never / 7 / 30 / 90 / 365 days (default 30). Deleting a folder also routes nested notes through Trash, so they can still be restored individually.</li>
+          <li>Pasting a bare http/https URL now inserts a Markdown link automatically: with no selection it becomes <code>[url](url)</code>; with text selected the selection becomes the link label. Pasting inside a code block keeps the URL raw.</li>
+          <li>Pasting a copied image (Ctrl+V) or files copied from a file manager now imports them into the active note's <code>assets</code> folder and inserts a Markdown reference, just like drag-and-drop.</li>
+          <li>Task-list checkboxes in the preview are clickable — toggling <code>[ ]</code> / <code>[x]</code> updates the editor and saves automatically.</li>
+          <li>Markdown rendering polish: loose lists (items separated by blank lines) get paragraph-style spacing per item, ordered lists restart numbering after a blank line, standalone image lines render as full-width block images, and badge rows keep their requested size.</li>
+          <li>The New Folder dialog now treats slashes as nesting separators and rejects hidden, whitespace-only, or Windows-incompatible names with a clear message.</li>
+          <li>The Flatpak build bundles 21 hunspell dictionaries (en, de, es, fr, it, pl, ru, uk, cs, da, nl, fi, hu, nb, pt, ro, sk, sl, sr, sv, he) so inline spell-check works for those languages out of the box without installing extra packages.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.4" date="2026-04-28">
       <description>
         <p>This update brings folders and inline spell-checking to Swifty Notes — two of the most-requested features for organising notes and writing comfortably.</p>
