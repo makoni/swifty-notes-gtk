@@ -8,6 +8,117 @@ final class MarkdownPreview {
         case remote(URL)
     }
 
+    private typealias ListPreviewItem = (text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)
+
+    private enum PreviewRow: Equatable {
+        case heading(level: Int, text: RenderedText)
+        case paragraphRun([RenderedText])
+        case codeBlock(code: String, language: String?)
+        case blockquoteRun([RenderedText])
+        case list(items: [ListPreviewItem])
+        case thematicBreak
+        case table(headers: [RenderedText], rows: [[RenderedText]], alignments: [RenderedTableAlignment])
+        case image(alt: String, source: String?, title: String?, style: ImageBlockStyle)
+        case imageGroup(items: [RenderedImageItem], style: ImageBlockStyle)
+
+        var supportsVirtualization: Bool {
+            switch self {
+            case .image, .imageGroup:
+                false
+            default:
+                true
+            }
+        }
+
+        var supportsIncrementalUpdate: Bool {
+            switch self {
+            case .image, .imageGroup:
+                false
+            default:
+                true
+            }
+        }
+
+        var supportsCustomTextLayout: Bool {
+            switch self {
+            case .heading, .paragraphRun, .blockquoteRun, .thematicBreak:
+                true
+            case let .list(items):
+                items.allSatisfy { $0.taskIndex == nil }
+            case .codeBlock, .table, .image, .imageGroup:
+                false
+            }
+        }
+
+        static func == (lhs: PreviewRow, rhs: PreviewRow) -> Bool {
+            switch (lhs, rhs) {
+            case let (.heading(lhsLevel, lhsText), .heading(rhsLevel, rhsText)):
+                lhsLevel == rhsLevel && lhsText == rhsText
+            case let (.paragraphRun(lhsTexts), .paragraphRun(rhsTexts)):
+                lhsTexts == rhsTexts
+            case let (.codeBlock(lhsCode, lhsLanguage), .codeBlock(rhsCode, rhsLanguage)):
+                lhsCode == rhsCode && lhsLanguage == rhsLanguage
+            case let (.blockquoteRun(lhsTexts), .blockquoteRun(rhsTexts)):
+                lhsTexts == rhsTexts
+            case let (.list(lhsItems), .list(rhsItems)):
+                lhsItems.elementsEqual(rhsItems) { lhsItem, rhsItem in
+                    lhsItem.text == rhsItem.text
+                        && lhsItem.depth == rhsItem.depth
+                        && lhsItem.marker == rhsItem.marker
+                        && lhsItem.loose == rhsItem.loose
+                        && lhsItem.taskIndex == rhsItem.taskIndex
+                }
+            case (.thematicBreak, .thematicBreak):
+                true
+            case let (.table(lhsHeaders, lhsRows, lhsAlignments), .table(rhsHeaders, rhsRows, rhsAlignments)):
+                lhsHeaders == rhsHeaders && lhsRows == rhsRows && lhsAlignments == rhsAlignments
+            case let (.image(lhsAlt, lhsSource, lhsTitle, lhsStyle), .image(rhsAlt, rhsSource, rhsTitle, rhsStyle)):
+                lhsAlt == rhsAlt && lhsSource == rhsSource && lhsTitle == rhsTitle && lhsStyle == rhsStyle
+            case let (.imageGroup(lhsItems, lhsStyle), .imageGroup(rhsItems, rhsStyle)):
+                lhsItems == rhsItems && lhsStyle == rhsStyle
+            default:
+                false
+            }
+        }
+    }
+
+    private enum RenderMode: Equatable {
+        case stacked
+        case virtualized
+        case customText
+    }
+
+    private struct RowDiff {
+        let prefixCount: Int
+        let oldChangedRange: Range<Int>
+        let newChangedRange: Range<Int>
+
+        var hasChanges: Bool {
+            !oldChangedRange.isEmpty || !newChangedRange.isEmpty
+        }
+
+        static func between(old oldRows: [PreviewRow], new newRows: [PreviewRow]) -> Self {
+            let sharedCount = min(oldRows.count, newRows.count)
+            var prefixCount = 0
+            while prefixCount < sharedCount, oldRows[prefixCount] == newRows[prefixCount] {
+                prefixCount += 1
+            }
+
+            var suffixCount = 0
+            while suffixCount < sharedCount - prefixCount,
+                  oldRows[oldRows.count - 1 - suffixCount] == newRows[newRows.count - 1 - suffixCount]
+            {
+                suffixCount += 1
+            }
+
+            return .init(
+                prefixCount: prefixCount,
+                oldChangedRange: prefixCount ..< (oldRows.count - suffixCount),
+                newChangedRange: prefixCount ..< (newRows.count - suffixCount),
+            )
+        }
+    }
+
     let container: Box
     let rootScroll: ScrolledWindow
 
@@ -141,6 +252,17 @@ final class MarkdownPreview {
     private let remoteImageLoader: PreviewRemoteImageLoadHandler
     private var animatedImagePlayers: [PreviewAnimatedImagePlayer] = []
     private var lastObservedPreviewWidth: Int = -1
+    private var lastRenderedBlocks: [RenderedBlock] = []
+    private var renderedRows: [PreviewRow] = []
+    private var renderedBaseDirectory: URL?
+    private var renderMode: RenderMode = .stacked
+    private var virtualizedRows: [PreviewRow] = []
+    private var virtualizedStore: ListStore?
+    private var virtualizedSelection: NoSelection?
+    private var virtualizedFactory: SignalListItemFactory?
+    private var virtualizedListView: ListView?
+    var debugForceVirtualizedRows = false
+    var debugForceCustomTextLayout = false
 
     init(remoteImageLoader: @escaping PreviewRemoteImageLoadHandler = { url, completion in
         PreviewRemoteImageLoader.shared.loadImage(url, completion: completion)
@@ -184,8 +306,10 @@ final class MarkdownPreview {
     }
 
     var plainText: String {
-        container.children()
-            .compactMap(Self.extractPlainText(from:))
+        if lastRenderedBlocks.isEmpty {
+            return "Nothing to preview yet."
+        }
+        return lastRenderedBlocks.map(\.plainText)
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
     }
@@ -198,14 +322,28 @@ final class MarkdownPreview {
     /// immediate block widgets the preview is currently asking GTK to
     /// lay out/snapshot.
     var debugTopLevelWidgetCount: Int {
-        container.children().count
+        if debugUsesVirtualizedRows {
+            return 1
+        }
+        return container.children().count
     }
 
     /// Recursive widget count of the preview subtree. Useful as a
     /// headless proxy for scenegraph growth while iterating on scroll
     /// performance work.
     var debugWidgetTreeCount: Int {
-        Self.widgetTreeCount(in: container)
+        if debugUsesVirtualizedRows, let root = rootScroll.child {
+            return Self.widgetTreeCount(in: root)
+        }
+        return Self.widgetTreeCount(in: container)
+    }
+
+    var debugUsesVirtualizedRows: Bool {
+        renderMode == .virtualized
+    }
+
+    var debugUsesCustomTextLayout: Bool {
+        renderMode == .customText
     }
 
     private static func extractPlainText(from widget: Widget) -> String? {
@@ -237,38 +375,240 @@ final class MarkdownPreview {
     }
 
     func render(blocks: [RenderedBlock], baseDirectory: URL? = nil) {
-        self.baseDirectory = baseDirectory
-        clear()
+        let standardizedBaseDirectory = baseDirectory?.standardizedFileURL
+        self.baseDirectory = standardizedBaseDirectory
+        lastRenderedBlocks = blocks
+        let rows = makeRows(from: blocks)
+        let targetRenderMode = resolvedRenderMode(for: rows)
+
         guard !blocks.isEmpty else {
+            clear()
+            renderedBaseDirectory = standardizedBaseDirectory
+            renderedRows = []
+            renderMode = .stacked
             container.append(makeParagraph(text: .plain("Nothing to preview yet.")))
             return
         }
 
+        guard !shouldSkipRender(rows: rows, renderMode: targetRenderMode, baseDirectory: standardizedBaseDirectory) else {
+            return
+        }
+
+        if canIncrementallyUpdate(
+            to: rows,
+            renderMode: targetRenderMode,
+            baseDirectory: standardizedBaseDirectory,
+        ) {
+            if targetRenderMode == .virtualized {
+                updateVirtualizedRows(to: rows)
+            } else {
+                updateNonVirtualizedRows(to: rows)
+            }
+            renderedRows = rows
+            renderedBaseDirectory = standardizedBaseDirectory
+            renderMode = targetRenderMode
+            return
+        }
+
+        clear()
+        renderedRows = rows
+        renderedBaseDirectory = standardizedBaseDirectory
+        renderMode = targetRenderMode
+        if targetRenderMode == .virtualized {
+            renderVirtualized(rows: rows)
+            return
+        }
+        if targetRenderMode == .customText {
+            container.append(makeCustomTextDocument(rows: rows))
+            return
+        }
+
+        for row in rows {
+            container.append(makeWidget(for: row))
+        }
+    }
+
+    private func resolvedRenderMode(for rows: [PreviewRow]) -> RenderMode {
+        guard !rows.isEmpty else { return .stacked }
+        let forcedVirtualization = debugForceVirtualizedRows || (
+            ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW"]
+                .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
+        )
+        if forcedVirtualization && rows.allSatisfy(\.supportsVirtualization) {
+            return .virtualized
+        }
+        if shouldUseCustomTextLayout(rows) {
+            return .customText
+        }
+        if shouldUseVirtualizedRows(rows) {
+            return .virtualized
+        }
+        return .stacked
+    }
+
+    private func shouldSkipRender(rows: [PreviewRow], renderMode: RenderMode, baseDirectory: URL?) -> Bool {
+        !renderedRows.isEmpty
+            && renderedRows == rows
+            && renderedBaseDirectory == baseDirectory
+            && self.renderMode == renderMode
+    }
+
+    private func canIncrementallyUpdate(to newRows: [PreviewRow], renderMode: RenderMode, baseDirectory: URL?) -> Bool {
+        !renderedRows.isEmpty
+            && renderedBaseDirectory == baseDirectory
+            && self.renderMode == renderMode
+            && renderMode != .customText
+            && renderedRows.allSatisfy(\.supportsIncrementalUpdate)
+            && newRows.allSatisfy(\.supportsIncrementalUpdate)
+    }
+
+    private func makeRows(from blocks: [RenderedBlock]) -> [PreviewRow] {
+        var rows: [PreviewRow] = []
         var index = 0
         while index < blocks.count {
             let block = blocks[index]
             if case .listItem = block {
-                var items: [(text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)] = []
+                var items: [ListPreviewItem] = []
                 while index < blocks.count {
                     guard case let .listItem(text, depth, marker, loose, taskIndex) = blocks[index] else { break }
                     items.append((text, depth, marker, loose, taskIndex))
                     index += 1
                 }
-                container.append(makeList(items))
+                rows.append(.list(items: items))
                 continue
             }
 
-            if let textRun = makeTextRunWidget(from: blocks, startingAt: &index) {
-                container.append(textRun)
+            if let textRun = makeTextRun(from: blocks, startingAt: &index) {
+                rows.append(textRun)
                 continue
             }
 
-            container.append(makeWidget(for: block))
+            rows.append(makeRow(for: block))
             index += 1
+        }
+        return rows
+    }
+
+    private func shouldUseVirtualizedRows(_ rows: [PreviewRow]) -> Bool {
+        let forcedByEnvironment = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW"]
+            .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
+        let forced = debugForceVirtualizedRows || forcedByEnvironment
+        let wantsVirtualization = forced || rows.count >= 120
+        return wantsVirtualization && rows.allSatisfy(\.supportsVirtualization)
+    }
+
+    private func shouldUseCustomTextLayout(_ rows: [PreviewRow]) -> Bool {
+        let forcedByEnvironment = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_FORCE_CUSTOM_TEXT_PREVIEW"]
+            .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
+        let forced = debugForceCustomTextLayout || forcedByEnvironment
+        let wantsCustomTextLayout = forced || rows.count >= 160
+        return wantsCustomTextLayout && rows.allSatisfy(\.supportsCustomTextLayout)
+    }
+
+    private func renderVirtualized(rows: [PreviewRow]) {
+        virtualizedRows = rows
+
+        let store = ListStore()
+        for _ in rows {
+            store.appendPlaceholder()
+        }
+
+        let factory = SignalListItemFactory()
+        factory.onBind { [weak self] listItem in
+            guard let self else { return }
+            let position = listItem.position
+            guard position >= 0, position < virtualizedRows.count else {
+                listItem.child = nil
+                return
+            }
+            listItem.child = makeVirtualizedRowWidget(
+                for: virtualizedRows[position],
+                isFirst: position == 0,
+                isLast: position == virtualizedRows.count - 1,
+            )
+        }
+        factory.onUnbind { listItem in
+            listItem.child = nil
+        }
+
+        let selection = NoSelection(model: store)
+        let listView = ListView(model: selection, factory: factory)
+        listView.showSeparators = false
+        listView.singleClickActivate = false
+        listView.hexpand = true
+        listView.vexpand = true
+
+        virtualizedStore = store
+        virtualizedSelection = selection
+        virtualizedFactory = factory
+        virtualizedListView = listView
+        rootScroll.child = listView
+    }
+
+    private func makeCustomTextDocument(rows: [PreviewRow]) -> Label {
+        let label = makeMarkupLabel(customTextMarkup(for: rows))
+        label.addCSSClass("preview-paragraph-label")
+        label.selectable = true
+        label.hexpand = true
+        label.halign = .fill
+        return label
+    }
+
+    private func updateVirtualizedRows(to newRows: [PreviewRow]) {
+        guard let store = virtualizedStore else {
+            renderVirtualized(rows: newRows)
+            return
+        }
+
+        let diff = RowDiff.between(old: renderedRows, new: newRows)
+        guard diff.hasChanges else { return }
+
+        virtualizedRows = newRows
+        for index in diff.oldChangedRange.reversed() {
+            store.remove(at: index)
+        }
+        for index in diff.newChangedRange {
+            store.insertPlaceholder(at: index)
         }
     }
 
-    private func makeTextRunWidget(from blocks: [RenderedBlock], startingAt index: inout Int) -> Widget? {
+    private func updateNonVirtualizedRows(to newRows: [PreviewRow]) {
+        let diff = RowDiff.between(old: renderedRows, new: newRows)
+        guard diff.hasChanges else { return }
+
+        let existingChildren = container.children()
+        for index in diff.oldChangedRange.reversed() {
+            let child = existingChildren[index]
+            child.visible = false
+            container.remove(child)
+        }
+
+        let retainedChildren = container.children()
+        var sibling: Widget?
+        if diff.prefixCount > 0 {
+            sibling = retainedChildren[diff.prefixCount - 1]
+        }
+
+        for row in newRows[diff.newChangedRange] {
+            let widget = makeWidget(for: row)
+            container.insertChildAfter(widget, sibling: sibling)
+            sibling = widget
+        }
+    }
+
+    private func makeVirtualizedRowWidget(for row: PreviewRow, isFirst: Bool, isLast: Bool) -> Widget {
+        let wrapper = Box(orientation: .vertical, spacing: 0)
+        wrapper.hexpand = true
+        wrapper.halign = .fill
+        wrapper.marginStart = 20
+        wrapper.marginEnd = 20
+        wrapper.marginTop = isFirst ? 20 : 0
+        wrapper.marginBottom = isLast ? 20 : 20
+        wrapper.append(makeWidget(for: row))
+        return wrapper
+    }
+
+    private func makeTextRun(from blocks: [RenderedBlock], startingAt index: inout Int) -> PreviewRow? {
         switch blocks[index] {
         case let .paragraph(text):
             var texts = [text]
@@ -278,7 +618,7 @@ final class MarkdownPreview {
                 texts.append(nextText)
                 index += 1
             }
-            return makeParagraphRun(texts)
+            return .paragraphRun(texts)
         case let .blockquote(text):
             var texts = [text]
             index += 1
@@ -287,24 +627,47 @@ final class MarkdownPreview {
                 texts.append(nextText)
                 index += 1
             }
-            return makeBlockquoteRun(texts)
+            return .blockquoteRun(texts)
         default:
             return nil
         }
     }
 
-    private func makeWidget(for block: RenderedBlock) -> Widget {
+    private func makeRow(for block: RenderedBlock) -> PreviewRow {
         switch block {
         case let .heading(level, text):
-            makeHeading(level: level, text: text)
+            .heading(level: level, text: text)
         case let .paragraph(text):
-            makeParagraph(text: text)
+            .paragraphRun([text])
+        case let .codeBlock(code, language):
+            .codeBlock(code: code, language: language)
+        case let .blockquote(text):
+            .blockquoteRun([text])
+        case .listItem:
+            .list(items: [])
+        case .thematicBreak:
+            .thematicBreak
+        case let .table(headers, rows, alignments):
+            .table(headers: headers, rows: rows, alignments: alignments)
+        case let .image(alt, source, title, style):
+            .image(alt: alt, source: source, title: title, style: style)
+        case let .imageGroup(items, style):
+            .imageGroup(items: items, style: style)
+        }
+    }
+
+    private func makeWidget(for row: PreviewRow) -> Widget {
+        switch row {
+        case let .heading(level, text):
+            makeHeading(level: level, text: text)
+        case let .paragraphRun(texts):
+            makeParagraphRun(texts)
         case let .codeBlock(code, language):
             makeCodeBlock(code: code, language: language)
-        case let .blockquote(text):
-            makeBlockquote(text: text)
-        case .listItem:
-            Box()
+        case let .blockquoteRun(texts):
+            makeBlockquoteRun(texts)
+        case let .list(items):
+            makeList(items)
         case .thematicBreak:
             makeSeparator()
         case let .table(headers, rows, alignments):
@@ -321,6 +684,17 @@ final class MarkdownPreview {
             player.stop()
         }
         animatedImagePlayers.removeAll()
+        renderedRows.removeAll()
+        renderedBaseDirectory = nil
+        renderMode = .stacked
+        virtualizedRows.removeAll()
+        virtualizedFactory = nil
+        virtualizedSelection = nil
+        virtualizedStore = nil
+        virtualizedListView = nil
+        if rootScroll.child?.widgetPointer != container.widgetPointer {
+            rootScroll.child = container
+        }
         for child in container.children() {
             child.visible = false
             container.remove(child)
@@ -511,11 +885,63 @@ final class MarkdownPreview {
         return row
     }
 
+    private func customTextMarkup(for rows: [PreviewRow]) -> String {
+        rows.enumerated().map { index, row in
+            customTextMarkup(for: row, isLast: index == rows.count - 1)
+        }.joined()
+    }
+
+    private func customTextMarkup(for row: PreviewRow, isLast: Bool) -> String {
+        let separator = isLast ? "" : "\n\n"
+        switch row {
+        case let .heading(level, text):
+            let size: String
+            switch level {
+            case 1:
+                size = "xx-large"
+            case 2:
+                size = "x-large"
+            default:
+                size = "large"
+            }
+            return "<span weight=\"bold\" size=\"\(size)\">\(text.markup)</span>\(separator)"
+        case let .paragraphRun(texts):
+            return joinedMarkup(for: texts) + separator
+        case let .blockquoteRun(texts):
+            let quoteMarkup = texts.map { "<span alpha=\"70%\">│ \($0.markup)</span>" }
+                .joined(separator: "\n\n")
+            return quoteMarkup + separator
+        case let .list(items):
+            return customTextMarkup(forListItems: items) + separator
+        case .thematicBreak:
+            return "<span alpha=\"45%\">────────────────</span>\(separator)"
+        case .codeBlock, .table, .image, .imageGroup:
+            return separator
+        }
+    }
+
+    private func customTextMarkup(forListItems items: [ListPreviewItem]) -> String {
+        var lines: [String] = []
+        for (index, item) in items.enumerated() {
+            let indentation = String(repeating: "\u{00A0}\u{00A0}", count: item.depth)
+            let line = "\(indentation)\(displayMarker(for: item.marker, depth: item.depth)) \(item.text.markup)"
+            if item.loose, index > 0 {
+                lines.append("")
+            }
+            lines.append(line)
+        }
+        return lines.joined(separator: "\n")
+    }
+
     private func joinedMarkup(for texts: [RenderedText]) -> String {
         texts.map(\.markup).joined(separator: "\n\n")
     }
 
     private func makeList(_ items: [(text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)]) -> Widget {
+        if items.allSatisfy({ $0.depth == 0 }) {
+            return makeFlatList(items)
+        }
+
         let list = Box(orientation: .vertical, spacing: 0)
         for item in items {
             list.append(makeListItem(
@@ -530,6 +956,29 @@ final class MarkdownPreview {
         return list
     }
 
+    private func makeFlatList(_ items: [(text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)]) -> Widget {
+        let grid = Grid(columnSpacing: PreviewMetrics.listMarkerSpacing, rowSpacing: 0)
+        grid.hexpand = true
+        grid.halign = .fill
+        grid.valign = .start
+
+        for (rowIndex, item) in items.enumerated() {
+            let compact = !isTaskListMarker(item.marker)
+            let cells = makeListItemCells(
+                text: item.text,
+                depth: item.depth,
+                marker: item.marker,
+                compact: compact,
+                taskIndex: item.taskIndex,
+            )
+            applyFlatListSpacing(markerLabel: cells.markerLabel, contentLabel: cells.contentLabel, loose: item.loose)
+            grid.attach(cells.markerLabel, column: 0, row: rowIndex)
+            grid.attach(cells.contentLabel, column: 1, row: rowIndex)
+        }
+
+        return grid
+    }
+
     private func makeListItem(text: RenderedText, depth: Int, marker: String, compact: Bool, loose: Bool, taskIndex: Int?) -> Widget {
         let row = Box(orientation: .horizontal, spacing: PreviewMetrics.listMarkerSpacing)
         row.marginStart = PreviewMetrics.listIndentPerLevel * depth
@@ -542,6 +991,14 @@ final class MarkdownPreview {
             row.addCSSClass("preview-nested-list-row")
         }
 
+        let cells = makeListItemCells(text: text, depth: depth, marker: marker, compact: compact, taskIndex: taskIndex)
+        row.append(cells.markerLabel)
+        row.append(cells.contentLabel)
+
+        return row
+    }
+
+    private func makeListItemCells(text: RenderedText, depth: Int, marker: String, compact: Bool, taskIndex: Int?) -> (markerLabel: Label, contentLabel: Label) {
         let markerLabel = Label(displayMarker(for: marker, depth: depth))
         markerLabel.xalign = 0
         markerLabel.yalign = 0
@@ -550,16 +1007,14 @@ final class MarkdownPreview {
         markerLabel.addCSSClass(compact ? "preview-compact-list-marker" : "preview-task-list-marker")
         markerLabel.widthChars = markerWidth(for: marker)
 
-        let content = makeMarkupLabel(text.markup)
-        content.selectable = true
-        content.hexpand = true
-        content.yalign = 0
-        content.valign = .start
-        content.addCSSClass(compact ? "preview-compact-list-label" : "preview-task-list-label")
-        content.setMargins(0)
-
-        row.append(markerLabel)
-        row.append(content)
+        let contentLabel = makeMarkupLabel(text.markup)
+        contentLabel.selectable = true
+        contentLabel.hexpand = true
+        contentLabel.halign = .fill
+        contentLabel.yalign = 0
+        contentLabel.valign = .start
+        contentLabel.addCSSClass(compact ? "preview-compact-list-label" : "preview-task-list-label")
+        contentLabel.setMargins(0)
 
         if let taskIndex {
             markerLabel.addCSSClass("preview-task-checkbox")
@@ -571,7 +1026,15 @@ final class MarkdownPreview {
             markerLabel.addController(click)
         }
 
-        return row
+        return (markerLabel, contentLabel)
+    }
+
+    private func applyFlatListSpacing(markerLabel: Label, contentLabel: Label, loose: Bool) {
+        let topMargin = loose ? 18 : 2
+        markerLabel.marginTop = topMargin
+        markerLabel.marginBottom = 2
+        contentLabel.marginTop = topMargin
+        contentLabel.marginBottom = 2
     }
 
     /// Invoked when the user clicks the `☐` / `☑` glyph in front of a
@@ -1042,7 +1505,8 @@ final class MarkdownPreview {
     }
 
     private func refreshBlockImageHeights() {
-        for child in container.children() {
+        let root = rootScroll.child ?? container
+        for child in root.children() {
             guard let (clamp, picture) = firstClampWithPicture(in: child) else { continue }
             updateBlockImageSize(of: picture, clamp: clamp)
         }

@@ -854,15 +854,17 @@ public final class NotesRepository: @unchecked Sendable {
     /// read every note file into memory while the app is idle or scrolling.
     public func directoryMonitorSnapshot() throws -> NotesDirectorySnapshot {
         try queue.sync {
-            try ensureNotesDirectoryUnlocked()
-            let entries = try storedNoteEntriesUnlocked()
-                .map {
-                    try makeSnapshotEntryUnlocked(
-                        from: $0.directoryURL,
-                        folderPath: $0.folderPath,
-                        includeContentFingerprint: false,
-                    )
-                }
+            try prepareNotesDirectoryForMonitoringUnlocked()
+            let noteEntries = try storedNoteEntriesUnlocked().map {
+                try makeSnapshotEntryUnlocked(
+                    from: $0.directoryURL,
+                    folderPath: $0.folderPath,
+                    includeContentFingerprint: false,
+                )
+            }
+            let legacyEntries = try legacyFlatMarkdownFilesUnlocked()
+                .map(makeLegacyFlatSnapshotEntryUnlocked)
+            let entries = (noteEntries + legacyEntries)
                 .sorted { $0.filename < $1.filename }
             return NotesDirectorySnapshot(entries: entries)
         }
@@ -964,6 +966,18 @@ public final class NotesRepository: @unchecked Sendable {
         }
     }
 
+    /// Minimal setup path for cheap monitor polling.
+    ///
+    /// Polling only needs the directory tree to exist so it can compare
+    /// metadata snapshots. Full legacy migration and staged-asset pruning
+    /// stay on the heavier load/save paths; if the monitor notices a new
+    /// legacy root markdown file it includes a synthetic entry so the UI
+    /// reload path can run the full migration on demand.
+    private func prepareNotesDirectoryForMonitoringUnlocked() throws {
+        try migrateLegacyStorageIfNeededUnlocked()
+        try fileManager.createDirectory(at: notesDirectory, withIntermediateDirectories: true)
+    }
+
     private func migrateLegacyStorageIfNeededUnlocked() throws {
         guard notesDirectory.lastPathComponent == "notes" else { return }
         let appDirectory = notesDirectory.deletingLastPathComponent()
@@ -971,15 +985,7 @@ public final class NotesRepository: @unchecked Sendable {
     }
 
     private func migrateLegacyFlatNoteLayoutIfNeededUnlocked() throws {
-        let rootContents = try fileManager.contentsOfDirectory(
-            at: notesDirectory,
-            includingPropertiesForKeys: [.creationDateKey, .contentModificationDateKey],
-            options: [.skipsHiddenFiles],
-        )
-        let legacyMarkdownFiles = rootContents
-            .filter { !$0.hasDirectoryPath && $0.pathExtension == "md" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
-
+        let legacyMarkdownFiles = try legacyFlatMarkdownFilesUnlocked()
         guard !legacyMarkdownFiles.isEmpty else { return }
 
         let legacyShowcaseAssetURL = notesDirectory.appendingPathComponent(
@@ -1000,6 +1006,17 @@ public final class NotesRepository: @unchecked Sendable {
         if fileManager.fileExists(atPath: legacyShowcaseAssetURL.path(percentEncoded: false)) {
             try fileManager.removeItem(at: legacyShowcaseAssetURL)
         }
+    }
+
+    private func legacyFlatMarkdownFilesUnlocked() throws -> [URL] {
+        let rootContents = try fileManager.contentsOfDirectory(
+            at: notesDirectory,
+            includingPropertiesForKeys: [.creationDateKey, .contentModificationDateKey],
+            options: [.skipsHiddenFiles],
+        )
+        return rootContents
+            .filter { !$0.hasDirectoryPath && $0.pathExtension == "md" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     private struct StoredNoteEntry {
@@ -1346,6 +1363,16 @@ public final class NotesRepository: @unchecked Sendable {
             modifiedAt: modifiedAt,
             fileSize: totalSize,
             contentFingerprint: includeContentFingerprint ? fingerprint : 0,
+        )
+    }
+
+    private func makeLegacyFlatSnapshotEntryUnlocked(from fileURL: URL) throws -> NotesDirectorySnapshot.Entry {
+        let attributes = try fileManager.attributesOfItem(atPath: fileURL.path(percentEncoded: false))
+        return .init(
+            filename: "__legacy_flat__/\(fileURL.lastPathComponent)",
+            modifiedAt: (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0,
+            fileSize: (attributes[.size] as? NSNumber)?.uint64Value ?? 0,
+            contentFingerprint: 0,
         )
     }
 

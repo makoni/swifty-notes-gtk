@@ -774,6 +774,24 @@ struct RepositoryStateTests {
     }
 
     @Test
+    func `directory monitor snapshot surfaces legacy flat markdown files without migrating them`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+
+        let legacyURL = temp.appendingPathComponent("legacy-note.md", isDirectory: false)
+        try "# Legacy\n\ncontent".write(to: legacyURL, atomically: true, encoding: .utf8)
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let snapshot = try repository.directoryMonitorSnapshot()
+
+        #expect(snapshot.entries.count == 1)
+        #expect(snapshot.entries[0].filename == "__legacy_flat__/legacy-note.md")
+        #expect(snapshot.entries[0].contentFingerprint == 0)
+        #expect(FileManager.default.fileExists(atPath: legacyURL.path()))
+    }
+
+    @Test
     func `workspace state store round trips state`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let store = WorkspaceStateStore(

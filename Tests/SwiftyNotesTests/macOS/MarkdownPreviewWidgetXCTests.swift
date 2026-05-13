@@ -424,6 +424,26 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         XCTAssertTrue(measurement.minimum <= 320)
     }
 
+    @MainActor func test_preview_flattens_depth_zero_list_runs_into_a_smaller_subtree() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.list-run-flattening")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.render(blocks: [
+            .listItem(text: .plain("API surface stays Swifty"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Ordered items still render"), depth: 0, marker: "1."),
+            .listItem(text: .plain("Task checkboxes stay interactive"), depth: 0, marker: "[ ]", taskIndex: 0),
+            .listItem(text: .plain("Completed tasks keep their checkmark"), depth: 0, marker: "[x]", taskIndex: 1),
+        ])
+
+        XCTAssertTrue(preview.debugTopLevelWidgetCount == 1)
+        XCTAssertTrue(preview.debugWidgetTreeCount == 10)
+        let mergedText = labelTexts(in: preview.container).joined(separator: "\n")
+        XCTAssertTrue(mergedText.contains("API surface stays Swifty"))
+        XCTAssertTrue(mergedText.contains("☐"))
+        XCTAssertTrue(mergedText.contains("☑"))
+    }
+
     @MainActor func test_preview_coalesces_long_paragraph_runs_into_a_single_label_subtree() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.paragraph-run-coalescing")
         try app.register()
@@ -437,6 +457,89 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         let mergedText = labelTexts(in: preview.container).joined(separator: "\n")
         XCTAssertTrue(mergedText.contains("Paragraph 1"))
         XCTAssertTrue(mergedText.contains("Paragraph 32"))
+    }
+
+    @MainActor func test_preview_can_force_virtualization_for_long_safe_documents_while_preserving_plain_text() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.virtualized-preview-safe-doc")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.debugForceVirtualizedRows = true
+        let blocks = (1 ... 160).map { RenderedBlock.codeBlock(code: "let item\($0) = \($0)\n", language: "swift") }
+        preview.render(blocks: blocks)
+
+        XCTAssertTrue(preview.debugUsesVirtualizedRows)
+        XCTAssertTrue(preview.debugTopLevelWidgetCount == 1)
+        XCTAssertTrue(preview.container.children().isEmpty)
+        XCTAssertNotNil(preview.rootScroll.child?.tryCast(ListView.self))
+        XCTAssertTrue(preview.plainText.contains("let item1 = 1"))
+        XCTAssertTrue(preview.plainText.contains("let item160 = 160"))
+    }
+
+    @MainActor func test_preview_incrementally_reuses_unchanged_top_level_rows_around_a_middle_edit() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.incremental-preview-middle-edit")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.render(blocks: [
+            .heading(level: 2, text: .plain("Alpha")),
+            .heading(level: 2, text: .plain("Bravo")),
+            .heading(level: 2, text: .plain("Charlie")),
+        ])
+        let initialChildren = preview.container.children()
+        let initialAddresses = initialChildren.map(widgetAddress)
+
+        preview.render(blocks: [
+            .heading(level: 2, text: .plain("Alpha")),
+            .heading(level: 2, text: .plain("Bravo updated")),
+            .heading(level: 2, text: .plain("Charlie")),
+        ])
+        let updatedChildren = preview.container.children()
+        let updatedAddresses = updatedChildren.map(widgetAddress)
+
+        XCTAssertTrue(updatedChildren.count == 3)
+        XCTAssertTrue(initialAddresses[0] == updatedAddresses[0])
+        XCTAssertTrue(initialAddresses[1] != updatedAddresses[1])
+        XCTAssertTrue(initialAddresses[2] == updatedAddresses[2])
+        XCTAssertTrue(labelTexts(in: preview.container).contains("Bravo updated"))
+    }
+
+    @MainActor func test_preview_can_force_custom_text_layout_for_long_safe_documents() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-safe-doc")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.debugForceCustomTextLayout = true
+        let blocks = (1 ... 160).flatMap { index -> [RenderedBlock] in
+            [
+                .heading(level: 2, text: .plain("Section \(index)")),
+                .paragraph(.plain("Body \(index)")),
+            ]
+        }
+        preview.render(blocks: blocks)
+
+        XCTAssertTrue(preview.debugUsesCustomTextLayout)
+        XCTAssertFalse(preview.debugUsesVirtualizedRows)
+        XCTAssertTrue(preview.debugTopLevelWidgetCount == 1)
+        XCTAssertTrue(preview.debugWidgetTreeCount == 2)
+        XCTAssertTrue(labelTexts(in: preview.container).joined(separator: "\n").contains("Section 1"))
+        XCTAssertTrue(labelTexts(in: preview.container).joined(separator: "\n").contains("Body 160"))
+    }
+
+    @MainActor func test_preview_custom_text_layout_refuses_task_lists_so_checkbox_rows_keep_interactivity() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-task-fallback")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.debugForceCustomTextLayout = true
+        preview.render(blocks: [
+            .paragraph(.plain("Intro")),
+            .listItem(text: .plain("Todo"), depth: 0, marker: "[ ]", taskIndex: 0),
+        ])
+
+        XCTAssertFalse(preview.debugUsesCustomTextLayout)
+        XCTAssertTrue(preview.debugTopLevelWidgetCount == 2)
+        XCTAssertTrue(labelTexts(in: preview.container).contains("☐"))
     }
 
     @MainActor func test_preview_coalesces_consecutive_blockquotes_but_still_breaks_runs_around_non_text_blocks() throws {
@@ -992,6 +1095,7 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         return nil
     }
 
+
     @MainActor
     private func firstHBox(in widget: Widget) -> Box? {
         if let box = widget.tryCast(Box.self), box.orientation == .horizontal {
@@ -1043,6 +1147,11 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
     @MainActor
     private func pictureHasPaintable(_ picture: Adwaita.Picture?) -> Bool {
         picture?.hasPaintable == true
+    }
+
+    @MainActor
+    private func widgetAddress(_ widget: Widget) -> UInt {
+        UInt(bitPattern: UnsafeRawPointer(widget.widgetPointer))
     }
 
     @MainActor

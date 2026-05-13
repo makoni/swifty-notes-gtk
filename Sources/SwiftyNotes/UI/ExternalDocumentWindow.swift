@@ -958,7 +958,7 @@ private extension ExternalDocumentWindow {
         var debugPreviewText: String {
             previewRefreshScheduler.flush()
             previewRefreshScheduler.cancel()
-            if preview.plainText.isEmpty {
+            if preview.debugTopLevelWidgetCount == 0 {
                 let blocks = renderer.blocks(for: editor.buffer.text)
                 preview.render(blocks: blocks, baseDirectory: fileURL.deletingLastPathComponent())
             }

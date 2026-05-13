@@ -409,6 +409,27 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
+    func `preview flattens depth-zero list runs into a smaller subtree`() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.list-run-flattening")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.render(blocks: [
+            .listItem(text: .plain("API surface stays Swifty"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Ordered items still render"), depth: 0, marker: "1."),
+            .listItem(text: .plain("Task checkboxes stay interactive"), depth: 0, marker: "[ ]", taskIndex: 0),
+            .listItem(text: .plain("Completed tasks keep their checkmark"), depth: 0, marker: "[x]", taskIndex: 1),
+        ])
+
+        #expect(preview.debugTopLevelWidgetCount == 1)
+        #expect(preview.debugWidgetTreeCount == 10)
+        let mergedText = labelTexts(in: preview.container).joined(separator: "\n")
+        #expect(mergedText.contains("API surface stays Swifty"))
+        #expect(mergedText.contains("☐"))
+        #expect(mergedText.contains("☑"))
+    }
+
+    @Test @MainActor
     func `preview coalesces long paragraph runs into a single label subtree`() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.paragraph-run-coalescing")
         try app.register()
@@ -422,6 +443,93 @@ struct MarkdownPreviewWidgetTests {
         let mergedText = labelTexts(in: preview.container).joined(separator: "\n")
         #expect(mergedText.contains("Paragraph 1"))
         #expect(mergedText.contains("Paragraph 32"))
+    }
+
+    @Test @MainActor
+    func `preview can force virtualization for long safe documents while preserving plain text`() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.virtualized-preview-safe-doc")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.debugForceVirtualizedRows = true
+        let blocks = (1 ... 160).map { RenderedBlock.codeBlock(code: "let item\($0) = \($0)\n", language: "swift") }
+        preview.render(blocks: blocks)
+
+        #expect(preview.debugUsesVirtualizedRows)
+        #expect(preview.debugTopLevelWidgetCount == 1)
+        #expect(preview.container.children().isEmpty)
+        #expect(preview.rootScroll.child?.tryCast(ListView.self) != nil)
+        #expect(preview.plainText.contains("let item1 = 1"))
+        #expect(preview.plainText.contains("let item160 = 160"))
+    }
+
+    @Test @MainActor
+    func `preview incrementally reuses unchanged top-level rows around a middle edit`() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.incremental-preview-middle-edit")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.render(blocks: [
+            .heading(level: 2, text: .plain("Alpha")),
+            .heading(level: 2, text: .plain("Bravo")),
+            .heading(level: 2, text: .plain("Charlie")),
+        ])
+        let initialChildren = preview.container.children()
+        let initialAddresses = initialChildren.map(widgetAddress)
+
+        preview.render(blocks: [
+            .heading(level: 2, text: .plain("Alpha")),
+            .heading(level: 2, text: .plain("Bravo updated")),
+            .heading(level: 2, text: .plain("Charlie")),
+        ])
+        let updatedChildren = preview.container.children()
+        let updatedAddresses = updatedChildren.map(widgetAddress)
+
+        #expect(updatedChildren.count == 3)
+        #expect(initialAddresses[0] == updatedAddresses[0])
+        #expect(initialAddresses[1] != updatedAddresses[1])
+        #expect(initialAddresses[2] == updatedAddresses[2])
+        #expect(labelTexts(in: preview.container).contains("Bravo updated"))
+    }
+
+    @Test @MainActor
+    func `preview can force custom text layout for long safe documents`() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-safe-doc")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.debugForceCustomTextLayout = true
+        let blocks = (1 ... 160).flatMap { index -> [RenderedBlock] in
+            [
+                .heading(level: 2, text: .plain("Section \(index)")),
+                .paragraph(.plain("Body \(index)")),
+            ]
+        }
+        preview.render(blocks: blocks)
+
+        #expect(preview.debugUsesCustomTextLayout)
+        #expect(!preview.debugUsesVirtualizedRows)
+        #expect(preview.debugTopLevelWidgetCount == 1)
+        #expect(preview.debugWidgetTreeCount == 2)
+        #expect(labelTexts(in: preview.container).joined(separator: "\n").contains("Section 1"))
+        #expect(labelTexts(in: preview.container).joined(separator: "\n").contains("Body 160"))
+    }
+
+    @Test @MainActor
+    func `preview custom text layout refuses task lists so checkbox rows keep interactivity`() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-task-fallback")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.debugForceCustomTextLayout = true
+        preview.render(blocks: [
+            .paragraph(.plain("Intro")),
+            .listItem(text: .plain("Todo"), depth: 0, marker: "[ ]", taskIndex: 0),
+        ])
+
+        #expect(!preview.debugUsesCustomTextLayout)
+        #expect(preview.debugTopLevelWidgetCount == 2)
+        #expect(labelTexts(in: preview.container).contains("☐"))
     }
 
     @Test @MainActor
@@ -1004,6 +1112,7 @@ struct MarkdownPreviewWidgetTests {
         return nil
     }
 
+
     @MainActor
     private func firstHBox(in widget: Widget) -> Box? {
         if let box = widget.tryCast(Box.self), box.orientation == .horizontal {
@@ -1055,6 +1164,11 @@ struct MarkdownPreviewWidgetTests {
     @MainActor
     private func pictureHasPaintable(_ picture: Picture?) -> Bool {
         picture?.hasPaintable == true
+    }
+
+    @MainActor
+    private func widgetAddress(_ widget: Widget) -> UInt {
+        UInt(bitPattern: UnsafeRawPointer(widget.widgetPointer))
     }
 
     @MainActor
