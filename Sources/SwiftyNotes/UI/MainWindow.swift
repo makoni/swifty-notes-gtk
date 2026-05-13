@@ -159,6 +159,7 @@ final class MainWindow {
 #if DEBUG
     var previewBlockBuildCount = 0
 #endif
+    var previewBlockBuilder = IncrementalPreviewBlockBuilder()
 
     init(
         application: Application,

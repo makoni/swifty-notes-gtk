@@ -658,6 +658,39 @@ struct NoteModelAndRendererTests {
     }
 
     @Test
+    func `incremental preview block builder reparses only changed text segment in long safe document`() {
+        var builder = IncrementalPreviewBlockBuilder()
+        let original = (1 ... 120).map { index in
+            "## Section \(index)\n\nBody \(index) with **bold** text and `code`."
+        }.joined(separator: "\n\n")
+        let updated = original + " More typing at the tail."
+
+        let first = builder.blocks(for: original, darkAppearance: false)
+        let second = builder.blocks(for: updated, darkAppearance: false)
+        let expected = MarkdownRenderer().blocks(for: updated, darkAppearance: false)
+
+        #expect(first.count == 240)
+        #expect(second == expected)
+        #expect(builder.debugFullRenderCount == 1)
+        #expect(builder.debugIncrementalRenderCount == 1)
+    }
+
+    @Test
+    func `incremental preview block builder falls back for list documents`() {
+        var builder = IncrementalPreviewBlockBuilder()
+        let original = "# Title\n\n- One\n- Two"
+        let updated = "# Title\n\n- One\n- Two\n- Three"
+
+        _ = builder.blocks(for: original, darkAppearance: false)
+        let blocks = builder.blocks(for: updated, darkAppearance: false)
+        let expected = MarkdownRenderer().blocks(for: updated, darkAppearance: false)
+
+        #expect(blocks == expected)
+        #expect(builder.debugFullRenderCount == 2)
+        #expect(builder.debugIncrementalRenderCount == 0)
+    }
+
+    @Test
     func `preview render deferral waits for visible allocated preview pane`() {
         #expect(MainWindow.shouldDeferPreviewRender(
             isPreviewPresented: true,

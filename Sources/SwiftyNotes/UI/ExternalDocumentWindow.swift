@@ -145,6 +145,7 @@ final class ExternalDocumentWindow {
 #if DEBUG
     private var previewBlockBuildCount = 0
 #endif
+    private var previewBlockBuilder = IncrementalPreviewBlockBuilder()
 
     init(
         application: Application,
@@ -443,7 +444,7 @@ private extension ExternalDocumentWindow {
 #if DEBUG
         previewBlockBuildCount += 1
 #endif
-        return renderer.blocks(for: markdown)
+        return previewBlockBuilder.blocks(for: markdown, darkAppearance: StyleManager.default.dark)
     }
 
     func schedulePreviewRefresh(blocks: [RenderedBlock], baseDirectory: URL) {
