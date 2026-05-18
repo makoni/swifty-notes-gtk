@@ -81,21 +81,64 @@ struct NotesSidebar {
         emptyLabel.xalign = 0
         emptyLabel.addCSSClass(.dimLabel)
 
-        let header = HeaderBar()
-        header.titleWidget = titleLabel
-
+        // On macOS the sidebar deliberately does NOT get an AdwHeaderBar.
+        // Each AdwHeaderBar instance internally creates a GtkWindowControls
+        // with `use_native_controls = TRUE`, which spawns a
+        // GtkWindowButtonsQuartz widget whose size-allocate calls
+        // `setTitlebarHeight:` on the underlying NSWindow with the widget's
+        // own Y coordinate. With two AdwHeaderBars stacked vertically
+        // (main + sidebar), the lower one wins the setTitlebarHeight race,
+        // pulling the native macOS traffic lights down into the sidebar
+        // pane instead of the window-level toolbar where macOS conventions
+        // place them. By skipping `root.addTopBar(header)` on macOS we
+        // leave only MainWindow's HeaderBar to own the native controls,
+        // and the traffic lights settle at the absolute top-left of the
+        // window — the natural macOS position.
+        //
+        // The "Notes (N)" title + sort SplitButton that normally sit in
+        // the AdwHeaderBar move into a row at the top of the sidebar's
+        // content area, with the search entry on its own row below. This
+        // matches the typical macOS sidebar pattern (Notes.app, Mail.app,
+        // Finder) where the sidebar has no per-pane title chrome — just
+        // a section header inline with the content.
         let controlsRow = Box(orientation: .horizontal, spacing: 6)
         controlsRow.append(searchEntry)
+        #if !os(macOS)
+        // On Linux the sort SplitButton sits next to the search entry on
+        // the same row because the title lives in the HeaderBar above.
+        // On macOS it instead pairs with the title in `titleRow` below
+        // to keep the search row clean and full-width.
         controlsRow.append(sortButton)
+        #endif
 
         let content = Box(orientation: .vertical, spacing: 12)
         content.setMargins(12)
+
+        #if os(macOS)
+        // macOS replacement for the AdwHeaderBar's titleWidget: an
+        // inline horizontal row with the "Notes" label hugging the
+        // start and the sort SplitButton hugging the end.
+        let titleRow = Box(orientation: .horizontal, spacing: 6)
+        titleLabel.hexpand = true
+        titleLabel.xalign = 0   // left-align the label text
+        titleRow.append(titleLabel)
+        titleRow.append(sortButton)
+        content.append(titleRow)
+        #endif
+
         content.append(controlsRow)
         content.append(scroll)
         content.append(emptyLabel)
 
         root = ToolbarView()
+        #if !os(macOS)
+        // Linux only: keep the original libadwaita HeaderBar with the
+        // title widget centred. On macOS the title widget already lives
+        // inside `content` (see `titleRow` above), so no top bar at all.
+        let header = HeaderBar()
+        header.titleWidget = titleLabel
         root.addTopBar(header)
+        #endif
         root.content = content
         root.setAccessibleLabel("Notes Sidebar")
 
