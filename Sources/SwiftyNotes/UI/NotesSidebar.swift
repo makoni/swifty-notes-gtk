@@ -348,7 +348,7 @@ struct NotesSidebar {
 
     func setSortMode(_ sortMode: NotesSortMode) {
         sortState.currentMode = sortMode
-        sortButton.iconName = Self.iconName(for: sortMode)
+        Self.applyIcon(named: Self.iconName(for: sortMode), to: sortButton)
         sortButton.tooltipText = Self.tooltip(for: sortMode)
         sortButton.setAccessibleLabel(Self.accessibilityLabel(for: sortMode))
     }
@@ -357,7 +357,7 @@ struct NotesSidebar {
         sortButton.onClicked { [sortButton, sortState] in
             let nextMode = Self.nextSortMode(after: sortState.currentMode)
             sortState.currentMode = nextMode
-            sortButton.iconName = Self.iconName(for: nextMode)
+            Self.applyIcon(named: Self.iconName(for: nextMode), to: sortButton)
             sortButton.tooltipText = Self.tooltip(for: nextMode)
             sortButton.setAccessibleLabel(Self.accessibilityLabel(for: nextMode))
             handler(nextMode)
@@ -366,12 +366,36 @@ struct NotesSidebar {
         for (mode, button) in sortOptionButtons {
             button.onClicked { [sortPopover, sortButton, sortState] in
                 sortState.currentMode = mode
-                sortButton.iconName = Self.iconName(for: mode)
+                Self.applyIcon(named: Self.iconName(for: mode), to: sortButton)
                 sortButton.tooltipText = Self.tooltip(for: mode)
                 sortButton.setAccessibleLabel(Self.accessibilityLabel(for: mode))
                 sortPopover.popdown()
                 handler(mode)
             }
+        }
+    }
+
+    /// Sets the icon shown on the sort SplitButton, preferring a bundled
+    /// SVG from `Sources/SwiftyNotes/Icons/` over the system Adwaita
+    /// theme. Same workaround as ``MainWindow/iconButton(named:)`` — see
+    /// the comment there for why bundled-first is necessary on macOS
+    /// Quartz (GtkSymbolicPaintable drops `<g>` group elements that
+    /// Adwaita-icon-theme 50.0 uses for the sort/font icons). `SplitButton`
+    /// doesn't take a Button-style init parameter for its icon, so the
+    /// logic lives here as a static helper rather than feeding through
+    /// the MainWindow factory.
+    private static func applyIcon(named iconName: String, to button: SplitButton) {
+        if let bundledPath = MainWindow.bundledIconFilePath(for: iconName) {
+            let image = Image(filename: bundledPath)
+            image.pixelSize = 16
+            button.child = image
+        } else {
+            // Clear any previously set custom child so the icon-name path
+            // becomes the active rendering source again. Without this,
+            // SplitButton continues to display the stale child widget and
+            // ignores the new iconName.
+            button.child = nil
+            button.iconName = iconName
         }
     }
 
