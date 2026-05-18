@@ -1589,14 +1589,19 @@ final class MarkdownPreview {
             return .local(URL(fileURLWithPath: expanded))
         }
         if let baseDirectory {
+            // `URL.path()` returns a percent-encoded string on Swift 6;
+            // FileManager.fileExists expects a decoded native path. Notes
+            // stored under "My Notes/" (or any folder/filename containing
+            // spaces) wouldn't be found here without `percentEncoded: false`
+            // — same class of bug as issue #3 / #24.
             let noteLocalURL = baseDirectory.appendingPathComponent(expanded)
-            if FileManager.default.fileExists(atPath: noteLocalURL.path()) {
+            if FileManager.default.fileExists(atPath: noteLocalURL.path(percentEncoded: false)) {
                 return .local(noteLocalURL)
             }
 
             let sharedNotesURL = baseDirectory.deletingLastPathComponent().appendingPathComponent(expanded)
             if baseDirectory.lastPathComponent != "notes",
-               FileManager.default.fileExists(atPath: sharedNotesURL.path())
+               FileManager.default.fileExists(atPath: sharedNotesURL.path(percentEncoded: false))
             {
                 return .local(sharedNotesURL)
             }

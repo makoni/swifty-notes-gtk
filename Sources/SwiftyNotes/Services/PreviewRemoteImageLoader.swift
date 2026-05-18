@@ -33,7 +33,12 @@ final class PreviewRemoteImageLoader: @unchecked Sendable {
     func loadImage(_ remoteURL: URL, completion: @escaping PreviewRemoteImageLoadCompletion) {
         lock.lock()
         if let cachedFile = cachedFiles[remoteURL],
-           fileManager.fileExists(atPath: cachedFile.path())
+           // `percentEncoded: false` because FileManager expects a
+           // decoded native path. Without this the cache check fails
+           // for any user whose cache lives under a path with spaces
+           // (e.g. macOS users with "/Users/First Last/" home dirs) —
+           // same regression class as issue #24.
+           fileManager.fileExists(atPath: cachedFile.path(percentEncoded: false))
         {
             lock.unlock()
             dispatch(cachedFile, completion: completion)
@@ -80,7 +85,9 @@ private extension PreviewRemoteImageLoader {
         do {
             try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
             let destinationURL = cacheDirectory.appendingPathComponent(cacheFilename(for: remoteURL, response: response), isDirectory: false)
-            if fileManager.fileExists(atPath: destinationURL.path()) {
+            // See cache-lookup comment above — FileManager wants the
+            // decoded path, not the URL-encoded form `URL.path()` ships.
+            if fileManager.fileExists(atPath: destinationURL.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: destinationURL)
             }
             try fileManager.copyItem(at: temporaryURL, to: destinationURL)

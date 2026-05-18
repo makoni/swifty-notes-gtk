@@ -1,18 +1,25 @@
 import Adwaita
 import Foundation
 
-private struct ExternalDocumentFileSnapshot: Equatable {
+// `internal` (not `private`) so the test suite can exercise
+// `ExternalMarkdownDocumentStore.load` directly — regression tests
+// for the "spaces in path" class of bug (issues #2, #3, #24) need
+// to call into the store with a temp file whose name contains a
+// space, and that's not reachable via the public `MainWindow` or
+// `ExternalDocumentWindow` surface without standing up an entire
+// GTK application context.
+struct ExternalDocumentFileSnapshot: Equatable {
     let modifiedAt: TimeInterval
     let fileSize: UInt64
 }
 
-private struct ExternalMarkdownDocument {
+struct ExternalMarkdownDocument {
     let url: URL
     let content: String
     let snapshot: ExternalDocumentFileSnapshot
 }
 
-private enum ExternalMarkdownDocumentStore {
+enum ExternalMarkdownDocumentStore {
     static func load(from fileURL: URL, fileManager: FileManager = .default) throws -> ExternalMarkdownDocument {
         let standardizedURL = fileURL.standardizedFileURL
         let content = try String(contentsOf: standardizedURL, encoding: .utf8)
@@ -33,7 +40,14 @@ private enum ExternalMarkdownDocumentStore {
 
     static func snapshot(of fileURL: URL, fileManager: FileManager = .default) throws -> ExternalDocumentFileSnapshot {
         let standardizedURL = fileURL.standardizedFileURL
-        let attributes = try fileManager.attributesOfItem(atPath: standardizedURL.path())
+        // `URL.path()` on Swift 6 returns a percent-encoded path
+        // (`/Users/me/My%20Notes/foo.md`), but FileManager expects
+        // a decoded native path. Without `percentEncoded: false`
+        // every file whose name or any ancestor folder contains a
+        // space silently fails to open — the same class of bug as
+        // issues #2 and #3 that 1cb8e41 fixed in storage / CLI /
+        // settings code. Regression covered by issue #24.
+        let attributes = try fileManager.attributesOfItem(atPath: standardizedURL.path(percentEncoded: false))
         return .init(
             modifiedAt: (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0,
             fileSize: (attributes[.size] as? NSNumber)?.uint64Value ?? 0,
@@ -403,7 +417,11 @@ private extension ExternalDocumentWindow {
         let wordCount = editor.buffer.text.split(whereSeparator: \.isWhitespace).count
         let saveState = editor.buffer.modified ? "Unsaved changes" : "Saved"
         let wordLabel = wordCount == 1 ? "word" : "words"
-        headerTitle.subtitle = "\(fileURL.path()) • \(saveState) • \(wordCount) \(wordLabel)"
+        // `percentEncoded: false` so the header reads
+        // "/Users/me/My Notes/foo.md" instead of the URL-encoded
+        // "/Users/me/My%20Notes/foo.md" when the path contains
+        // spaces or other reserved characters.
+        headerTitle.subtitle = "\(fileURL.path(percentEncoded: false)) • \(saveState) • \(wordCount) \(wordLabel)"
     }
 
     func loadDocument(_ document: ExternalMarkdownDocument) {

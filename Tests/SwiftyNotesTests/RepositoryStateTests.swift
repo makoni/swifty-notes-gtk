@@ -74,6 +74,55 @@ struct RepositoryStateTests {
     }
 
     @Test
+    func `external markdown document store loads file when path contains spaces`() throws {
+        // Regression test for https://github.com/makoni/swifty-notes-gtk/issues/24
+        // — "Open Markdown File…" and double-clicking a .md from Nautilus
+        // both route through `ExternalMarkdownDocumentStore.load`, which
+        // calls `FileManager.attributesOfItem(atPath: standardizedURL.path())`
+        // for the modification-time + size snapshot. On Swift 6 `URL.path()`
+        // is percent-encoded, FileManager wants the decoded native path,
+        // so any file under "My Notes/" silently fails to open — same
+        // class as #2/#3 that 1cb8e41 fixed elsewhere. The fix is the same
+        // (`path(percentEncoded: false)`); this test pins it on
+        // ExternalMarkdownDocumentStore specifically so that path stays
+        // covered by CI from now on.
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let spacedDirectory = temp.appendingPathComponent("My Notes", isDirectory: true)
+        let fileURL = spacedDirectory.appendingPathComponent("note with spaces.md", isDirectory: false)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try FileManager.default.createDirectory(at: spacedDirectory, withIntermediateDirectories: true)
+        try "# Opened from a spaced path".write(to: fileURL, atomically: true, encoding: .utf8)
+
+        let document = try ExternalMarkdownDocumentStore.load(from: fileURL)
+
+        #expect(document.content == "# Opened from a spaced path")
+        #expect(document.url.lastPathComponent == "note with spaces.md")
+        #expect(document.snapshot.fileSize == UInt64("# Opened from a spaced path".utf8.count))
+        #expect(document.snapshot.modifiedAt > 0)
+    }
+
+    @Test
+    func `external markdown document store round-trips save+load through a spaced path`() throws {
+        // Twin of the load-only test above, covering the save() path of
+        // ExternalMarkdownDocumentStore — "Save As…" with a target file
+        // whose parent directory contains a space (or the user typed a
+        // spaced filename) would hit the same FileManager call chain
+        // and the same `URL.path()` regression if save loses the fix.
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let spacedDirectory = temp.appendingPathComponent("Output Folder", isDirectory: true)
+        let fileURL = spacedDirectory.appendingPathComponent("saved note.md", isDirectory: false)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let saved = try ExternalMarkdownDocumentStore.save(content: "# Persisted via save", to: fileURL)
+        #expect(saved.content == "# Persisted via save")
+        #expect(saved.snapshot.fileSize > 0)
+
+        let reloaded = try ExternalMarkdownDocumentStore.load(from: fileURL)
+        #expect(reloaded.content == "# Persisted via save")
+    }
+
+    @Test
     func `repository operates when notes directory path contains spaces`() throws {
         // Regression test for https://github.com/makoni/swifty-notes-gtk/issues/2
         // If the user points the notes library at e.g. ~/My Notes, every
