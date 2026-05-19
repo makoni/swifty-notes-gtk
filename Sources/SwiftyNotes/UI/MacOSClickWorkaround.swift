@@ -30,11 +30,25 @@ enum MacOSClickWorkaround {
     /// Wires `handler` so it fires when the user releases a primary
     /// click on `button`, even when Quartz's drag detector would
     /// otherwise eat the click.
+    ///
+    /// We register on BOTH the GtkButton `clicked` signal AND the
+    /// CAPTURE-phase release. They cover non-overlapping triggers:
+    ///
+    /// * Real macOS pointer input — our CAPTURE claim denies the
+    ///   button's internal gesture, so the `clicked` signal never
+    ///   emits; only our `released` handler fires.
+    /// * Linux pointer input — no CAPTURE gesture is installed, so
+    ///   the usual `clicked` signal path runs.
+    /// * Programmatic `emitClicked()` from XCTest mirror suites — no
+    ///   pointer event, so the GestureClick stays silent; the
+    ///   `clicked` signal handler is what makes the test trigger
+    ///   reach the real callback. Without this, every macOS XCTest
+    ///   that drove the toolbar / formatting / sort buttons via
+    ///   `emitClicked()` broke after we rolled out the workaround.
     static func onClick(_ button: Button, handler: @escaping @MainActor () -> Void) {
+        button.onClicked(handler)
         #if os(macOS)
         attachReleaseHandler(to: button) { handler() }
-        #else
-        button.onClicked(handler)
         #endif
     }
 

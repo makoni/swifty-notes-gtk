@@ -23,7 +23,16 @@ enum BuildInfo {
         {
             return env
         }
-        if let bundled = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+        // Only consult `Bundle.main` when it actually IS the Swifty
+        // Notes bundle — i.e. running inside the macOS `.app`. xctest
+        // harnesses and `swift test` runners also give us a
+        // `Bundle.main`, but its `CFBundleShortVersionString` is the
+        // test runner's version (or empty), not ours; without the
+        // identifier guard those processes would silently return a
+        // bogus version and break the About-dialog snapshot tests.
+        if Bundle.main.bundleIdentifier == AppIdentity.identifier,
+           let bundled = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        {
             let trimmed = bundled.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty {
                 return trimmed

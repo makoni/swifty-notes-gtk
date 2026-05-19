@@ -97,6 +97,7 @@ final class MainWindowActionsXCTests: XCTestCase {
                 "Open notes folder",
             ],
             "Help": [
+                "Check for Updates…",
                 "About Swifty Notes",
             ],
         ])

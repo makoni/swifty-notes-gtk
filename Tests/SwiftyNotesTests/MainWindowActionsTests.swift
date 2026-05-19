@@ -100,6 +100,7 @@ struct MainWindowActionsTests {
                 "Open notes folder",
             ],
             "Help": [
+                "Check for Updates…",
                 "About Swifty Notes",
             ],
         ])
