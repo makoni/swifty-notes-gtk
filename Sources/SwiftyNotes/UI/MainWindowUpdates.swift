@@ -31,10 +31,19 @@ extension MainWindow {
         // Task never gets scheduled — the launch-time check would sit
         // queued forever. Hop back onto the GLib loop via
         // `MainContext.idle` to touch widgets safely.
-        Task.detached { [weak self] in
+        //
+        // The handler is built here on the MainActor and captures
+        // `[weak self]` from MainActor context. Because it's a
+        // `@MainActor`-isolated closure value, Swift 6 strict
+        // concurrency lets us send it into the detached Task without
+        // crossing isolation on `self` itself.
+        let handle: @MainActor @Sendable (UpdateCheckResult) -> Void = { [weak self] result in
+            self?.handleUpdateCheckResult(result, manual: manual)
+        }
+        Task.detached {
             let result = await checker.check()
             MainContext.idle {
-                self?.handleUpdateCheckResult(result, manual: manual)
+                handle(result)
             }
         }
     }
