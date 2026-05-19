@@ -25,9 +25,15 @@ extension MainWindow {
             forceUpdateAvailable: forceUpdateAvailable,
             fetchLatestRelease: fetcher,
         )
-        Task { [weak self] in
+        // Detached so the body runs on the global cooperative pool
+        // instead of inheriting MainActor. GTK blocks the main thread
+        // inside `g_main_loop_run`, which means a MainActor-isolated
+        // Task never gets scheduled — the launch-time check would sit
+        // queued forever. Hop back onto the GLib loop via
+        // `MainContext.idle` to touch widgets safely.
+        Task.detached { [weak self] in
             let result = await checker.check()
-            await MainActor.run { [weak self] in
+            MainContext.idle {
                 self?.handleUpdateCheckResult(result, manual: manual)
             }
         }
