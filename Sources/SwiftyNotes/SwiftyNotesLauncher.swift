@@ -179,6 +179,7 @@ final class AppController {
 public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
+        ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded()
         MainContext.silenceSpuriousScrollbarWarnings()
         if let cliResult = NotesCLI.runIfRequested(arguments: arguments) {
             if !cliResult.stdout.isEmpty, let data = cliResult.stdout.data(using: .utf8) {
@@ -248,6 +249,37 @@ public enum SwiftyNotesLauncher {
             flags.insert(.nonUnique)
         }
         return flags
+    }
+
+    /// On macOS, GTK/GLib's resource discovery walks `XDG_DATA_DIRS` to
+    /// find `glib-2.0/schemas/gschemas.compiled` and the icon themes.
+    /// The bundled `.app` entry sets this from `Bundle.main.resourcePath`
+    /// before calling `run`; the SwiftPM `swift run swiftynotes` entry
+    /// doesn't, which means `g_settings_new(...)` aborts the process
+    /// with `No GSettings schemas are installed on the system` the
+    /// moment any GTK widget that needs a schema is created — most
+    /// visibly `GtkFileChooserNative` (Settings → Browse).
+    ///
+    /// Merging (not replacing) is important: Ghostty / iTerm export
+    /// their own `XDG_DATA_DIRS` from `~/.zshrc` (`/usr/local/share`,
+    /// terminal-bundled paths, …) which contain *no* GLib schemas, so
+    /// a "set only when unset" guard would silently skip exactly the
+    /// case that broke this user's Settings → Browse. Mirror what
+    /// swift-adwaita's `DemoAppLib.ensureHomebrewSchemasOnPath` does:
+    /// prepend brew's share dir(s) if they aren't already in the path.
+    private static func ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded() {
+        #if os(macOS)
+        let env = ProcessInfo.processInfo.environment
+        let candidates = ["/opt/homebrew/share", "/usr/local/share"]
+            .filter { FileManager.default.fileExists(atPath: "\($0)/glib-2.0/schemas/gschemas.compiled") }
+        guard !candidates.isEmpty else { return }
+        let existing = env["XDG_DATA_DIRS"] ?? ""
+        let parts = existing.split(separator: ":").map(String.init)
+        let missing = candidates.filter { !parts.contains($0) }
+        guard !missing.isEmpty else { return }
+        let combined = (missing + parts).joined(separator: ":")
+        setenv("XDG_DATA_DIRS", combined, 1)
+        #endif
     }
 }
 
