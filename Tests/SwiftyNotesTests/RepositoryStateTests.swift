@@ -977,7 +977,7 @@ struct RepositoryStateTests {
 
         let repository = NotesRepository(notesDirectory: temp)
         try repository.createFolder(at: "Projects")
-        var note = try repository.createNote(initialContent: "# Doomed", in: "Projects")
+        let note = try repository.createNote(initialContent: "# Doomed", in: "Projects")
 
         let directoryBeforeTrash = repository.noteDirectoryURL(for: note)
         #expect(FileManager.default.fileExists(atPath: directoryBeforeTrash.path()))
