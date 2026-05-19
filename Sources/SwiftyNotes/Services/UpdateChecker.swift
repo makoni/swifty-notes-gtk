@@ -1,4 +1,14 @@
 import Foundation
+// On Linux, `URLSession`, `URLRequest`, and the async `data(for:)`
+// helper live in a separate `FoundationNetworking` module rather than
+// in Foundation proper. Without this conditional import the Linux
+// build sees `URLSession` as the opaque `AnyObject` typealias from
+// pure Foundation, and `.shared` / `data(for:)` fail to resolve. The
+// macOS build resolves the same names from Foundation directly, so
+// the canImport guard makes both platforms compile.
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// GitHub `/releases/latest` payload, narrowed to the two fields we use.
 struct GitHubLatestRelease: Sendable, Equatable {
