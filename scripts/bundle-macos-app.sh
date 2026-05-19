@@ -173,12 +173,20 @@ cp "$BREW_PREFIX/share/glib-2.0/schemas/gschemas.compiled" "$SCHEMAS_DEST/"
 # `share/icons/Adwaita` and `share/icons/hicolor` into `Resources/icons/`.
 # `rsync -a --delete` keeps re-runs idempotent and skips files unchanged
 # since the last run; cuts a clean copy by ~80% on subsequent invocations.
-
+#
+# `-L` (--copy-links) dereferences symlinks during the copy. Brew's icon
+# dirs use relative symlinks pointing back into `../../../Cellar/<formula>/`,
+# and `share/icons/hicolor/<size>/apps/qemu.*` aliases into the qemu cask.
+# A plain `rsync -a` would mirror those links verbatim — they then resolve
+# inside the bundle to non-existent `<bundle>/Cellar/...` paths, leaving
+# broken symlinks. `codesign --verify --strict` traverses every sealed
+# resource and fails with "No such file or directory" when it hits one,
+# which previously broke the entire release pipeline.
 echo "==> [3/4] Vendoring icon themes (Adwaita + hicolor)"
 ICONS_DEST="$RESOURCES_DIR/icons"
 mkdir -p "$ICONS_DEST"
-rsync -a --delete "$BREW_PREFIX/share/icons/Adwaita/" "$ICONS_DEST/Adwaita/"
-rsync -a --delete "$BREW_PREFIX/share/icons/hicolor/" "$ICONS_DEST/hicolor/"
+rsync -aL --delete "$BREW_PREFIX/share/icons/Adwaita/" "$ICONS_DEST/Adwaita/"
+rsync -aL --delete "$BREW_PREFIX/share/icons/hicolor/" "$ICONS_DEST/hicolor/"
 
 # -- 4. GdkPixbuf module loaders ----------------------------------------------
 #
