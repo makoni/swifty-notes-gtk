@@ -151,7 +151,6 @@ final class SettingsWindow {
         trashRetentionRow.onNotify(.selected) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onActionRowActivate(trashRetentionRow)
         storageGroup.add(trashRetentionRow)
 
         let editorGroup = PreferencesGroup(
@@ -163,7 +162,6 @@ final class SettingsWindow {
         wrapLinesRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onSwitchRowToggle(wrapLinesRow)
         editorGroup.add(wrapLinesRow)
 
         fontSizeRow.subtitle = "Points"
@@ -172,7 +170,6 @@ final class SettingsWindow {
         fontSizeRow.onNotify(.value) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onActionRowActivate(fontSizeRow)
         editorGroup.add(fontSizeRow)
 
         tabWidthRow.subtitle = "Columns"
@@ -181,7 +178,6 @@ final class SettingsWindow {
         tabWidthRow.onNotify(.value) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onActionRowActivate(tabWidthRow)
         editorGroup.add(tabWidthRow)
 
         indentStyleRow.subtitle = "Choose whether Tab inserts spaces or hard tabs."
@@ -189,7 +185,6 @@ final class SettingsWindow {
         indentStyleRow.onNotify(.selected) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onActionRowActivate(indentStyleRow)
         editorGroup.add(indentStyleRow)
 
         let savingGroup = PreferencesGroup(
@@ -202,7 +197,6 @@ final class SettingsWindow {
         autosaveDelayRow.onNotify(.value) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onActionRowActivate(autosaveDelayRow)
         savingGroup.add(autosaveDelayRow)
 
         let appearanceGroup = PreferencesGroup(
@@ -213,7 +207,6 @@ final class SettingsWindow {
         appearanceRow.onNotify(.selected) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onActionRowActivate(appearanceRow)
         appearanceGroup.add(appearanceRow)
 
         let spellCheckGroup = PreferencesGroup(
@@ -224,7 +217,6 @@ final class SettingsWindow {
         spellCheckEnabledRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
-        MacOSClickWorkaround.onSwitchRowToggle(spellCheckEnabledRow)
         spellCheckGroup.add(spellCheckEnabledRow)
 
         if !spellCheckLanguages.isEmpty {
@@ -234,7 +226,6 @@ final class SettingsWindow {
             spellCheckLanguageRow.onNotify(.selected) { [weak self] in
                 self?.handleInlinePreferenceChange()
             }
-            MacOSClickWorkaround.onActionRowActivate(spellCheckLanguageRow)
             spellCheckGroup.add(spellCheckLanguageRow)
         }
 

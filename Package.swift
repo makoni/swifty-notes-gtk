@@ -105,7 +105,15 @@ let package = Package(
             ],
             resources: [
                 .process("Resources"),
-                .copy("Icons")
+                .copy("Icons"),
+                // AppIcons/hicolor/scalable/apps/me.spaceinbox.swiftynotes.svg
+                // is registered as a GTK icon-theme search root at
+                // first window construction so AdwAboutDialog can
+                // resolve `applicationIcon`. Must be `.copy` (not
+                // `.process`) — `.process` flattens nested directories
+                // and GTK's icon-theme lookup expects the standard
+                // `<theme>/<size>/<context>/<name>.<ext>` layout.
+                .copy("AppIcons")
             ]
         ),
         .executableTarget(

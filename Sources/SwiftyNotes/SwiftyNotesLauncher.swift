@@ -201,6 +201,7 @@ public enum SwiftyNotesLauncher {
             flags: resolveApplicationFlags(env: environment),
         )
         let appController = AppController(launchOptions: launchOptions)
+        installQuitAction(on: app)
 
         app.onActivate {
             appController.activate(app: app)
@@ -249,6 +250,35 @@ public enum SwiftyNotesLauncher {
             flags.insert(.nonUnique)
         }
         return flags
+    }
+
+    /// Registers an `app.quit` GAction on the GApplication and binds
+    /// `<Primary>q` (Cmd+Q on macOS, Ctrl+Q on Linux) to it. Doing this
+    /// at the GApplication level — instead of per-window
+    /// `addKeyboardShortcut` — lights up the standard "Quit Swifty
+    /// Notes" item in the Cocoa Apple menu (GTK's macOS backend bridges
+    /// it to `app.quit` automatically) and lets the shortcut fire even
+    /// when no swift-adwaita-managed window has focus.
+    @MainActor
+    private static func installQuitAction(on app: Application) {
+        let quitAction = SimpleAction(name: "quit") {
+            Application.current?.quit()
+        }
+        app.addAction(quitAction)
+
+        // `gtk_application_set_accels_for_action` takes a NULL-terminated
+        // C array of accelerator strings. Build it inline so the
+        // CStrings outlive the GTK call.
+        "<Primary>q".withCString { accel in
+            var arr: [UnsafePointer<CChar>?] = [accel, nil]
+            arr.withUnsafeMutableBufferPointer { buf in
+                gtk_application_set_accels_for_action(
+                    app.gtkApplicationPointer,
+                    "app.quit",
+                    buf.baseAddress,
+                )
+            }
+        }
     }
 
     /// On macOS, GTK/GLib's resource discovery walks `XDG_DATA_DIRS` to

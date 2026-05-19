@@ -229,19 +229,6 @@ final class MainWindow {
         }
         configureActionsAndMenu()
         wireSignals()
-        installQuitShortcut()
-    }
-
-    /// `<Primary>q` is GTK's cross-platform accelerator: Cmd+Q on
-    /// macOS, Ctrl+Q on Linux. The closure returns `true` so GTK stops
-    /// propagating the event after we've taken over the keystroke
-    /// (otherwise a downstream listener could eat it and the app stays
-    /// alive after the keys are released).
-    private func installQuitShortcut() {
-        window.addKeyboardShortcut("<Primary>q") {
-            Application.current?.quit()
-            return true
-        }
     }
 
     func present() {
@@ -725,7 +712,7 @@ final class MainWindow {
     func registerBundledIconSearchPathIfNeeded() {
         guard !Self.bundledIconSearchPathRegistered,
               let iconsURL = Bundle.module.resourceURL?
-                .appendingPathComponent("icons", isDirectory: true),
+                .appendingPathComponent("AppIcons", isDirectory: true),
               FileManager.default.fileExists(atPath: iconsURL.path),
               let display = Display.default
         else { return }
