@@ -349,14 +349,27 @@ extension MainWindow {
         window.addAction(aboutAction)
         window.addAction(checkForUpdatesAction)
 
+        let libraryItems: [(label: String, action: String)] = [
+            ("Settings", "win.settings"),
+            ("Open Markdown File…", "win.open-markdown-file"),
+            ("Import into Library…", "win.import-note"),
+            ("Reload from disk", "win.reload-notes"),
+            ("Open notes folder", "win.open-notes-folder"),
+        ]
+        let helpItems: [(label: String, action: String)] = [
+            ("Check for Updates…", "win.check-for-updates"),
+            ("About Swifty Notes", "win.about"),
+        ]
+
+        #if os(macOS)
         // Hand-built popover (not GMenu/setMenuModel) so the items
-        // themselves are explicit `Button`s and can route their clicks
-        // through `MacOSClickWorkaround.onClick`. The auto-built
-        // PopoverMenu that `setMenuModel` produces internally is
-        // composed of widgets we don't have references to, so its
-        // items suffer the same Quartz drag-detection regression the
-        // workaround exists for — sub-pixel motion between press and
-        // release silently eats the click.
+        // themselves are explicit `Button`s routed through
+        // `MacOSClickWorkaround.onClick`. The auto-built PopoverMenu
+        // that `setMenuModel` produces is composed of widgets we don't
+        // have references to, so its items suffer the same Quartz
+        // drag-detection regression — sub-pixel motion between press
+        // and release silently eats the click. Linux doesn't have this
+        // bug and keeps the native GMenu look-and-feel below.
         let library: [(label: String, handler: @MainActor () -> Void)] = [
             ("Settings", { [weak self] in self?.presentSettingsWindow() }),
             ("Open Markdown File…", { [weak self] in self?.openMarkdownFile() }),
@@ -384,15 +397,30 @@ extension MainWindow {
         }
         popover.child = content
         menuButton.setPopover(popover)
+        #else
+        let librarySection = GMenuRef()
+        for item in libraryItems {
+            librarySection.append(item.label, action: item.action)
+        }
+        let helpSection = GMenuRef()
+        for item in helpItems {
+            helpSection.append(item.label, action: item.action)
+        }
+        let menu = GMenuRef()
+        menu.appendSection("Library", section: librarySection)
+        menu.appendSection("Help", section: helpSection)
+        menuButton.setMenuModel(menu)
+        #endif
 
         overflowMenuSectionTitles = ["Library", "Help"]
         overflowMenuItemsBySection = [
-            "Library": library.map(\.label),
-            "Help": help.map(\.label),
+            "Library": libraryItems.map(\.label),
+            "Help": helpItems.map(\.label),
         ]
         updateActionAvailability()
     }
 
+    #if os(macOS)
     private func makeMenuItemButton(
         label: String,
         popover: Popover,
@@ -416,6 +444,7 @@ extension MainWindow {
         }
         return button
     }
+    #endif
 
     func configureToolbarAccessibility() {
         sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
