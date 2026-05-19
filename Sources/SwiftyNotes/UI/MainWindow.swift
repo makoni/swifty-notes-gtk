@@ -229,6 +229,19 @@ final class MainWindow {
         }
         configureActionsAndMenu()
         wireSignals()
+        installQuitShortcut()
+    }
+
+    /// `<Primary>q` is GTK's cross-platform accelerator: Cmd+Q on
+    /// macOS, Ctrl+Q on Linux. The closure returns `true` so GTK stops
+    /// propagating the event after we've taken over the keystroke
+    /// (otherwise a downstream listener could eat it and the app stays
+    /// alive after the keys are released).
+    private func installQuitShortcut() {
+        window.addKeyboardShortcut("<Primary>q") {
+            Application.current?.quit()
+            return true
+        }
     }
 
     func present() {
@@ -252,6 +265,7 @@ final class MainWindow {
     }
 
     func buildUI() {
+        registerBundledIconSearchPathIfNeeded()
         sidebarToggle.addCSSClass(.flat)
         newNoteButton.addCSSClass(.flat)
         saveNoteButton.addCSSClass(.flat)
@@ -698,6 +712,28 @@ final class MainWindow {
             message
         }
     }
+
+    /// Tells GTK's icon theme to look inside the package's bundled
+    /// `Resources/icons/` tree, so widgets that resolve an icon by name
+    /// (most visibly `AdwAboutDialog`'s `appIcon`) can find our shipped
+    /// `me.spaceinbox.swiftynotes.svg`. On Linux installs the icon
+    /// lives under `/usr/share/icons/hicolor/...` via the .desktop +
+    /// hicolor-theme XDG flow and resolves without us doing anything;
+    /// the SwiftPM `swift run` build and the macOS bundle skip that
+    /// install step, so without this registration the About dialog
+    /// shows a missing-icon placeholder.
+    func registerBundledIconSearchPathIfNeeded() {
+        guard !Self.bundledIconSearchPathRegistered,
+              let iconsURL = Bundle.module.resourceURL?
+                .appendingPathComponent("icons", isDirectory: true),
+              FileManager.default.fileExists(atPath: iconsURL.path),
+              let display = Display.default
+        else { return }
+        display.iconTheme.addSearchPath(iconsURL.path)
+        Self.bundledIconSearchPathRegistered = true
+    }
+
+    nonisolated(unsafe) private static var bundledIconSearchPathRegistered = false
 
     nonisolated static func openDirectoryInSystemFileManager(_ folderURL: URL) throws {
         try openDirectoryInSystemFileManager(

@@ -193,6 +193,15 @@ final class ExternalDocumentWindow {
         preview.attach(to: window)
         configureActionsAndMenu()
         wireSignals()
+        // Cross-platform quit: Cmd+Q on macOS, Ctrl+Q on Linux. We
+        // install the shortcut on every top-level window because
+        // swift-adwaita does not expose a GApplication-level accels
+        // API, and the shortcut controller only fires when its host
+        // window has focus.
+        window.addKeyboardShortcut("<Primary>q") {
+            Application.current?.quit()
+            return true
+        }
         loadDocument(loadedDocument)
     }
 

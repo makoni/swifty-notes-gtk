@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#62B6FC"/>
+      <stop offset="100%" stop-color="#2260D8"/>
+    </linearGradient>
+    <linearGradient id="pageGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#EAEAF2"/>
+    </linearGradient>
+    <linearGradient id="backPageGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#E8E8F0"/>
+      <stop offset="100%" stop-color="#D0D0DC"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#3580E8"/>
+      <stop offset="100%" stop-color="#1B4DB5"/>
+    </linearGradient>
+    <filter id="pageShadow" x="-15%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E2860" flood-opacity="0.35"/>
+    </filter>
+    <filter id="backPageShadow" x="-15%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0E2860" flood-opacity="0.2"/>
+    </filter>
+    <clipPath id="squircleClip">
+      <rect x="0" y="0" width="512" height="512" rx="114"/>
+    </clipPath>
+  </defs>
+
+  <!-- GNOME squircle background -->
+  <rect x="0" y="0" width="512" height="512" rx="114" fill="url(#bgGrad)"/>
+
+  <!-- Bottom edge darkening (behind pages) -->
+  <rect x="0" y="380" width="512" height="132" rx="114" fill="black" opacity="0.06" clip-path="url(#squircleClip)"/>
+
+  <!-- Subtle top highlight -->
+  <rect x="0" y="0" width="512" height="220" rx="114" fill="white" opacity="0.07" clip-path="url(#squircleClip)"/>
+
+  <!-- Back page -->
+  <g filter="url(#backPageShadow)">
+    <rect x="152" y="72" width="240" height="320" rx="18" fill="url(#backPageGrad)" transform="rotate(3, 272, 232)"/>
+  </g>
+
+  <!-- Front page -->
+  <g filter="url(#pageShadow)">
+    <rect x="120" y="82" width="256" height="340" rx="20" fill="url(#pageGrad)"/>
+  </g>
+
+  <!-- Markdown "#" -->
+  <g transform="translate(158, 132)" fill="url(#accentGrad)" opacity="0.9">
+    <rect x="28" y="0" width="16" height="100" rx="8"/>
+    <rect x="68" y="0" width="16" height="100" rx="8"/>
+    <rect x="8" y="22" width="96" height="16" rx="8"/>
+    <rect x="8" y="58" width="96" height="16" rx="8"/>
+  </g>
+
+  <!-- Text lines -->
+  <rect x="164" y="270" width="170" height="14" rx="7" fill="#2E65C4" opacity="0.3"/>
+  <rect x="164" y="298" width="120" height="14" rx="7" fill="#2E65C4" opacity="0.22"/>
+  <rect x="164" y="326" width="145" height="14" rx="7" fill="#2E65C4" opacity="0.16"/>
+  <rect x="164" y="354" width="95" height="14" rx="7" fill="#2E65C4" opacity="0.12"/>
+</svg>

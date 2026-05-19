@@ -75,6 +75,33 @@ enum MacOSClickWorkaround {
         #endif
     }
 
+    /// For `AdwSwitchRow`: a click anywhere on the row should toggle
+    /// the switch. The internal GtkSwitch's click handler is eaten by
+    /// the same drag detector, so the value never changes (and
+    /// `onNotify(.active)` never fires). Install the CAPTURE gesture
+    /// on the row itself and flip `active` directly on release.
+    static func onSwitchRowToggle(_ row: SwitchRow) {
+        #if os(macOS)
+        attachReleaseHandler(to: row) { [weak row] in
+            row?.active.toggle()
+        }
+        #endif
+    }
+
+    /// For `AdwComboRow` / `AdwSpinRow` and other AdwActionRow-derived
+    /// rows where the natural click affordance is "activate the row"
+    /// (open a dropdown, focus the spinner). Calls `gtk_widget_activate`
+    /// on release, which routes through GTK's standard activation path
+    /// without going through the clicked signal that gets eaten.
+    static func onActionRowActivate(_ row: Widget) {
+        #if os(macOS)
+        attachReleaseHandler(to: row) { [weak row] in
+            guard let row else { return }
+            gtk_widget_activate(row.widgetPointer)
+        }
+        #endif
+    }
+
     #if os(macOS)
     /// Generic press/release plumbing shared by Button / ToggleButton /
     /// MenuButton. The widget keeps a strong reference to the gesture
