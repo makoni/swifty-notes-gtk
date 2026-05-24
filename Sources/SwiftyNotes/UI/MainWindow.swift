@@ -14,10 +14,17 @@ final class MainWindow {
     let autosave: AutosaveCoordinator
 
     let sidebar = NotesSidebar()
+    let outlineSidebar = OutlineSidebar()
     var editor = MarkdownEditor()
     let preview = MarkdownPreview()
     let headerTitle = WindowTitle(title: "Swifty Notes", subtitle: "Markdown notes")
     let sidebarToggle = MainWindow.iconButton(named: "sidebar-show-symbolic")
+    /// Toggles the right-hand Outline panel. Active state CSS tracks
+    /// ``AppState.isOutlineVisible``. Bound to F9 in `wireKeyboardShortcuts`.
+    let outlineToggleButton = MainWindow.iconButton(named: "view-list-bullet-symbolic")
+    /// Opens the Ctrl+G command palette. Stub-only in Phase 1 — wired
+    /// in Phase 5.
+    let quickJumpButton = MainWindow.iconButton(named: "system-search-symbolic")
     let editorModeToggle = ToggleButton(label: "Editor")
     let splitModeToggle = ToggleButton(label: "Split")
     let previewModeToggle = ToggleButton(label: "Preview")
@@ -31,6 +38,12 @@ final class MainWindow {
     let menuButton = MenuButton(icon: .custom("open-menu-symbolic"))
     let toastOverlay = ToastOverlay()
     let splitView = OverlaySplitView()
+    /// Wraps ``splitView`` to place the Outline panel on the right-hand
+    /// side. We need a second OverlaySplitView because AdwOverlaySplitView
+    /// is single-sidebar — to get a left + right shell (the GNOME
+    /// Builder / Apostrophe layout) we nest them. Inner = notes sidebar,
+    /// outer = outline sidebar with `sidebarPosition: .end`.
+    let outlineSplitView = OverlaySplitView()
     let editorPreviewPane = Paned(orientation: .horizontal)
     let editorScroll = ScrolledWindow()
     /// Banner shown above the editor when the user is previewing a
@@ -300,6 +313,8 @@ final class MainWindow {
         header.packStart(deleteNoteButton)
         header.packEnd(menuButton)
         header.packEnd(viewModeSwitcher)
+        header.packEnd(outlineToggleButton)
+        header.packEnd(quickJumpButton)
 
         editorScroll.child = editor.view
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
@@ -365,9 +380,25 @@ final class MainWindow {
         splitView.content = editorPreviewPane
         applySidebarVisibility()
 
+        // Outer split: notes-sidebar + content on the left, Outline
+        // panel on the right. Keeping the Outline pinned and non-
+        // collapsing means the toggle is purely show/hide chrome —
+        // the content area never has to renegotiate width during a
+        // collapse animation.
+        outlineSplitView.pinSidebar = true
+        outlineSplitView.sidebarPosition = .end
+        outlineSplitView.enableShowGesture = false
+        outlineSplitView.enableHideGesture = false
+        outlineSplitView.minSidebarWidth = 240
+        outlineSplitView.maxSidebarWidth = 360
+        outlineSplitView.sidebarWidthFraction = 0.22
+        outlineSplitView.sidebar = outlineSidebar.root
+        outlineSplitView.content = splitView
+        outlineSplitView.showSidebar = state.isOutlineVisible
+
         let toolbar = ToolbarView()
         toolbar.addTopBar(header)
-        toolbar.content = splitView
+        toolbar.content = outlineSplitView
 
         toastOverlay.child = toolbar
         window.setContent(toastOverlay)
@@ -394,6 +425,13 @@ final class MainWindow {
 
         MacOSClickWorkaround.onClick(sidebarToggle, label: "SidebarToggle") { [weak self] in
             self?.toggleSidebarVisibility()
+        }
+
+        MacOSClickWorkaround.onClick(outlineToggleButton, label: "OutlineToggle") { [weak self] in
+            self?.toggleOutlineVisibility()
+        }
+        MacOSClickWorkaround.onClick(quickJumpButton, label: "QuickJump") { [weak self] in
+            self?.openCommandPalette()
         }
 
         // The view-mode switcher is a linked group: clicking one button
@@ -511,8 +549,20 @@ final class MainWindow {
             self?.reloadFromDisk(announce: true)
             return true
         }
+        // F9 toggles the right-hand Outline panel — GNOME convention
+        // (Builder, Files, gedit, GNOME Text Editor all bind F9 to the
+        // secondary side pane). The previous Editor↔Split toggle has
+        // moved to F10 so the keyboard shortcut survives.
         window.addKeyboardShortcut("F9") { [weak self] in
+            self?.toggleOutlineVisibility()
+            return true
+        }
+        window.addKeyboardShortcut("F10") { [weak self] in
             self?.toggleEditorAndSplitModes()
+            return true
+        }
+        window.addKeyboardShortcut("<Primary>g") { [weak self] in
+            self?.openCommandPalette()
             return true
         }
     }

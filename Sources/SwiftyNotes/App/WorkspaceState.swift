@@ -76,6 +76,11 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
     /// users who keep the bin open between sessions don't have to keep
     /// re-expanding it.
     public var isTrashExpanded: Bool
+    /// Whether the right-hand Outline panel is visible. Defaults to
+    /// `true` for both new and legacy (pre-Outline) workspaces, so
+    /// users discover the feature without having to enable it from a
+    /// menu. The F9 / headerbar toggle persists user-driven changes.
+    public var isOutlineVisible: Bool
 
     public var isPreviewVisible: Bool {
         viewMode.isPreviewVisible
@@ -96,6 +101,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         lastTableAlignments: [MarkdownTableAlignment] = [],
         expandedFolders: [String] = [],
         isTrashExpanded: Bool = false,
+        isOutlineVisible: Bool = true,
     ) {
         self.selectedNoteID = selectedNoteID
         self.isSidebarVisible = isSidebarVisible
@@ -110,6 +116,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         self.lastTableAlignments = lastTableAlignments
         self.expandedFolders = Self.deduplicatedFolderPaths(expandedFolders)
         self.isTrashExpanded = isTrashExpanded
+        self.isOutlineVisible = isOutlineVisible
     }
 
     private static func deduplicatedFolderPaths(_ paths: [String]) -> [String] {
@@ -141,6 +148,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         case lastTableAlignments
         case expandedFolders
         case isTrashExpanded
+        case isOutlineVisible
     }
 
     public init(from decoder: any Decoder) throws {
@@ -164,6 +172,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
             try container.decodeIfPresent([String].self, forKey: .expandedFolders) ?? [],
         )
         isTrashExpanded = try container.decodeIfPresent(Bool.self, forKey: .isTrashExpanded) ?? false
+        isOutlineVisible = try container.decodeIfPresent(Bool.self, forKey: .isOutlineVisible) ?? true
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -182,5 +191,6 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         try container.encode(lastTableAlignments, forKey: .lastTableAlignments)
         try container.encode(expandedFolders, forKey: .expandedFolders)
         try container.encode(isTrashExpanded, forKey: .isTrashExpanded)
+        try container.encode(isOutlineVisible, forKey: .isOutlineVisible)
     }
 }

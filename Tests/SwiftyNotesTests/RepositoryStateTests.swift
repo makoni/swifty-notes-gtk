@@ -942,6 +942,41 @@ struct RepositoryStateTests {
     }
 
     @Test
+    func `workspace state defaults isOutlineVisible to true for legacy payloads`() throws {
+        // Pre-Outline payloads omit the field entirely. The Outline
+        // panel ships visible by default, so a missing key must decode
+        // to `true`.
+        let data = Data("""
+        {
+          "selectedNoteID": null,
+          "isPreviewVisible": true,
+          "searchQuery": "legacy",
+          "sortMode": "newestFirst",
+          "windowWidth": 1200,
+          "windowHeight": 800
+        }
+        """.utf8)
+
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: data)
+        #expect(decoded.isOutlineVisible == true)
+    }
+
+    @Test
+    func `workspace state round trips isOutlineVisible`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let store = WorkspaceStateStore(
+            stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false),
+        )
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try store.save(WorkspaceState(isOutlineVisible: true))
+        #expect(try store.load().isOutlineVisible == true)
+
+        try store.save(WorkspaceState(isOutlineVisible: false))
+        #expect(try store.load().isOutlineVisible == false)
+    }
+
+    @Test
     func `workspace state decodes older payload without preview width`() throws {
         let data = Data("""
         {

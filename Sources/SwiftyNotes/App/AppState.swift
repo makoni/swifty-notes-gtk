@@ -18,6 +18,7 @@ public final class AppState {
     public var lastTableCols: Int
     public var lastTableAlignments: [MarkdownTableAlignment]
     public var isTrashExpanded: Bool
+    public var isOutlineVisible: Bool
 
     public var isPreviewVisible: Bool {
         viewMode.isPreviewVisible
@@ -41,6 +42,7 @@ public final class AppState {
         lastTableAlignments = persistedState.lastTableAlignments
         expandedFolders = Set(persistedState.expandedFolders)
         isTrashExpanded = persistedState.isTrashExpanded
+        isOutlineVisible = persistedState.isOutlineVisible
     }
 
     public func setLastTableSize(rows: Int, cols: Int, alignments: [MarkdownTableAlignment]) {
@@ -147,6 +149,7 @@ public final class AppState {
             lastTableAlignments: lastTableAlignments,
             expandedFolders: expandedFolders.sorted(),
             isTrashExpanded: isTrashExpanded,
+            isOutlineVisible: isOutlineVisible,
         )
     }
 
