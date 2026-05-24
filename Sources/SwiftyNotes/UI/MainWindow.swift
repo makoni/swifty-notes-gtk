@@ -482,6 +482,12 @@ final class MainWindow {
             outlineSidebar.toggleCollapsed(id)
             persistOutlineStateForCurrentNote()
         }
+        // Empty-state "Add ## Heading" link: insert a starter heading
+        // at the current cursor position and focus the editor so the
+        // user can keep typing.
+        outlineSidebar.onInsertHeadingRequest { [weak self] in
+            self?.insertStarterHeadingIntoEditor()
+        }
 
         // Lazy scroll-spy bind. Done here (rather than in init) so the
         // editor / preview widget trees are fully constructed before

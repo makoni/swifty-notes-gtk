@@ -84,6 +84,27 @@ extension MainWindow {
         persistStateBestEffort()
     }
 
+    /// Inserts a starter `## Heading` at the cursor in the editor and
+    /// focuses the editor. Wired to the empty-state "Add `## Heading`"
+    /// link in the outline panel — clicking it scaffolds the section
+    /// the panel is asking for and drops the user into the right
+    /// place to keep typing.
+    func insertStarterHeadingIntoEditor() {
+        // Pad the heading line so it doesn't jam against whatever is
+        // before / after the cursor. The trailing `\n\n` leaves the
+        // editor focused on the line *after* the heading where prose
+        // typically goes.
+        let snippet: String
+        let bufferText = editor.buffer.text
+        if bufferText.isEmpty {
+            snippet = "## Heading\n\n"
+        } else {
+            snippet = "\n\n## Heading\n\n"
+        }
+        editor.buffer.insertAtCursor(snippet)
+        editor.focus()
+    }
+
     /// Same shape as ``persistOutgoingOutlineState`` but for the
     /// currently active note. Called from chevron-toggle / palette
     /// pick handlers so the JSON on disk catches the change before

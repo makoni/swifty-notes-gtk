@@ -18,6 +18,8 @@ struct OutlineSidebar {
     init() {
         OutlineCSS.installGlobalIfNeeded()
 
+        renderState = RenderState()
+
         list = ListBox()
         list.selectionMode = .single
         list.activateOnSingleClick = true
@@ -51,6 +53,22 @@ struct OutlineSidebar {
         emptyLabel.marginEnd = 6
         emptyLabel.marginTop = 6
 
+        // Activate-link wiring for the "Add ## Heading" hint in the
+        // empty-state markup. The `<a href="…">` segments below resolve
+        // to specific actions — `insert-heading` is the only one we
+        // ship right now.
+        let renderStateForLink = renderState
+        emptyLabel.onActivateLink { href in
+            // Ignored: the `<a href>` is captured in markup so a
+            // future link target can be routed by inspecting `href`.
+            switch href {
+            case "insert-heading":
+                renderStateForLink.insertHeadingHandler?()
+            default:
+                break
+            }
+        }
+
         footerLabel = Label("")
         footerLabel.xalign = 0
         footerLabel.addCSSClass(.dimLabel)
@@ -74,8 +92,6 @@ struct OutlineSidebar {
         content.append(scroll)
         content.append(emptyLabel)
         content.append(footerLabel)
-
-        renderState = RenderState()
 
         root = ToolbarView()
         root.content = content
@@ -182,7 +198,12 @@ struct OutlineSidebar {
         let isQuery = !renderState.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         if renderState.allHeadings.isEmpty {
             emptyLabel.useMarkup = true
-            emptyLabel.text = "No headings in this note. Add <tt>## Heading</tt> to start."
+            // The `Add ## Heading` segment is a Pango hyperlink that
+            // routes to `insert-heading` via `onActivateLink` above.
+            // The link target is opaque to GTK (it's not a real URL)
+            // but Pango requires the `href` syntax for activate-link
+            // to fire.
+            emptyLabel.text = "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
             emptyLabel.visible = true
             scroll.visible = false
         } else if isQuery, visible.isEmpty {
@@ -316,6 +337,18 @@ struct OutlineSidebar {
         renderState.toggleHandler = handler
     }
 
+    /// Hooked from `MainWindow.wireSignals` so a click on the empty-
+    /// state "Add `## Heading`" link can insert a starter heading in
+    /// the editor without OutlineSidebar (a value-type struct) holding
+    /// a reference cycle on itself.
+    func onInsertHeadingRequest(_ handler: @escaping () -> Void) {
+        renderState.insertHeadingHandler = handler
+    }
+
+    func emptyStateInsertHandler() -> (() -> Void)? {
+        renderState.insertHeadingHandler
+    }
+
     final class RenderState {
         var allHeadings: [Heading] = []
         var visible: [Heading] = []
@@ -323,6 +356,7 @@ struct OutlineSidebar {
         var collapsed: Set<String> = []
         var activeID: String?
         var toggleHandler: ((String) -> Void)?
+        var insertHeadingHandler: (() -> Void)?
     }
 }
 

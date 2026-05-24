@@ -117,6 +117,21 @@ struct MainWindowOutlineTests {
     }
 
     @Test @MainActor
+    func `the empty-state link inserts a starter heading and focuses the editor`() throws {
+        let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.insertheading")
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("Paragraph one.\n")
+        _ = window.debugPreviewText
+        let before = window.debugSelectedNoteContent ?? ""
+        // Drive the activate-link handler directly — Pango simulates a
+        // click on the `<a href="insert-heading">` segment.
+        window.outlineSidebar.emptyStateInsertHandler()?()
+        let after = window.debugSelectedNoteContent ?? ""
+        #expect(after.contains("## Heading"))
+        #expect(after.count > before.count)
+    }
+
+    @Test @MainActor
     func `outline panel falls back to empty-state when the note has no headings`() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.emptynote")
         window.debugLoadInitialNotes()
