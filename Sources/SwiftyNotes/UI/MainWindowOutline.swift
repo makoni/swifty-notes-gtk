@@ -111,15 +111,17 @@ extension MainWindow {
     /// so the outline highlight matches the click immediately (without
     /// waiting for the next scroll-spy tick).
     func scrollToHeading(_ heading: Heading) {
-        OutlineNavigation.scrollEditor(view: editor.view, buffer: editor.buffer, toLine: heading.line)
-        // Defer the preview alignment a frame — the editor's scroll
-        // adjustment updates on the next GLib main-loop iteration, and
-        // the proportional preview sync needs the post-jump `source.value`
-        // to read the right progress.
-        MainContext.idle { [weak self] in
-            guard let self else { return }
-            OutlineNavigation.scrollPreview(editorScroll: editorScroll, previewScroll: preview.rootScroll)
-        }
+        OutlineNavigation.scrollEditor(
+            view: editor.view,
+            buffer: editor.buffer,
+            scroll: editorScroll,
+            toLine: heading.line,
+        )
+        OutlineNavigation.scrollPreview(
+            heading: heading,
+            preview: preview,
+            editorScroll: editorScroll,
+        )
         outlineSidebar.setActiveHeading(heading.id)
     }
 }

@@ -1,37 +1,104 @@
 import Adwaita
 import Foundation
 
-/// Editor scroll helpers used by the Outline panel, the breadcrumb,
-/// and the Ctrl+G command palette. Phase 7 replaces the instant jump
-/// with an animated `Adjustment.animate(...)` path; Phase 2 ships the
-/// direct-jump baseline so the data wiring is testable end-to-end.
+/// Editor + preview scroll helpers used by the Outline panel, the
+/// breadcrumb, and the Ctrl+G command palette. Animates both panes
+/// when ``smoothScroll`` is on; falls back to an instant jump
+/// otherwise.
 @MainActor
 enum OutlineNavigation {
-    /// Scrolls the source view so the given 1-based line sits near the
-    /// top of the viewport (10 % margin from the edges). Uses GTK's
-    /// underlying `gtk_text_view_scroll_to_iter` because swift-adwaita
-    /// doesn't ship a scroll-to-line wrapper on ``SourceView`` yet.
-    static func scrollEditor(view: SourceView, buffer: SourceBuffer, toLine line: Int) {
+    /// Default scroll-animation duration. 260 ms matches libadwaita's
+    /// own "medium" duration constant — long enough to feel smooth,
+    /// short enough that fast keyboard navigation doesn't stack a
+    /// queue of pending animations.
+    static let smoothScrollDurationMs: Int = 260
+
+    /// Top-of-viewport breathing room when jumping to a heading. The
+    /// scroll-spy anchor sits ~80 px below the visible top, so a 24 px
+    /// breathing room leaves the heading clearly above the anchor.
+    static let scrollMarginTopPx: Double = 24
+
+    /// Scrolls the source view to the heading's line. Uses
+    /// `gtk_text_view_get_iter_location` to find the buffer-space Y
+    /// of the line; animates the `verticalAdjustment.value` to that
+    /// Y minus a top margin so the heading sits comfortably below the
+    /// editor toolbar.
+    ///
+    /// Also places the cursor at the iter so a follow-up keystroke
+    /// continues editing where the user just navigated.
+    static func scrollEditor(view: SourceView, buffer: SourceBuffer, scroll: ScrolledWindow, toLine line: Int, smooth: Bool = true) {
         let zeroBased = max(line - 1, 0)
         var iter = GtkTextIter()
         let bufferPtr = UnsafeMutablePointer<GtkTextBuffer>(buffer.opaquePointer)
         let viewPtr = UnsafeMutablePointer<GtkTextView>(view.opaquePointer)
         gtk_text_buffer_get_iter_at_line(bufferPtr, &iter, gint(zeroBased))
-        // Also place the cursor at the heading so a follow-up keystroke
-        // continues editing where the user just navigated.
         gtk_text_buffer_place_cursor(bufferPtr, &iter)
-        // within_margin 0.1, use_align true, xalign 0, yalign 0 — same
-        // call shape GtkSourceView's own Go-To-Line dialog uses, lands
-        // the line near the top with a small breathing room.
-        gtk_text_view_scroll_to_iter(viewPtr, &iter, 0.1, gtk_true(), 0.0, 0.0)
+        var rect = GdkRectangle()
+        gtk_text_view_get_iter_location(viewPtr, &iter, &rect)
+        let targetY = Double(rect.y) - scrollMarginTopPx
+        let adj = scroll.verticalAdjustment
+        let clamped = clampToAdjustment(adj, target: targetY)
+        if smooth {
+            animate(adj: adj, from: adj.value, to: clamped, widget: view)
+        } else {
+            adj.value = clamped
+        }
     }
 
-    /// Aligns the preview pane to the editor's current scroll progress.
-    /// Phase 7 replaces this proportional sync with a block-targeted
-    /// scroll that lines the chosen heading up at the same Y as in the
-    /// editor.
-    static func scrollPreview(editorScroll: ScrolledWindow, previewScroll: ScrolledWindow) {
-        PreviewScrollSync.sync(editor: editorScroll, preview: previewScroll)
+    /// Scrolls the preview pane to the rendered widget at the given
+    /// `Heading.blockIndex`. Falls back to the proportional editor-
+    /// driven sync when block-targeted positioning isn't available
+    /// (the widget tree hasn't allocated yet, or `blockIndex` is out
+    /// of bounds for the current render).
+    static func scrollPreview(heading: Heading, preview: MarkdownPreview, editorScroll: ScrolledWindow, smooth: Bool = true) {
+        let previewScroll = preview.rootScroll
+        if let blockY = OutlinePositions.previewY(for: heading, in: preview.container) {
+            let target = blockY - scrollMarginTopPx
+            let adj = previewScroll.verticalAdjustment
+            let clamped = clampToAdjustment(adj, target: target)
+            if smooth {
+                animate(adj: adj, from: adj.value, to: clamped, widget: previewScroll)
+            } else {
+                adj.value = clamped
+            }
+        } else {
+            // Block widget not yet allocated — fall back to the
+            // proportional sync via the editor's adjustment position
+            // (works in split mode; in preview-only mode the editor
+            // is hidden so the sync is a no-op and the user just sees
+            // the existing preview scroll, which is acceptable as a
+            // best-effort fallback).
+            PreviewScrollSync.sync(editor: editorScroll, preview: previewScroll)
+        }
+    }
+
+    private static func clampToAdjustment(_ adj: Adjustment, target: Double) -> Double {
+        let lower = adj.lower
+        let upper = adj.upper - adj.pageSize
+        if upper <= lower { return lower }
+        return min(max(lower, target), upper)
+    }
+
+    private static func animate(adj: Adjustment, from: Double, to: Double, widget: Widget) {
+        // Bail out on tiny deltas so a flurry of clicks doesn't queue
+        // up imperceptible animations. The Adjustment proportional-sync
+        // logic uses the same 0.5 px floor.
+        guard abs(to - from) > 0.5 else {
+            adj.value = to
+            return
+        }
+        let target = CallbackAnimationTarget { value in
+            adj.value = value
+        }
+        let animation = TimedAnimation(
+            widget: widget,
+            from: from,
+            to: to,
+            duration: smoothScrollDurationMs,
+            target: target,
+        )
+        animation.easing = .easeOutCubic
+        animation.play()
     }
 }
 
