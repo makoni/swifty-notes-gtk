@@ -59,6 +59,36 @@ struct SettingsStoreTests {
         // Legacy settings without `trashRetention` fall back to the
         // 30-day default — the same as a fresh install.
         #expect(settings.trashRetention == .days(30))
+        // Outline tweaks fall back to the design's default ("comfortable
+        // density, tree lines on, drag handles on hover, breadcrumb
+        // visible") so the panel looks the same as a fresh install.
+        #expect(settings.outlineDensity == .comfortable)
+        #expect(settings.outlineTreeLines == true)
+        #expect(settings.outlineDragHandles == true)
+        #expect(settings.outlineBreadcrumbVisible == true)
+    }
+
+    @Test
+    func `app settings store round trips outline tweaks`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let store = AppSettingsStore(
+            settingsFileURL: temp.appendingPathComponent("settings.json", isDirectory: false),
+        )
+
+        let saved = AppSettings(
+            outlineDensity: .compact,
+            outlineTreeLines: false,
+            outlineDragHandles: false,
+            outlineBreadcrumbVisible: false,
+        )
+        try store.save(saved)
+        let loaded = try store.load()
+        #expect(loaded.outlineDensity == .compact)
+        #expect(loaded.outlineTreeLines == false)
+        #expect(loaded.outlineDragHandles == false)
+        #expect(loaded.outlineBreadcrumbVisible == false)
     }
 
     @Test

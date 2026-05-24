@@ -30,6 +30,10 @@ final class SettingsWindow {
     private let spellCheckEnabledRow = SwitchRow(title: "Enable spell-check")
     private let spellCheckLanguageRow = ComboRow(title: "Spell-check language")
     private let spellCheckLanguages: [SpellChecking.LanguageOption]
+    private let outlineDensityRow = ComboRow(title: "Outline density")
+    private let outlineTreeLinesRow = SwitchRow(title: "Tree lines under H2 sections")
+    private let outlineDragHandlesRow = SwitchRow(title: "Drag handles on hover")
+    private let outlineBreadcrumbRow = SwitchRow(title: "Breadcrumb strip above editor")
     private let trashRetentionOptions: [(retention: TrashRetention, displayName: String)] = [
         (.never, "Never"),
         (.days(7), "After 7 days"),
@@ -229,6 +233,32 @@ final class SettingsWindow {
             spellCheckGroup.add(spellCheckLanguageRow)
         }
 
+        let outlineGroup = PreferencesGroup(
+            title: "Outline",
+            description: "Tweak the right-hand outline panel and the breadcrumb strip above the editor.",
+        )
+        outlineDensityRow.subtitle = "Comfortable matches the default; Compact tightens row padding."
+        outlineDensityRow.setModel(StringList(OutlineDensity.allCases.map(\.displayName)))
+        outlineDensityRow.onNotify(.selected) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        outlineGroup.add(outlineDensityRow)
+        outlineTreeLinesRow.subtitle = "Vertical guides linking H3+ subsections to their H2 parent."
+        outlineTreeLinesRow.onNotify(.active) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        outlineGroup.add(outlineTreeLinesRow)
+        outlineDragHandlesRow.subtitle = "Show the drag affordance on hover. Drag-to-reorder ships separately."
+        outlineDragHandlesRow.onNotify(.active) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        outlineGroup.add(outlineDragHandlesRow)
+        outlineBreadcrumbRow.subtitle = "“You are here” strip above the editor toolbar."
+        outlineBreadcrumbRow.onNotify(.active) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        outlineGroup.add(outlineBreadcrumbRow)
+
         let content = Box(orientation: .vertical, spacing: 24)
         content.setMargins(24)
         content.append(storageGroup)
@@ -236,6 +266,7 @@ final class SettingsWindow {
         content.append(savingGroup)
         content.append(appearanceGroup)
         content.append(spellCheckGroup)
+        content.append(outlineGroup)
 
         let scrolled = ScrolledWindow(child: content)
         scrolled.setPolicy(horizontal: .never, vertical: .automatic)
@@ -322,6 +353,10 @@ final class SettingsWindow {
         trashRetentionRow.selected = trashRetentionOptions.firstIndex {
             $0.retention == currentSettings.trashRetention
         } ?? trashRetentionOptions.firstIndex { $0.retention == .days(30) } ?? 0
+        outlineDensityRow.selected = OutlineDensity.allCases.firstIndex(of: currentSettings.outlineDensity) ?? 0
+        outlineTreeLinesRow.active = currentSettings.outlineTreeLines
+        outlineDragHandlesRow.active = currentSettings.outlineDragHandles
+        outlineBreadcrumbRow.active = currentSettings.outlineBreadcrumbVisible
         if !spellCheckLanguages.isEmpty {
             // Index 0 represents the "follow system locale" option (no
             // explicit language). Subsequent indices map onto entries in
@@ -363,6 +398,9 @@ final class SettingsWindow {
             trashRetentionOptions.count - 1,
         )
         let trashRetention = trashRetentionOptions[trashRetentionIndex].retention
+        let outlineDensity = OutlineDensity.allCases[
+            min(max(outlineDensityRow.selected, 0), OutlineDensity.allCases.count - 1),
+        ]
         let updatedSettings = AppSettings(
             customNotesDirectoryPath: currentSettings.customNotesDirectoryPath,
             wrapsEditorLines: wrapLinesRow.active,
@@ -374,6 +412,10 @@ final class SettingsWindow {
             spellCheckEnabled: spellCheckEnabledRow.active,
             spellCheckLanguage: resolvedSpellCheckLanguage,
             trashRetention: trashRetention,
+            outlineDensity: outlineDensity,
+            outlineTreeLines: outlineTreeLinesRow.active,
+            outlineDragHandles: outlineDragHandlesRow.active,
+            outlineBreadcrumbVisible: outlineBreadcrumbRow.active,
         )
 
         do {

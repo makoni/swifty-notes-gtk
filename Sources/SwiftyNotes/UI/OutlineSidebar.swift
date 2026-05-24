@@ -138,6 +138,22 @@ struct OutlineSidebar {
         rerender()
     }
 
+    /// Push the user-facing display tweaks (Settings → Outline). The
+    /// density flips the `.outline-compact` class on the root so the
+    /// CSS provider can tighten / loosen padding; tree-lines and
+    /// drag-handle visibility flow through to the row builder's CSS
+    /// classes for the next ``rerender()``.
+    func applyTweaks(density: OutlineDensity, treeLines: Bool, dragHandles: Bool) {
+        if density == .compact {
+            root.addCSSClass("outline-compact")
+        } else {
+            root.removeCSSClass("outline-compact")
+        }
+        renderState.treeLines = treeLines
+        renderState.dragHandles = dragHandles
+        rerender()
+    }
+
     /// Replace the collapsed-set wholesale. Used by ``MainWindow`` to
     /// hydrate from persisted per-note state on a note transition.
     /// Re-renders so the visible row list reflects the new mask
@@ -189,6 +205,12 @@ struct OutlineSidebar {
         let h2 = renderState.allHeadings.lazy.filter { $0.level == 2 }.count
         let h3 = renderState.allHeadings.lazy.filter { $0.level == 3 }.count
         footerLabel.text = "\(h2) section\(h2 == 1 ? "" : "s") · \(h3) subsection\(h3 == 1 ? "" : "s")"
+
+        if renderState.treeLines {
+            list.addCSSClass("has-lines")
+        } else {
+            list.removeCSSClass("has-lines")
+        }
 
         list.removeAll()
         for heading in visible {
@@ -357,6 +379,8 @@ struct OutlineSidebar {
         var activeID: String?
         var toggleHandler: ((String) -> Void)?
         var insertHeadingHandler: (() -> Void)?
+        var treeLines: Bool = true
+        var dragHandles: Bool = true
     }
 }
 

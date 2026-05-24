@@ -33,8 +33,19 @@ extension MainWindow {
             defaultNotesDirectory: NotesRepository.fallbackNotesDirectory(),
         )
 
+        applyOutlineTweaks(settings)
+
         guard shouldRefreshPreview else { return }
         refreshPreview()
+    }
+
+    private func applyOutlineTweaks(_ settings: AppSettings) {
+        outlineSidebar.applyTweaks(
+            density: settings.outlineDensity,
+            treeLines: settings.outlineTreeLines,
+            dragHandles: settings.outlineDragHandles,
+        )
+        breadcrumb.root.visible = settings.outlineBreadcrumbVisible
     }
 }
 

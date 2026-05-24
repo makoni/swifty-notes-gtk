@@ -14,6 +14,24 @@ public enum EditorIndentStyle: String, Codable, CaseIterable, Equatable, Sendabl
     }
 }
 
+/// Density of the right-hand Outline panel. `comfortable` matches the
+/// design's default with full padding and full-size H2 / H3 labels;
+/// `compact` tightens row padding and trims label sizes one step so
+/// dense documents fit more rows on screen.
+public enum OutlineDensity: String, Codable, CaseIterable, Equatable, Sendable {
+    case comfortable
+    case compact
+
+    public var displayName: String {
+        switch self {
+        case .comfortable:
+            "Comfortable"
+        case .compact:
+            "Compact"
+        }
+    }
+}
+
 public enum AppearanceMode: String, Codable, CaseIterable, Equatable, Sendable {
     case system
     case light
@@ -50,6 +68,20 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// dictionary that matches it.
     public var spellCheckLanguage: String?
     public var trashRetention: TrashRetention
+    /// Outline panel row density. Defaults to ``OutlineDensity.comfortable``,
+    /// matching the design.
+    public var outlineDensity: OutlineDensity
+    /// Whether the outline panel draws vertical tree-lines under each
+    /// H2 section. Decorative; defaults to `true`.
+    public var outlineTreeLines: Bool
+    /// Whether outline rows show a drag-handle on hover. Defaults to
+    /// `true`. The drag interaction itself is the Phase 14 follow-up;
+    /// this toggle just controls whether the affordance is visible.
+    public var outlineDragHandles: Bool
+    /// Whether the breadcrumb strip above the editor is visible.
+    /// Defaults to `true`. Hidden when the user wants the editor
+    /// chrome quieter or runs in a tight window.
+    public var outlineBreadcrumbVisible: Bool
 
     public init(
         customNotesDirectoryPath: String? = nil,
@@ -62,6 +94,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
         spellCheckEnabled: Bool = true,
         spellCheckLanguage: String? = nil,
         trashRetention: TrashRetention = .days(30),
+        outlineDensity: OutlineDensity = .comfortable,
+        outlineTreeLines: Bool = true,
+        outlineDragHandles: Bool = true,
+        outlineBreadcrumbVisible: Bool = true,
     ) {
         self.customNotesDirectoryPath = customNotesDirectoryPath?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -76,6 +112,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nilIfEmpty
         self.trashRetention = trashRetention
+        self.outlineDensity = outlineDensity
+        self.outlineTreeLines = outlineTreeLines
+        self.outlineDragHandles = outlineDragHandles
+        self.outlineBreadcrumbVisible = outlineBreadcrumbVisible
     }
 
     public static let `default` = AppSettings()
@@ -122,6 +162,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
             trashRetention: trashRetention,
+            outlineDensity: outlineDensity,
+            outlineTreeLines: outlineTreeLines,
+            outlineDragHandles: outlineDragHandles,
+            outlineBreadcrumbVisible: outlineBreadcrumbVisible,
         )
     }
 
@@ -166,6 +210,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
             trashRetention: trashRetention,
+            outlineDensity: outlineDensity,
+            outlineTreeLines: outlineTreeLines,
+            outlineDragHandles: outlineDragHandles,
+            outlineBreadcrumbVisible: outlineBreadcrumbVisible,
         )
     }
 
@@ -180,6 +228,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case spellCheckEnabled
         case spellCheckLanguage
         case trashRetention
+        case outlineDensity
+        case outlineTreeLines
+        case outlineDragHandles
+        case outlineBreadcrumbVisible
     }
 
     public init(from decoder: any Decoder) throws {
@@ -195,6 +247,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: container.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled) ?? true,
             spellCheckLanguage: container.decodeIfPresent(String.self, forKey: .spellCheckLanguage),
             trashRetention: container.decodeIfPresent(TrashRetention.self, forKey: .trashRetention) ?? .days(30),
+            outlineDensity: container.decodeIfPresent(OutlineDensity.self, forKey: .outlineDensity) ?? .comfortable,
+            outlineTreeLines: container.decodeIfPresent(Bool.self, forKey: .outlineTreeLines) ?? true,
+            outlineDragHandles: container.decodeIfPresent(Bool.self, forKey: .outlineDragHandles) ?? true,
+            outlineBreadcrumbVisible: container.decodeIfPresent(Bool.self, forKey: .outlineBreadcrumbVisible) ?? true,
         )
     }
 
