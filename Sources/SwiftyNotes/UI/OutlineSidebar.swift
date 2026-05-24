@@ -16,6 +16,8 @@ struct OutlineSidebar {
     private let renderState: RenderState
 
     init() {
+        OutlineCSS.installGlobalIfNeeded()
+
         list = ListBox()
         list.selectionMode = .single
         list.activateOnSingleClick = true

@@ -126,6 +126,26 @@ struct OutlineSidebarTests {
     }
 
     @Test @MainActor
+    func `deeply nested H4 through H6 headings all render rows`() throws {
+        let outline = try Self.makeOutline(suffix: "deep")
+        let deep: [Heading] = [
+            .init(id: "h1", level: 1, text: "Document",  blockIndex: 0, line: 1),
+            .init(id: "h2", level: 2, text: "Section",   blockIndex: 1, line: 3),
+            .init(id: "h3", level: 3, text: "Sub",       blockIndex: 2, line: 5),
+            .init(id: "h4", level: 4, text: "Sub-sub",   blockIndex: 3, line: 7),
+            .init(id: "h5", level: 5, text: "Detail",    blockIndex: 4, line: 9),
+            .init(id: "h6", level: 6, text: "Footnote",  blockIndex: 5, line: 11),
+        ]
+        outline.setHeadings(deep)
+        #expect(outline.renderedHeadings.map(\.level) == [1, 2, 3, 4, 5, 6])
+        // Collapse model still only governs the H2 — H4+ rows have an
+        // H3 parent in some intervening section, but the collapse rule
+        // is "hide H3+ under collapsed H2", which covers H4–H6 too.
+        outline.toggleCollapsed("h2")
+        #expect(outline.renderedHeadings.map(\.id) == ["h1", "h2"])
+    }
+
+    @Test @MainActor
     func `setHeadings prunes collapse entries for removed H2 sections`() throws {
         let outline = try Self.makeOutline(suffix: "prune")
         outline.setHeadings([
