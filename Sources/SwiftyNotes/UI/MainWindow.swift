@@ -597,20 +597,15 @@ final class MainWindow {
             self?.reloadFromDisk(announce: true)
             return true
         }
-        // F9 toggles the right-hand Outline panel — GNOME convention
-        // (Builder, Files, gedit, GNOME Text Editor all bind F9 to the
-        // secondary side pane). The previous Editor↔Split toggle has
-        // moved to F10 so the keyboard shortcut survives.
-        window.addKeyboardShortcut("F9") { [weak self] in
-            self?.toggleOutlineVisibility()
-            return true
-        }
+        // F9 (outline toggle) and Ctrl+G (command palette) live on the
+        // GApplication as `app.toggle-outline` / `app.quick-jump`. See
+        // `SwiftyNotesLauncher.installOutlineActions` — that lift lets
+        // macOS surface the shortcuts in the Apple menu and lets them
+        // fire across every window without per-window re-registration.
+        // F10 stays per-window because Editor↔Split is a single-window
+        // concern.
         window.addKeyboardShortcut("F10") { [weak self] in
             self?.toggleEditorAndSplitModes()
-            return true
-        }
-        window.addKeyboardShortcut("<Primary>g") { [weak self] in
-            self?.openCommandPalette()
             return true
         }
     }

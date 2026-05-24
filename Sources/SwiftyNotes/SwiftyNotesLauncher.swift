@@ -24,7 +24,7 @@ final class AppController {
     private let appSettingsStore: AppSettingsStore
     private let allowsWindowPresentation: Bool
     private let launchOptions: AppLaunchOptions
-    private var mainWindow: MainWindow?
+    fileprivate(set) var mainWindow: MainWindow?
     private var externalDocumentWindows: [ObjectIdentifier: ExternalDocumentWindow] = [:]
 
     init(
@@ -202,6 +202,7 @@ public enum SwiftyNotesLauncher {
         )
         let appController = AppController(launchOptions: launchOptions)
         installQuitAction(on: app)
+        installOutlineActions(on: app, controller: appController)
 
         app.onActivate {
             appController.activate(app: app)
@@ -250,6 +251,42 @@ public enum SwiftyNotesLauncher {
             flags.insert(.nonUnique)
         }
         return flags
+    }
+
+    /// Registers `app.toggle-outline` (bound to F9) and
+    /// `app.quick-jump` (bound to `<Primary>g`) at the GApplication
+    /// level. Same pattern as ``installQuitAction``: lifting the
+    /// shortcuts off the per-window keyboard map lets them surface in
+    /// the macOS Apple menu and fire across every window (main note
+    /// window + external document windows + Settings) without each
+    /// having to wire them up locally.
+    @MainActor
+    private static func installOutlineActions(on app: Application, controller: AppController) {
+        let toggle = SimpleAction(name: "toggle-outline") { [weak controller] in
+            controller?.mainWindow?.toggleOutlineVisibility()
+        }
+        app.addAction(toggle)
+        installAccelerator("F9", forAction: "app.toggle-outline", on: app)
+
+        let quickJump = SimpleAction(name: "quick-jump") { [weak controller] in
+            controller?.mainWindow?.openCommandPalette()
+        }
+        app.addAction(quickJump)
+        installAccelerator("<Primary>g", forAction: "app.quick-jump", on: app)
+    }
+
+    @MainActor
+    private static func installAccelerator(_ accel: String, forAction action: String, on app: Application) {
+        accel.withCString { accelPtr in
+            var arr: [UnsafePointer<CChar>?] = [accelPtr, nil]
+            arr.withUnsafeMutableBufferPointer { buf in
+                gtk_application_set_accels_for_action(
+                    app.gtkApplicationPointer,
+                    action,
+                    buf.baseAddress,
+                )
+            }
+        }
     }
 
     /// Registers an `app.quit` GAction on the GApplication and binds
