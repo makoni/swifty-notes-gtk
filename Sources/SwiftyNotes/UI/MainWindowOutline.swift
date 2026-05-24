@@ -34,6 +34,32 @@ extension MainWindow {
         // the palette UI lands.
         toastOverlay.addToast(Toast(title: "Command palette coming in Phase 5."))
     }
+
+    /// Re-extracts the outline for the current note and pushes the
+    /// resulting headings into ``outlineSidebar``. Called from
+    /// ``refreshPreview`` so the panel stays in lockstep with the
+    /// preview's view of the document.
+    func refreshOutline(markdown: String, blocks: [RenderedBlock]) {
+        let headings = MarkdownOutlineExtractor.extract(markdown: markdown, blocks: blocks)
+        outlineSidebar.render(headings: headings)
+    }
+
+    /// Click / Ctrl+G handler. Scrolls both the editor and the preview
+    /// to the heading and records it as the current scroll-spy anchor
+    /// so the outline highlight matches the click immediately (without
+    /// waiting for the next scroll-spy tick).
+    func scrollToHeading(_ heading: Heading) {
+        OutlineNavigation.scrollEditor(view: editor.view, buffer: editor.buffer, toLine: heading.line)
+        // Defer the preview alignment a frame — the editor's scroll
+        // adjustment updates on the next GLib main-loop iteration, and
+        // the proportional preview sync needs the post-jump `source.value`
+        // to read the right progress.
+        MainContext.idle { [weak self] in
+            guard let self else { return }
+            OutlineNavigation.scrollPreview(editorScroll: editorScroll, previewScroll: preview.rootScroll)
+        }
+        outlineSidebar.setActiveHeading(heading.id)
+    }
 }
 
 extension MainWindow {

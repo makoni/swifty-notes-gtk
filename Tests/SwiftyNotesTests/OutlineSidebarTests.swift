@@ -51,5 +51,34 @@ struct OutlineSidebarTests {
         ])
         #expect(outline.footerLabel.text == "1 section · 1 subsection")
     }
+
+    @Test @MainActor
+    func `render builds one ListBox row per heading and exposes them by index`() throws {
+        let outline = try Self.makeOutline(suffix: "rows")
+        let headings: [Heading] = [
+            .init(id: "intro",  level: 1, text: "Intro",  blockIndex: 0, line: 1),
+            .init(id: "body",   level: 2, text: "Body",   blockIndex: 1, line: 3),
+            .init(id: "goals",  level: 3, text: "Goals",  blockIndex: 2, line: 5),
+        ]
+        outline.render(headings: headings)
+        #expect(outline.renderedHeadings == headings)
+        #expect(outline.heading(at: 0)?.id == "intro")
+        #expect(outline.heading(at: 1)?.id == "body")
+        #expect(outline.heading(at: 2)?.id == "goals")
+        #expect(outline.heading(at: 99) == nil)
+    }
+
+    @Test @MainActor
+    func `setActiveHeading records the active id for later highlight`() throws {
+        let outline = try Self.makeOutline(suffix: "active")
+        outline.render(headings: [
+            .init(id: "intro", level: 1, text: "Intro", blockIndex: 0, line: 1),
+        ])
+        #expect(outline.activeHeadingID == nil)
+        outline.setActiveHeading("intro")
+        #expect(outline.activeHeadingID == "intro")
+        outline.setActiveHeading(nil)
+        #expect(outline.activeHeadingID == nil)
+    }
 }
 #endif

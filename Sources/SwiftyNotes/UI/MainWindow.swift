@@ -138,7 +138,13 @@ final class MainWindow {
     var suppressEditorChange = false
     lazy var previewRefreshScheduler = PreviewRefreshScheduler(
         render: { [weak self] blocks, baseDirectory in
-            self?.preview.render(blocks: blocks, baseDirectory: baseDirectory)
+            guard let self else { return }
+            preview.render(blocks: blocks, baseDirectory: baseDirectory)
+            // Keep the outline in sync with whatever the preview just
+            // committed. Reading the buffer here (rather than threading
+            // markdown through the scheduler) means deferred typing
+            // refreshes also update the outline.
+            refreshOutline(markdown: editor.buffer.text, blocks: blocks)
         },
         fallbackBaseDirectory: { [weak self] in
             self?.repository.notesDirectoryURL ?? FileManager.default.temporaryDirectory
@@ -432,6 +438,12 @@ final class MainWindow {
         }
         MacOSClickWorkaround.onClick(quickJumpButton, label: "QuickJump") { [weak self] in
             self?.openCommandPalette()
+        }
+        outlineSidebar.list.onRowActivated { [weak self] row in
+            guard let self else { return }
+            let index = Int(row.index)
+            guard let heading = outlineSidebar.heading(at: index) else { return }
+            scrollToHeading(heading)
         }
 
         // The view-mode switcher is a linked group: clicking one button

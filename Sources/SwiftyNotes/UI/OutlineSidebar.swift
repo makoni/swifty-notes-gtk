@@ -2,9 +2,7 @@ import Adwaita
 import Foundation
 
 /// The right-hand Outline panel — a Table-of-Contents view of the
-/// active note's headings. Phase 1 ships the widget shell only; the
-/// surrounding phases wire heading rendering, scroll-spy, search,
-/// collapse, and Ctrl+G integration.
+/// active note's headings.
 @MainActor
 struct OutlineSidebar {
     let root: ToolbarView
@@ -15,6 +13,7 @@ struct OutlineSidebar {
     let footerLabel: Label
 
     private let scroll: ScrolledWindow
+    private let renderState: RenderState
 
     init() {
         list = ListBox()
@@ -27,8 +26,6 @@ struct OutlineSidebar {
         scroll.setPolicy(horizontal: .never, vertical: .automatic)
         scroll.vexpand = true
         #if os(macOS)
-        // Mirror NotesSidebar's macOS jitter workaround for inertial
-        // trackpad input layered over GTK's Quartz scroll fade-in.
         scroll.overlayScrolling = false
         scroll.kineticScrolling = false
         #endif
@@ -76,11 +73,8 @@ struct OutlineSidebar {
         content.append(emptyLabel)
         content.append(footerLabel)
 
-        // No AdwHeaderBar on the Outline panel — the design places the
-        // title inline with the content (matching the NotesSidebar macOS
-        // shape and the design's `.sn-outline-head` spec), and adding a
-        // second AdwHeaderBar on the right column risks the same
-        // NSWindow traffic-light reshuffle that NotesSidebar avoids.
+        renderState = RenderState()
+
         root = ToolbarView()
         root.content = content
         root.setAccessibleLabel("Outline Sidebar")
@@ -88,10 +82,27 @@ struct OutlineSidebar {
         render(headings: [])
     }
 
-    /// Refreshes the count badge, footer summary, and empty-state
-    /// visibility. Heading-row population lands in Phase 2 — for now
-    /// we just keep the chrome in sync with the count.
+    /// Snapshot of the most recent ``render(headings:)`` call — index
+    /// into this array matches the corresponding `ListBox` row index,
+    /// so a row-activation handler can look up which heading was
+    /// clicked.
+    var renderedHeadings: [Heading] { renderState.headings }
+
+    func heading(at index: Int) -> Heading? {
+        renderState.headings.indices.contains(index) ? renderState.headings[index] : nil
+    }
+
+    /// Refresh the panel for a new heading list. Rebuilds the rows
+    /// from scratch — Phase 2 keeps the implementation simple; a
+    /// row-reuse pass can land later if rebuild churn shows up in
+    /// profiling.
     func render(headings: [Heading]) {
+        renderState.headings = headings
+        list.removeAll()
+        for heading in headings {
+            list.append(Self.makeRow(for: heading))
+        }
+
         countBadge.text = "\(headings.count)"
         let h2 = headings.lazy.filter { $0.level == 2 }.count
         let h3 = headings.lazy.filter { $0.level == 3 }.count
@@ -106,5 +117,56 @@ struct OutlineSidebar {
             emptyLabel.visible = false
             scroll.visible = true
         }
+    }
+
+    /// Set the active highlight on the row whose heading id matches.
+    /// Pass `nil` to clear. Phase 3 will drive this from scroll-spy.
+    func setActiveHeading(_ id: String?) {
+        renderState.activeID = id
+        // Phase 3 wires the CSS-class swap — for now we just remember
+        // the id so the data path is testable.
+    }
+
+    /// Currently-active heading id, set by ``setActiveHeading``.
+    var activeHeadingID: String? { renderState.activeID }
+
+    private static func makeRow(for heading: Heading) -> ListBoxRow {
+        let row = ListBoxRow()
+        row.setAccessibleLabel(heading.text)
+
+        let label = Label(heading.text)
+        label.xalign = 0
+        label.hexpand = true
+        label.ellipsize = .end
+        label.tooltipText = heading.text
+        // Level-specific CSS classes match the design's `.sn-out-h1`,
+        // `.sn-out-h2`, `.sn-out-h3` selectors. Per-level indentation is
+        // applied as a Pango margin so it composes with the row's own
+        // padding rather than fighting it.
+        row.addCSSClass("sn-out")
+        row.addCSSClass("sn-out-h\(heading.level)")
+        row.marginStart = indent(for: heading.level)
+        row.marginEnd = 4
+
+        row.child = label
+        return row
+    }
+
+    /// Per-level indentation in pixels. H1/H2 have no extra indent
+    /// (they're "section anchors"); H3 lines up under H2 with a 22 px
+    /// step, and each deeper level adds another 16 px so deeply nested
+    /// H4–H6 outlines remain readable. Phase 6 will revisit visual
+    /// hierarchy for H4+.
+    private static func indent(for level: Int) -> Int {
+        switch level {
+        case ...2: 0
+        case 3:    22
+        default:   22 + 16 * (level - 3)
+        }
+    }
+
+    private final class RenderState {
+        var headings: [Heading] = []
+        var activeID: String?
     }
 }

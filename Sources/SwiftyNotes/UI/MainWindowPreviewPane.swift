@@ -6,10 +6,12 @@ extension MainWindow {
     func refreshPreview() {
         guard let selected = state.selectedNote else {
             schedulePreviewRefresh(blocks: [], baseDirectory: repository.notesDirectoryURL)
+            refreshOutline(markdown: "", blocks: [])
             return
         }
         let blocks = buildPreviewBlocks(for: selected.content)
         schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.noteContentBaseDirectoryURL(for: selected))
+        refreshOutline(markdown: selected.content, blocks: blocks)
     }
 
     func scheduleTypingPreviewRefresh() {

@@ -53,5 +53,45 @@ struct MainWindowOutlineTests {
         #expect(window.debugIsOutlineVisible == true)
         #expect(window.debugAppStateIsOutlineVisible == true)
     }
+
+    @Test @MainActor
+    func `editing the note populates the outline panel with extracted headings`() throws {
+        let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.populate")
+        window.debugLoadInitialNotes()
+        // Replace the seeded content with a tiny TOC-worthy doc so we
+        // can assert specific heading rows without depending on whatever
+        // shape the showcase seed happens to take.
+        window.debugSetEditorText("""
+        # Doc
+
+        ## Overview
+
+        Body.
+
+        ## Features
+
+        ### Outline
+
+        Click to scroll.
+        """)
+        // Touch the deferred preview text to force a flush — the typing
+        // refresh schedules through the GLib main loop, and reading the
+        // outline before that flush would see stale headings from the
+        // seed.
+        _ = window.debugPreviewText
+        let headings = window.outlineSidebar.renderedHeadings
+        #expect(headings.map(\.id) == ["doc", "overview", "features", "outline"])
+        #expect(headings.map(\.level) == [1, 2, 2, 3])
+    }
+
+    @Test @MainActor
+    func `outline panel falls back to empty-state when the note has no headings`() throws {
+        let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.emptynote")
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("Just a paragraph.\n\nAnother one.")
+        _ = window.debugPreviewText
+        #expect(window.outlineSidebar.renderedHeadings.isEmpty)
+        #expect(window.outlineSidebar.emptyLabel.visible == true)
+    }
 }
 #endif
