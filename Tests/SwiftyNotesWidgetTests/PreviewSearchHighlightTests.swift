@@ -192,6 +192,55 @@ struct PreviewSearchHighlightTests {
     }
 
     @Test @MainActor
+    func `applying the same matches twice is memoized as a no-op`() throws {
+        let preview = try Self.makePreview(suffix: "memo", markdown: "alpha search beta search")
+        let matches = MarkdownSearchEngine.search(
+            blocks: preview.debugLastRenderedBlocks,
+            query: "search",
+            options: .init(),
+        )
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        let firstApplyCount = preview.debugHighlightApplyCount
+        // Same arguments again — memoization should swallow this.
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugHighlightApplyCount == firstApplyCount)
+        // Stepping to a new active index IS a different argument
+        // and DOES trigger work.
+        preview.applySearchHighlights(matches: matches, activeIndex: 1)
+        #expect(preview.debugHighlightApplyCount == firstApplyCount + 1)
+    }
+
+    @Test @MainActor
+    func `applying highlights does not grow the preview widget tree`() throws {
+        // Perf gate: the overlay is supposed to be an attribute
+        // swap, not a widget rebuild. The recursive widget count
+        // before and after must be identical — sysprof showed
+        // attribute-only paths cost 14× less per frame than the
+        // tree growth the alternative markup-rebuild approach
+        // would have introduced.
+        let preview = try Self.makePreview(suffix: "tree-stable", markdown: """
+        # Doc
+
+        body text body text
+
+        ```
+        code line one
+        code line two
+        ```
+        """)
+        let countBefore = preview.debugWidgetTreeCount
+        let matches = MarkdownSearchEngine.search(
+            blocks: preview.debugLastRenderedBlocks,
+            query: "code",
+            options: .init(),
+        )
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugWidgetTreeCount == countBefore)
+        preview.clearSearchHighlights()
+        #expect(preview.debugWidgetTreeCount == countBefore)
+    }
+
+    @Test @MainActor
     func `re-rendering preview keeps highlight pipeline working`() throws {
         let preview = try Self.makePreview(suffix: "rerender", markdown: "alpha search")
         let matches = MarkdownSearchEngine.search(

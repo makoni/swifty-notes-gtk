@@ -819,6 +819,18 @@ final class MarkdownPreview {
     /// code-block side of the overlay.
     private var highlightedCodeBlockBuffers: [Int: SourceBuffer] = [:]
 
+    /// Memoization key for ``applySearchHighlights``. Typing one
+    /// character at a time in the find bar produces a stream of
+    /// calls — most of them with identical (matches, activeIndex)
+    /// once the controller debounces. Skipping a no-op call here
+    /// keeps the Pango attribute traffic flat: the slow path
+    /// (allocating attribute lists + walking the matches per
+    /// label) only runs when something has actually changed.
+    private var lastAppliedMatches: [PreviewMatch] = []
+    private var lastAppliedActiveIndex: Int?
+    private var lastAppliedNonEmpty: Bool = false
+    private(set) var debugHighlightApplyCount: Int = 0
+
     /// Apply yellow-background Pango attributes over the rendered
     /// labels for each match, plus a saturated-orange + bold style
     /// for the match at `activeDisplayIndex` (0-based into
@@ -831,6 +843,22 @@ final class MarkdownPreview {
     /// deliberately-omitted blocks). The caller's step navigation
     /// still scrolls there; we just don't underline.
     func applySearchHighlights(matches: [PreviewMatch], activeIndex: Int?) {
+        // Memoization: re-running apply with the exact same
+        // matches + active index is a no-op visually. Skip the
+        // grouping + attribute allocation entirely. (Phase E:
+        // protects the typing path from O(matches) work per
+        // keystroke once the bar's debounced.)
+        if matches == lastAppliedMatches,
+           activeIndex == lastAppliedActiveIndex,
+           lastAppliedNonEmpty == !matches.isEmpty
+        {
+            return
+        }
+        debugHighlightApplyCount += 1
+        lastAppliedMatches = matches
+        lastAppliedActiveIndex = activeIndex
+        lastAppliedNonEmpty = !matches.isEmpty
+
         // Group matches into two buckets: Label-backed (Pango
         // attribute overlay) and code-block-backed (SourceBuffer
         // tag overlay). The dual path is identical in spirit to
@@ -884,6 +912,12 @@ final class MarkdownPreview {
             clearTags(on: buffer)
         }
         highlightedCodeBlockBuffers = [:]
+        // Reset the memoization key so a subsequent apply with the
+        // exact pre-clear matches doesn't get swallowed as "same
+        // as last".
+        lastAppliedMatches = []
+        lastAppliedActiveIndex = nil
+        lastAppliedNonEmpty = false
     }
 
     /// Apply highlight tags to a single code-block buffer using
@@ -1315,9 +1349,15 @@ final class MarkdownPreview {
         // labels they reference are about to be removed below, so
         // a later clear/apply would dereference freed pointers.
         // The next applySearchHighlights from the controller will
-        // re-populate against the rebuilt widget tree.
+        // re-populate against the rebuilt widget tree. The
+        // memoization key is reset too so an "identical" call
+        // against the new tree doesn't get short-circuited as
+        // "same as last".
         highlightedLabelPointers = []
         highlightedCodeBlockBuffers = [:]
+        lastAppliedMatches = []
+        lastAppliedActiveIndex = nil
+        lastAppliedNonEmpty = false
         if rootScroll.child?.widgetPointer != container.widgetPointer {
             rootScroll.child = container
         }
