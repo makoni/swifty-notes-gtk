@@ -143,15 +143,15 @@ final class FindReplaceBar {
         findEntry.searchDelay = 0
 
         caseSensitiveToggle = ToggleButton(label: "Aa")
-        caseSensitiveToggle.tooltipText = "Match Case"
+        caseSensitiveToggle.tooltipText = "Case Sensitive"
         caseSensitiveToggle.addCSSClass(.flat)
 
         wholeWordToggle = ToggleButton(label: "ab")
-        wholeWordToggle.tooltipText = "Match Whole Word"
+        wholeWordToggle.tooltipText = "Whole Word Match"
         wholeWordToggle.addCSSClass(.flat)
 
         regexToggle = ToggleButton(label: ".*")
-        regexToggle.tooltipText = "Use Regular Expression"
+        regexToggle.tooltipText = "Regular Expression"
         regexToggle.addCSSClass(.flat)
 
         countLabel = Label("")
@@ -161,11 +161,11 @@ final class FindReplaceBar {
         countLabel.marginEnd = 4
 
         prevButton = Button(icon: .custom("go-up-symbolic"))
-        prevButton.tooltipText = "Previous Match (Shift+Enter)"
+        prevButton.tooltipText = "Previous Match"
         prevButton.addCSSClass(.flat)
 
         nextButton = Button(icon: .custom("go-down-symbolic"))
-        nextButton.tooltipText = "Next Match (Enter)"
+        nextButton.tooltipText = "Next Match"
         nextButton.addCSSClass(.flat)
 
         replaceEntry = Entry()
@@ -177,7 +177,10 @@ final class FindReplaceBar {
 
         replaceAllButton = Button(label: "Replace All")
         replaceAllButton.tooltipText = "Replace every match"
-        replaceAllButton.addCSSClass("suggested-action")
+        // GNOME convention: Replace All is mutating-without-confirm,
+        // so it's not a `suggested-action` (which is reserved for
+        // primary positive actions). GNOME Text Editor and Builder
+        // both render it as a plain button.
 
         let findRow = Box(orientation: .horizontal, spacing: 6)
         findRow.append(findEntry)
@@ -276,6 +279,27 @@ final class FindReplaceBar {
         }
         findEntry.onActivate { [weak self] in
             self?.onStepNext?()
+        }
+        // Shift+Enter walks backwards through matches — standard
+        // GNOME find-bar behaviour. F3 / Shift+F3 mirror the same
+        // step actions because that's what GtkSourceView / GNOME
+        // Builder users expect when their hands are off the
+        // letter keys.
+        findEntry.addKeyboardShortcut("<Shift>Return") { [weak self] in
+            self?.onStepPrev?()
+            return true
+        }
+        findEntry.addKeyboardShortcut("<Shift>KP_Enter") { [weak self] in
+            self?.onStepPrev?()
+            return true
+        }
+        findEntry.addKeyboardShortcut("F3") { [weak self] in
+            self?.onStepNext?()
+            return true
+        }
+        findEntry.addKeyboardShortcut("<Shift>F3") { [weak self] in
+            self?.onStepPrev?()
+            return true
         }
         caseSensitiveToggle.onToggled { [weak self] in
             self?.notifyQueryChanged()
