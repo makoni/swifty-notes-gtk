@@ -321,10 +321,42 @@ final class CommandPaletteWindow {
         let clamped = max(0, min(index, items.count - 1))
         highlightIndex = clamped
         list.selectRow(at: clamped)
-        // Scroll the highlighted row into view — the GTK ListBox doesn't
-        // auto-scroll on programmatic selection.
-        if rowWidgets.indices.contains(clamped) {
-            rowWidgets[clamped].grabFocus()
+        scrollHighlightedRowIntoView()
+    }
+
+    /// Bring the currently highlighted row into the visible band of
+    /// the ScrolledWindow without stealing keyboard focus from the
+    /// search entry. The earlier implementation called `grabFocus()`
+    /// on the row, which yanked focus off the input — typing the
+    /// second character of a query landed on the list instead of the
+    /// search entry, breaking incremental search.
+    ///
+    /// Uses the row's allocation against the ListBox parent (rows
+    /// are direct children of the box). `gtk_widget_get_allocation`
+    /// is technically deprecated in favour of `compute_bounds`, but
+    /// the rest of the project (see OutlineNavigation.swift) already
+    /// uses it and the data we need is exactly what it returns.
+    private func scrollHighlightedRowIntoView() {
+        guard rowWidgets.indices.contains(highlightIndex) else { return }
+        let row = rowWidgets[highlightIndex]
+        var allocation = GtkAllocation()
+        gtk_widget_get_allocation(row.widgetPointer, &allocation)
+        // Pre-layout (first paint), allocation is zeroed — nothing
+        // sensible to scroll to yet. The next setHighlight call after
+        // GTK has done its sizing pass will succeed.
+        guard allocation.height > 0 else { return }
+        let rowTop = Double(allocation.y)
+        let rowBottom = rowTop + Double(allocation.height)
+        let adjustment = scroll.verticalAdjustment
+        let viewTop = adjustment.value
+        let viewBottom = viewTop + adjustment.pageSize
+        if rowTop < viewTop {
+            adjustment.value = max(adjustment.lower, rowTop)
+        } else if rowBottom > viewBottom {
+            adjustment.value = min(
+                adjustment.upper - adjustment.pageSize,
+                rowBottom - adjustment.pageSize,
+            )
         }
     }
 
