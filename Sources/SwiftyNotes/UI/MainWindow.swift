@@ -44,12 +44,33 @@ final class MainWindow {
     /// height. Wired by ``editorSearchController``.
     let findReplaceBar = FindReplaceBar()
 
+    /// Find-only bar mounted at the top of the preview pane.
+    /// Read-only (replace row locked off) because replacing inside
+    /// a rendered view doesn't make sense.
+    let previewFindReplaceBar = FindReplaceBar()
+
     /// Controller that drives ``findReplaceBar`` against the editor
     /// buffer. Built in `wireSignals` (deferred so the bar + editor
     /// widgets are constructed first). Held strongly so the
     /// controller's callbacks survive across user interactions —
     /// same lifetime rule we hit on `activeCommandPalette`.
     var editorSearchController: EditorSearchController?
+
+    /// Controller that drives ``previewFindReplaceBar`` against the
+    /// preview's rendered blocks. Lazily built on the first
+    /// `openFindBar(.find)` that lands on the preview pane.
+    var previewSearchController: PreviewSearchController?
+
+    /// Which pane was last focused — used by `openFindBar` to pick
+    /// the right bar in split mode. Updated on `focus-in` events on
+    /// the editor view and the preview's root scroll. Defaults to
+    /// `.editor` so Ctrl+F on a fresh window opens the editor bar.
+    var lastFocusedPane: FocusedPane = .editor
+
+    enum FocusedPane {
+        case editor
+        case preview
+    }
     /// Built lazily in `wireSignals` (deferred so the editor / preview
     /// widget trees are constructed before we connect signals to them).
     var outlineScrollSpyDriver: OutlineScrollSpyDriver?
@@ -68,6 +89,11 @@ final class MainWindow {
     let previewModeToggle = ToggleButton(label: "Preview")
     let viewModeSwitcher = Box(orientation: .horizontal, spacing: 0)
     let editorContent = Box(orientation: .vertical, spacing: 0)
+    /// Wraps the preview's `rootScroll` so the preview-side find bar
+    /// can sit above it inside the right pane. Built in `wireSignals`
+    /// and attached to `editorPreviewPane.endChild` instead of
+    /// `preview.rootScroll` directly.
+    let previewPaneContent = Box(orientation: .vertical, spacing: 0)
     let editorFormattingToolbar = EditorFormattingToolbar()
     let newNoteButton = Button(icon: .custom("list-add-symbolic"))
     let newFolderButton = Button(icon: .custom("folder-new-symbolic"))
@@ -183,6 +209,10 @@ final class MainWindow {
             // markdown through the scheduler) means deferred typing
             // refreshes also update the outline.
             refreshOutline(markdown: editor.buffer.text, blocks: blocks)
+            // If a preview find bar is currently active, refresh its
+            // cache against the new block list so step navigation
+            // doesn't land on a stale block index.
+            refreshPreviewSearchAfterRerender()
         },
         fallbackBaseDirectory: { [weak self] in
             self?.repository.notesDirectoryURL ?? FileManager.default.temporaryDirectory
@@ -400,6 +430,14 @@ final class MainWindow {
         // space when the user actually opens it.
         editorContent.append(findReplaceBar.root)
         editorContent.append(editorScroll)
+
+        // Preview-pane wrapper: search bar above the scroll. The
+        // scrolled preview is appended once here and stays in the
+        // wrapper for the lifetime of the window; what changes is
+        // whether `editorPreviewPane.endChild` points at the wrapper
+        // (Split / Preview mode) or `nil` (Editor mode).
+        previewPaneContent.append(previewFindReplaceBar.root)
+        previewPaneContent.append(preview.rootScroll)
         editorPreviewPane.startChild = editorContent
         editorPreviewPane.resizeStartChild = true
         editorPreviewPane.resizeEndChild = false

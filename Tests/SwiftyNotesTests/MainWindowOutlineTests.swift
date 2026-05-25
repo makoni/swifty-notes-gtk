@@ -306,6 +306,43 @@ struct MainWindowOutlineTests {
     }
 
     @Test @MainActor
+    func `blockToRowIndex covers every block, not just headings`() throws {
+        // Regression guard for the preview-side find/replace work
+        // (#26): the controller scrolls to a matched block by
+        // looking up `block index → row index` on MarkdownPreview.
+        // headingBlockToRowIndex used to be the only mapping, which
+        // gave us heading-only coverage. blockToRowIndex extends
+        // the same shape to paragraphs, list items, code, tables,
+        // blockquotes — anything that can hold a match.
+        let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.blockmap.all")
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("""
+        # Doc
+
+        Body one.
+
+        Body two.
+
+        - List item
+
+        ## Section
+
+        Inside section.
+
+        ```
+        code
+        ```
+        """)
+        _ = window.debugPreviewText
+        let mapping = window.preview.blockToRowIndex
+        // Every block should have a row mapping — no holes.
+        let blockCount = window.preview.debugLastRenderedBlockCount
+        #expect(mapping.count == blockCount)
+        // Document order: keys are 0..<blockCount.
+        #expect(Set(mapping.keys) == Set(0..<blockCount))
+    }
+
+    @Test @MainActor
     func `Ctrl+G keeps a strong reference to the palette so signal handlers can fire`() throws {
         // Regression: `openCommandPalette` used to leave the
         // `CommandPaletteWindow` in a local variable. The moment the

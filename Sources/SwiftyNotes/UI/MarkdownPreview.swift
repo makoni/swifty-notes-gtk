@@ -271,6 +271,11 @@ final class MarkdownPreview {
     /// (consecutive paragraphs collapse into one `paragraphRun`,
     /// list items collapse into one `list`, …).
     private(set) var headingBlockToRowIndex: [Int: Int] = [:]
+    /// Same shape as ``headingBlockToRowIndex`` but covers EVERY
+    /// block — paragraphs, lists, code, tables. Used by the
+    /// preview-side search controller (#26) to scroll to the
+    /// rendered widget for a given match's block.
+    private(set) var blockToRowIndex: [Int: Int] = [:]
     private var renderedBaseDirectory: URL?
     private var renderMode: RenderMode = .stacked
     private var virtualizedRows: [PreviewRow] = []
@@ -334,6 +339,23 @@ final class MarkdownPreview {
 
     var debugAnimatedImagePlayerCount: Int {
         animatedImagePlayers.count
+    }
+
+    /// How many `RenderedBlock`s the preview rendered in its last
+    /// pass. Exposed for find/replace tests that assert
+    /// `blockToRowIndex` covers every block.
+    var debugLastRenderedBlockCount: Int {
+        lastRenderedBlocks.count
+    }
+
+    /// The current `RenderedBlock` slice exposed for the
+    /// PreviewSearchController to feed into MarkdownSearchEngine.
+    /// Not a `debug*` API in the strictest sense — search runs in
+    /// production — but kept off the public surface (internal) so
+    /// it tracks alongside `lastRenderedBlocks` and isn't mistaken
+    /// for stable history.
+    var debugLastRenderedBlocks: [RenderedBlock] {
+        lastRenderedBlocks
     }
 
     /// Perf-focused debug metric for tests and investigations: how many
@@ -493,6 +515,7 @@ final class MarkdownPreview {
         // Reset before populating — a previous render may have
         // tracked an entirely different note.
         headingBlockToRowIndex = [:]
+        blockToRowIndex = [:]
         while index < blocks.count {
             let block = blocks[index]
 
@@ -505,10 +528,12 @@ final class MarkdownPreview {
             if case let .heading(level, text) = block {
                 let runStartRow = rows.count
                 headingBlockToRowIndex[index] = runStartRow
+                blockToRowIndex[index] = runStartRow
                 var segments: [RichTextSegment] = [.heading(level: level, text: text)]
                 index += 1
                 while index < blocks.count, case let .paragraph(pText) = blocks[index] {
                     segments.append(.paragraph(text: pText))
+                    blockToRowIndex[index] = runStartRow
                     index += 1
                 }
                 if segments.count == 1 {
@@ -526,25 +551,45 @@ final class MarkdownPreview {
             }
 
             if case .listItem = block {
+                let listStartRow = rows.count
                 var items: [ListPreviewItem] = []
                 while index < blocks.count {
                     guard case let .listItem(text, depth, marker, loose, taskIndex) = blocks[index] else { break }
                     items.append((text, depth, marker, loose, taskIndex))
+                    blockToRowIndex[index] = listStartRow
                     index += 1
                 }
                 rows.append(.list(items: items))
                 continue
             }
 
-            if let textRun = makeTextRun(from: blocks, startingAt: &index) {
-                rows.append(textRun)
+            if let textRunStart = makeTextRunWithMap(from: blocks, startingAt: &index, rowIndex: rows.count) {
+                rows.append(textRunStart)
                 continue
             }
 
+            blockToRowIndex[index] = rows.count
             rows.append(makeRow(for: block))
             index += 1
         }
         return rows
+    }
+
+    /// Like ``makeTextRun(from:startingAt:)`` but also records each
+    /// consumed block's index → row mapping, so the preview-search
+    /// controller can scroll back to any block within a coalesced
+    /// paragraph or blockquote run.
+    private func makeTextRunWithMap(
+        from blocks: [RenderedBlock],
+        startingAt index: inout Int,
+        rowIndex: Int,
+    ) -> PreviewRow? {
+        let start = index
+        guard let row = makeTextRun(from: blocks, startingAt: &index) else { return nil }
+        for consumedIndex in start..<index {
+            blockToRowIndex[consumedIndex] = rowIndex
+        }
+        return row
     }
 
     private func shouldUseVirtualizedRows(_ rows: [PreviewRow]) -> Bool {

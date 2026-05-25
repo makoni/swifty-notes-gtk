@@ -606,7 +606,7 @@ extension MainWindow {
 
     func attachPreviewPane() {
         guard !isPreviewPaneAttached else { return }
-        editorPreviewPane.endChild = preview.rootScroll
+        editorPreviewPane.endChild = previewPaneContent
         isPreviewPaneAttached = true
     }
 
