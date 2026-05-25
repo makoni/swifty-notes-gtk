@@ -1,4 +1,5 @@
 import Adwaita
+import CSpelling
 import Foundation
 
 @MainActor
@@ -399,6 +400,14 @@ final class MarkdownPreview {
     /// labels.
     var debugHighlightedLabelPointers: Set<OpaquePointer> {
         highlightedLabelPointers
+    }
+
+    /// Test-only: which code-block blockIndexes currently carry
+    /// highlight tags. Used by Phase C tests to confirm the
+    /// SourceBuffer-tag overlay activates / clears at the right
+    /// times.
+    var debugHighlightedCodeBlockBlockIndexes: Set<Int> {
+        Set(highlightedCodeBlockBuffers.keys)
     }
 
     /// Perf-focused debug metric for tests and investigations: how many
@@ -804,6 +813,12 @@ final class MarkdownPreview {
     /// not O(all rows).
     private var highlightedLabelPointers: Set<OpaquePointer> = []
 
+    /// Code-block buffers that currently carry GtkTextTags from a
+    /// previous `applySearchHighlights` call — same role as
+    /// `highlightedLabelPointers`, just for the SourceBuffer-backed
+    /// code-block side of the overlay.
+    private var highlightedCodeBlockBuffers: [Int: SourceBuffer] = [:]
+
     /// Apply yellow-background Pango attributes over the rendered
     /// labels for each match, plus a saturated-orange + bold style
     /// for the match at `activeDisplayIndex` (0-based into
@@ -816,35 +831,89 @@ final class MarkdownPreview {
     /// deliberately-omitted blocks). The caller's step navigation
     /// still scrolls there; we just don't underline.
     func applySearchHighlights(matches: [PreviewMatch], activeIndex: Int?) {
-        var grouped: [OpaquePointer: [(match: PreviewMatch, isActive: Bool)]] = [:]
+        // Group matches into two buckets: Label-backed (Pango
+        // attribute overlay) and code-block-backed (SourceBuffer
+        // tag overlay). The dual path is identical in spirit to
+        // the editor side — same colours, same active style —
+        // applied through the medium that fits each block kind.
+        var labelHits: [OpaquePointer: [(match: PreviewMatch, isActive: Bool)]] = [:]
+        var codeHits: [Int: [(match: PreviewMatch, isActive: Bool)]] = [:]
         for (index, match) in matches.enumerated() {
-            guard let span = blockTextSpans[match.blockIndex],
-                  let labelPointer = span.labelPointer
-            else { continue }
-            grouped[labelPointer, default: []].append((match, isActive: index == activeIndex))
+            let isActive = (index == activeIndex)
+            if let span = blockTextSpans[match.blockIndex],
+               let labelPointer = span.labelPointer
+            {
+                labelHits[labelPointer, default: []].append((match, isActive: isActive))
+                continue
+            }
+            if codeBlockBuffers[match.blockIndex] != nil {
+                codeHits[match.blockIndex, default: []].append((match, isActive: isActive))
+            }
         }
 
-        let newHighlighted = Set(grouped.keys)
-        // Clear labels that were highlighted before but aren't in
-        // the new set — drop their attributes back to nil so the
-        // pure-markup styling shows through.
-        for label in highlightedLabelPointers where !newHighlighted.contains(label) {
+        let newHighlightedLabels = Set(labelHits.keys)
+        for label in highlightedLabelPointers where !newHighlightedLabels.contains(label) {
             gtk_label_set_attributes(label, nil)
         }
-        highlightedLabelPointers = newHighlighted
-
-        for (labelPointer, hits) in grouped {
+        highlightedLabelPointers = newHighlightedLabels
+        for (labelPointer, hits) in labelHits {
             applyAttributes(forLabel: labelPointer, hits: hits)
+        }
+
+        let newHighlightedBuffers = Set(codeHits.keys)
+        for (blockIndex, buffer) in highlightedCodeBlockBuffers where !newHighlightedBuffers.contains(blockIndex) {
+            clearTags(on: buffer)
+        }
+        highlightedCodeBlockBuffers = [:]
+        for (blockIndex, hits) in codeHits {
+            guard let buffer = codeBlockBuffers[blockIndex] else { continue }
+            applyTags(on: buffer, hits: hits)
+            highlightedCodeBlockBuffers[blockIndex] = buffer
         }
     }
 
-    /// Drop any active highlight attributes from every label that
-    /// currently carries them. Called when the search bar closes.
+    /// Drop any active highlight attributes / tags so the preview
+    /// reads as if nobody had ever searched. Called when the
+    /// preview's search bar closes.
     func clearSearchHighlights() {
         for label in highlightedLabelPointers {
             gtk_label_set_attributes(label, nil)
         }
         highlightedLabelPointers = []
+        for buffer in highlightedCodeBlockBuffers.values {
+            clearTags(on: buffer)
+        }
+        highlightedCodeBlockBuffers = [:]
+    }
+
+    /// Apply highlight tags to a single code-block buffer using
+    /// the same C shim helpers the editor uses, so the visual
+    /// styling stays consistent across panes.
+    private func applyTags(on buffer: SourceBuffer, hits: [(match: PreviewMatch, isActive: Bool)]) {
+        let bufferPointer = UnsafeMutableRawPointer(buffer.opaquePointer)
+        let matchTag = swifty_notes_search_create_match_tag(bufferPointer)
+        let activeTag = swifty_notes_search_create_active_tag(bufferPointer)
+        swifty_notes_search_clear_tags(bufferPointer, matchTag, activeTag)
+        for (match, isActive) in hits {
+            let blockText = match.blockText
+            let startOffset = blockText.distance(from: blockText.startIndex, to: match.range.lowerBound)
+            let endOffset = blockText.distance(from: blockText.startIndex, to: match.range.upperBound)
+            let tag = isActive ? activeTag : matchTag
+            guard let tag else { continue }
+            swifty_notes_search_apply_tag(
+                bufferPointer,
+                tag,
+                Int32(startOffset),
+                Int32(endOffset),
+            )
+        }
+    }
+
+    private func clearTags(on buffer: SourceBuffer) {
+        let bufferPointer = UnsafeMutableRawPointer(buffer.opaquePointer)
+        let matchTag = swifty_notes_search_create_match_tag(bufferPointer)
+        let activeTag = swifty_notes_search_create_active_tag(bufferPointer)
+        swifty_notes_search_clear_tags(bufferPointer, matchTag, activeTag)
     }
 
     private func applyAttributes(

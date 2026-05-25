@@ -136,6 +136,62 @@ struct PreviewSearchHighlightTests {
     }
 
     @Test @MainActor
+    func `code-block matches activate the SourceBuffer-tag overlay`() throws {
+        let preview = try Self.makePreview(suffix: "code-tag", markdown: """
+        # Doc
+
+        body text
+
+        ```
+        let value = findMe()
+        another findMe call
+        ```
+        """)
+        let matches = MarkdownSearchEngine.search(
+            blocks: preview.debugLastRenderedBlocks,
+            query: "findMe",
+            options: .init(),
+        )
+        // Two matches inside the code block; none in label-backed
+        // blocks (this doc doesn't contain "findMe" elsewhere).
+        #expect(matches.count == 2)
+        let codeBlockIndex = matches[0].blockIndex
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        // Code-block buffer's blockIndex should now be marked
+        // highlighted; label set stays empty since none of the
+        // matches landed in a label-backed block.
+        #expect(preview.debugHighlightedCodeBlockBlockIndexes.contains(codeBlockIndex))
+        #expect(preview.debugHighlightedLabelPointers.isEmpty)
+
+        // Clear: code-block highlights drop out too.
+        preview.clearSearchHighlights()
+        #expect(preview.debugHighlightedCodeBlockBlockIndexes.isEmpty)
+    }
+
+    @Test @MainActor
+    func `matches across labels + code blocks light up both overlays`() throws {
+        let preview = try Self.makePreview(suffix: "mixed", markdown: """
+        # Title with findMe
+
+        body findMe text
+
+        ```
+        findMe in code
+        ```
+        """)
+        let matches = MarkdownSearchEngine.search(
+            blocks: preview.debugLastRenderedBlocks,
+            query: "findMe",
+            options: .init(),
+        )
+        #expect(matches.count == 3)
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        // Both overlays are active.
+        #expect(!preview.debugHighlightedLabelPointers.isEmpty)
+        #expect(!preview.debugHighlightedCodeBlockBlockIndexes.isEmpty)
+    }
+
+    @Test @MainActor
     func `re-rendering preview keeps highlight pipeline working`() throws {
         let preview = try Self.makePreview(suffix: "rerender", markdown: "alpha search")
         let matches = MarkdownSearchEngine.search(
