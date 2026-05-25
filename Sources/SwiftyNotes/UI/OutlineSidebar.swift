@@ -231,11 +231,22 @@ struct OutlineSidebar {
             list.removeCSSClass("has-lines")
         }
 
+        // Precompute "does any visible H2 have children?". When the
+        // answer is no — the showcase note is the common example —
+        // there's no chevron column to align against, so we can build
+        // every row as just `ListBoxRow > Label` (2 widgets) instead
+        // of `ListBoxRow > Box > spacer Label > text Label` (4
+        // widgets). On a typical chevron-less note that halves the
+        // outline panel's widget count, which directly cuts the per-
+        // frame `gtk_widget_snapshot_child` walk that dominates scroll
+        // CPU at this point.
+        let anyH2HasChildren = visible.contains { $0.level == 2 && hasChildren(of: $0) }
+
         list.removeAll()
         renderState.rows.removeAll()
         renderState.rowLabels.removeAll()
         for heading in visible {
-            let (row, label) = makeRow(for: heading)
+            let (row, label) = makeRow(for: heading, anyH2HasChildren: anyH2HasChildren)
             list.append(row)
             renderState.rows.append(row)
             renderState.rowLabels.append(label)
@@ -276,7 +287,7 @@ struct OutlineSidebar {
         }
     }
 
-    private func makeRow(for heading: Heading) -> (ListBoxRow, Label) {
+    private func makeRow(for heading: Heading, anyH2HasChildren: Bool) -> (ListBoxRow, Label) {
         let row = ListBoxRow()
         row.setAccessibleLabel(heading.text)
 
@@ -307,35 +318,52 @@ struct OutlineSidebar {
         }
         row.marginEnd = 4
 
-        // H2 rows lead with a chevron that toggles their collapse state
-        // (only when they have at least one H3+ child below them). H3+
-        // rows lead with a rail-width spacer so the H2 / H3 columns line
-        // up regardless of whether the chevron is present.
-        let leadingContainer = Box(orientation: .horizontal, spacing: 4)
-        leadingContainer.marginStart = indent(for: heading.level)
-        leadingContainer.marginEnd = 4
-        if heading.level == 2, hasChildren(of: heading) {
+        // Layout decision tree, optimised for widget count:
+        //
+        // (a) H2 with children → needs a chevron toggle, so we keep
+        //     the leading `Box > [chevron, label]` shape (4 widgets).
+        // (b) H2 without children, in a doc where some other H2
+        //     does have children → keep a spacer-Label-in-Box so the
+        //     "H2 text" column stays aligned across siblings.
+        // (c) anything else (H1, H3+, and H2-without-children in a
+        //     chevron-less doc) → `ListBoxRow > Label` directly
+        //     (2 widgets). Indent flows through `label.marginStart`.
+        let chevronColumnWidth = 20 // 16 px chevron + 4 px spacing
+        let needsChevron = heading.level == 2 && hasChildren(of: heading)
+        let needsAlignmentSpacer = heading.level == 2 && !needsChevron && anyH2HasChildren
+
+        if needsChevron {
+            let leadingContainer = Box(orientation: .horizontal, spacing: 4)
+            leadingContainer.marginStart = indent(for: heading.level)
+            leadingContainer.marginEnd = 4
             let chevron = Button(icon: .custom(renderState.collapsed.contains(heading.id) ? "pan-end-symbolic" : "pan-down-symbolic"))
             chevron.addCSSClass(.flat)
             chevron.tooltipText = renderState.collapsed.contains(heading.id) ? "Expand section" : "Collapse section"
             MacOSClickWorkaround.onClick(chevron, label: "OutlineChevron") { [weak rs = renderState, id = heading.id] in
-                // We can't safely capture `self` (struct) from a long-
-                // lived closure, but the renderState class is the
-                // single source of truth — toggle through it directly.
                 guard let rs else { return }
                 rs.toggleHandler?(id)
             }
             leadingContainer.append(chevron)
+            leadingContainer.append(label)
+            row.child = leadingContainer
+        } else if needsAlignmentSpacer {
+            // Cheap shape variant: still need the Box to keep the H2
+            // column aligned with chevron-bearing siblings, but skip
+            // the spacer Label entirely — `label.marginStart` covers
+            // the chevron-column width.
+            let leadingContainer = Box(orientation: .horizontal, spacing: 4)
+            leadingContainer.marginStart = indent(for: heading.level)
+            leadingContainer.marginEnd = 4
+            label.marginStart = chevronColumnWidth
+            leadingContainer.append(label)
+            row.child = leadingContainer
         } else {
-            // 16 px spacer to keep H2-without-children and H3+ rows
-            // aligned with H2-with-children siblings.
-            let spacer = Label("")
-            spacer.widthRequest(16)
-            leadingContainer.append(spacer)
+            // Smallest shape: ListBoxRow > Label. The indent + spacing
+            // moves to `label.marginStart` so the Box layer goes away.
+            label.marginStart = indent(for: heading.level) + 4
+            label.marginEnd = 4
+            row.child = label
         }
-        leadingContainer.append(label)
-
-        row.child = leadingContainer
 
         // Drag source: identifies the row by its heading id. The drop
         // handler on every sibling row reads this string and routes
