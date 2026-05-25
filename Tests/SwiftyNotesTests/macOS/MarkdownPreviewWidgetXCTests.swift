@@ -509,6 +509,10 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         try app.register()
 
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        // Phase B.1 of SCROLL_PERF_PLAN coalesces a heading + its
+        // trailing paragraphs into a single richTextRun Label, so
+        // `heading + paragraph + blockquote` renders as 2 widgets
+        // (rich-text label + blockquote box) — not 3.
         preview.render(blocks: [
             .heading(level: 2, text: .plain("Heading A")),
             .paragraph(.plain("Paragraph A")),
@@ -516,6 +520,7 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         ])
         let initialChildren = preview.container.children()
         let initialAddresses = initialChildren.map(widgetAddress)
+        XCTAssertEqual(initialChildren.count, 2)
 
         preview.render(blocks: [
             .heading(level: 1, text: .plain("Heading B")),
@@ -525,11 +530,12 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         let updatedChildren = preview.container.children()
         let updatedAddresses = updatedChildren.map(widgetAddress)
 
-        XCTAssertTrue(updatedChildren.count == 3)
-        XCTAssertTrue(initialAddresses == updatedAddresses)
-        XCTAssertTrue(labelTexts(in: preview.container).contains("Heading B"))
-        XCTAssertTrue(labelTexts(in: preview.container).contains("Paragraph B"))
-        XCTAssertTrue(labelTexts(in: preview.container).contains("Quote B"))
+        XCTAssertEqual(updatedChildren.count, 2)
+        XCTAssertEqual(initialAddresses, updatedAddresses)
+        let texts = labelTexts(in: preview.container)
+        XCTAssertTrue(texts.contains { $0.contains("Heading B") })
+        XCTAssertTrue(texts.contains { $0.contains("Paragraph B") })
+        XCTAssertTrue(texts.contains { $0.contains("Quote B") })
     }
 
     @MainActor func test_preview_can_force_custom_text_layout_for_long_safe_documents() throws {

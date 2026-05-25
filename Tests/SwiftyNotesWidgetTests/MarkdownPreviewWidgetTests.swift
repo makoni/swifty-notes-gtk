@@ -498,6 +498,12 @@ struct MarkdownPreviewWidgetTests {
         try app.register()
 
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        // Phase B.1 of SCROLL_PERF_PLAN coalesces a heading + its
+        // trailing paragraphs into a single `richTextRun` Label, so
+        // `heading + paragraph + blockquote` now renders as 2 widgets
+        // (one Label for the rich-text run, one Box for the
+        // blockquote) — not 3. The in-place update path still has to
+        // reuse those 2 widgets without rebuilding them.
         preview.render(blocks: [
             .heading(level: 2, text: .plain("Heading A")),
             .paragraph(.plain("Paragraph A")),
@@ -505,6 +511,7 @@ struct MarkdownPreviewWidgetTests {
         ])
         let initialChildren = preview.container.children()
         let initialAddresses = initialChildren.map(widgetAddress)
+        #expect(initialChildren.count == 2)
 
         preview.render(blocks: [
             .heading(level: 1, text: .plain("Heading B")),
@@ -514,11 +521,15 @@ struct MarkdownPreviewWidgetTests {
         let updatedChildren = preview.container.children()
         let updatedAddresses = updatedChildren.map(widgetAddress)
 
-        #expect(updatedChildren.count == 3)
+        #expect(updatedChildren.count == 2)
         #expect(initialAddresses == updatedAddresses)
-        #expect(labelTexts(in: preview.container).contains("Heading B"))
-        #expect(labelTexts(in: preview.container).contains("Paragraph B"))
-        #expect(labelTexts(in: preview.container).contains("Quote B"))
+        let texts = labelTexts(in: preview.container)
+        // Heading + paragraph live inside the same Label's markup,
+        // separated by the Pango run's `\n\n`. Confirm both spans
+        // reached the surviving label.
+        #expect(texts.contains(where: { $0.contains("Heading B") }))
+        #expect(texts.contains(where: { $0.contains("Paragraph B") }))
+        #expect(texts.contains(where: { $0.contains("Quote B") }))
     }
 
     @Test @MainActor
