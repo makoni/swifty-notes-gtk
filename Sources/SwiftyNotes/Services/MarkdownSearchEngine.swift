@@ -78,6 +78,32 @@ public enum MarkdownSearchEngine {
         return matches
     }
 
+    /// Plain-text overload used by the editor pane — the editor lives
+    /// on raw markdown source, so the structured block walk doesn't
+    /// apply. Returns ranges over the input string itself.
+    ///
+    /// Same option semantics as the block-based ``search(blocks:...)``:
+    /// empty / whitespace-only query → empty, invalid regex → empty,
+    /// no throw.
+    public static func matches(
+        in text: String,
+        query: String,
+        options: SearchOptions = SearchOptions(),
+    ) -> [Range<String.Index>] {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let regex = compile(query: query, options: options)
+        else {
+            return []
+        }
+        let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.matches(in: text, options: [], range: nsRange).compactMap { result in
+            guard result.range.length > 0,
+                  let range = Range(result.range, in: text)
+            else { return nil }
+            return range
+        }
+    }
+
     /// The slice of a block's text that's exposed to the user as
     /// readable content. Differs from ``RenderedBlock.plainText`` in
     /// three deliberate ways: code blocks omit the language prefix,

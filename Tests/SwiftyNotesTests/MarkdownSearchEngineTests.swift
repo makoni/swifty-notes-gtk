@@ -167,6 +167,39 @@ struct MarkdownSearchEngineTests {
     }
 
     @Test
+    func `plain-text overload returns ranges into the source string`() {
+        let text = "alpha beta alpha gamma"
+        let ranges = MarkdownSearchEngine.matches(in: text, query: "alpha", options: .init())
+        #expect(ranges.count == 2)
+        // Slicing the original text by each range reproduces "alpha".
+        #expect(ranges.allSatisfy { text[$0] == "alpha" })
+        // Ranges are in document order.
+        let starts = ranges.map { text.distance(from: text.startIndex, to: $0.lowerBound) }
+        #expect(starts == [0, 11])
+    }
+
+    @Test
+    func `plain-text overload honours whole-word, regex, and case options`() {
+        let text = "Test the testing testTube"
+        // Whole-word excludes "testing" and "testTube" (they're prefixes).
+        var options = SearchOptions(wholeWord: true)
+        let wholeWord = MarkdownSearchEngine.matches(in: text, query: "test", options: options)
+        #expect(wholeWord.count == 1)
+        #expect(text[wholeWord[0]] == "Test")
+
+        // Case-sensitive flips it back so "Test" stays but lowercase
+        // "testing" / "testTube" still drop out.
+        options.caseSensitive = true
+        let caseExact = MarkdownSearchEngine.matches(in: text, query: "Test", options: options)
+        #expect(caseExact.count == 1)
+        #expect(text[caseExact[0]] == "Test")
+
+        // Regex catches all four.
+        let regex = MarkdownSearchEngine.matches(in: text, query: "test\\w*", options: SearchOptions(regex: true))
+        #expect(regex.count == 3)
+    }
+
+    @Test
     func `listItem marker glyph is not part of the searchable text`() {
         // The plainText returned by RenderedBlock for a list item is
         // "- First task" — but searching for "- " is not what the user
