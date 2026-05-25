@@ -10,9 +10,29 @@ final class MarkdownPreview {
 
     private typealias ListPreviewItem = (text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)
 
+    /// Inline segment carried inside a ``PreviewRow/richTextRun``.
+    /// Phase B.1 of SCROLL_PERF_PLAN.md coalesces a heading and its
+    /// trailing paragraphs into a single rich-text Label — segments
+    /// describe what each part of that Label is so the markup builder
+    /// can apply the right Pango styling.
+    enum RichTextSegment: Sendable, Equatable {
+        case heading(level: Int, text: RenderedText)
+        case paragraph(text: RenderedText)
+
+        var equalityKey: String {
+            switch self {
+            case let .heading(level, text):
+                "h:\(level):\(text.plainText)"
+            case let .paragraph(text):
+                "p:\(text.plainText)"
+            }
+        }
+    }
+
     private enum PreviewRow: Equatable {
         case heading(level: Int, text: RenderedText)
         case paragraphRun([RenderedText])
+        case richTextRun([RichTextSegment])
         case codeBlock(code: String, language: String?)
         case blockquoteRun([RenderedText])
         case list(items: [ListPreviewItem])
@@ -41,7 +61,7 @@ final class MarkdownPreview {
 
         var supportsCustomTextLayout: Bool {
             switch self {
-            case .heading, .paragraphRun, .blockquoteRun, .thematicBreak:
+            case .heading, .paragraphRun, .richTextRun, .blockquoteRun, .thematicBreak:
                 true
             case let .list(items):
                 items.allSatisfy { $0.taskIndex == nil }
@@ -56,6 +76,8 @@ final class MarkdownPreview {
                 lhsLevel == rhsLevel && lhsText == rhsText
             case let (.paragraphRun(lhsTexts), .paragraphRun(rhsTexts)):
                 lhsTexts == rhsTexts
+            case let (.richTextRun(lhsSegs), .richTextRun(rhsSegs)):
+                lhsSegs == rhsSegs
             case let (.codeBlock(lhsCode, lhsLanguage), .codeBlock(rhsCode, rhsLanguage)):
                 lhsCode == rhsCode && lhsLanguage == rhsLanguage
             case let (.blockquoteRun(lhsTexts), .blockquoteRun(rhsTexts)):
@@ -486,15 +508,36 @@ final class MarkdownPreview {
         headingBlockToRowIndex = [:]
         while index < blocks.count {
             let block = blocks[index]
-            // Headings are always 1:1 with a row (the grouping logic
-            // below only consumes listItem / paragraph / blockquote
-            // blocks). Record the mapping before appending so the
-            // scroll-spy can look up each heading's rendered widget
-            // by row-index later.
-            let blockStartIndex = index
-            if case .heading = block {
-                headingBlockToRowIndex[blockStartIndex] = rows.count
+
+            // Phase B.1: greedily coalesce a heading + its trailing
+            // paragraphs into one ``richTextRun`` row. Each heading
+            // STARTS a new run, so heading.y always equals row.y
+            // (preserves outline scroll-spy precision). Lists,
+            // blockquotes, code, tables, images, thematic breaks all
+            // close the current run.
+            if case let .heading(level, text) = block {
+                let runStartRow = rows.count
+                headingBlockToRowIndex[index] = runStartRow
+                var segments: [RichTextSegment] = [.heading(level: level, text: text)]
+                index += 1
+                while index < blocks.count, case let .paragraph(pText) = blocks[index] {
+                    segments.append(.paragraph(text: pText))
+                    index += 1
+                }
+                if segments.count == 1 {
+                    // Heading with no trailing paragraph — keep the
+                    // legacy `.heading` row so the incremental-update
+                    // path (which special-cases heading-only rows)
+                    // and the equality / Pango layout that the
+                    // existing `.heading` widget builder uses stay
+                    // unchanged in the common no-body-paragraph case.
+                    rows.append(.heading(level: level, text: text))
+                } else {
+                    rows.append(.richTextRun(segments))
+                }
+                continue
             }
+
             if case .listItem = block {
                 var items: [ListPreviewItem] = []
                 while index < blocks.count {
@@ -674,6 +717,10 @@ final class MarkdownPreview {
             guard let label = widget.tryCast(Label.self) else { return false }
             configureParagraphLabel(label, texts: texts)
             return true
+        case let (.richTextRun(_), .richTextRun(segments)):
+            guard let label = widget.tryCast(Label.self) else { return false }
+            label.markup = richTextRunMarkup(segments)
+            return true
         case let (.blockquoteRun(_), .blockquoteRun(texts)):
             guard let row = widget.tryCast(Box.self) else { return false }
             return configureBlockquoteRow(row, texts: texts)
@@ -750,6 +797,8 @@ final class MarkdownPreview {
             makeHeading(level: level, text: text)
         case let .paragraphRun(texts):
             makeParagraphRun(texts)
+        case let .richTextRun(segments):
+            makeRichTextRun(segments)
         case let .codeBlock(code, language):
             makeCodeBlock(code: code, language: language)
         case let .blockquoteRun(texts):
@@ -804,6 +853,61 @@ final class MarkdownPreview {
         let label = makeMarkupLabel(joinedMarkup(for: texts))
         configureParagraphLabel(label, texts: texts)
         return label
+    }
+
+    /// Phase B.1: render a heading + its trailing paragraphs as a
+    /// single Label whose markup mixes a heading-styled span and the
+    /// body paragraph spans. Cuts a heading-with-body pair from 2
+    /// widgets down to 1 — the render walk has fewer
+    /// `gtk_widget_snapshot_child` recursions per frame and the
+    /// Pango layout is a single object instead of two.
+    ///
+    /// Heading is always the first segment (by construction in
+    /// `makeRows`), so its Y aligns with the row's top and the
+    /// outline scroll-spy continues to land precisely on the
+    /// heading line.
+    private func makeRichTextRun(_ segments: [RichTextSegment]) -> Label {
+        let label = makeMarkupLabel(richTextRunMarkup(segments))
+        // Reuse the paragraph styling baseline (selectable text,
+        // preview-paragraph-label class). The heading span carries
+        // its size/weight inline via Pango markup, not via a CSS
+        // class — applying `.title1`/`.title2` to the whole Label
+        // would also scale the paragraph body, which we don't want.
+        if !label.hasCSSClass("preview-paragraph-label") {
+            label.addCSSClass("preview-paragraph-label")
+        }
+        if !label.hasCSSClass("preview-rich-text-run") {
+            label.addCSSClass("preview-rich-text-run")
+        }
+        label.selectable = true
+        return label
+    }
+
+    /// Markup string used by both the stacked Label and the
+    /// custom-text-layout path. Heading sizes mirror the symbolic
+    /// Pango sizes the legacy customTextMarkup uses for `.heading`
+    /// rows, so behaviour matches the pre-B.1 customText output
+    /// when this run reaches that mode.
+    private func richTextRunMarkup(_ segments: [RichTextSegment]) -> String {
+        var parts: [String] = []
+        parts.reserveCapacity(segments.count)
+        for segment in segments {
+            switch segment {
+            case let .heading(level, text):
+                let size: String = switch level {
+                case 1: "xx-large"
+                case 2: "x-large"
+                default: "large"
+                }
+                parts.append("<span weight=\"bold\" size=\"\(size)\">\(text.markup)</span>")
+            case let .paragraph(text):
+                parts.append(text.markup)
+            }
+        }
+        // Double newline between segments matches the visual gap
+        // between separate `heading` + `paragraphRun` widgets that the
+        // pre-B.1 render produced (each Label had its own margin).
+        return parts.joined(separator: "\n\n")
     }
 
     private func makeCodeBlock(code: String, language: String?) -> Widget {
@@ -1035,6 +1139,8 @@ final class MarkdownPreview {
             return "<span weight=\"bold\" size=\"\(size)\">\(text.markup)</span>\(separator)"
         case let .paragraphRun(texts):
             return joinedMarkup(for: texts) + separator
+        case let .richTextRun(segments):
+            return richTextRunMarkup(segments) + separator
         case let .blockquoteRun(texts):
             let quoteMarkup = texts.map { "<span alpha=\"70%\">│ \($0.markup)</span>" }
                 .joined(separator: "\n\n")

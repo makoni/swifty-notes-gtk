@@ -264,20 +264,20 @@ struct MainWindowOutlineTests {
         """)
         _ = window.debugPreviewText
 
-        // Three consecutive paragraphs in section A collapse into a
-        // single PreviewRow. The map should still place "## B" at the
-        // *row* that follows that single grouped paragraph row, NOT
-        // at the raw block index.
+        // Phase B.1 coalesces a heading + its trailing paragraphs into
+        // one `.richTextRun` row, so the row list collapses to:
+        // [Doc (heading-only — no body), A (richTextRun with A + 3 ps),
+        //  B (richTextRun with B + 1 p)]. The heading IDs still need
+        // to map to the right row index — the outline scroll-spy
+        // looks up `container.children()[rowIndex]` to find each
+        // heading's rendered widget.
         let mapping = window.preview.headingBlockToRowIndex
-        // Doc, A, B → three headings. Row indices come from
-        // [Doc, A, paragraphRun(A1+A2+A3), B, paragraphRun(B)].
-        // Doc=0, A=1, B=3.
         let docHeading = window.currentHeadings.first { $0.text == "Doc" }!
         let aHeading = window.currentHeadings.first { $0.text == "A" }!
         let bHeading = window.currentHeadings.first { $0.text == "B" }!
         #expect(mapping[docHeading.blockIndex] == 0)
         #expect(mapping[aHeading.blockIndex] == 1)
-        #expect(mapping[bHeading.blockIndex] == 3)
+        #expect(mapping[bHeading.blockIndex] == 2)
     }
 
     @Test @MainActor
