@@ -393,6 +393,14 @@ final class MarkdownPreview {
         lastRenderedBlocks
     }
 
+    /// Test-only: which Label pointers currently carry highlight
+    /// attributes from the find/replace bar. Lets the Phase B
+    /// tests verify that apply/clear transitions touch the right
+    /// labels.
+    var debugHighlightedLabelPointers: Set<OpaquePointer> {
+        highlightedLabelPointers
+    }
+
     /// Perf-focused debug metric for tests and investigations: how many
     /// immediate block widgets the preview is currently asking GTK to
     /// lay out/snapshot.
@@ -785,6 +793,142 @@ final class MarkdownPreview {
             }
         }
         return nil
+    }
+
+    // MARK: - Search highlight overlay (#27 Phase B)
+
+    /// Labels that currently carry a PangoAttrList from a previous
+    /// `applySearchHighlights` call. Used so the next apply can
+    /// clear stale labels (those no longer in the new match set)
+    /// without touching every label in the preview — O(affected),
+    /// not O(all rows).
+    private var highlightedLabelPointers: Set<OpaquePointer> = []
+
+    /// Apply yellow-background Pango attributes over the rendered
+    /// labels for each match, plus a saturated-orange + bold style
+    /// for the match at `activeDisplayIndex` (0-based into
+    /// `matches`). Layers ON TOP of the existing Pango markup that
+    /// `label.markup = ...` already parsed — no widget rebuilds,
+    /// no markup mutation. Reversible via ``clearSearchHighlights``.
+    ///
+    /// Matches whose blockIndex is not in `blockTextSpans` are
+    /// silently skipped (tables, task lists, etc — phase A's
+    /// deliberately-omitted blocks). The caller's step navigation
+    /// still scrolls there; we just don't underline.
+    func applySearchHighlights(matches: [PreviewMatch], activeIndex: Int?) {
+        var grouped: [OpaquePointer: [(match: PreviewMatch, isActive: Bool)]] = [:]
+        for (index, match) in matches.enumerated() {
+            guard let span = blockTextSpans[match.blockIndex],
+                  let labelPointer = span.labelPointer
+            else { continue }
+            grouped[labelPointer, default: []].append((match, isActive: index == activeIndex))
+        }
+
+        let newHighlighted = Set(grouped.keys)
+        // Clear labels that were highlighted before but aren't in
+        // the new set — drop their attributes back to nil so the
+        // pure-markup styling shows through.
+        for label in highlightedLabelPointers where !newHighlighted.contains(label) {
+            gtk_label_set_attributes(label, nil)
+        }
+        highlightedLabelPointers = newHighlighted
+
+        for (labelPointer, hits) in grouped {
+            applyAttributes(forLabel: labelPointer, hits: hits)
+        }
+    }
+
+    /// Drop any active highlight attributes from every label that
+    /// currently carries them. Called when the search bar closes.
+    func clearSearchHighlights() {
+        for label in highlightedLabelPointers {
+            gtk_label_set_attributes(label, nil)
+        }
+        highlightedLabelPointers = []
+    }
+
+    private func applyAttributes(
+        forLabel labelPointer: OpaquePointer,
+        hits: [(match: PreviewMatch, isActive: Bool)],
+    ) {
+        guard let attrs = pango_attr_list_new() else { return }
+        defer { pango_attr_list_unref(attrs) }
+
+        // Pango needs UTF-8 byte offsets into the label's plain
+        // text. We have character offsets in `BlockTextSpan` and
+        // `match.range` is over `match.blockText` (the engine's
+        // per-block searchable text). To translate to bytes we
+        // read the label's current plain text via gtk_label_get_text
+        // — Pango's text view IS exactly that plain text (markup
+        // tags stripped).
+        guard let cText = gtk_label_get_text(labelPointer) else { return }
+        let plainText = String(cString: cText)
+        let utf8 = plainText.utf8
+
+        for (match, isActive) in hits {
+            guard let span = blockTextSpans[match.blockIndex] else { continue }
+            // Character offsets within the match's block text.
+            let matchStartInBlock = match.blockText.distance(
+                from: match.blockText.startIndex,
+                to: match.range.lowerBound,
+            )
+            let matchEndInBlock = match.blockText.distance(
+                from: match.blockText.startIndex,
+                to: match.range.upperBound,
+            )
+            let matchCharStart = span.plainTextOffset + matchStartInBlock
+            let matchCharEnd = span.plainTextOffset + matchEndInBlock
+            guard matchCharStart >= 0, matchCharEnd <= plainText.count, matchCharStart < matchCharEnd else { continue }
+            let startUTF8 = byteOffset(in: plainText, utf8: utf8, atCharOffset: matchCharStart)
+            let endUTF8 = byteOffset(in: plainText, utf8: utf8, atCharOffset: matchCharEnd)
+            guard endUTF8 > startUTF8 else { continue }
+
+            // Yellow background (same colours as the editor's
+            // `swifty-notes-search-match` tag).
+            insertColourAttribute(into: attrs, factory: pango_attr_background_new,
+                                  r: 0xFF, g: 0xF5, b: 0x9D,
+                                  start: UInt32(startUTF8), end: UInt32(endUTF8))
+            insertColourAttribute(into: attrs, factory: pango_attr_foreground_new,
+                                  r: 0x1E, g: 0x1E, b: 0x1E,
+                                  start: UInt32(startUTF8), end: UInt32(endUTF8))
+
+            if isActive {
+                // Saturated orange + bold for the active match —
+                // matches `swifty-notes-search-match-active`.
+                insertColourAttribute(into: attrs, factory: pango_attr_background_new,
+                                      r: 0xF9, g: 0xA8, b: 0x25,
+                                      start: UInt32(startUTF8), end: UInt32(endUTF8))
+                if let weight = pango_attr_weight_new(PANGO_WEIGHT_BOLD) {
+                    weight.pointee.start_index = guint(startUTF8)
+                    weight.pointee.end_index = guint(endUTF8)
+                    pango_attr_list_insert(attrs, weight)
+                }
+            }
+        }
+
+        gtk_label_set_attributes(labelPointer, attrs)
+    }
+
+    private func insertColourAttribute(
+        into attrs: OpaquePointer,
+        factory: (guint16, guint16, guint16) -> UnsafeMutablePointer<PangoAttribute>?,
+        r: UInt8, g: UInt8, b: UInt8,
+        start: UInt32, end: UInt32,
+    ) {
+        let r16 = guint16(UInt16(r) << 8 | UInt16(r))
+        let g16 = guint16(UInt16(g) << 8 | UInt16(g))
+        let b16 = guint16(UInt16(b) << 8 | UInt16(b))
+        guard let attr = factory(r16, g16, b16) else { return }
+        attr.pointee.start_index = guint(start)
+        attr.pointee.end_index = guint(end)
+        pango_attr_list_insert(attrs, attr)
+    }
+
+    private func byteOffset(in text: String, utf8: String.UTF8View, atCharOffset offset: Int) -> Int {
+        guard offset >= 0 else { return 0 }
+        guard offset < text.count else { return utf8.count }
+        let idx = text.index(text.startIndex, offsetBy: offset)
+        return utf8.distance(from: utf8.startIndex, to: idx.samePosition(in: utf8)!)
     }
 
     /// Pure-logic accessor mirroring ``MarkdownSearchEngine.searchableText``
