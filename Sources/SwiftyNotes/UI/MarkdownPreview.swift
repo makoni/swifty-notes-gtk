@@ -722,14 +722,14 @@ final class MarkdownPreview {
             label.markup = richTextRunMarkup(segments)
             return true
         case let (.list(oldItems), .list(newItems)):
-            // Phase B.2: only the flat-non-task path uses a single
-            // Label. If both renders agree on that shape we can swap
-            // the markup in place; otherwise the row shape changed
-            // (e.g. user added a checkbox → task list) and the caller
-            // has to rebuild.
-            let oldFlatNonTask = oldItems.allSatisfy { $0.depth == 0 && $0.taskIndex == nil }
-            let newFlatNonTask = newItems.allSatisfy { $0.depth == 0 && $0.taskIndex == nil }
-            guard oldFlatNonTask, newFlatNonTask else { return false }
+            // Phase B.2: any non-task list (depth-0 or nested) now
+            // uses a single Label. If both renders agree on that
+            // shape we can swap the markup in place; otherwise the
+            // row shape changed (e.g. user added a checkbox → task
+            // list) and the caller has to rebuild.
+            let oldNonTask = oldItems.allSatisfy { $0.taskIndex == nil }
+            let newNonTask = newItems.allSatisfy { $0.taskIndex == nil }
+            guard oldNonTask, newNonTask else { return false }
             guard let label = widget.tryCast(Label.self) else { return false }
             label.markup = flatListMarkup(newItems)
             return true
@@ -1184,13 +1184,16 @@ final class MarkdownPreview {
     }
 
     private func makeList(_ items: [(text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)]) -> Widget {
+        // Phase B.2 (extended): any list with no checkbox marker
+        // collapses to a single Label, regardless of depth. Indent
+        // per nesting level is approximated through leading spaces
+        // in the Pango markup. Task lists still need per-row
+        // widgets because checkbox markers are interactive.
+        if items.allSatisfy({ $0.taskIndex == nil }) {
+            return makeFlatListAsLabel(items)
+        }
+
         if items.allSatisfy({ $0.depth == 0 }) {
-            // Phase B.2: a flat list with no clickable checkbox can
-            // collapse to a single Label. Task lists keep the per-row
-            // Grid because each checkbox is an interactive widget.
-            if items.allSatisfy({ $0.taskIndex == nil }) {
-                return makeFlatListAsLabel(items)
-            }
             return makeFlatList(items)
         }
 
@@ -1208,11 +1211,18 @@ final class MarkdownPreview {
         return list
     }
 
-    /// Markup string for a flat non-task list. Shared between the
-    /// initial-build path (``makeFlatListAsLabel``) and the in-place
-    /// update path (``updateWidgetInPlace``), so a typing-debounced
-    /// refresh that only changed one bullet can keep the Label widget
-    /// alive and just swap its `markup`.
+    /// Markup string for a non-task list (any depth). Shared between
+    /// the initial-build path (``makeFlatListAsLabel``) and the
+    /// in-place update path (``updateWidgetInPlace``), so a typing-
+    /// debounced refresh that only changed one bullet can keep the
+    /// Label widget alive and just swap its `markup`.
+    ///
+    /// Indent per nesting level is rendered through leading spaces
+    /// (Pango Label has no per-line `indent` knob exposed through
+    /// swift-adwaita yet — see Phase B.2 trade-off comment in
+    /// `makeFlatListAsLabel`). Two spaces per depth level approximates
+    /// the 10 px / level the per-row Box layout uses; visually close
+    /// for short bullets, slightly tighter for deep nesting.
     private func flatListMarkup(_ items: [(text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)]) -> String {
         let markers = items.map { displayMarker(for: $0.marker, depth: $0.depth) }
         let maxMarkerWidth = markers.map(\.count).max() ?? 1
@@ -1223,7 +1233,8 @@ final class MarkdownPreview {
             let marker = markers[index]
             let padCount = max(padTarget - marker.count, 1)
             let pad = String(repeating: " ", count: padCount)
-            lines.append("<span alpha=\"60%\">\(marker)</span>\(pad)\(item.text.markup)")
+            let depthIndent = item.depth > 0 ? String(repeating: "  ", count: item.depth) : ""
+            lines.append("\(depthIndent)<span alpha=\"60%\">\(marker)</span>\(pad)\(item.text.markup)")
         }
         let separator = items.contains(where: \.loose) ? "\n\n" : "\n"
         return lines.joined(separator: separator)

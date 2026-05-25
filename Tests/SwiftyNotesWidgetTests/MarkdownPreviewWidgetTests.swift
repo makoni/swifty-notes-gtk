@@ -430,6 +430,33 @@ struct MarkdownPreviewWidgetTests {
     }
 
     @Test @MainActor
+    func `preview collapses nested non-task list into a single Label too`() throws {
+        // Phase B.2 (extended): the depth restriction is dropped for
+        // non-task lists. A list with nested items still becomes one
+        // Label — indent per depth level is rendered through leading
+        // spaces inside the Pango markup so the outer container goes
+        // from `Box > N×(Box per item)` (≥ N+1 widgets) down to a
+        // single widget regardless of nesting.
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.nested-list-label")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.render(blocks: [
+            .listItem(text: .plain("Outer one"),   depth: 0, marker: "-"),
+            .listItem(text: .plain("Inner one"),   depth: 1, marker: "-"),
+            .listItem(text: .plain("Inner two"),   depth: 1, marker: "-"),
+            .listItem(text: .plain("Outer two"),   depth: 0, marker: "-"),
+        ])
+        #expect(preview.debugTopLevelWidgetCount == 1)
+        #expect(preview.debugWidgetTreeCount == 2)
+        let texts = labelTexts(in: preview.container)
+        #expect(texts.contains { $0.contains("Outer one") })
+        #expect(texts.contains { $0.contains("Inner one") })
+        #expect(texts.contains { $0.contains("Inner two") })
+        #expect(texts.contains { $0.contains("Outer two") })
+    }
+
+    @Test @MainActor
     func `preview collapses flat non-task list into a single Label`() throws {
         // Phase B.2: a depth-0 list with no checkbox markers no
         // longer materializes a Grid + 2N cell Labels. The whole
