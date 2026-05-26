@@ -880,8 +880,8 @@ final class MarkdownPreview {
         }
 
         let newHighlightedLabels = Set(labelHits.keys)
-        for label in highlightedLabelPointers where !newHighlightedLabels.contains(label) {
-            gtk_label_set_attributes(label, nil)
+        for labelPointer in highlightedLabelPointers where !newHighlightedLabels.contains(labelPointer) {
+            Label(borrowing: UnsafeMutableRawPointer(labelPointer)).attributes = nil
         }
         highlightedLabelPointers = newHighlightedLabels
         for (labelPointer, hits) in labelHits {
@@ -904,8 +904,8 @@ final class MarkdownPreview {
     /// reads as if nobody had ever searched. Called when the
     /// preview's search bar closes.
     func clearSearchHighlights() {
-        for label in highlightedLabelPointers {
-            gtk_label_set_attributes(label, nil)
+        for labelPointer in highlightedLabelPointers {
+            Label(borrowing: UnsafeMutableRawPointer(labelPointer)).attributes = nil
         }
         highlightedLabelPointers = []
         for buffer in highlightedCodeBlockBuffers.values {
@@ -950,27 +950,33 @@ final class MarkdownPreview {
         swifty_notes_search_clear_tags(bufferPointer, matchTag, activeTag)
     }
 
+    // Highlight colours, shared with the editor side's
+    // `swifty-notes-search-match` / `*-active` GtkTextTags so a
+    // match looks the same on both panes.
+    private static let matchBackground = RGBA(red: 0xFF / 255, green: 0xF5 / 255, blue: 0x9D / 255)
+    private static let matchForeground = RGBA(red: 0x1E / 255, green: 0x1E / 255, blue: 0x1E / 255)
+    private static let activeMatchBackground = RGBA(red: 0xF9 / 255, green: 0xA8 / 255, blue: 0x25 / 255)
+
     private func applyAttributes(
         forLabel labelPointer: OpaquePointer,
         hits: [(match: PreviewMatch, isActive: Bool)],
     ) {
-        guard let attrs = pango_attr_list_new() else { return }
-        defer { pango_attr_list_unref(attrs) }
-
-        // Pango needs UTF-8 byte offsets into the label's plain
-        // text. We have character offsets in `BlockTextSpan` and
-        // `match.range` is over `match.blockText` (the engine's
-        // per-block searchable text). To translate to bytes we
-        // read the label's current plain text via gtk_label_get_text
-        // — Pango's text view IS exactly that plain text (markup
-        // tags stripped).
-        guard let cText = gtk_label_get_text(labelPointer) else { return }
-        let plainText = String(cString: cText)
-        let utf8 = plainText.utf8
+        // swift-adwaita's `TextAttributes` range helpers take a Swift
+        // `Range<String.Index>` over the label's plain text and do the
+        // UTF-8 byte-offset translation + boundary validation
+        // internally — so the preview no longer hand-rolls
+        // `pango_attr_*_new` + manual `String.utf8.distance` (that
+        // boilerplate moved into the library). `label.text` returns
+        // exactly the plain text Pango lays out (markup tags
+        // stripped), which is the coordinate space `blockTextSpans`
+        // offsets live in.
+        let label = Label(borrowing: UnsafeMutableRawPointer(labelPointer))
+        let plainText = label.text
+        let totalChars = plainText.count
+        let attributes = TextAttributes()
 
         for (match, isActive) in hits {
             guard let span = blockTextSpans[match.blockIndex] else { continue }
-            // Character offsets within the match's block text.
             let matchStartInBlock = match.blockText.distance(
                 from: match.blockText.startIndex,
                 to: match.range.lowerBound,
@@ -979,59 +985,22 @@ final class MarkdownPreview {
                 from: match.blockText.startIndex,
                 to: match.range.upperBound,
             )
-            let matchCharStart = span.plainTextOffset + matchStartInBlock
-            let matchCharEnd = span.plainTextOffset + matchEndInBlock
-            guard matchCharStart >= 0, matchCharEnd <= plainText.count, matchCharStart < matchCharEnd else { continue }
-            let startUTF8 = byteOffset(in: plainText, utf8: utf8, atCharOffset: matchCharStart)
-            let endUTF8 = byteOffset(in: plainText, utf8: utf8, atCharOffset: matchCharEnd)
-            guard endUTF8 > startUTF8 else { continue }
+            let charStart = span.plainTextOffset + matchStartInBlock
+            let charEnd = span.plainTextOffset + matchEndInBlock
+            guard charStart >= 0, charEnd <= totalChars, charStart < charEnd else { continue }
+            let startIndex = plainText.index(plainText.startIndex, offsetBy: charStart)
+            let endIndex = plainText.index(plainText.startIndex, offsetBy: charEnd)
+            let range = startIndex..<endIndex
 
-            // Yellow background (same colours as the editor's
-            // `swifty-notes-search-match` tag).
-            insertColourAttribute(into: attrs, factory: pango_attr_background_new,
-                                  r: 0xFF, g: 0xF5, b: 0x9D,
-                                  start: UInt32(startUTF8), end: UInt32(endUTF8))
-            insertColourAttribute(into: attrs, factory: pango_attr_foreground_new,
-                                  r: 0x1E, g: 0x1E, b: 0x1E,
-                                  start: UInt32(startUTF8), end: UInt32(endUTF8))
-
+            attributes.addBackgroundColor(Self.matchBackground, range: range, in: plainText)
+            attributes.addForegroundColor(Self.matchForeground, range: range, in: plainText)
             if isActive {
-                // Saturated orange + bold for the active match —
-                // matches `swifty-notes-search-match-active`.
-                insertColourAttribute(into: attrs, factory: pango_attr_background_new,
-                                      r: 0xF9, g: 0xA8, b: 0x25,
-                                      start: UInt32(startUTF8), end: UInt32(endUTF8))
-                if let weight = pango_attr_weight_new(PANGO_WEIGHT_BOLD) {
-                    weight.pointee.start_index = guint(startUTF8)
-                    weight.pointee.end_index = guint(endUTF8)
-                    pango_attr_list_insert(attrs, weight)
-                }
+                attributes.addBackgroundColor(Self.activeMatchBackground, range: range, in: plainText)
+                attributes.addBold(range: range, in: plainText)
             }
         }
 
-        gtk_label_set_attributes(labelPointer, attrs)
-    }
-
-    private func insertColourAttribute(
-        into attrs: OpaquePointer,
-        factory: (guint16, guint16, guint16) -> UnsafeMutablePointer<PangoAttribute>?,
-        r: UInt8, g: UInt8, b: UInt8,
-        start: UInt32, end: UInt32,
-    ) {
-        let r16 = guint16(UInt16(r) << 8 | UInt16(r))
-        let g16 = guint16(UInt16(g) << 8 | UInt16(g))
-        let b16 = guint16(UInt16(b) << 8 | UInt16(b))
-        guard let attr = factory(r16, g16, b16) else { return }
-        attr.pointee.start_index = guint(start)
-        attr.pointee.end_index = guint(end)
-        pango_attr_list_insert(attrs, attr)
-    }
-
-    private func byteOffset(in text: String, utf8: String.UTF8View, atCharOffset offset: Int) -> Int {
-        guard offset >= 0 else { return 0 }
-        guard offset < text.count else { return utf8.count }
-        let idx = text.index(text.startIndex, offsetBy: offset)
-        return utf8.distance(from: utf8.startIndex, to: idx.samePosition(in: utf8)!)
+        label.attributes = attributes
     }
 
     /// Pure-logic accessor mirroring ``MarkdownSearchEngine.searchableText``

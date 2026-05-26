@@ -72,10 +72,12 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            // Pinned to the swift-adwaita 1.3.0 release commit (the macOS
-            // support release). Bump deliberately when validating a newer
-            // upstream rather than via SemVer auto-resolution.
-            revision: "41822ceb073962bf195d31ce1cca110c017dcc0b"
+            // Pinned past the 1.3.0 release to the markup-safety /
+            // Label.attributes / scrollChildIntoView work (PangoMarkup,
+            // range-aware TextAttributes, Widget tree dump). Bump
+            // deliberately when validating a newer upstream rather than
+            // via SemVer auto-resolution.
+            revision: "39e0289356e84c1e61eb3fd5eda17b5fc5027a6f"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",
