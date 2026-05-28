@@ -74,10 +74,13 @@ let package = Package(
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
             // Pinned past the 1.3.0 release to the markup-safety /
             // Label.attributes / scrollChildIntoView work (PangoMarkup,
-            // range-aware TextAttributes, Widget tree dump). Bump
+            // range-aware TextAttributes, Widget tree dump), the
+            // SearchEntry stop-search signal (Ctrl+G palette Escape fix),
+            // and the Dialog.enableBackdropClickDismiss helper with
+            // bounded retry + idle-source cleanup on unmap. Bump
             // deliberately when validating a newer upstream rather than
             // via SemVer auto-resolution.
-            revision: "39e0289356e84c1e61eb3fd5eda17b5fc5027a6f"
+            revision: "1d2f0eaa69198178320cd9565de60fe8a3e2c09b"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",

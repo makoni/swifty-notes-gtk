@@ -1,15 +1,26 @@
 #if !os(macOS)
 import Adwaita
+import CAdwaita
 import Foundation
 @testable import SwiftyNotes
 import Testing
 
+@Suite(.serialized)
 struct MainWindowOutlineTests {
+    @MainActor
+    private static func ensureAdwInit() {
+        struct Once { nonisolated(unsafe) static var done = false }
+        guard !Once.done else { return }
+        adw_init()
+        Once.done = true
+    }
+
     @MainActor
     private static func makeWindow(
         appID: String,
         isOutlineVisible: Bool = true,
     ) throws -> MainWindow {
+        Self.ensureAdwInit()
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let app = Application(id: appID)
         try app.register()
@@ -23,6 +34,26 @@ struct MainWindowOutlineTests {
             renderer: MarkdownRenderer(),
             autosave: AutosaveCoordinator(),
         )
+    }
+
+    @MainActor
+    private static func visibleDialog(of window: ApplicationWindow) -> Dialog? {
+        adw_application_window_get_visible_dialog(window.adwWindowPointer)
+            .map { Dialog(borrowing: UnsafeMutableRawPointer($0)) }
+    }
+
+    @MainActor
+    private static func waitUntil(
+        timeout: Duration = .milliseconds(300),
+        step: Duration = .milliseconds(10),
+        _ condition: @MainActor () -> Bool
+    ) {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+
+        while !condition(), clock.now < deadline {
+            MainContext.pump(for: step)
+        }
     }
 
     @Test @MainActor
@@ -368,6 +399,29 @@ struct MainWindowOutlineTests {
         // bug masked in production.
         window.activeCommandPalette?.debugSetQuery("A")
         #expect(window.activeCommandPalette?.debugItems.map(\.id) == ["a"])
+    }
+
+    @Test @MainActor
+    func `Ctrl+G enables dialog backdrop dismiss and outside-click closes the palette`() throws {
+        let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.palettebackdrop")
+        window.present()
+        window.debugLoadInitialNotes()
+        window.debugSetEditorText("# Doc\n\n## A\n\n## B\n")
+        _ = window.debugPreviewText
+
+        window.openCommandPalette()
+        Self.waitUntil {
+            Self.visibleDialog(of: window.window)?.debugHasBackdropClickDismissHook == true
+        }
+
+        #expect(Self.visibleDialog(of: window.window)?.debugHasBackdropClickDismissHook == true)
+
+        Self.visibleDialog(of: window.window)?.debugEmitBackdropClickDismiss()
+        Self.waitUntil {
+            window.activeCommandPalette == nil
+        }
+
+        #expect(window.activeCommandPalette == nil)
     }
 }
 #endif

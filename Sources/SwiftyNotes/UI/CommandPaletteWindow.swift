@@ -34,6 +34,13 @@ final class CommandPaletteWindow {
     private var rowWidgets: [ListBoxRow] = []
     private var highlightIndex: Int = 0
 
+    #if DEBUG
+        /// Incremented every time `close()` is called via the `stop-search`
+        /// (Escape) path. Tests use this instead of `onClosed`, which only fires
+        /// for a dialog that was presented.
+        var debugCloseCallCount = 0
+    #endif
+
     init(
         transientFor: ApplicationWindow,
         headings: [Heading],
@@ -75,7 +82,6 @@ final class CommandPaletteWindow {
         dialog.contentWidth = 640
         dialog.contentHeight = 480
         dialog.presentationMode = .floating
-
         searchEntry = SearchEntry()
         searchEntry.placeholderText = "Jump to heading…"
         searchEntry.hexpand = true
@@ -144,6 +150,7 @@ final class CommandPaletteWindow {
         // 0th row highlighted before our currentID resolution kicks in.
         rebuildItems()
         dialog.present(transient)
+        dialog.enableBackdropClickDismiss()
         _ = searchEntry.grabFocus()
     }
 
@@ -161,6 +168,18 @@ final class CommandPaletteWindow {
 
         searchEntry.onSearchChanged { [weak self] in
             self?.rebuildItems()
+        }
+
+        // GtkSearchEntry consumes Escape by emitting stop-search and returning
+        // GDK_EVENT_STOP, so LOCAL-scope shortcuts on ancestor widgets (including
+        // the dialog's own Escape shortcut below) never fire when the search field
+        // has focus. Connect here so pressing Escape always closes the palette,
+        // regardless of which widget currently holds keyboard focus.
+        searchEntry.onStopSearch { [weak self] in
+            #if DEBUG
+                self?.debugCloseCallCount += 1
+            #endif
+            _ = self?.dialog.close()
         }
 
         list.onRowActivated { [weak self] row in
@@ -405,14 +424,34 @@ final class CommandPaletteWindow {
 }
 
 #if DEBUG
-extension CommandPaletteWindow {
-    var debugItems: [Heading] { items }
-    var debugHighlightIndex: Int { highlightIndex }
-    func debugSetQuery(_ q: String) {
-        searchEntry.text = q
-        rebuildItems()
+    extension CommandPaletteWindow {
+        var debugItems: [Heading] {
+            items
+        }
+
+        var debugHighlightIndex: Int {
+            highlightIndex
+        }
+
+        func debugSetQuery(_ q: String) {
+            searchEntry.text = q
+            rebuildItems()
+        }
+
+        func debugActivateHighlighted() {
+            activateHighlighted()
+        }
+
+        func debugMove(by delta: Int) {
+            move(by: delta)
+        }
+
+        /// Emits the `stop-search` signal on the internal `SearchEntry` — this is
+        /// exactly what `GtkSearchEntry` does when the user presses Escape with
+        /// focus on the entry.  Used by unit tests to verify the Escape close path
+        /// without simulating real keyboard events.
+        func debugEmitStopSearch() {
+            searchEntry.emitStopSearch()
+        }
     }
-    func debugActivateHighlighted() { activateHighlighted() }
-    func debugMove(by delta: Int) { move(by: delta) }
-}
 #endif
