@@ -134,6 +134,42 @@ extension MainWindow {
         }
     }
 
+    /// Debug autopilot: switch to preview-only, open the find bar, and
+    /// type a query, so a screenshot can confirm the preview highlight
+    /// overlay actually paints. Set
+    /// SWIFTY_NOTES_DEBUG_PREVIEW_SEARCH_ON_LAUNCH=<query>.
+    func scheduleDebugPreviewSearchIfRequested() {
+        guard !hasScheduledDebugPreviewSearch else { return }
+        let query = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_PREVIEW_SEARCH_ON_LAUNCH"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let query, !query.isEmpty else { return }
+
+        hasScheduledDebugPreviewSearch = true
+        let delayMilliseconds = debugEnvironmentInt(named: "SWIFTY_NOTES_DEBUG_PREVIEW_SEARCH_DELAY_MS") ?? 1200
+        scheduleDebugPreviewSearch(query: query, after: max(delayMilliseconds, 0), remainingAttempts: 40)
+    }
+
+    private func scheduleDebugPreviewSearch(query: String, after delayMilliseconds: Int, remainingAttempts: Int) {
+        MainContext.delay(for: .milliseconds(delayMilliseconds)) { [weak self] in
+            guard let self else { return }
+            guard state.selectedNote != nil else {
+                guard remainingAttempts > 0 else { return }
+                scheduleDebugPreviewSearch(query: query, after: 200, remainingAttempts: remainingAttempts - 1)
+                return
+            }
+            FileHandle.standardError.write(Data("SwiftyNotes debug preview search: \(query)\n".utf8))
+            setViewMode(.preview, animated: false)
+            openFindBar(mode: .find)
+            previewFindReplaceBar.debugTypeQuery(query)
+            MainContext.delay(for: .milliseconds(300)) { [weak self] in
+                guard let self else { return }
+                FileHandle.standardError.write(
+                    Data("SwiftyNotes debug preview search result: highlighted=\(preview.debugAppliedHighlightTexts)\n".utf8),
+                )
+            }
+        }
+    }
+
     func scheduleDebugHeaderSubtitleLogIfRequested() {
         let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_LOG_HEADER_SUBTITLE_DELAY_MS"]
             .flatMap(Int.init)

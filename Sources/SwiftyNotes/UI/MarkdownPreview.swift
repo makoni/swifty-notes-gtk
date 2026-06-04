@@ -531,6 +531,15 @@ final class MarkdownPreview {
         }
 
         guard !shouldSkipRender(rows: rows, renderMode: targetRenderMode, baseDirectory: standardizedBaseDirectory) else {
+            // `makeRows(from:)` above unconditionally reset
+            // `blockTextSpans` / `tableHighlightSpans` / `codeBlockBuffers`
+            // and repopulated them WITHOUT widget pointers. When we skip the
+            // actual re-render (content unchanged) the existing row widgets
+            // are still valid, so re-link the freshly-rebuilt spans to them —
+            // otherwise every no-op re-render (e.g. refreshPreview on a view-
+            // mode switch) silently drops the search-highlight label pointers
+            // and the overlay stops painting.
+            attachWidgetPointersToBlockSpans()
             return
         }
 

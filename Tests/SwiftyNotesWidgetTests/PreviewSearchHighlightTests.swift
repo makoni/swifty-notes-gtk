@@ -134,6 +134,33 @@ struct PreviewSearchHighlightTests {
     }
 
     @Test @MainActor
+    func `re-rendering identical content keeps span label pointers so highlights still paint`() throws {
+        // Regression: a no-op re-render (shouldSkipRender, e.g. refreshPreview
+        // on a view-mode switch) ran makeRows — which resets blockTextSpans
+        // and repopulates them WITHOUT label pointers — then returned early,
+        // skipping the attach walk. The freshly-rebuilt spans were left with
+        // nil label pointers, so applySearchHighlights painted nothing even
+        // though matches existed. This was the real cause of "preview search
+        // highlight does nothing" once preview-only mode started rendering.
+        let preview = try Self.makePreview(suffix: "skip-render", markdown: """
+        # Heading with searchword
+
+        Body paragraph.
+        """)
+        let blocks = preview.debugLastRenderedBlocks
+        // Render the IDENTICAL content again — hits the skip-render path.
+        preview.render(blocks: blocks)
+
+        let matches = MarkdownSearchEngine.search(blocks: blocks, query: "searchword", options: .init())
+        #expect(!matches.isEmpty)
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        // The heading label must still be linked after the no-op render, so
+        // the overlay paints the matched substring.
+        #expect(!preview.debugHighlightedLabelPointers.isEmpty)
+        #expect(preview.debugAppliedHighlightTexts.contains("searchword"))
+    }
+
+    @Test @MainActor
     func `partial match inside a table cell highlights only the matched substring`() throws {
         // Cell text is longer than the query — exercises the localOffset /
         // match-length translation (the whole reason per-cell offset math

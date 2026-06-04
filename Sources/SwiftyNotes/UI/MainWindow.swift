@@ -273,6 +273,7 @@ final class MainWindow {
     var hasScheduledDebugSettingsOpen = false
     var hasScheduledDebugCreateNote = false
     var hasScheduledDebugScrollSweep = false
+    var hasScheduledDebugPreviewSearch = false
 #if DEBUG
     var previewBlockBuildCount = 0
 #endif
@@ -340,6 +341,7 @@ final class MainWindow {
         scheduleDebugSelectionSwitchIfRequested()
         scheduleDebugTypingBurstIfRequested()
         scheduleDebugScrollSweepIfRequested()
+        scheduleDebugPreviewSearchIfRequested()
         MainContext.idle { [weak self] in
             self?.refreshPreview()
             self?.applyViewMode(animated: false)
