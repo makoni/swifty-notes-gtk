@@ -99,15 +99,15 @@ final class BreadcrumbStrip {
     static func buildMarkup(docTitle: String, section: String?, leaf: String?) -> String {
         var pieces: [String] = []
         if !docTitle.isEmpty {
-            pieces.append("<span alpha=\"60%\">\(escape(docTitle))</span>")
+            pieces.append("<span alpha=\"60%\">\(PangoMarkup.escape(docTitle))</span>")
         }
         if let section, !section.isEmpty {
             let renderedSection: String
             if let leaf, !leaf.isEmpty {
-                renderedSection = "<span alpha=\"60%\">\(escape(section))</span>"
+                renderedSection = "<span alpha=\"60%\">\(PangoMarkup.escape(section))</span>"
             } else {
                 // No leaf — the section is the current focus, render full-weight.
-                renderedSection = "<span weight=\"500\">\(escape(section))</span>"
+                renderedSection = "<span weight=\"500\">\(PangoMarkup.escape(section))</span>"
             }
             if !pieces.isEmpty {
                 pieces.append(separator)
@@ -118,7 +118,7 @@ final class BreadcrumbStrip {
             if !pieces.isEmpty {
                 pieces.append(separator)
             }
-            pieces.append("<span weight=\"500\">\(escape(leaf))</span>")
+            pieces.append("<span weight=\"500\">\(PangoMarkup.escape(leaf))</span>")
         }
         return pieces.joined(separator: " ")
     }
@@ -127,19 +127,4 @@ final class BreadcrumbStrip {
     /// `.sn-breadcrumb svg { opacity: 0.5 }` rule.
     private static let separator = "<span alpha=\"45%\">›</span>"
 
-    private static func escape(_ text: String) -> String {
-        var out = ""
-        out.reserveCapacity(text.count)
-        for character in text {
-            switch character {
-            case "&": out.append("&amp;")
-            case "<": out.append("&lt;")
-            case ">": out.append("&gt;")
-            case "\"": out.append("&quot;")
-            case "'": out.append("&apos;")
-            default: out.append(character)
-            }
-        }
-        return out
-    }
 }

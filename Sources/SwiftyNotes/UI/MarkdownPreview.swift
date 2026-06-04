@@ -2348,10 +2348,10 @@ final class MarkdownPreview {
             wrapper.tooltipText = item.alt.isEmpty ? link : item.alt
 
             let click = GestureClick()
-            click.onReleased { [weak window] _, _, _ in
-                let launcher = UriLauncher(uri: link)
-                launcher.launch(parent: window)
+            let openLink = URIScheme.allowlist(.http, .https, .mailto, .file) { [weak window] uri in
+                UriLauncher(uri: uri).launch(parent: window)
             }
+            click.onReleased { _, _, _ in openLink(link) }
             wrapper.addController(click)
             return wrapper
         }
@@ -2554,10 +2554,11 @@ final class MarkdownPreview {
         label.xalign = 0
         label.justify = .left
         label.selectable = true
-        label.onActivateLink { [weak window] uri in
-            let launcher = UriLauncher(uri: uri)
-            launcher.launch(parent: window)
-        }
+        // Rendered markdown can carry arbitrary `<a href>` schemes from
+        // note content, so only forward known-safe schemes to the launcher.
+        label.onActivateLink(URIScheme.allowlist(.http, .https, .mailto, .file) { [weak window] uri in
+            UriLauncher(uri: uri).launch(parent: window)
+        })
         return label
     }
 
