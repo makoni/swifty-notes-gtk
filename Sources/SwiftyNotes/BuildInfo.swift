@@ -1,7 +1,7 @@
 import Foundation
 
 enum BuildInfo {
-    private static let defaultVersion = "1.1.7"
+    private static let defaultVersion = "1.2.0"
 
     /// Source of truth resolution order:
     /// 1. `SWIFTY_NOTES_VERSION` env var — Linux release flow exports

@@ -63,11 +63,12 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description>
-        <p>This update helps you stay on the latest version and smooths out a few rough edges in everyday editing.</p>
+        <p>This update adds a document outline for quick navigation, full Find &amp; Replace, and live search highlighting in the preview.</p>
         <ul>
-          <li>Swifty Notes now lets you know when a newer release is available: a friendly banner appears at the top of the editor with a one-click link to the release page, and a new "Check for Updates…" entry was added to the main menu so you can check on demand.</li>
-          <li>Opening standalone Markdown files from outside your library — including from your file manager's Open With flow — works reliably again when the file path contains spaces, for example notes stored under "My Documents" or a cloud-synced folder like "Cloud Disk".</li>
-          <li>Fenced code blocks tagged as <code>bash</code> or <code>csharp</code> now get syntax highlighting in the preview, matching the other supported languages.</li>
+          <li>A new Outline panel (toggle with F9) lists every heading in the current note so you can jump around long documents at a glance. It tracks your position as you scroll, shows a breadcrumb of where you are, and lets you filter headings, collapse sections, fold them in the editor, and even drag to reorder whole sections. Press Ctrl+G for a command-palette-style quick jump to any heading.</li>
+          <li>Find &amp; Replace arrives: Ctrl+F searches, Ctrl+H replaces, with Replace and Replace All, case-sensitive matching, match counts, and smooth scrolling to each result. Search works in both the editor and the live preview, and remembers your last query.</li>
+          <li>Search matches now highlight directly in the rendered preview — including inside fenced code blocks and table cells — so you can see every hit in context, not just in the raw text.</li>
+          <li>Editing large, heading-heavy notes feels noticeably smoother thanks to a leaner preview and outline that do far less redrawing while you write and scroll.</li>
         </ul>
       </description>
     </release>
