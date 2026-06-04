@@ -44,7 +44,7 @@
   </provides>
   <screenshots>
     <screenshot type="default">
-      <caption>Split view with the sidebar, formatting toolbar, live Markdown preview, and the document outline.</caption>
+      <caption>Split view with the sidebar, formatting toolbar, live preview, and outline.</caption>
       <image type="source" width="2000" height="1442">@SCREENSHOT_MAIN_URL@</image>
     </screenshot>
     <screenshot>
@@ -52,7 +52,7 @@
       <image type="source" width="2000" height="1442">@SCREENSHOT_EDITOR_URL@</image>
     </screenshot>
     <screenshot>
-      <caption>Full editor with the formatting toolbar; every note is plain Markdown you can also drive from the CLI.</caption>
+      <caption>Full editor with the formatting toolbar and the document outline panel.</caption>
       <image type="source" width="2000" height="1442">@SCREENSHOT_CLI_URL@</image>
     </screenshot>
   </screenshots>
