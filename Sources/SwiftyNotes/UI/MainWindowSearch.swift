@@ -106,15 +106,28 @@ extension MainWindow {
         preview.rootScroll.addController(previewFocus)
     }
 
-    /// Open the find / replace bar in the requested mode. The
-    /// active pane (editor vs preview) is decided by which one had
-    /// focus most recently — same affordance GNOME Builder uses
-    /// in split mode (find runs against the file you were just
-    /// looking at). In `.replace` mode we always land in the
-    /// editor pane because the preview bar is read-only.
+    /// Open the find / replace bar in the requested mode. In split
+    /// mode the target pane (editor vs preview) is whichever had focus
+    /// most recently — the affordance GNOME Builder uses (find runs
+    /// against the pane you were just looking at). In single-pane modes
+    /// the target is unambiguous: editor-only → editor, preview-only →
+    /// preview, regardless of `lastFocusedPane` (preview labels aren't
+    /// focusable, so switching to preview-only never flips the tracked
+    /// pane — routing by view mode is what makes Ctrl+F hit the visible
+    /// pane). In `.replace` mode we always land in the editor pane
+    /// because the preview bar is read-only.
     func openFindBar(mode: FindReplaceBar.Mode) {
         wirePaneFocusTracking()
-        let target: FocusedPane = mode == .replace ? .editor : lastFocusedPane
+        let target: FocusedPane
+        if mode == .replace {
+            target = .editor
+        } else {
+            switch state.viewMode {
+            case .editor: target = .editor
+            case .preview: target = .preview
+            case .split: target = lastFocusedPane
+            }
+        }
         switch target {
         case .editor:
             wireEditorFindReplaceBar()
