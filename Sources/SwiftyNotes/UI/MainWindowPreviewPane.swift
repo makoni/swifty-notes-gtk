@@ -161,11 +161,14 @@ extension MainWindow {
             setViewMode(.preview, animated: false)
             openFindBar(mode: .find)
             previewFindReplaceBar.debugTypeQuery(query)
-            MainContext.delay(for: .milliseconds(300)) { [weak self] in
-                guard let self else { return }
-                FileHandle.standardError.write(
-                    Data("SwiftyNotes debug preview search result: highlighted=\(preview.debugAppliedHighlightTexts)\n".utf8),
-                )
+            // Optional second query to exercise the highlight-replacement path
+            // (verifies stale highlights from the first query are cleared).
+            if let thenQuery = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_PREVIEW_SEARCH_THEN"]?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !thenQuery.isEmpty
+            {
+                MainContext.delay(for: .milliseconds(300)) { [weak self] in
+                    self?.previewFindReplaceBar.debugTypeQuery(thenQuery)
+                }
             }
         }
     }

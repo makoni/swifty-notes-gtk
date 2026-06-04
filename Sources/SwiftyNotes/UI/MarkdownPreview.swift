@@ -988,7 +988,7 @@ final class MarkdownPreview {
 
         let newHighlightedLabels = Set(labelHits.keys)
         for labelPointer in highlightedLabelPointers where !newHighlightedLabels.contains(labelPointer) {
-            Label(borrowing: UnsafeMutableRawPointer(labelPointer)).attributes = nil
+            Self.clearLabelOverlay(labelPointer)
         }
         highlightedLabelPointers = newHighlightedLabels
         debugAppliedHighlights = []
@@ -1013,7 +1013,7 @@ final class MarkdownPreview {
     /// preview's search bar closes.
     func clearSearchHighlights() {
         for labelPointer in highlightedLabelPointers {
-            Label(borrowing: UnsafeMutableRawPointer(labelPointer)).attributes = nil
+            Self.clearLabelOverlay(labelPointer)
         }
         highlightedLabelPointers = []
         debugAppliedHighlights = []
@@ -1156,7 +1156,31 @@ final class MarkdownPreview {
             }
         }
 
+        // Re-set the markup before installing the new attributes. On a
+        // use-markup GtkLabel, `gtk_label_set_attributes` alone does NOT
+        // reliably invalidate the cached PangoLayout — replacing an existing
+        // highlight overlay (or clearing it) leaves the OLD highlight painted
+        // on screen even though the attribute list is correct. Round-tripping
+        // the markup (set_markup with the same string) forces a clean layout
+        // rebuild, after which the fresh attributes paint correctly. This is
+        // the one reliable invalidation path; queue_draw / queue_resize alone
+        // do not clear the stale overlay.
+        let markup = label.markup
+        label.markup = markup
         label.attributes = attributes
+    }
+
+    /// Remove any search-highlight overlay from a label, forcing GTK to
+    /// repaint. Setting `attributes = nil` is not enough on a use-markup
+    /// label (the stale overlay stays painted), so we round-trip the markup
+    /// to rebuild the layout. Shared by the stale-label sweep in
+    /// ``applySearchHighlights(matches:activeIndex:)`` and by
+    /// ``clearSearchHighlights()``.
+    private static func clearLabelOverlay(_ labelPointer: OpaquePointer) {
+        let label = Label(borrowing: UnsafeMutableRawPointer(labelPointer))
+        label.attributes = nil
+        let markup = label.markup
+        label.markup = markup
     }
 
     /// Pure-logic accessor mirroring ``MarkdownSearchEngine.searchableText``

@@ -89,6 +89,34 @@ struct PreviewSearchHighlightTests {
     }
 
     @Test @MainActor
+    func `switching the query replaces highlights without leaving stale ones`() throws {
+        // Regression: changing the find query left the previous query's
+        // highlights painted on labels that no longer match (and a different
+        // shade lingered under the new matches). The applied-highlight set
+        // must reflect ONLY the current query after a switch — no stale
+        // substrings from the prior one. (The visual half — forcing GTK to
+        // repaint a use-markup label whose attributes changed — is handled by
+        // the markup round-trip in applyAttributes / clearLabelOverlay and is
+        // verified manually, since headless tests don't render.)
+        let preview = try Self.makePreview(suffix: "switch-query", markdown: """
+        # Why it stands out
+
+        A second paragraph with the letter d sprinkled around.
+        """)
+        let why = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "Why", options: .init())
+        preview.applySearchHighlights(matches: why, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts.contains("Why"))
+
+        let d = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "d", options: .init())
+        preview.applySearchHighlights(matches: d, activeIndex: 0)
+        // After switching to "d", nothing from "Why" must remain in the
+        // applied set — every applied substring is a "d"/"D".
+        #expect(!preview.debugAppliedHighlightTexts.contains("Why"))
+        #expect(!preview.debugAppliedHighlightTexts.isEmpty)
+        #expect(preview.debugAppliedHighlightTexts.allSatisfy { $0.lowercased() == "d" })
+    }
+
+    @Test @MainActor
     func `table-only match highlights the matched cell substring`() throws {
         let preview = try Self.makePreview(suffix: "table-hit", markdown: """
         # Doc
