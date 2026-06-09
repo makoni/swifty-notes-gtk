@@ -141,7 +141,11 @@ extension MainWindow {
         editor.view.opacity = 0.85
         editorFormattingToolbar.scrolled.sensitive = false
         let renderer = MarkdownRenderer()
-        let blocks = renderer.blocks(for: note.content)
+        let blocks = renderer.blocks(
+            for: note.content,
+            darkAppearance: StyleManager.default.dark,
+            renderEmojiShortcodes: appSettings.renderEmojiShortcodes,
+        )
         schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
         saveNoteButton.visible = false
         deleteNoteButton.visible = false

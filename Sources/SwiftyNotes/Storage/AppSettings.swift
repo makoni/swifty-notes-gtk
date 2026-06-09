@@ -82,6 +82,11 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// Defaults to `true`. Hidden when the user wants the editor
     /// chrome quieter or runs in a tight window.
     public var outlineBreadcrumbVisible: Bool
+    /// Whether `:shortcode:` emoji aliases (the GitHub gemoji vocabulary,
+    /// e.g. `:rocket:`) are rendered as their emoji in the preview. The
+    /// source text on disk is never changed, and code spans / code blocks
+    /// are left literal. Defaults to `true`.
+    public var renderEmojiShortcodes: Bool
 
     public init(
         customNotesDirectoryPath: String? = nil,
@@ -98,6 +103,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         outlineTreeLines: Bool = true,
         outlineDragHandles: Bool = true,
         outlineBreadcrumbVisible: Bool = true,
+        renderEmojiShortcodes: Bool = true,
     ) {
         self.customNotesDirectoryPath = customNotesDirectoryPath?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -116,6 +122,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.outlineTreeLines = outlineTreeLines
         self.outlineDragHandles = outlineDragHandles
         self.outlineBreadcrumbVisible = outlineBreadcrumbVisible
+        self.renderEmojiShortcodes = renderEmojiShortcodes
     }
 
     public static let `default` = AppSettings()
@@ -153,6 +160,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 outlineTreeLines: outlineTreeLines,
                 outlineDragHandles: outlineDragHandles,
                 outlineBreadcrumbVisible: outlineBreadcrumbVisible,
+                renderEmojiShortcodes: renderEmojiShortcodes,
             )
         }
         return AppSettings(
@@ -170,6 +178,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineTreeLines: outlineTreeLines,
             outlineDragHandles: outlineDragHandles,
             outlineBreadcrumbVisible: outlineBreadcrumbVisible,
+            renderEmojiShortcodes: renderEmojiShortcodes,
         )
     }
 
@@ -218,6 +227,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineTreeLines: outlineTreeLines,
             outlineDragHandles: outlineDragHandles,
             outlineBreadcrumbVisible: outlineBreadcrumbVisible,
+            renderEmojiShortcodes: renderEmojiShortcodes,
         )
     }
 
@@ -236,6 +246,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case outlineTreeLines
         case outlineDragHandles
         case outlineBreadcrumbVisible
+        case renderEmojiShortcodes
     }
 
     public init(from decoder: any Decoder) throws {
@@ -255,6 +266,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineTreeLines: container.decodeIfPresent(Bool.self, forKey: .outlineTreeLines) ?? true,
             outlineDragHandles: container.decodeIfPresent(Bool.self, forKey: .outlineDragHandles) ?? true,
             outlineBreadcrumbVisible: container.decodeIfPresent(Bool.self, forKey: .outlineBreadcrumbVisible) ?? true,
+            renderEmojiShortcodes: container.decodeIfPresent(Bool.self, forKey: .renderEmojiShortcodes) ?? true,
         )
     }
 

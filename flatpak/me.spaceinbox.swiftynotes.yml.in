@@ -127,3 +127,4 @@ modules:
       - install -Dm644 flatpak-deps/swift-markdown/LICENSE.txt /app/share/licenses/me.spaceinbox.swiftynotes/swift-markdown/LICENSE.txt
       - install -Dm644 flatpak-deps/swift-markdown/NOTICE.txt /app/share/licenses/me.spaceinbox.swiftynotes/swift-markdown/NOTICE.txt
       - install -Dm644 flatpak-deps/swift-cmark/COPYING /app/share/licenses/me.spaceinbox.swiftynotes/swift-cmark/COPYING
+      - install -Dm644 Sources/SwiftyNotes/Resources/gemoji-LICENSE.txt /app/share/licenses/me.spaceinbox.swiftynotes/gemoji/LICENSE.txt

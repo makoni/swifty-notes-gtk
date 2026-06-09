@@ -30,7 +30,11 @@ extension MainWindow {
 #if DEBUG
         previewBlockBuildCount += 1
 #endif
-        return previewBlockBuilder.blocks(for: markdown, darkAppearance: StyleManager.default.dark)
+        return previewBlockBuilder.blocks(
+            for: markdown,
+            darkAppearance: StyleManager.default.dark,
+            renderEmojiShortcodes: appSettings.renderEmojiShortcodes,
+        )
     }
 
     func scheduleDebugLaunchEditIfRequested() {

@@ -10,8 +10,13 @@ public struct MarkdownRenderer: Sendable {
         blocks(for: markdown, darkAppearance: StyleManager.default.dark)
     }
 
-    public func blocks(for markdown: String, darkAppearance: Bool) -> [RenderedBlock] {
-        HTMLPreviewDocumentBuilder(darkAppearance: darkAppearance).render(markdown: markdown)
+    public func blocks(
+        for markdown: String,
+        darkAppearance: Bool,
+        renderEmojiShortcodes: Bool = true,
+    ) -> [RenderedBlock] {
+        HTMLPreviewDocumentBuilder(darkAppearance: darkAppearance, renderEmojiShortcodes: renderEmojiShortcodes)
+            .render(markdown: markdown)
     }
 }
 

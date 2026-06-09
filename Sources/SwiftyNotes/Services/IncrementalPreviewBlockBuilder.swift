@@ -13,6 +13,7 @@ struct IncrementalPreviewBlockBuilder {
     private struct Snapshot {
         let markdown: String
         let darkAppearance: Bool
+        let renderEmojiShortcodes: Bool
         let blocks: [RenderedBlock]
         let segments: [Segment]?
     }
@@ -67,16 +68,22 @@ struct IncrementalPreviewBlockBuilder {
     private(set) var debugFullRenderCount = 0
     private(set) var debugIncrementalRenderCount = 0
 
-    mutating func blocks(for markdown: String, darkAppearance: Bool) -> [RenderedBlock] {
+    mutating func blocks(
+        for markdown: String,
+        darkAppearance: Bool,
+        renderEmojiShortcodes: Bool = true,
+    ) -> [RenderedBlock] {
         if let snapshot,
            snapshot.markdown == markdown,
-           snapshot.darkAppearance == darkAppearance
+           snapshot.darkAppearance == darkAppearance,
+           snapshot.renderEmojiShortcodes == renderEmojiShortcodes
         {
             return snapshot.blocks
         }
 
         if let snapshot,
            snapshot.darkAppearance == darkAppearance,
+           snapshot.renderEmojiShortcodes == renderEmojiShortcodes,
            let oldSegments = snapshot.segments,
            let newSegments = Self.parseSegments(from: markdown),
            let incrementallyRendered = Self.incrementalBlocks(
@@ -84,31 +91,43 @@ struct IncrementalPreviewBlockBuilder {
                oldSegments: oldSegments,
                newSegments: newSegments,
                darkAppearance: darkAppearance,
+               renderEmojiShortcodes: renderEmojiShortcodes,
            )
         {
             debugIncrementalRenderCount += 1
             self.snapshot = Snapshot(
                 markdown: markdown,
                 darkAppearance: darkAppearance,
+                renderEmojiShortcodes: renderEmojiShortcodes,
                 blocks: incrementallyRendered,
                 segments: newSegments,
             )
             return incrementallyRendered
         }
 
-        let fullyRendered = Self.fullRender(markdown: markdown, darkAppearance: darkAppearance)
+        let fullyRendered = Self.fullRender(
+            markdown: markdown,
+            darkAppearance: darkAppearance,
+            renderEmojiShortcodes: renderEmojiShortcodes,
+        )
         debugFullRenderCount += 1
         snapshot = Snapshot(
             markdown: markdown,
             darkAppearance: darkAppearance,
+            renderEmojiShortcodes: renderEmojiShortcodes,
             blocks: fullyRendered,
             segments: Self.validatedSegments(for: markdown, blocks: fullyRendered),
         )
         return fullyRendered
     }
 
-    private static func fullRender(markdown: String, darkAppearance: Bool) -> [RenderedBlock] {
-        HTMLPreviewDocumentBuilder(darkAppearance: darkAppearance).render(markdown: markdown)
+    private static func fullRender(
+        markdown: String,
+        darkAppearance: Bool,
+        renderEmojiShortcodes: Bool,
+    ) -> [RenderedBlock] {
+        HTMLPreviewDocumentBuilder(darkAppearance: darkAppearance, renderEmojiShortcodes: renderEmojiShortcodes)
+            .render(markdown: markdown)
     }
 
     private static func validatedSegments(for markdown: String, blocks: [RenderedBlock]) -> [Segment]? {
@@ -132,6 +151,7 @@ struct IncrementalPreviewBlockBuilder {
         oldSegments: [Segment],
         newSegments: [Segment],
         darkAppearance: Bool,
+        renderEmojiShortcodes: Bool,
     ) -> [RenderedBlock]? {
         guard oldBlocks.count == oldSegments.count else { return nil }
 
@@ -144,7 +164,11 @@ struct IncrementalPreviewBlockBuilder {
         var replacementBlocks: [RenderedBlock] = []
         replacementBlocks.reserveCapacity(diff.newChangedRange.count)
         for segment in newSegments[diff.newChangedRange] {
-            guard let rendered = renderSegment(segment, darkAppearance: darkAppearance) else {
+            guard let rendered = renderSegment(
+                segment,
+                darkAppearance: darkAppearance,
+                renderEmojiShortcodes: renderEmojiShortcodes,
+            ) else {
                 return nil
             }
             replacementBlocks.append(rendered)
@@ -155,8 +179,16 @@ struct IncrementalPreviewBlockBuilder {
         return Array(prefix) + replacementBlocks + suffix
     }
 
-    private static func renderSegment(_ segment: Segment, darkAppearance: Bool) -> RenderedBlock? {
-        let rendered = fullRender(markdown: segment.markdown, darkAppearance: darkAppearance)
+    private static func renderSegment(
+        _ segment: Segment,
+        darkAppearance: Bool,
+        renderEmojiShortcodes: Bool,
+    ) -> RenderedBlock? {
+        let rendered = fullRender(
+            markdown: segment.markdown,
+            darkAppearance: darkAppearance,
+            renderEmojiShortcodes: renderEmojiShortcodes,
+        )
         guard rendered.count == 1, let block = rendered.first, isCompatible(block: block, with: segment.kind) else {
             return nil
         }

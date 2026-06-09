@@ -34,6 +34,7 @@ final class SettingsWindow {
     private let outlineTreeLinesRow = SwitchRow(title: "Tree lines under H2 sections")
     private let outlineDragHandlesRow = SwitchRow(title: "Drag handles on hover")
     private let outlineBreadcrumbRow = SwitchRow(title: "Breadcrumb strip above editor")
+    private let renderEmojiRow = SwitchRow(title: "Render emoji shortcodes")
     private let trashRetentionOptions: [(retention: TrashRetention, displayName: String)] = [
         (.never, "Never"),
         (.days(7), "After 7 days"),
@@ -191,6 +192,16 @@ final class SettingsWindow {
         }
         editorGroup.add(indentStyleRow)
 
+        let previewGroup = PreferencesGroup(
+            title: "Preview",
+            description: "Control how rendered Markdown appears in the preview.",
+        )
+        renderEmojiRow.subtitle = "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+        renderEmojiRow.onNotify(.active) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        previewGroup.add(renderEmojiRow)
+
         let savingGroup = PreferencesGroup(
             title: "Saving",
             description: "Autosave runs after the last edit using the configured delay.",
@@ -263,6 +274,7 @@ final class SettingsWindow {
         content.setMargins(24)
         content.append(storageGroup)
         content.append(editorGroup)
+        content.append(previewGroup)
         content.append(savingGroup)
         content.append(appearanceGroup)
         content.append(spellCheckGroup)
@@ -357,6 +369,7 @@ final class SettingsWindow {
         outlineTreeLinesRow.active = currentSettings.outlineTreeLines
         outlineDragHandlesRow.active = currentSettings.outlineDragHandles
         outlineBreadcrumbRow.active = currentSettings.outlineBreadcrumbVisible
+        renderEmojiRow.active = currentSettings.renderEmojiShortcodes
         if !spellCheckLanguages.isEmpty {
             // Index 0 represents the "follow system locale" option (no
             // explicit language). Subsequent indices map onto entries in
@@ -416,6 +429,7 @@ final class SettingsWindow {
             outlineTreeLines: outlineTreeLinesRow.active,
             outlineDragHandles: outlineDragHandlesRow.active,
             outlineBreadcrumbVisible: outlineBreadcrumbRow.active,
+            renderEmojiShortcodes: renderEmojiRow.active,
         )
 
         do {

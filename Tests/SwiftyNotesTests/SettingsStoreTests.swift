@@ -66,6 +66,8 @@ struct SettingsStoreTests {
         #expect(settings.outlineTreeLines == true)
         #expect(settings.outlineDragHandles == true)
         #expect(settings.outlineBreadcrumbVisible == true)
+        // Emoji-shortcode rendering defaults on for legacy payloads too.
+        #expect(settings.renderEmojiShortcodes == true)
     }
 
     @Test
@@ -82,6 +84,7 @@ struct SettingsStoreTests {
             outlineTreeLines: false,
             outlineDragHandles: false,
             outlineBreadcrumbVisible: false,
+            renderEmojiShortcodes: false,
         )
         try store.save(saved)
         let loaded = try store.load()
@@ -89,6 +92,7 @@ struct SettingsStoreTests {
         #expect(loaded.outlineTreeLines == false)
         #expect(loaded.outlineDragHandles == false)
         #expect(loaded.outlineBreadcrumbVisible == false)
+        #expect(loaded.renderEmojiShortcodes == false)
     }
 
     @Test
@@ -292,6 +296,7 @@ struct SettingsStoreTests {
             outlineTreeLines: false,
             outlineDragHandles: false,
             outlineBreadcrumbVisible: false,
+            renderEmojiShortcodes: false,
         )
 
         // The equality branch (directory == default) previously rebuilt
@@ -313,6 +318,7 @@ struct SettingsStoreTests {
         #expect(updated.outlineTreeLines == false)
         #expect(updated.outlineDragHandles == false)
         #expect(updated.outlineBreadcrumbVisible == false)
+        #expect(updated.renderEmojiShortcodes == false)
     }
 
     @Test

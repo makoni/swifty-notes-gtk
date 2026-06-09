@@ -160,6 +160,9 @@ final class ExternalDocumentWindow {
     private var previewBlockBuildCount = 0
 #endif
     private var previewBlockBuilder = IncrementalPreviewBlockBuilder()
+    /// Mirrors `AppSettings.renderEmojiShortcodes`; refreshed in
+    /// `applyRuntimeSettings` and fed to the preview block builder.
+    private var renderEmojiShortcodes = true
 
     init(
         application: Application,
@@ -394,6 +397,7 @@ private extension ExternalDocumentWindow {
 
     func applyRuntimeSettings(_ settings: AppSettings, shouldRefreshPreview: Bool = true) {
         editor.applySettings(settings)
+        renderEmojiShortcodes = settings.renderEmojiShortcodes
         autosaveDelay = autosaveDelayOverride ?? .seconds(settings.autosaveDelaySeconds)
 
         let styleManager = StyleManager.default
@@ -467,7 +471,11 @@ private extension ExternalDocumentWindow {
 #if DEBUG
         previewBlockBuildCount += 1
 #endif
-        return previewBlockBuilder.blocks(for: markdown, darkAppearance: StyleManager.default.dark)
+        return previewBlockBuilder.blocks(
+            for: markdown,
+            darkAppearance: StyleManager.default.dark,
+            renderEmojiShortcodes: renderEmojiShortcodes,
+        )
     }
 
     func schedulePreviewRefresh(blocks: [RenderedBlock], baseDirectory: URL) {

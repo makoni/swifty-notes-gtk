@@ -4,6 +4,10 @@ import Markdown
 
 final class HTMLPreviewDocumentBuilder {
     let darkAppearance: Bool
+    /// When true, `:shortcode:` emoji aliases are substituted in body text
+    /// (never inside code spans / code blocks). Threaded down to the inline
+    /// text builder so it can skip substitution while descending into code.
+    let renderEmojiShortcodes: Bool
 
     /// Per-item metadata recovered from the source markdown in
     /// document order. Order matches `HTMLFormatter`'s depth-first
@@ -29,8 +33,9 @@ final class HTMLPreviewDocumentBuilder {
     private var listItemMetadata: [ListItemMeta] = []
     private var listItemMetadataCursor = 0
 
-    init(darkAppearance: Bool) {
+    init(darkAppearance: Bool, renderEmojiShortcodes: Bool = true) {
         self.darkAppearance = darkAppearance
+        self.renderEmojiShortcodes = renderEmojiShortcodes
     }
 
     func render(markdown: String) -> [RenderedBlock] {
@@ -174,7 +179,8 @@ final class HTMLPreviewDocumentBuilder {
     func block(from node: HTMLNode, listDepth: Int) -> [RenderedBlock] {
         switch node.kind {
         case let .text(text):
-            return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? [] : [.paragraph(.plain(text))]
+            let rendered = renderEmojiShortcodes ? EmojiShortcodes.render(text) : text
+            return rendered.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? [] : [.paragraph(.plain(rendered))]
         case let .element(name, attributes, children):
             switch name {
             case "h1", "h2", "h3", "h4", "h5", "h6":
@@ -601,17 +607,22 @@ final class HTMLPreviewDocumentBuilder {
         }
     }
 
-    func inlineText(from nodes: [HTMLNode]) -> RenderedText {
+    /// - Parameter insideCode: true while descending into an inline `<code>`
+    ///   element, so emoji shortcodes inside code spans (e.g. `` `:rocket:` ``)
+    ///   are left literal. Block code (`<pre>`) never reaches here — it is
+    ///   handled via `textContent(of:)` in `block(from:)`.
+    func inlineText(from nodes: [HTMLNode], insideCode: Bool = false) -> RenderedText {
         var markup = ""
         var plainText = ""
 
         for node in nodes {
             switch node.kind {
             case let .text(text):
-                markup += pangoEscape(text)
-                plainText += text
+                let rendered = (renderEmojiShortcodes && !insideCode) ? EmojiShortcodes.render(text) : text
+                markup += pangoEscape(rendered)
+                plainText += rendered
             case let .element(name, attributes, children):
-                let childText = inlineText(from: children)
+                let childText = inlineText(from: children, insideCode: insideCode || name == "code")
                 switch name {
                 case "strong":
                     markup += "<b>\(childText.markup)</b>"

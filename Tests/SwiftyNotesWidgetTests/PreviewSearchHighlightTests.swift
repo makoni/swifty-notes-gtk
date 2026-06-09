@@ -148,6 +148,46 @@ struct PreviewSearchHighlightTests {
     }
 
     @Test @MainActor
+    func `search highlight lands correctly after an emoji shortcode in the block`() throws {
+        // Offset-alignment guard for #28 × #27: a shortcode like
+        // :white_check_mark: (19 source characters) collapses to ✅ (one
+        // Character) in the rendered text. The highlight overlay computes
+        // Character offsets over that rendered text, so a search term *after*
+        // the emoji must still be painted on exactly the right span — not
+        // shifted by the source/rendered length difference.
+        let preview = try Self.makePreview(suffix: "emoji-offset", markdown: """
+        Shipped :white_check_mark: and findme here
+        """)
+        let matches = MarkdownSearchEngine.search(
+            blocks: preview.debugLastRenderedBlocks,
+            query: "findme",
+            options: .init(),
+        )
+        #expect(!matches.isEmpty)
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["findme"])
+    }
+
+    @Test @MainActor
+    func `search highlight aligns after a multi-scalar flag emoji shortcode`() throws {
+        // Hardens the offset guard against scalar-vs-Character bugs: :de: → 🇩🇪
+        // is ONE Swift Character but two Unicode scalars / eight UTF-8 bytes.
+        // If the highlight offsets were ever computed in scalars or bytes
+        // instead of Characters, the painted span would drift off "findme".
+        let preview = try Self.makePreview(suffix: "flag-offset", markdown: """
+        Region :de: then findme here
+        """)
+        let matches = MarkdownSearchEngine.search(
+            blocks: preview.debugLastRenderedBlocks,
+            query: "findme",
+            options: .init(),
+        )
+        #expect(!matches.isEmpty)
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["findme"])
+    }
+
+    @Test @MainActor
     func `table-only match highlights the matched cell substring`() throws {
         let preview = try Self.makePreview(suffix: "table-hit", markdown: """
         # Doc
