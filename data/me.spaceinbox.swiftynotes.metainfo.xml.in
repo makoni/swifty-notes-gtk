@@ -63,12 +63,32 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description>
+        <p>This update brings your Markdown emoji to life and tidies up the update checker.</p>
+        <ul>
+          <li>Emoji shortcodes like <code>:white_check_mark:</code> and <code>:rocket:</code> now render as real emoji in the preview — in headings, lists, quotes, tables, and link labels. Your Markdown source stays untouched, and anything inside code stays literal. Around 1,900 GitHub-style shortcodes are supported, and a new switch in Settings → Preview turns the substitution off if you prefer the raw text.</li>
+          <li>"Check for Updates…" no longer appears in sandboxed installs (Flatpak and Snap) that have no network access, where checking could only ever fail — your store keeps you up to date instead. Regular installs are unaffected, even when you happen to be offline at launch.</li>
+          <li>Running a manual update check without an internet connection now shows a plain "no internet connection" message instead of a technical error.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.2.0" date="2026-06-04">
+      <description>
         <p>This update adds a document outline for quick navigation, full Find &amp; Replace, and live search highlighting in the preview.</p>
         <ul>
           <li>A new Outline panel (toggle with F9) lists every heading in the current note so you can jump around long documents at a glance. It tracks your position as you scroll, shows a breadcrumb of where you are, and lets you filter headings, collapse sections, fold them in the editor, and even drag to reorder whole sections. Press Ctrl+G for a command-palette-style quick jump to any heading.</li>
           <li>Find &amp; Replace arrives: Ctrl+F searches, Ctrl+H replaces, with Replace and Replace All, case-sensitive matching, match counts, and smooth scrolling to each result. Search works in both the editor and the live preview, and remembers your last query.</li>
           <li>Search matches now highlight directly in the rendered preview — including inside fenced code blocks and table cells — so you can see every hit in context, not just in the raw text.</li>
           <li>Editing large, heading-heavy notes feels noticeably smoother thanks to a leaner preview and outline that do far less redrawing while you write and scroll.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.1.7" date="2026-05-20">
+      <description>
+        <p>This update helps you stay on the latest version and smooths out a few rough edges in everyday editing.</p>
+        <ul>
+          <li>Swifty Notes now lets you know when a newer release is available: a friendly banner appears at the top of the editor with a one-click link to the release page, and a new "Check for Updates…" entry was added to the main menu so you can check on demand.</li>
+          <li>Opening standalone Markdown files from outside your library — including from your file manager's Open With flow — works reliably again when the file path contains spaces, for example notes stored under "My Documents" or a cloud-synced folder like "Cloud Disk".</li>
+          <li>Fenced code blocks tagged as <code>bash</code> or <code>csharp</code> now get syntax highlighting in the preview, matching the other supported languages.</li>
         </ul>
       </description>
     </release>
