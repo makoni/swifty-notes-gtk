@@ -4,8 +4,8 @@ import Testing
 struct MarkdownFormattingTests {
     // MARK: - Table scaffold
 
-    @Test
-    func `table scaffold builds header alignment and data rows`() {
+    @Test("Table scaffold builds header alignment and data rows")
+    func tableScaffoldBuildsHeaderAlignmentAndDataRows() {
         let scaffold = MarkdownTableScaffold.generate(rows: 2, cols: 3)
 
         #expect(scaffold == """
@@ -16,8 +16,8 @@ struct MarkdownFormattingTests {
         """)
     }
 
-    @Test
-    func `table scaffold encodes alignment row per column`() {
+    @Test("Table scaffold encodes alignment row per column")
+    func tableScaffoldEncodesAlignmentRowPerColumn() {
         let scaffold = MarkdownTableScaffold.generate(
             rows: 1,
             cols: 3,
@@ -31,8 +31,8 @@ struct MarkdownFormattingTests {
         """)
     }
 
-    @Test
-    func `table scaffold pads alignment array to match column count`() {
+    @Test("Table scaffold pads alignment array to match column count")
+    func tableScaffoldPadsAlignmentArrayToMatchColumnCount() {
         // Short alignment arrays extend with .left so callers that only
         // care about the first few columns still get valid output.
         let scaffold = MarkdownTableScaffold.generate(
@@ -48,8 +48,8 @@ struct MarkdownFormattingTests {
         """)
     }
 
-    @Test
-    func `table scaffold single row single column`() {
+    @Test("Table scaffold single row single column")
+    func tableScaffoldSingleRowSingleColumn() {
         let scaffold = MarkdownTableScaffold.generate(rows: 1, cols: 1)
 
         #expect(scaffold == """
@@ -59,15 +59,15 @@ struct MarkdownFormattingTests {
         """)
     }
 
-    @Test
-    func `table scaffold ignores non positive dimensions`() {
+    @Test("Table scaffold ignores non positive dimensions")
+    func tableScaffoldIgnoresNonPositiveDimensions() {
         #expect(MarkdownTableScaffold.generate(rows: 0, cols: 3) == nil)
         #expect(MarkdownTableScaffold.generate(rows: 2, cols: 0) == nil)
         #expect(MarkdownTableScaffold.generate(rows: -1, cols: 3) == nil)
     }
 
-    @Test
-    func `table insertion at start of empty buffer writes scaffold with trailing newline`() {
+    @Test("Table insertion at start of empty buffer writes scaffold with trailing newline")
+    func tableInsertionAtStartOfEmptyBufferWritesScaffoldWithTrailingNewline() {
         let edit = MarkdownTableScaffold.insertion(
             into: "",
             at: 0,
@@ -93,8 +93,8 @@ struct MarkdownFormattingTests {
         ] == "Column 1")
     }
 
-    @Test
-    func `table insertion in the middle of A paragraph surrounds the scaffold with blank lines`() {
+    @Test("Table insertion in the middle of A paragraph surrounds the scaffold with blank lines")
+    func tableInsertionInTheMiddleOfAParagraphSurroundsTheScaffoldWith() {
         let text = "Intro paragraph ends here.\nNext paragraph."
         let cursor = 27 // just after "\n" between the two paragraphs — start of "Next"
         let edit = MarkdownTableScaffold.insertion(
@@ -111,8 +111,8 @@ struct MarkdownFormattingTests {
         #expect(edit.replacementText.contains("| Column 1 |"))
     }
 
-    @Test
-    func `table insertion on empty line does not add extra blank lines`() {
+    @Test("Table insertion on empty line does not add extra blank lines")
+    func tableInsertionOnEmptyLineDoesNotAddExtraBlankLines() {
         let text = "Paragraph\n\nAfter table."
         let cursor = 10 // on the empty line between paragraphs
         let edit = MarkdownTableScaffold.insertion(
@@ -126,8 +126,8 @@ struct MarkdownFormattingTests {
         #expect(edit.replacementText.hasSuffix("\n"))
     }
 
-    @Test
-    func `bold wraps selected text and keeps inner selection`() {
+    @Test("Bold wraps selected text and keeps inner selection")
+    func boldWrapsSelectedTextAndKeepsInnerSelection() {
         let edit = MarkdownFormatting.edit(
             for: .bold,
             in: "Hello world",
@@ -139,8 +139,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 6 ..< 15)
     }
 
-    @Test
-    func `bold unwraps selection when already formatted`() {
+    @Test("Bold unwraps selection when already formatted")
+    func boldUnwrapsSelectionWhenAlreadyFormatted() {
         let edit = MarkdownFormatting.edit(
             for: .bold,
             in: "Hello **world**",
@@ -152,8 +152,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 6 ..< 11)
     }
 
-    @Test
-    func `italic without selection inserts placeholder`() {
+    @Test("Italic without selection inserts placeholder")
+    func italicWithoutSelectionInsertsPlaceholder() {
         let edit = MarkdownFormatting.edit(
             for: .italic,
             in: "Hello",
@@ -165,8 +165,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 5 ..< 15)
     }
 
-    @Test
-    func `link for selected text inserts URL placeholder`() {
+    @Test("Link for selected text inserts URL placeholder")
+    func linkForSelectedTextInsertsURLPlaceholder() {
         let edit = MarkdownFormatting.edit(
             for: .link,
             in: "Read docs",
@@ -178,8 +178,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 5 ..< 21)
     }
 
-    @Test
-    func `heading prefixes current line at cursor`() {
+    @Test("Heading prefixes current line at cursor")
+    func headingPrefixesCurrentLineAtCursor() {
         let edit = MarkdownFormatting.edit(
             for: .heading,
             in: "First line\nSecond line",
@@ -191,8 +191,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 11 ..< 24)
     }
 
-    @Test
-    func `heading toggles current line off`() {
+    @Test("Heading toggles current line off")
+    func headingTogglesCurrentLineOff() {
         let edit = MarkdownFormatting.edit(
             for: .heading,
             in: "First line\n# Second line",
@@ -204,8 +204,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 11 ..< 22)
     }
 
-    @Test
-    func `bullet list prefixes each selected line`() {
+    @Test("Bullet list prefixes each selected line")
+    func bulletListPrefixesEachSelectedLine() {
         let edit = MarkdownFormatting.edit(
             for: .bulletList,
             in: "Alpha\nBeta\nGamma",
@@ -217,8 +217,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 0 ..< 14)
     }
 
-    @Test
-    func `bullet list toggles whole current line off at cursor`() {
+    @Test("Bullet list toggles whole current line off at cursor")
+    func bulletListTogglesWholeCurrentLineOffAtCursor() {
         let edit = MarkdownFormatting.edit(
             for: .bulletList,
             in: "- Alpha\nBeta",
@@ -230,8 +230,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 0 ..< 5)
     }
 
-    @Test
-    func `numbered list enumerates selected lines`() {
+    @Test("Numbered list enumerates selected lines")
+    func numberedListEnumeratesSelectedLines() {
         let edit = MarkdownFormatting.edit(
             for: .numberedList,
             in: "Alpha\nBeta",
@@ -242,8 +242,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 0 ..< 16)
     }
 
-    @Test
-    func `task list prefixes selected lines`() {
+    @Test("Task list prefixes selected lines")
+    func taskListPrefixesSelectedLines() {
         let edit = MarkdownFormatting.edit(
             for: .taskList,
             in: "Ship it",
@@ -254,8 +254,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 0 ..< 13)
     }
 
-    @Test
-    func `task list converts existing bullet list line`() {
+    @Test("Task list converts existing bullet list line")
+    func taskListConvertsExistingBulletListLine() {
         let edit = MarkdownFormatting.edit(
             for: .taskList,
             in: "- Ship it",
@@ -267,8 +267,8 @@ struct MarkdownFormattingTests {
         #expect(edit.selectedRange == 0 ..< 13)
     }
 
-    @Test
-    func `task list toggles off whole line when already task item`() {
+    @Test("Task list toggles off whole line when already task item")
+    func taskListTogglesOffWholeLineWhenAlreadyTaskItem() {
         let edit = MarkdownFormatting.edit(
             for: .taskList,
             in: "- [ ] Ship it",

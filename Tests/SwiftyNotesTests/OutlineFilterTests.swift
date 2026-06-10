@@ -21,51 +21,51 @@ struct OutlineFilterTests {
         .init(id: "search",    level: 3, text: "Search",     blockIndex: 6, line: 13),
     ]
 
-    @Test
-    func `with empty query and empty collapsed set, returns everything`() {
+    @Test("With empty query and empty collapsed set, returns everything")
+    func withEmptyQueryAndEmptyCollapsedSetReturnsEverything() {
         let visible = OutlineFilter.visible(headings: document, query: "", collapsed: [])
         #expect(visible.map(\.id) == ["doc", "overview", "goals", "non-goals", "features", "outline", "search"])
     }
 
-    @Test
-    func `collapsing an H2 hides its H3 children but keeps siblings`() {
+    @Test("Collapsing an H2 hides its H3 children but keeps siblings")
+    func collapsingAnH2HidesItsH3ChildrenButKeepsSiblings() {
         let visible = OutlineFilter.visible(headings: document, query: "", collapsed: ["overview"])
         #expect(visible.map(\.id) == ["doc", "overview", "features", "outline", "search"])
     }
 
-    @Test
-    func `collapsing both H2 sections hides every H3`() {
+    @Test("Collapsing both H2 sections hides every H3")
+    func collapsingBothH2SectionsHidesEveryH3() {
         let visible = OutlineFilter.visible(headings: document, query: "", collapsed: ["overview", "features"])
         #expect(visible.map(\.id) == ["doc", "overview", "features"])
     }
 
-    @Test
-    func `a non-empty query filters by case-insensitive substring on text`() {
+    @Test("A non-empty query filters by case-insensitive substring on text")
+    func aNonEmptyQueryFiltersByCaseInsensitiveSubstringOnText() {
         let visible = OutlineFilter.visible(headings: document, query: "go", collapsed: [])
         #expect(visible.map(\.id) == ["goals", "non-goals"])
     }
 
-    @Test
-    func `query ignores the collapsed set so matches under a collapsed section still surface`() {
+    @Test("Query ignores the collapsed set so matches under a collapsed section still surface")
+    func queryIgnoresTheCollapsedSetSoMatchesUnderACollapsedSectionStill() {
         // The user collapsed Overview but searches for "goals" — they
         // would expect to find them anyway.
         let visible = OutlineFilter.visible(headings: document, query: "goals", collapsed: ["overview"])
         #expect(visible.map(\.id) == ["goals", "non-goals"])
     }
 
-    @Test
-    func `query is case-insensitive and trims leading and trailing whitespace`() {
+    @Test("Query is case-insensitive and trims leading and trailing whitespace")
+    func queryIsCaseInsensitiveAndTrimsLeadingAndTrailingWhitespace() {
         #expect(OutlineFilter.visible(headings: document, query: "OUTLINE", collapsed: []).map(\.id) == ["outline"])
         #expect(OutlineFilter.visible(headings: document, query: "  outline  ", collapsed: []).map(\.id) == ["outline"])
     }
 
-    @Test
-    func `query with no matches returns empty`() {
+    @Test("Query with no matches returns empty")
+    func queryWithNoMatchesReturnsEmpty() {
         #expect(OutlineFilter.visible(headings: document, query: "zzz", collapsed: []).isEmpty)
     }
 
-    @Test
-    func `H1 is never hidden by collapsing it — collapse only applies to H2 children`() {
+    @Test("H1 is never hidden by collapsing it — collapse only applies to H2 children")
+    func h1IsNeverHiddenByCollapsingItCollapseOnlyAppliesToH2() {
         // Collapsing the document-level H1 would be surprising. Only H2
         // collapses make sense for the rule "hide my H3 children".
         let visible = OutlineFilter.visible(headings: document, query: "", collapsed: ["doc"])

@@ -30,8 +30,8 @@ struct MainWindowUpdatesTests {
         )
     }
 
-    @Test @MainActor
-    func `updateAvailable result shows the banner and records the release URL`() throws {
+    @Test("updateAvailable result shows the banner and records the release URL") @MainActor
+    func updateAvailableResultShowsTheBannerAndRecordsTheReleaseURL() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.update.available")
         let releaseURL = URL(string: "https://github.com/makoni/swifty-notes-gtk/releases/tag/v1.2.4")!
 
@@ -41,8 +41,8 @@ struct MainWindowUpdatesTests {
         #expect(window.pendingUpdateReleaseURL == releaseURL)
     }
 
-    @Test @MainActor
-    func `upToDate result leaves the banner hidden`() throws {
+    @Test("upToDate result leaves the banner hidden") @MainActor
+    func upToDateResultLeavesTheBannerHidden() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.update.uptodate")
 
         window.handleUpdateCheckResult(.upToDate, manual: false)
@@ -51,8 +51,8 @@ struct MainWindowUpdatesTests {
         #expect(window.pendingUpdateReleaseURL == nil)
     }
 
-    @Test @MainActor
-    func `error result leaves the banner hidden`() throws {
+    @Test("Error result leaves the banner hidden") @MainActor
+    func errorResultLeavesTheBannerHidden() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.update.error")
 
         window.handleUpdateCheckResult(.error(message: "network unreachable"), manual: true)
@@ -133,8 +133,8 @@ struct MainWindowUpdatesTests {
         #expect(window.overflowMenuItemsBySection["Help"]?.contains("Check for Updates…") == true)
     }
 
-    @Test @MainActor
-    func `Update button opens the release URL through the injected opener`() throws {
+    @Test("Update button opens the release URL through the injected opener") @MainActor
+    func updateButtonOpensTheReleaseURLThroughTheInjectedOpener() throws {
         let openedURL = URLRecorder()
         let window = try Self.makeWindow(
             appID: "me.spaceinbox.swiftynotes.tests.update.openrelease",
@@ -150,8 +150,8 @@ struct MainWindowUpdatesTests {
         #expect(openedURL.snapshot() == releaseURL)
     }
 
-    @Test @MainActor
-    func `Update button is a no-op before any successful check has stored a URL`() throws {
+    @Test("Update button is a no-op before any successful check has stored a URL") @MainActor
+    func updateButtonIsANoOpBeforeAnySuccessfulCheckHasStored() throws {
         let openedURL = URLRecorder()
         let window = try Self.makeWindow(
             appID: "me.spaceinbox.swiftynotes.tests.update.openrelease.nil",
@@ -165,8 +165,8 @@ struct MainWindowUpdatesTests {
         #expect(openedURL.snapshot() == nil)
     }
 
-    @Test @MainActor
-    func `force-update-available flag promotes equal remote version into updateAvailable via handleUpdateCheckResult`() throws {
+    @Test("Force-update-available flag promotes equal remote version into updateAvailable via handleUpdateCheckResult") @MainActor
+    func forceUpdateAvailableFlagPromotesEqualRemoteVersionIntoUpdateAvailableViaHandleUpdateCheckResult() throws {
         // The force-flag end-to-end path is already covered by
         // UpdateCheckerTests; here we just confirm the MainWindow
         // surface mirrors that outcome — given an `updateAvailable`

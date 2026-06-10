@@ -22,8 +22,8 @@ struct PreviewSearchHighlightTests {
         return preview
     }
 
-    @Test @MainActor
-    func `apply with matches in two blocks marks both their labels`() throws {
+    @Test("Apply with matches in two blocks marks both their labels") @MainActor
+    func applyWithMatchesInTwoBlocksMarksBothTheirLabels() throws {
         let preview = try Self.makePreview(suffix: "two-blocks", markdown: """
         # Doc
 
@@ -52,8 +52,8 @@ struct PreviewSearchHighlightTests {
         #expect(!preview.debugHighlightedLabelPointers.isEmpty)
     }
 
-    @Test @MainActor
-    func `clearSearchHighlights drops every previously-highlighted label`() throws {
+    @Test("clearSearchHighlights drops every previously-highlighted label") @MainActor
+    func clearSearchHighlightsDropsEveryPreviouslyHighlightedLabel() throws {
         let preview = try Self.makePreview(suffix: "clear", markdown: """
         # Title
 
@@ -70,8 +70,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugHighlightedLabelPointers.isEmpty)
     }
 
-    @Test @MainActor
-    func `applying empty match set clears prior highlights`() throws {
+    @Test("Applying empty match set clears prior highlights") @MainActor
+    func applyingEmptyMatchSetClearsPriorHighlights() throws {
         let preview = try Self.makePreview(suffix: "empty-apply", markdown: """
         first search second search
         """)
@@ -88,8 +88,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugHighlightedLabelPointers.isEmpty)
     }
 
-    @Test @MainActor
-    func `switching the query replaces highlights without leaving stale ones`() throws {
+    @Test("Switching the query replaces highlights without leaving stale ones") @MainActor
+    func switchingTheQueryReplacesHighlightsWithoutLeavingStaleOnes() throws {
         // Regression: changing the find query left the previous query's
         // highlights painted on labels that no longer match (and a different
         // shade lingered under the new matches). The applied-highlight set
@@ -187,8 +187,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts == ["findme"])
     }
 
-    @Test @MainActor
-    func `table-only match highlights the matched cell substring`() throws {
+    @Test("Table-only match highlights the matched cell substring") @MainActor
+    func tableOnlyMatchHighlightsTheMatchedCellSubstring() throws {
         let preview = try Self.makePreview(suffix: "table-hit", markdown: """
         # Doc
 
@@ -213,8 +213,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugActiveHighlightTexts == ["search"])
     }
 
-    @Test @MainActor
-    func `clearing restores a highlighted table label`() throws {
+    @Test("Clearing restores a highlighted table label") @MainActor
+    func clearingRestoresAHighlightedTableLabel() throws {
         let preview = try Self.makePreview(suffix: "table-clear", markdown: """
         | a | b |
         |---|---|
@@ -232,8 +232,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts.isEmpty)
     }
 
-    @Test @MainActor
-    func `re-rendering identical content keeps span label pointers so highlights still paint`() throws {
+    @Test("Re-rendering identical content keeps span label pointers so highlights still paint") @MainActor
+    func reRenderingIdenticalContentKeepsSpanLabelPointersSoHighlightsStillPaint() throws {
         // Regression: a no-op re-render (shouldSkipRender, e.g. refreshPreview
         // on a view-mode switch) ran makeRows — which resets blockTextSpans
         // and repopulates them WITHOUT label pointers — then returned early,
@@ -259,8 +259,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts.contains("searchword"))
     }
 
-    @Test @MainActor
-    func `partial match inside a table cell highlights only the matched substring`() throws {
+    @Test("Partial match inside a table cell highlights only the matched substring") @MainActor
+    func partialMatchInsideATableCellHighlightsOnlyTheMatchedSubstring() throws {
         // Cell text is longer than the query — exercises the localOffset /
         // match-length translation (the whole reason per-cell offset math
         // exists). A bug that painted the whole cell, or dropped localOffset,
@@ -282,8 +282,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts == ["search"])
     }
 
-    @Test @MainActor
-    func `match in the middle of a table cell highlights at the right offset`() throws {
+    @Test("Match in the middle of a table cell highlights at the right offset") @MainActor
+    func matchInTheMiddleOfATableCellHighlightsAtTheRight() throws {
         // Query matches NOT at the cell start, so localOffset > 0.
         let preview = try Self.makePreview(suffix: "table-midcell", markdown: """
         | label | value |
@@ -300,8 +300,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts == ["beta"])
     }
 
-    @Test @MainActor
-    func `two tables in one document highlight independently`() throws {
+    @Test("Two tables in one document highlight independently") @MainActor
+    func twoTablesInOneDocumentHighlightIndependently() throws {
         let preview = try Self.makePreview(suffix: "two-tables", markdown: """
         | a | b |
         |---|---|
@@ -326,8 +326,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts == ["alpha", "alpha"])
     }
 
-    @Test @MainActor
-    func `match in a body cell highlights that cell, not the header`() throws {
+    @Test("Match in a body cell highlights that cell, not the header") @MainActor
+    func matchInABodyCellHighlightsThatCellNotTheHeader() throws {
         // "Name" appears only as a body value; ensure the highlight lands
         // on the body cell (post-divider) and reads back as "Name".
         let preview = try Self.makePreview(suffix: "table-body", markdown: """
@@ -345,8 +345,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugAppliedHighlightTexts == ["Name"])
     }
 
-    @Test @MainActor
-    func `applying twice with same matches doesn't duplicate the label set`() throws {
+    @Test("Applying twice with same matches doesn't duplicate the label set") @MainActor
+    func applyingTwiceWithSameMatchesDoesntDuplicateTheLabelSet() throws {
         let preview = try Self.makePreview(suffix: "idempotent", markdown: """
         search again search
         """)
@@ -364,8 +364,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugHighlightedLabelPointers == firstSet)
     }
 
-    @Test @MainActor
-    func `code-block matches activate the SourceBuffer-tag overlay`() throws {
+    @Test("Code-block matches activate the SourceBuffer-tag overlay") @MainActor
+    func codeBlockMatchesActivateTheSourceBufferTagOverlay() throws {
         let preview = try Self.makePreview(suffix: "code-tag", markdown: """
         # Doc
 
@@ -397,8 +397,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugHighlightedCodeBlockBlockIndexes.isEmpty)
     }
 
-    @Test @MainActor
-    func `matches across labels + code blocks light up both overlays`() throws {
+    @Test("Matches across labels + code blocks light up both overlays") @MainActor
+    func matchesAcrossLabelsCodeBlocksLightUpBothOverlays() throws {
         let preview = try Self.makePreview(suffix: "mixed", markdown: """
         # Title with findMe
 
@@ -420,8 +420,8 @@ struct PreviewSearchHighlightTests {
         #expect(!preview.debugHighlightedCodeBlockBlockIndexes.isEmpty)
     }
 
-    @Test @MainActor
-    func `applying the same matches twice is memoized as a no-op`() throws {
+    @Test("Applying the same matches twice is memoized as a no-op") @MainActor
+    func applyingTheSameMatchesTwiceIsMemoizedAsANoOp() throws {
         let preview = try Self.makePreview(suffix: "memo", markdown: "alpha search beta search")
         let matches = MarkdownSearchEngine.search(
             blocks: preview.debugLastRenderedBlocks,
@@ -439,8 +439,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugHighlightApplyCount == firstApplyCount + 1)
     }
 
-    @Test @MainActor
-    func `applying highlights does not grow the preview widget tree`() throws {
+    @Test("Applying highlights does not grow the preview widget tree") @MainActor
+    func applyingHighlightsDoesNotGrowThePreviewWidgetTree() throws {
         // Perf gate: the overlay is supposed to be an attribute
         // swap, not a widget rebuild. The recursive widget count
         // before and after must be identical — sysprof showed
@@ -469,8 +469,8 @@ struct PreviewSearchHighlightTests {
         #expect(preview.debugWidgetTreeCount == countBefore)
     }
 
-    @Test @MainActor
-    func `re-rendering preview keeps highlight pipeline working`() throws {
+    @Test("Re-rendering preview keeps highlight pipeline working") @MainActor
+    func reRenderingPreviewKeepsHighlightPipelineWorking() throws {
         let preview = try Self.makePreview(suffix: "rerender", markdown: "alpha search")
         let matches = MarkdownSearchEngine.search(
             blocks: preview.debugLastRenderedBlocks,

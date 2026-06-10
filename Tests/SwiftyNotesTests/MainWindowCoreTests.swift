@@ -5,8 +5,8 @@ import Foundation
 import Testing
 
 struct MainWindowCoreTests {
-    @Test @MainActor
-    func `main window creates initial note and updates preview`() throws {
+    @Test("Main window creates initial note and updates preview") @MainActor
+    func mainWindowCreatesInitialNoteAndUpdatesPreview() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -38,8 +38,8 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("Body"))
     }
 
-    @Test @MainActor
-    func `main window typing burst defers markdown rebuild until pending preview flush`() throws {
+    @Test("Main window typing burst defers markdown rebuild until pending preview flush") @MainActor
+    func mainWindowTypingBurstDefersMarkdownRebuildUntilPendingPreviewFlush() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -69,8 +69,8 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewBlockBuildCount == baselineBuildCount + 1)
     }
 
-    @Test @MainActor
-    func `main window body edits skip sidebar redraw when title and search state are unchanged`() throws {
+    @Test("Main window body edits skip sidebar redraw when title and search state are unchanged") @MainActor
+    func mainWindowBodyEditsSkipSidebarRedrawWhenTitleAndSearchState() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -96,8 +96,8 @@ struct MainWindowCoreTests {
         #expect(window.debugSidebarRenderCount == baselineRenderCount)
     }
 
-    @Test @MainActor
-    func `main window selecting CLI seeded note updates preview`() throws {
+    @Test("Main window selecting CLI seeded note updates preview") @MainActor
+    func mainWindowSelectingCLISeededNoteUpdatesPreview() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -134,8 +134,8 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("swiftynotes cli update"))
     }
 
-    @Test @MainActor
-    func `main window present renders preview for initially selected note`() async throws {
+    @Test("Main window present renders preview for initially selected note") @MainActor
+    func mainWindowPresentRendersPreviewForInitiallySelectedNote() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -164,8 +164,8 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("Preview body"))
     }
 
-    @Test @MainActor
-    func `main window applies configured editor autosave and appearance preferences at startup`() throws {
+    @Test("Main window applies configured editor autosave and appearance preferences at startup") @MainActor
+    func mainWindowAppliesConfiguredEditorAutosaveAndAppearancePreferencesAtStartup() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -203,8 +203,8 @@ struct MainWindowCoreTests {
         #expect(StyleManager.default.colorScheme == .forceDark)
     }
 
-    @Test @MainActor
-    func `main window create note adds another note`() throws {
+    @Test("Main window create note adds another note") @MainActor
+    func mainWindowCreateNoteAddsAnotherNote() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -229,8 +229,8 @@ struct MainWindowCoreTests {
         #expect(window.debugNotesCount == 4)
     }
 
-    @Test @MainActor
-    func `main window create note after present keeps selection stable`() async throws {
+    @Test("Main window create note after present keeps selection stable") @MainActor
+    func mainWindowCreateNoteAfterPresentKeepsSelectionStable() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -259,8 +259,8 @@ struct MainWindowCoreTests {
         #expect(window.debugHeaderSubtitle.contains("Saved"))
     }
 
-    @Test @MainActor
-    func `main window imports dropped image into selected note assets and markdown`() throws {
+    @Test("Main window imports dropped image into selected note assets and markdown") @MainActor
+    func mainWindowImportsDroppedImageIntoSelectedNoteAssetsAndMarkdown() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -296,8 +296,8 @@ struct MainWindowCoreTests {
         #expect(try Data(contentsOf: repository.noteAssetsDirectoryURL(for: reloaded[0]).appendingPathComponent("dragged-diagram.png")) == Data("dropped-image".utf8))
     }
 
-    @Test @MainActor
-    func `main window imports pasted image into selected note assets and markdown`() throws {
+    @Test("Main window imports pasted image into selected note assets and markdown") @MainActor
+    func mainWindowImportsPastedImageIntoSelectedNoteAssetsAndMarkdown() throws {
         // Clipboard paste mirrors the drop-target import: the bytes the
         // clipboard handed us land in the note's `assets/` folder under
         // a unique `pasted.png` / `pasted-2.png` filename, and a
@@ -344,8 +344,8 @@ struct MainWindowCoreTests {
         #expect(try Data(contentsOf: assetsDir.appendingPathComponent("pasted-2.png")) == Data("second-paste".utf8))
     }
 
-    @Test @MainActor
-    func `main window paste URL with no selection wraps it as a markdown link`() throws {
+    @Test("Main window paste URL with no selection wraps it as a markdown link") @MainActor
+    func mainWindowPasteURLWithNoSelectionWrapsItAsAMarkdown() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -379,8 +379,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorText == "Cursor here: [https://example.com](https://example.com)")
     }
 
-    @Test @MainActor
-    func `main window paste URL with selection wraps the selection as link text`() throws {
+    @Test("Main window paste URL with selection wraps the selection as link text") @MainActor
+    func mainWindowPasteURLWithSelectionWrapsTheSelectionAsLinkText() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -414,8 +414,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorText == "[click here](https://example.com) please")
     }
 
-    @Test @MainActor
-    func `main window paste plain text inserts text without wrapping`() throws {
+    @Test("Main window paste plain text inserts text without wrapping") @MainActor
+    func mainWindowPastePlainTextInsertsTextWithoutWrapping() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -449,8 +449,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorText == "Prefix: just some words")
     }
 
-    @Test @MainActor
-    func `main window paste URL inside code block keeps URL raw`() throws {
+    @Test("Main window paste URL inside code block keeps URL raw") @MainActor
+    func mainWindowPasteURLInsideCodeBlockKeepsURLRaw() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -485,8 +485,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorText == "```\ncurl https://example.com")
     }
 
-    @Test @MainActor
-    func `main window paste image throws when no note is selected`() throws {
+    @Test("Main window paste image throws when no note is selected") @MainActor
+    func mainWindowPasteImageThrowsWhenNoNoteIsSelected() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -512,8 +512,8 @@ struct MainWindowCoreTests {
         }
     }
 
-    @Test @MainActor
-    func `main window create note request creates note after main loop drain`() throws {
+    @Test("Main window create note request creates note after main loop drain") @MainActor
+    func mainWindowCreateNoteRequestCreatesNoteAfterMainLoopDrain() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         let deferredScheduler = TestMainActorScheduler()
@@ -541,8 +541,8 @@ struct MainWindowCoreTests {
         #expect(window.debugNotesCount == 4)
     }
 
-    @Test @MainActor
-    func `main window deferred selection switch runs after main loop drain`() throws {
+    @Test("Main window deferred selection switch runs after main loop drain") @MainActor
+    func mainWindowDeferredSelectionSwitchRunsAfterMainLoopDrain() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -593,8 +593,8 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("One"))
     }
 
-    @Test @MainActor
-    func `main window toolbar buttons expose standard tooltips`() throws {
+    @Test("Main window toolbar buttons expose standard tooltips") @MainActor
+    func mainWindowToolbarButtonsExposeStandardTooltips() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -632,8 +632,8 @@ struct MainWindowCoreTests {
         #expect(window.debugToolbarTooltips["formatTask"] == "Prefix the selected lines as a task list")
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar uses compact icon mode when editor narrows`() throws {
+    @Test("Main window formatting toolbar uses compact icon mode when editor narrows") @MainActor
+    func mainWindowFormattingToolbarUsesCompactIconModeWhenEditorNarrows() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -704,8 +704,8 @@ struct MainWindowCoreTests {
         ))
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar wraps into two rows when compact row still does not fit`() throws {
+    @Test("Main window formatting toolbar wraps into two rows when compact row still does not fit") @MainActor
+    func mainWindowFormattingToolbarWrapsIntoTwoRowsWhenCompactRowStill() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -754,8 +754,8 @@ struct MainWindowCoreTests {
         ))
     }
 
-    @Test @MainActor
-    func `main window uses application icon name`() throws {
+    @Test("Main window uses application icon name") @MainActor
+    func mainWindowUsesApplicationIconName() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -776,8 +776,8 @@ struct MainWindowCoreTests {
         #expect(window.debugWindowIconName == AppIdentity.identifier)
     }
 
-    @Test @MainActor
-    func `main window sidebar toggle hides and shows sidebar`() throws {
+    @Test("Main window sidebar toggle hides and shows sidebar") @MainActor
+    func mainWindowSidebarToggleHidesAndShowsSidebar() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -808,8 +808,8 @@ struct MainWindowCoreTests {
         #expect(window.debugToolbarTooltips["sidebar"] == "Hide Notes Sidebar")
     }
 
-    @Test @MainActor
-    func `main window search entry filters displayed notes and persists query`() async throws {
+    @Test("Main window search entry filters displayed notes and persists query") @MainActor
+    func mainWindowSearchEntryFiltersDisplayedNotesAndPersistsQuery() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -843,8 +843,8 @@ struct MainWindowCoreTests {
         #expect(try stateStore.load().searchQuery == "alp")
     }
 
-    @Test @MainActor
-    func `main window view mode switcher updates layout`() async throws {
+    @Test("Main window view mode switcher updates layout") @MainActor
+    func mainWindowViewModeSwitcherUpdatesLayout() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -881,8 +881,8 @@ struct MainWindowCoreTests {
         #expect(window.debugViewMode == .split)
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar applies bold to selected editor text`() throws {
+    @Test("Main window formatting toolbar applies bold to selected editor text") @MainActor
+    func mainWindowFormattingToolbarAppliesBoldToSelectedEditorText() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -911,8 +911,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorSelectionRange == 6 ..< 15)
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar remembers last chosen table size and alignments`() throws {
+    @Test("Main window formatting toolbar remembers last chosen table size and alignments") @MainActor
+    func mainWindowFormattingToolbarRemembersLastChosenTableSizeAndAlignments() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -945,8 +945,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorText.contains("| -------: | :------: |"))
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar insert table writes scaffold at the cursor and selects the first header cell`() throws {
+    @Test("Main window formatting toolbar insert table writes scaffold at the cursor and selects the first header cell") @MainActor
+    func mainWindowFormattingToolbarInsertTableWritesScaffoldAtTheCursorAnd() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -989,8 +989,8 @@ struct MainWindowCoreTests {
         #expect(selection == headerStart ..< (headerStart + "Column 1".count))
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar toggles bold off for formatted selection`() throws {
+    @Test("Main window formatting toolbar toggles bold off for formatted selection") @MainActor
+    func mainWindowFormattingToolbarTogglesBoldOffForFormattedSelection() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1019,8 +1019,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorSelectionRange == 6 ..< 11)
     }
 
-    @Test @MainActor
-    func `main window formatting toolbar toggles task list at cursor across whole line`() throws {
+    @Test("Main window formatting toolbar toggles task list at cursor across whole line") @MainActor
+    func mainWindowFormattingToolbarTogglesTaskListAtCursorAcrossWholeLine() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1051,8 +1051,8 @@ struct MainWindowCoreTests {
         #expect(window.debugEditorSelectionRange == 0 ..< 7)
     }
 
-    @Test @MainActor
-    func `main window restores persisted workspace state for filtering and visibility`() throws {
+    @Test("Main window restores persisted workspace state for filtering and visibility") @MainActor
+    func mainWindowRestoresPersistedWorkspaceStateForFilteringAndVisibility() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1094,8 +1094,8 @@ struct MainWindowCoreTests {
         #expect(window.debugDisplayedNoteTitles == ["Alpha", "Beta"])
     }
 
-    @Test @MainActor
-    func `main window save button persists current editor text`() async throws {
+    @Test("Main window save button persists current editor text") @MainActor
+    func mainWindowSaveButtonPersistsCurrentEditorText() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1133,8 +1133,8 @@ struct MainWindowCoreTests {
         #expect(window.debugDisplayedNoteTitles.contains("Saved Title"))
     }
 
-    @Test @MainActor
-    func `main window autosave waits for last edit before saving`() throws {
+    @Test("Main window autosave waits for last edit before saving") @MainActor
+    func mainWindowAutosaveWaitsForLastEditBeforeSaving() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1175,8 +1175,8 @@ struct MainWindowCoreTests {
         #expect(!window.debugHeaderSubtitle.contains("Unsaved changes"))
     }
 
-    @Test @MainActor
-    func `main window reloads external create after poll`() throws {
+    @Test("Main window reloads external create after poll") @MainActor
+    func mainWindowReloadsExternalCreateAfterPoll() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1207,8 +1207,8 @@ struct MainWindowCoreTests {
         #expect(window.debugDisplayedNotesCount == 4)
     }
 
-    @Test @MainActor
-    func `main window reloads external update after poll`() throws {
+    @Test("Main window reloads external update after poll") @MainActor
+    func mainWindowReloadsExternalUpdateAfterPoll() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -1246,8 +1246,8 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("Fresh text"))
     }
 
-    @Test @MainActor
-    func `main window reloads external same size update after poll`() throws {
+    @Test("Main window reloads external same size update after poll") @MainActor
+    func mainWindowReloadsExternalSameSizeUpdateAfterPoll() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 

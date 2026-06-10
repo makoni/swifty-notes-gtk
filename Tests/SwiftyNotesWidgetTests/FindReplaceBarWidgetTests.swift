@@ -12,8 +12,8 @@ struct FindReplaceBarWidgetTests {
         return FindReplaceBar()
     }
 
-    @Test @MainActor
-    func `bar starts hidden in find mode with no query`() throws {
+    @Test("Bar starts hidden in find mode with no query") @MainActor
+    func barStartsHiddenInFindModeWithNoQuery() throws {
         let bar = try Self.makeBar(suffix: "initial")
         #expect(bar.isVisible == false)
         #expect(bar.mode == .find)
@@ -22,8 +22,8 @@ struct FindReplaceBarWidgetTests {
         #expect(bar.options == SearchOptions())
     }
 
-    @Test @MainActor
-    func `setVisible true opens in the requested mode`() throws {
+    @Test("setVisible true opens in the requested mode") @MainActor
+    func setVisibleTrueOpensInTheRequestedMode() throws {
         let bar = try Self.makeBar(suffix: "open")
         bar.setVisible(true, mode: .find)
         #expect(bar.isVisible == true)
@@ -33,8 +33,8 @@ struct FindReplaceBarWidgetTests {
         #expect(bar.mode == .replace)
     }
 
-    @Test @MainActor
-    func `typing in the find entry fires onQueryChanged with current options`() throws {
+    @Test("Typing in the find entry fires onQueryChanged with current options") @MainActor
+    func typingInTheFindEntryFiresOnQueryChangedWithCurrentOptions() throws {
         let bar = try Self.makeBar(suffix: "querychanged")
         var observed: [(String, SearchOptions)] = []
         bar.onQueryChanged = { query, options in
@@ -45,8 +45,8 @@ struct FindReplaceBarWidgetTests {
         #expect(observed.last?.1 == SearchOptions())
     }
 
-    @Test @MainActor
-    func `toggling case sensitivity flows through to options + re-fires query`() throws {
+    @Test("Toggling case sensitivity flows through to options + re-fires query") @MainActor
+    func togglingCaseSensitivityFlowsThroughToOptionsReFiresQuery() throws {
         let bar = try Self.makeBar(suffix: "casetoggle")
         bar.query = "term"
         var lastOptions: SearchOptions?
@@ -58,8 +58,8 @@ struct FindReplaceBarWidgetTests {
         #expect(lastOptions?.caseSensitive == true)
     }
 
-    @Test @MainActor
-    func `next + prev buttons fire their callbacks`() throws {
+    @Test("Next + prev buttons fire their callbacks") @MainActor
+    func nextPrevButtonsFireTheirCallbacks() throws {
         let bar = try Self.makeBar(suffix: "step")
         var nextCount = 0
         var prevCount = 0
@@ -71,8 +71,8 @@ struct FindReplaceBarWidgetTests {
         #expect(prevCount == 1)
     }
 
-    @Test @MainActor
-    func `replace + replace-all buttons fire their callbacks in replace mode`() throws {
+    @Test("Replace + replace-all buttons fire their callbacks in replace mode") @MainActor
+    func replaceReplaceAllButtonsFireTheirCallbacksInReplaceMode() throws {
         let bar = try Self.makeBar(suffix: "replace")
         bar.setVisible(true, mode: .replace)
         var replaceOne = 0
@@ -85,8 +85,8 @@ struct FindReplaceBarWidgetTests {
         #expect(replaceAll == 1)
     }
 
-    @Test @MainActor
-    func `read-only bar disables replace controls and never fires their callbacks`() throws {
+    @Test("Read-only bar disables replace controls and never fires their callbacks") @MainActor
+    func readOnlyBarDisablesReplaceControlsAndNeverFiresTheirCallbacks() throws {
         let bar = try Self.makeBar(suffix: "readonly")
         bar.isReadOnly = true
         bar.setVisible(true, mode: .replace)
@@ -100,8 +100,8 @@ struct FindReplaceBarWidgetTests {
         #expect(bar.replaceAllButton.sensitive == false)
     }
 
-    @Test @MainActor
-    func `setMatchCount renders the standard "N of M" label`() throws {
+    @Test("setMatchCount renders the standard \"N of M\" label") @MainActor
+    func setMatchCountRendersTheStandardNOfMLabel() throws {
         let bar = try Self.makeBar(suffix: "count")
         bar.setMatchCount(total: 0, activeDisplayIndex: nil)
         // No query typed yet — empty state is silent.
@@ -129,8 +129,8 @@ struct FindReplaceBarWidgetTests {
         #expect(bar.countLabel.visible == true)
     }
 
-    @Test @MainActor
-    func `programmatic query setter does NOT fire onQueryChanged`() throws {
+    @Test("Programmatic query setter does NOT fire onQueryChanged") @MainActor
+    func programmaticQuerySetterDoesNOTFireOnQueryChanged() throws {
         let bar = try Self.makeBar(suffix: "programmatic")
         var fired = false
         bar.onQueryChanged = { _, _ in fired = true }
@@ -145,8 +145,8 @@ struct FindReplaceBarWidgetTests {
         #expect(fired == true)
     }
 
-    @Test @MainActor
-    func `setVisible false fires onClose`() throws {
+    @Test("setVisible false fires onClose") @MainActor
+    func setVisibleFalseFiresOnClose() throws {
         let bar = try Self.makeBar(suffix: "close")
         bar.setVisible(true)
         var closed = false

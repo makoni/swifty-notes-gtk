@@ -3,42 +3,42 @@ import Foundation
 import Testing
 
 struct HeadingSlugTests {
-    @Test
-    func `simple ASCII text becomes lowercase kebab-case`() {
+    @Test("Simple ASCII text becomes lowercase kebab-case")
+    func simpleASCIITextBecomesLowercaseKebabCase() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("Hello World", occurrences: &occ) == "hello-world")
     }
 
-    @Test
-    func `mixed punctuation collapses to single dashes`() {
+    @Test("Mixed punctuation collapses to single dashes")
+    func mixedPunctuationCollapsesToSingleDashes() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("Goals & non-goals!", occurrences: &occ) == "goals-non-goals")
     }
 
-    @Test
-    func `leading and trailing punctuation is trimmed`() {
+    @Test("Leading and trailing punctuation is trimmed")
+    func leadingAndTrailingPunctuationIsTrimmed() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("--Hello--", occurrences: &occ) == "hello")
         #expect(HeadingSlug.slug("...World...", occurrences: &occ) == "world")
     }
 
-    @Test
-    func `consecutive whitespace collapses to single dash`() {
+    @Test("Consecutive whitespace collapses to single dash")
+    func consecutiveWhitespaceCollapsesToSingleDash() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("foo   bar", occurrences: &occ) == "foo-bar")
         #expect(HeadingSlug.slug("a\tb\nc", occurrences: &occ) == "a-b-c")
     }
 
-    @Test
-    func `empty or punctuation-only headings fall back to section`() {
+    @Test("Empty or punctuation-only headings fall back to section")
+    func emptyOrPunctuationOnlyHeadingsFallBackToSection() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("", occurrences: &occ) == "section")
         #expect(HeadingSlug.slug("---", occurrences: &occ) == "section-2")
         #expect(HeadingSlug.slug("???", occurrences: &occ) == "section-3")
     }
 
-    @Test
-    func `non-ASCII letters are preserved and lowercased`() {
+    @Test("non-ASCII letters are preserved and lowercased")
+    func nonASCIILettersArePreservedAndLowercased() {
         var occ: [String: Int] = [:]
         // Cyrillic — Swifty Notes ships in Russian-speaking communities,
         // we need TOC navigation to keep working for native headings.
@@ -46,14 +46,14 @@ struct HeadingSlugTests {
         #expect(HeadingSlug.slug("Café & Crème", occurrences: &occ) == "café-crème")
     }
 
-    @Test
-    func `digits are kept as identifier characters`() {
+    @Test("Digits are kept as identifier characters")
+    func digitsAreKeptAsIdentifierCharacters() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("Q3 2026 Roadmap", occurrences: &occ) == "q3-2026-roadmap")
     }
 
-    @Test
-    func `duplicate headings get -2, -3 suffixes in encounter order`() {
+    @Test("Duplicate headings get -2, -3 suffixes in encounter order")
+    func duplicateHeadingsGet23SuffixesInEncounterOrder() {
         var occ: [String: Int] = [:]
         #expect(HeadingSlug.slug("Goals", occurrences: &occ) == "goals")
         #expect(HeadingSlug.slug("Goals", occurrences: &occ) == "goals-2")
@@ -65,8 +65,8 @@ struct HeadingSlugTests {
         #expect(HeadingSlug.slug("Goals", occurrences: &occ) == "goals-4")
     }
 
-    @Test
-    func `dedup compares against final slug, not raw text`() {
+    @Test("Dedup compares against final slug, not raw text")
+    func dedupComparesAgainstFinalSlugNotRawText() {
         var occ: [String: Int] = [:]
         // Two distinct strings that normalize to the same slug must still
         // collide — otherwise IDs are not stable for scroll-spy.

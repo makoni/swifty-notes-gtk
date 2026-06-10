@@ -4,8 +4,8 @@ import Testing
 
 @MainActor
 struct PreviewScrollSyncSchedulerTests {
-    @Test
-    func `request sync coalesces multiple pending requests into one callback`() {
+    @Test("Request sync coalesces multiple pending requests into one callback")
+    func requestSyncCoalescesMultiplePendingRequestsIntoOneCallback() {
         let scheduler = TestMainActorScheduler()
         var syncCount = 0
         let subject = PreviewScrollSyncScheduler(
@@ -24,8 +24,8 @@ struct PreviewScrollSyncSchedulerTests {
         #expect(syncCount == 1)
     }
 
-    @Test
-    func `request sync schedules again after previous callback drains`() {
+    @Test("Request sync schedules again after previous callback drains")
+    func requestSyncSchedulesAgainAfterPreviousCallbackDrains() {
         let scheduler = TestMainActorScheduler()
         var syncCount = 0
         let subject = PreviewScrollSyncScheduler(
@@ -41,8 +41,8 @@ struct PreviewScrollSyncSchedulerTests {
         #expect(syncCount == 2)
     }
 
-    @Test
-    func `cancel drops pending callback but allows future requests`() {
+    @Test("Cancel drops pending callback but allows future requests")
+    func cancelDropsPendingCallbackButAllowsFutureRequests() {
         let scheduler = TestMainActorScheduler()
         var syncCount = 0
         let subject = PreviewScrollSyncScheduler(

@@ -10,8 +10,8 @@ struct UpdateCheckerTests {
         { GitHubLatestRelease(tagName: tag, htmlURL: URL(string: htmlURL)!) }
     }
 
-    @Test
-    func `reports up to date when remote tag equals current version`() async throws {
+    @Test("Reports up to date when remote tag equals current version")
+    func reportsUpToDateWhenRemoteTagEqualsCurrentVersion() async throws {
         let checker = UpdateChecker(
             currentVersion: "1.2.3",
             forceUpdateAvailable: false,
@@ -24,8 +24,8 @@ struct UpdateCheckerTests {
         }
     }
 
-    @Test
-    func `reports up to date when remote tag is older than current`() async throws {
+    @Test("Reports up to date when remote tag is older than current")
+    func reportsUpToDateWhenRemoteTagIsOlderThanCurrent() async throws {
         let checker = UpdateChecker(
             currentVersion: "1.5.0",
             forceUpdateAvailable: false,
@@ -38,8 +38,8 @@ struct UpdateCheckerTests {
         }
     }
 
-    @Test
-    func `reports updateAvailable when remote tag is strictly newer`() async throws {
+    @Test("Reports updateAvailable when remote tag is strictly newer")
+    func reportsUpdateAvailableWhenRemoteTagIsStrictlyNewer() async throws {
         let url = "https://github.com/makoni/swifty-notes-gtk/releases/tag/v1.2.4"
         let checker = UpdateChecker(
             currentVersion: "1.2.3",
@@ -55,8 +55,8 @@ struct UpdateCheckerTests {
         #expect(releaseURL.absoluteString == url)
     }
 
-    @Test
-    func `force flag reports updateAvailable even when current already newer`() async throws {
+    @Test("Force flag reports updateAvailable even when current already newer")
+    func forceFlagReportsUpdateAvailableEvenWhenCurrentAlreadyNewer() async throws {
         let url = "https://github.com/makoni/swifty-notes-gtk/releases/tag/v0.0.1"
         let checker = UpdateChecker(
             currentVersion: "9.9.9",
@@ -72,8 +72,8 @@ struct UpdateCheckerTests {
         #expect(releaseURL.absoluteString == url)
     }
 
-    @Test
-    func `force flag still reports error when network fetch fails`() async throws {
+    @Test("Force flag still reports error when network fetch fails")
+    func forceFlagStillReportsErrorWhenNetworkFetchFails() async throws {
         struct Boom: Error {}
         let checker = UpdateChecker(
             currentVersion: "1.0.0",
@@ -87,8 +87,8 @@ struct UpdateCheckerTests {
         }
     }
 
-    @Test
-    func `reports error when fetcher throws`() async throws {
+    @Test("Reports error when fetcher throws")
+    func reportsErrorWhenFetcherThrows() async throws {
         struct Boom: Error {}
         let checker = UpdateChecker(
             currentVersion: "1.0.0",
@@ -102,8 +102,8 @@ struct UpdateCheckerTests {
         }
     }
 
-    @Test
-    func `reports error when remote tag is not parseable as semver`() async throws {
+    @Test("Reports error when remote tag is not parseable as semver")
+    func reportsErrorWhenRemoteTagIsNotParseableAsSemver() async throws {
         let checker = UpdateChecker(
             currentVersion: "1.0.0",
             forceUpdateAvailable: false,
@@ -116,8 +116,8 @@ struct UpdateCheckerTests {
         }
     }
 
-    @Test
-    func `reports error when current version is not parseable as semver`() async throws {
+    @Test("Reports error when current version is not parseable as semver")
+    func reportsErrorWhenCurrentVersionIsNotParseableAsSemver() async throws {
         let checker = UpdateChecker(
             currentVersion: "not-a-version",
             forceUpdateAvailable: false,
@@ -224,8 +224,8 @@ struct UpdateCheckerTests {
         }
     }
 
-    @Test
-    func `parses GitHub release JSON payload`() throws {
+    @Test("Parses GitHub release JSON payload")
+    func parsesGitHubReleaseJSONPayload() throws {
         let json = #"""
         {
           "tag_name": "v1.4.2",

@@ -5,8 +5,8 @@ import Foundation
 import Testing
 
 struct MainWindowPreviewOnlyContentTests {
-    @Test @MainActor
-    func `switching to preview-only mode installs the preview pane wrapper as split content`() throws {
+    @Test("Switching to preview-only mode installs the preview pane wrapper as split content") @MainActor
+    func switchingToPreviewOnlyModeInstallsThePreviewPaneWrapperAsSplit() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -43,8 +43,8 @@ struct MainWindowPreviewOnlyContentTests {
         #expect(window.preview.rootScroll.parent?.opaquePointer == window.previewPaneContent.opaquePointer)
     }
 
-    @Test @MainActor
-    func `toggling split → preview → split keeps content consistent and emits no reparent error`() throws {
+    @Test("Toggling split → preview → split keeps content consistent and emits no reparent error") @MainActor
+    func togglingSplitPreviewSplitKeepsContentConsistentAndEmitsNoReparentError() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.previewonly.roundtrip")

@@ -32,8 +32,8 @@ struct OutlineScrollSpyDriverTests {
         )
     }
 
-    @Test @MainActor
-    func `suppress window blocks the resolver until the deadline passes`() throws {
+    @Test("Suppress window blocks the resolver until the deadline passes") @MainActor
+    func suppressWindowBlocksTheResolverUntilTheDeadlinePasses() throws {
         @MainActor final class Recorder { var calls: [String?] = [] }
         let recorder = Recorder()
         let driver = try Self.makeDriver(suffix: "block") { id in
@@ -47,8 +47,8 @@ struct OutlineScrollSpyDriverTests {
         #expect(recorder.calls.isEmpty)
     }
 
-    @Test @MainActor
-    func `tick resumes resolving once the suppress deadline has elapsed`() throws {
+    @Test("Tick resumes resolving once the suppress deadline has elapsed") @MainActor
+    func tickResumesResolvingOnceTheSuppressDeadlineHasElapsed() throws {
         @MainActor final class Recorder { var calls: [String?] = [] }
         let recorder = Recorder()
         let driver = try Self.makeDriver(suffix: "release") { id in
@@ -64,8 +64,8 @@ struct OutlineScrollSpyDriverTests {
         #expect(recorder.calls == ["a"])
     }
 
-    @Test @MainActor
-    func `re-suppressing only extends the window forward, never shortens it`() throws {
+    @Test("Re-suppressing only extends the window forward, never shortens it") @MainActor
+    func reSuppressingOnlyExtendsTheWindowForwardNeverShortensIt() throws {
         @MainActor final class Recorder { var calls: [String?] = [] }
         let recorder = Recorder()
         let driver = try Self.makeDriver(suffix: "extend") { id in

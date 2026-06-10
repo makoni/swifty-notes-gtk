@@ -21,8 +21,8 @@ struct PreviewSearchControllerTests {
         return (preview, bar, controller)
     }
 
-    @Test @MainActor
-    func `bar mounted on preview is forced into read-only mode`() throws {
+    @Test("Bar mounted on preview is forced into read-only mode") @MainActor
+    func barMountedOnPreviewIsForcedIntoReadOnlyMode() throws {
         let rig = try Self.makeRig(suffix: "readonly", markdown: "# Doc\n\nbody.")
         // The bar's replace half should be inert because the
         // preview pane has nothing to replace.
@@ -31,8 +31,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.bar.replaceAllButton.sensitive == false)
     }
 
-    @Test @MainActor
-    func `typing a query that only hits a table lights up the table highlight`() throws {
+    @Test("Typing a query that only hits a table lights up the table highlight") @MainActor
+    func typingAQueryThatOnlyHitsATableLightsUpTheTable() throws {
         let rig = try Self.makeRig(
             suffix: "table-only",
             markdown: """
@@ -51,8 +51,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.preview.debugAppliedHighlightTexts.contains("search"))
     }
 
-    @Test @MainActor
-    func `typing a query finds matches across multiple block types`() throws {
+    @Test("Typing a query finds matches across multiple block types") @MainActor
+    func typingAQueryFindsMatchesAcrossMultipleBlockTypes() throws {
         let rig = try Self.makeRig(
             suffix: "multi-block",
             markdown: """
@@ -76,8 +76,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.controller.debugMatchCount >= 5)
     }
 
-    @Test @MainActor
-    func `step forward + backward navigates active match with wrap`() throws {
+    @Test("Step forward + backward navigates active match with wrap") @MainActor
+    func stepForwardBackwardNavigatesActiveMatchWithWrap() throws {
         let rig = try Self.makeRig(
             suffix: "step",
             markdown: """
@@ -105,8 +105,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.controller.debugActiveIndex == 2)
     }
 
-    @Test @MainActor
-    func `clearing query empties matches and count`() throws {
+    @Test("Clearing query empties matches and count") @MainActor
+    func clearingQueryEmptiesMatchesAndCount() throws {
         let rig = try Self.makeRig(suffix: "clear", markdown: "find me find me")
         rig.bar.debugTypeQuery("find")
         #expect(rig.controller.debugMatchCount == 2)
@@ -116,8 +116,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.bar.countLabel.text.isEmpty)
     }
 
-    @Test @MainActor
-    func `re-rendering the preview refreshes the cached matches`() throws {
+    @Test("Re-rendering the preview refreshes the cached matches") @MainActor
+    func reRenderingThePreviewRefreshesTheCachedMatches() throws {
         let rig = try Self.makeRig(suffix: "rerender", markdown: "alpha beta")
         rig.bar.debugTypeQuery("alpha")
         #expect(rig.controller.debugMatchCount == 1)
@@ -130,8 +130,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.controller.debugMatchCount == 3)
     }
 
-    @Test @MainActor
-    func `closing the bar resets cached state`() throws {
+    @Test("Closing the bar resets cached state") @MainActor
+    func closingTheBarResetsCachedState() throws {
         let rig = try Self.makeRig(suffix: "close", markdown: "needle needle")
         rig.bar.setVisible(true, mode: .find)
         rig.bar.debugTypeQuery("needle")
@@ -141,8 +141,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.controller.debugCachedQuery.isEmpty)
     }
 
-    @Test @MainActor
-    func `typing a query activates Pango highlights on matching labels`() throws {
+    @Test("Typing a query activates Pango highlights on matching labels") @MainActor
+    func typingAQueryActivatesPangoHighlightsOnMatchingLabels() throws {
         // Phase D: PreviewSearchController must call
         // preview.applySearchHighlights when the bar's query
         // changes. Verifying through the public hook:
@@ -160,8 +160,8 @@ struct PreviewSearchControllerTests {
         #expect(!rig.preview.debugHighlightedLabelPointers.isEmpty)
     }
 
-    @Test @MainActor
-    func `closing the bar clears all preview highlight attributes`() throws {
+    @Test("Closing the bar clears all preview highlight attributes") @MainActor
+    func closingTheBarClearsAllPreviewHighlightAttributes() throws {
         let rig = try Self.makeRig(suffix: "wire-clear", markdown: "needle in haystack and needle")
         rig.bar.setVisible(true, mode: .find)
         rig.bar.debugTypeQuery("needle")
@@ -173,8 +173,8 @@ struct PreviewSearchControllerTests {
         #expect(rig.preview.debugHighlightedLabelPointers.isEmpty)
     }
 
-    @Test @MainActor
-    func `code-block-only query activates the SourceBuffer-tag overlay`() throws {
+    @Test("Code-block-only query activates the SourceBuffer-tag overlay") @MainActor
+    func codeBlockOnlyQueryActivatesTheSourceBufferTagOverlay() throws {
         let rig = try Self.makeRig(suffix: "wire-code", markdown: """
         # Doc
 
@@ -192,8 +192,8 @@ struct PreviewSearchControllerTests {
         #expect(!rig.preview.debugHighlightedCodeBlockBlockIndexes.isEmpty)
     }
 
-    @Test @MainActor
-    func `images and thematic breaks do not contribute matches even when alt-text would match`() throws {
+    @Test("Images and thematic breaks do not contribute matches even when alt-text would match") @MainActor
+    func imagesAndThematicBreaksDoNotContributeMatchesEvenWhenAltText() throws {
         let rig = try Self.makeRig(
             suffix: "skip-image",
             markdown: """

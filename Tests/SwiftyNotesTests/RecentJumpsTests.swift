@@ -3,14 +3,14 @@ import Foundation
 import Testing
 
 struct RecentJumpsTests {
-    @Test
-    func `starts empty`() {
+    @Test("Starts empty")
+    func startsEmpty() {
         let jumps = RecentJumps()
         #expect(jumps.ids == [])
     }
 
-    @Test
-    func `record prepends new ids in newest-first order`() {
+    @Test("Record prepends new ids in newest-first order")
+    func recordPrependsNewIdsInNewestFirstOrder() {
         var jumps = RecentJumps()
         jumps.record("a")
         jumps.record("b")
@@ -18,8 +18,8 @@ struct RecentJumpsTests {
         #expect(jumps.ids == ["c", "b", "a"])
     }
 
-    @Test
-    func `recording an existing id moves it to the front without duplicating`() {
+    @Test("Recording an existing id moves it to the front without duplicating")
+    func recordingAnExistingIdMovesItToTheFrontWithoutDuplicating() {
         var jumps = RecentJumps()
         jumps.record("a")
         jumps.record("b")
@@ -28,8 +28,8 @@ struct RecentJumpsTests {
         #expect(jumps.ids == ["a", "c", "b"])
     }
 
-    @Test
-    func `recently-jumped list is capped at five entries`() {
+    @Test("Recently-jumped list is capped at five entries")
+    func recentlyJumpedListIsCappedAtFiveEntries() {
         var jumps = RecentJumps()
         for id in ["a", "b", "c", "d", "e", "f", "g"] {
             jumps.record(id)
@@ -38,22 +38,22 @@ struct RecentJumpsTests {
         #expect(jumps.ids == ["g", "f", "e", "d", "c"])
     }
 
-    @Test
-    func `cap honors moves so the cap doesn't push the moved entry off`() {
+    @Test("Cap honors moves so the cap doesn't push the moved entry off")
+    func capHonorsMovesSoTheCapDoesntPushTheMovedEntryOff() {
         var jumps = RecentJumps(ids: ["a", "b", "c", "d", "e"])
         // Re-record "e" — should stay at the front, list unchanged length.
         jumps.record("e")
         #expect(jumps.ids == ["e", "a", "b", "c", "d"])
     }
 
-    @Test
-    func `seed initializer truncates to the cap`() {
+    @Test("Seed initializer truncates to the cap")
+    func seedInitializerTruncatesToTheCap() {
         let jumps = RecentJumps(ids: ["a", "b", "c", "d", "e", "f", "g"])
         #expect(jumps.ids == ["a", "b", "c", "d", "e"])
     }
 
-    @Test
-    func `seed initializer dedupes preserving first occurrence`() {
+    @Test("Seed initializer dedupes preserving first occurrence")
+    func seedInitializerDedupesPreservingFirstOccurrence() {
         let jumps = RecentJumps(ids: ["a", "b", "a", "c", "b"])
         #expect(jumps.ids == ["a", "b", "c"])
     }

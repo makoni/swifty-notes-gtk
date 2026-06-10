@@ -20,8 +20,8 @@ struct EditorSearchControllerTests {
         return (editor, bar, controller)
     }
 
-    @Test @MainActor
-    func `typing a query selects the first match at or after the cursor`() throws {
+    @Test("Typing a query selects the first match at or after the cursor") @MainActor
+    func typingAQuerySelectsTheFirstMatchAtOrAfterTheCursor() throws {
         let rig = try Self.makeRig(suffix: "firstmatch", text: "alpha beta alpha gamma alpha")
         // Cursor at start; first match is "alpha" at 0..<5.
         rig.editor.buffer.placeCursor(at: 0)
@@ -32,8 +32,8 @@ struct EditorSearchControllerTests {
         #expect(rig.bar.countLabel.text == "1 of 3")
     }
 
-    @Test @MainActor
-    func `next button steps forward and wraps from last to first`() throws {
+    @Test("Next button steps forward and wraps from last to first") @MainActor
+    func nextButtonStepsForwardAndWrapsFromLastToFirst() throws {
         let rig = try Self.makeRig(suffix: "next-wrap", text: "alpha beta alpha gamma alpha")
         rig.editor.buffer.placeCursor(at: 0)
         rig.bar.debugTypeQuery("alpha")
@@ -52,8 +52,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugActiveIndex == 0)
     }
 
-    @Test @MainActor
-    func `prev button steps backward and wraps from first to last`() throws {
+    @Test("Prev button steps backward and wraps from first to last") @MainActor
+    func prevButtonStepsBackwardAndWrapsFromFirstToLast() throws {
         let rig = try Self.makeRig(suffix: "prev-wrap", text: "alpha beta alpha gamma alpha")
         rig.editor.buffer.placeCursor(at: 0)
         rig.bar.debugTypeQuery("alpha")
@@ -63,8 +63,8 @@ struct EditorSearchControllerTests {
         #expect(rig.editor.buffer.selectedRange == 23..<28)
     }
 
-    @Test @MainActor
-    func `auto-step lands on the match nearest below the cursor, not always the first one`() throws {
+    @Test("Auto-step lands on the match nearest below the cursor, not always the first one") @MainActor
+    func autoStepLandsOnTheMatchNearestBelowTheCursorNotAlways() throws {
         let rig = try Self.makeRig(suffix: "cursoraware", text: "alpha beta alpha gamma alpha")
         // Place cursor between match #1 and match #2.
         rig.editor.buffer.placeCursor(at: 7)
@@ -74,8 +74,8 @@ struct EditorSearchControllerTests {
         #expect(rig.editor.buffer.selectedRange == 11..<16)
     }
 
-    @Test @MainActor
-    func `toggling case-sensitive re-runs the search and updates the count`() throws {
+    @Test("Toggling case-sensitive re-runs the search and updates the count") @MainActor
+    func togglingCaseSensitiveReRunsTheSearchAndUpdatesTheCount() throws {
         let rig = try Self.makeRig(suffix: "case-toggle", text: "Test the testing testTube")
         rig.editor.buffer.placeCursor(at: 0)
         rig.bar.debugTypeQuery("test")
@@ -88,8 +88,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugMatchCount == 2)
     }
 
-    @Test @MainActor
-    func `clearing the query clears matches + count`() throws {
+    @Test("Clearing the query clears matches + count") @MainActor
+    func clearingTheQueryClearsMatchesCount() throws {
         let rig = try Self.makeRig(suffix: "clear", text: "alpha beta alpha")
         rig.bar.debugTypeQuery("alpha")
         #expect(rig.controller.debugMatchCount == 2)
@@ -99,8 +99,8 @@ struct EditorSearchControllerTests {
         #expect(rig.bar.countLabel.text.isEmpty)
     }
 
-    @Test @MainActor
-    func `closing the bar resets state so a re-open starts fresh`() throws {
+    @Test("Closing the bar resets state so a re-open starts fresh") @MainActor
+    func closingTheBarResetsStateSoAReOpenStartsFresh() throws {
         let rig = try Self.makeRig(suffix: "close-reset", text: "alpha alpha")
         rig.bar.setVisible(true)
         rig.bar.debugTypeQuery("alpha")
@@ -113,8 +113,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugCachedQuery.isEmpty)
     }
 
-    @Test @MainActor
-    func `editing the buffer re-scans cached matches`() throws {
+    @Test("Editing the buffer re-scans cached matches") @MainActor
+    func editingTheBufferReScansCachedMatches() throws {
         let rig = try Self.makeRig(suffix: "rescan", text: "foo foo foo")
         rig.editor.buffer.placeCursor(at: 0)
         rig.bar.debugTypeQuery("foo")
@@ -127,8 +127,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugMatchCount == 2)
     }
 
-    @Test @MainActor
-    func `replace one swaps the active match and steps to the next`() throws {
+    @Test("Replace one swaps the active match and steps to the next") @MainActor
+    func replaceOneSwapsTheActiveMatchAndStepsToTheNext() throws {
         let rig = try Self.makeRig(suffix: "replaceone", text: "foo bar foo baz foo")
         rig.bar.setVisible(true, mode: .replace)
         rig.bar.debugTypeQuery("foo")
@@ -142,8 +142,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugMatchCount == 2)
     }
 
-    @Test @MainActor
-    func `replace all swaps every match and reports the count`() throws {
+    @Test("Replace all swaps every match and reports the count") @MainActor
+    func replaceAllSwapsEveryMatchAndReportsTheCount() throws {
         let rig = try Self.makeRig(suffix: "replaceall", text: "foo bar foo baz foo")
         rig.bar.setVisible(true, mode: .replace)
         var observed: Int?
@@ -157,8 +157,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugMatchCount == 0)
     }
 
-    @Test @MainActor
-    func `replace in regex mode expands backrefs`() throws {
+    @Test("Replace in regex mode expands backrefs") @MainActor
+    func replaceInRegexModeExpandsBackrefs() throws {
         let rig = try Self.makeRig(suffix: "regexreplace", text: "hello world hello")
         rig.bar.setVisible(true, mode: .replace)
         rig.bar.options = SearchOptions(regex: true)
@@ -168,8 +168,8 @@ struct EditorSearchControllerTests {
         #expect(rig.editor.buffer.text == "[h]ELLO world [h]ELLO")
     }
 
-    @Test @MainActor
-    func `replace in read-only bar is a no-op`() throws {
+    @Test("Replace in read-only bar is a no-op") @MainActor
+    func replaceInReadOnlyBarIsANoOp() throws {
         let rig = try Self.makeRig(suffix: "readonly-replace", text: "foo foo")
         rig.bar.isReadOnly = true
         rig.bar.setVisible(true, mode: .replace)
@@ -181,8 +181,8 @@ struct EditorSearchControllerTests {
         #expect(rig.editor.buffer.text == before)
     }
 
-    @Test @MainActor
-    func `replace with no active match is a no-op`() throws {
+    @Test("Replace with no active match is a no-op") @MainActor
+    func replaceWithNoActiveMatchIsANoOp() throws {
         let rig = try Self.makeRig(suffix: "noactive-replace", text: "alpha beta")
         rig.bar.setVisible(true, mode: .replace)
         // Don't type anything — nothing active.
@@ -193,8 +193,8 @@ struct EditorSearchControllerTests {
         #expect(rig.editor.buffer.text == before)
     }
 
-    @Test @MainActor
-    func `highlight tags are created on first non-empty query`() throws {
+    @Test("Highlight tags are created on first non-empty query") @MainActor
+    func highlightTagsAreCreatedOnFirstNonEmptyQuery() throws {
         let rig = try Self.makeRig(suffix: "tag-created", text: "needle in a haystack with needle")
         // No tags exist before searching.
         #expect(rig.controller.debugMatchTagCreated == false)
@@ -205,8 +205,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugActiveTagCreated == true)
     }
 
-    @Test @MainActor
-    func `clearing the bar removes match highlights from the buffer`() throws {
+    @Test("Clearing the bar removes match highlights from the buffer") @MainActor
+    func clearingTheBarRemovesMatchHighlightsFromTheBuffer() throws {
         // We can't easily introspect which characters carry the tag
         // in a headless test, but the contract is: after close,
         // clear is called. Cover the path by ensuring the bar
@@ -221,8 +221,8 @@ struct EditorSearchControllerTests {
         #expect(rig.controller.debugActiveIndex == nil)
     }
 
-    @Test @MainActor
-    func `no matches → shows "No matches" + cursor doesn't move`() throws {
+    @Test("No matches → shows \"No matches\" + cursor doesn't move") @MainActor
+    func noMatchesShowsNoMatchesCursorDoesntMove() throws {
         let rig = try Self.makeRig(suffix: "nomatches", text: "alpha beta gamma")
         rig.editor.buffer.placeCursor(at: 7)
         let cursorBefore = rig.editor.buffer.selectedRange

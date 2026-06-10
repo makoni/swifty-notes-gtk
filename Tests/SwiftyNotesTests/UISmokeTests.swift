@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct UISmokeTests {
-    @Test
-    func `app launches under headless wayland with accessible window and seeded controls`() throws {
+    @Test("App launches under headless wayland with accessible window and seeded controls")
+    func appLaunchesUnderHeadlessWaylandWithAccessibleWindowAndSeededControls() throws {
         let result = try runWaylandUIScript("""
         frame = wait_for_frame()
         require_named(frame, "Hide Notes Sidebar")
@@ -50,8 +50,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `app restores workspace state under headless wayland`() throws {
+    @Test("App restores workspace state under headless wayland")
+    func appRestoresWorkspaceStateUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
             frame = wait_for_frame()
@@ -98,8 +98,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `app editing does not emit snapshot warnings under headless wayland`() throws {
+    @Test("App editing does not emit snapshot warnings under headless wayland")
+    func appEditingDoesNotEmitSnapshotWarningsUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
             frame = wait_for_frame()
@@ -121,8 +121,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `app autosave clears unsaved status under headless wayland`() throws {
+    @Test("App autosave clears unsaved status under headless wayland")
+    func appAutosaveClearsUnsavedStatusUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
             frame = wait_for_frame()
@@ -172,8 +172,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `app creating note does not emit snapshot warnings under headless wayland`() throws {
+    @Test("App creating note does not emit snapshot warnings under headless wayland")
+    func appCreatingNoteDoesNotEmitSnapshotWarningsUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
             frame = wait_for_frame()
@@ -195,8 +195,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `app switching notes does not emit snapshot warnings under headless wayland`() throws {
+    @Test("App switching notes does not emit snapshot warnings under headless wayland")
+    func appSwitchingNotesDoesNotEmitSnapshotWarningsUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
             app_stderr_log = os.environ["APP_STDERR_LOG"]
@@ -225,8 +225,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `app can run launch scroll sweep and quit under headless wayland`() throws {
+    @Test("App can run launch scroll sweep and quit under headless wayland")
+    func appCanRunLaunchScrollSweepAndQuitUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
             """
             app_stderr_log = os.environ["APP_STDERR_LOG"]
@@ -281,8 +281,8 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
-    @Test
-    func `settings window opens under headless wayland and shows controls`() throws {
+    @Test("Settings window opens under headless wayland and shows controls")
+    func settingsWindowOpensUnderHeadlessWaylandAndShowsControls() throws {
         let result = try runWaylandUIScript(
             """
             def wait_for_named_frame(name):

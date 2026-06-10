@@ -15,8 +15,8 @@ struct OutlineSidebarTests {
         return OutlineSidebar()
     }
 
-    @Test @MainActor
-    func `empty headings render the empty-state hint and a zero badge`() throws {
+    @Test("Empty headings render the empty-state hint and a zero badge") @MainActor
+    func emptyHeadingsRenderTheEmptyStateHintAndAZeroBadge() throws {
         let outline = try Self.makeOutline(suffix: "empty")
         outline.render(headings: [])
         #expect(outline.countBadge.text == "0")
@@ -30,8 +30,8 @@ struct OutlineSidebarTests {
         #expect(outline.emptyLabel.markup.contains("href=\"insert-heading\""))
     }
 
-    @Test @MainActor
-    func `non-empty headings hide the empty-state and update the count`() throws {
+    @Test("Non-empty headings hide the empty-state and update the count") @MainActor
+    func nonEmptyHeadingsHideTheEmptyStateAndUpdateTheCount() throws {
         let outline = try Self.makeOutline(suffix: "non-empty")
         outline.render(headings: [
             .init(id: "intro",    level: 1, text: "Intro",    blockIndex: 0, line: 1),
@@ -46,8 +46,8 @@ struct OutlineSidebarTests {
         #expect(outline.footerLabel.text == "1 section · 2 subsections")
     }
 
-    @Test @MainActor
-    func `footer copes with singular vs plural counts`() throws {
+    @Test("Footer copes with singular vs plural counts") @MainActor
+    func footerCopesWithSingularVsPluralCounts() throws {
         let outline = try Self.makeOutline(suffix: "plurals")
         outline.render(headings: [
             .init(id: "overview", level: 2, text: "Overview", blockIndex: 0, line: 1),
@@ -56,8 +56,8 @@ struct OutlineSidebarTests {
         #expect(outline.footerLabel.text == "1 section · 1 subsection")
     }
 
-    @Test @MainActor
-    func `render builds one ListBox row per heading and exposes them by index`() throws {
+    @Test("Render builds one ListBox row per heading and exposes them by index") @MainActor
+    func renderBuildsOneListBoxRowPerHeadingAndExposesThemByIndex() throws {
         let outline = try Self.makeOutline(suffix: "rows")
         let headings: [Heading] = [
             .init(id: "intro",  level: 1, text: "Intro",  blockIndex: 0, line: 1),
@@ -72,8 +72,8 @@ struct OutlineSidebarTests {
         #expect(outline.heading(at: 99) == nil)
     }
 
-    @Test @MainActor
-    func `setActiveHeading records the active id for later highlight`() throws {
+    @Test("setActiveHeading records the active id for later highlight") @MainActor
+    func setActiveHeadingRecordsTheActiveIdForLaterHighlight() throws {
         let outline = try Self.makeOutline(suffix: "active")
         outline.render(headings: [
             .init(id: "intro", level: 1, text: "Intro", blockIndex: 0, line: 1),
@@ -85,8 +85,8 @@ struct OutlineSidebarTests {
         #expect(outline.activeHeadingID == nil)
     }
 
-    @Test @MainActor
-    func `setting a query filters the visible rows via OutlineFilter`() throws {
+    @Test("Setting a query filters the visible rows via OutlineFilter") @MainActor
+    func settingAQueryFiltersTheVisibleRowsViaOutlineFilter() throws {
         let outline = try Self.makeOutline(suffix: "query")
         outline.setHeadings([
             .init(id: "doc",      level: 1, text: "Doc",       blockIndex: 0, line: 1),
@@ -101,8 +101,8 @@ struct OutlineSidebarTests {
         #expect(outline.renderedHeadings.count == 4)
     }
 
-    @Test @MainActor
-    func `toggling collapse hides H3 children of that H2`() throws {
+    @Test("Toggling collapse hides H3 children of that H2") @MainActor
+    func togglingCollapseHidesH3ChildrenOfThatH2() throws {
         let outline = try Self.makeOutline(suffix: "collapse")
         outline.setHeadings([
             .init(id: "overview", level: 2, text: "Overview",  blockIndex: 0, line: 1),
@@ -118,8 +118,8 @@ struct OutlineSidebarTests {
         #expect(outline.renderedHeadings.map(\.id) == ["overview", "goals", "non", "features"])
     }
 
-    @Test @MainActor
-    func `toggling collapse on non-H2 is a no-op`() throws {
+    @Test("Toggling collapse on non-H2 is a no-op") @MainActor
+    func togglingCollapseOnNonH2IsANoOp() throws {
         let outline = try Self.makeOutline(suffix: "collapse-h3")
         outline.setHeadings([
             .init(id: "overview", level: 2, text: "Overview", blockIndex: 0, line: 1),
@@ -129,8 +129,8 @@ struct OutlineSidebarTests {
         #expect(outline.collapsedSections.isEmpty)
     }
 
-    @Test @MainActor
-    func `setActiveHeading early-exits and does not rebuild rows on no-op`() throws {
+    @Test("setActiveHeading early-exits and does not rebuild rows on no-op") @MainActor
+    func setActiveHeadingEarlyExitsAndDoesNotRebuildRowsOnNoOp() throws {
         // Performance regression guard: the scroll-spy fires this
         // method ~30/s during a kinetic scroll, often with the same
         // id back-to-back. Touching `list.removeAll` + re-appending
@@ -159,8 +159,8 @@ struct OutlineSidebarTests {
         #expect(afterRows == originalRows, "row widgets must survive setActiveHeading toggles")
     }
 
-    @Test @MainActor
-    func `clicked row stays selected in the ListBox after re-render`() throws {
+    @Test("Clicked row stays selected in the ListBox after re-render") @MainActor
+    func clickedRowStaysSelectedInTheListBoxAfterReRender() throws {
         // Regression: setActiveHeading used to clear the ListBox
         // selection via removeAll(), leaving the first row visually
         // selected even though scroll-spy / click had moved past it.
@@ -178,8 +178,8 @@ struct OutlineSidebarTests {
         #expect(outline.list.selectedRow == nil)
     }
 
-    @Test @MainActor
-    func `search highlight uses Pango markup, not literal text`() throws {
+    @Test("Search highlight uses Pango markup, not literal text") @MainActor
+    func searchHighlightUsesPangoMarkupNotLiteralText() throws {
         // Regression: label.text uses gtk_label_set_text which strips
         // markup. The highlight has to land on label.markup instead.
         let outline = try Self.makeOutline(suffix: "search-markup")
@@ -197,8 +197,8 @@ struct OutlineSidebarTests {
         #expect(label?.text == "Overview")
     }
 
-    @Test @MainActor
-    func `deeply nested H4 through H6 headings all render rows`() throws {
+    @Test("Deeply nested H4 through H6 headings all render rows") @MainActor
+    func deeplyNestedH4ThroughH6HeadingsAllRenderRows() throws {
         let outline = try Self.makeOutline(suffix: "deep")
         let deep: [Heading] = [
             .init(id: "h1", level: 1, text: "Document",  blockIndex: 0, line: 1),
@@ -217,8 +217,8 @@ struct OutlineSidebarTests {
         #expect(outline.renderedHeadings.map(\.id) == ["h1", "h2"])
     }
 
-    @Test @MainActor
-    func `setHeadings prunes collapse entries for removed H2 sections`() throws {
+    @Test("setHeadings prunes collapse entries for removed H2 sections") @MainActor
+    func setHeadingsPrunesCollapseEntriesForRemovedH2Sections() throws {
         let outline = try Self.makeOutline(suffix: "prune")
         outline.setHeadings([
             .init(id: "overview", level: 2, text: "Overview", blockIndex: 0, line: 1),

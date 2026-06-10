@@ -12,8 +12,8 @@ struct BreadcrumbStripTests {
         return BreadcrumbStrip()
     }
 
-    @Test @MainActor
-    func `with no active heading, only the doc title is visible`() throws {
+    @Test("With no active heading, only the doc title is visible") @MainActor
+    func withNoActiveHeadingOnlyTheDocTitleIsVisible() throws {
         let strip = try Self.makeStrip(suffix: "noactive")
         strip.update(
             docTitle: "Q3 Roadmap",
@@ -28,8 +28,8 @@ struct BreadcrumbStripTests {
         #expect(!markup.contains("›"))
     }
 
-    @Test @MainActor
-    func `H1 active heading lands in the section slot with no leaf`() throws {
+    @Test("H1 active heading lands in the section slot with no leaf") @MainActor
+    func h1ActiveHeadingLandsInTheSectionSlotWithNoLeaf() throws {
         let strip = try Self.makeStrip(suffix: "h1")
         strip.update(
             docTitle: "Doc",
@@ -43,8 +43,8 @@ struct BreadcrumbStripTests {
         #expect(markup.filter { $0 == "›" }.count == 1)
     }
 
-    @Test @MainActor
-    func `H2 active heading lands in the section slot with no leaf`() throws {
+    @Test("H2 active heading lands in the section slot with no leaf") @MainActor
+    func h2ActiveHeadingLandsInTheSectionSlotWithNoLeaf() throws {
         let strip = try Self.makeStrip(suffix: "h2")
         strip.update(
             docTitle: "Doc",
@@ -56,8 +56,8 @@ struct BreadcrumbStripTests {
         #expect(markup.filter { $0 == "›" }.count == 1)
     }
 
-    @Test @MainActor
-    func `H3 active heading uses the most recent H2 as its section`() throws {
+    @Test("H3 active heading uses the most recent H2 as its section") @MainActor
+    func h3ActiveHeadingUsesTheMostRecentH2AsItsSection() throws {
         let strip = try Self.makeStrip(suffix: "h3parent")
         let headings: [Heading] = [
             .init(id: "doc",      level: 1, text: "Doc",       blockIndex: 0, line: 1),
@@ -82,8 +82,8 @@ struct BreadcrumbStripTests {
         #expect(markup.contains("Outline"))
     }
 
-    @Test @MainActor
-    func `update no-ops when the doc title, section, and leaf are unchanged`() throws {
+    @Test("Update no-ops when the doc title, section, and leaf are unchanged") @MainActor
+    func updateNoOpsWhenTheDocTitleSectionAndLeafAreUnchanged() throws {
         // Performance regression guard: scroll-spy calls this ~60/s
         // during a kinetic scroll, almost always with the same tuple.
         let strip = try Self.makeStrip(suffix: "memo")
@@ -99,8 +99,8 @@ struct BreadcrumbStripTests {
         #expect(strip.label.markup.contains("Other"))
     }
 
-    @Test @MainActor
-    func `empty doc title hides the leading segment and its chevron`() throws {
+    @Test("Empty doc title hides the leading segment and its chevron") @MainActor
+    func emptyDocTitleHidesTheLeadingSegmentAndItsChevron() throws {
         let strip = try Self.makeStrip(suffix: "emptydoc")
         strip.update(docTitle: "", section: "Section", leaf: nil)
         let markup = strip.label.markup
@@ -110,8 +110,8 @@ struct BreadcrumbStripTests {
         #expect(markup.contains("Section"))
     }
 
-    @Test @MainActor
-    func `Pango-special characters in headings are escaped, not interpreted`() throws {
+    @Test("Pango-special characters in headings are escaped, not interpreted") @MainActor
+    func pangoSpecialCharactersInHeadingsAreEscapedNotInterpreted() throws {
         let strip = try Self.makeStrip(suffix: "escape")
         // Headings with `&`, `<`, `>` would crash Pango if passed raw
         // into a `markup` string. They have to be entity-escaped.

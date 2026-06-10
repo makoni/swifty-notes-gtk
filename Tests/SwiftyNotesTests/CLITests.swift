@@ -3,14 +3,14 @@ import Foundation
 import Testing
 
 struct CLITests {
-    @Test
-    func `cli run if requested ignores non CLI arguments`() {
+    @Test("Cli run if requested ignores non CLI arguments")
+    func cliRunIfRequestedIgnoresNonCLIArguments() {
         #expect(NotesCLI.runIfRequested(arguments: ["list"]) == nil)
         #expect(NotesCLI.runIfRequested(arguments: []) == nil)
     }
 
-    @Test
-    func `cli run if requested tolerates a leading dash dash from swift run`() {
+    @Test("Cli run if requested tolerates a leading dash dash from swift run")
+    func cliRunIfRequestedToleratesALeadingDashDashFromSwiftRun() {
         // `swift run swiftynotes -- cli list` forwards "--" to the binary
         // in some SwiftPM versions; the dispatch should still route to the
         // CLI rather than fall through to the GUI launcher.
@@ -24,8 +24,8 @@ struct CLITests {
         #expect(result?.exitCode == 0)
     }
 
-    @Test
-    func `cli supports stdin and content file sources`() throws {
+    @Test("Cli supports stdin and content file sources")
+    func cliSupportsStdinAndContentFileSources() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -74,8 +74,8 @@ struct CLITests {
         #expect(listed.allSatisfy { $0.filename.hasSuffix("/note.md") })
     }
 
-    @Test
-    func `cli reports usage and runtime errors`() {
+    @Test("Cli reports usage and runtime errors")
+    func cliReportsUsageAndRuntimeErrors() {
         let unknownCommand = NotesCLI.runIfRequested(arguments: ["cli", "unknown"])
         #expect(unknownCommand?.exitCode == 2)
         #expect(unknownCommand?.stderr.contains("Unknown CLI command") == true)
@@ -105,8 +105,8 @@ struct CLITests {
         #expect(invalidUTF8Stdin?.stderr.contains("Could not read UTF-8 content from stdin") == true)
     }
 
-    @Test
-    func `cli create with folder auto creates the folder and places the note there`() throws {
+    @Test("Cli create with folder auto creates the folder and places the note there")
+    func cliCreateWithFolderAutoCreatesTheFolderAndPlacesTheNote() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -133,8 +133,8 @@ struct CLITests {
         #expect(folders.contains("Work/Projects"))
     }
 
-    @Test
-    func `cli list with folder scopes results to that folder and its descendants`() throws {
+    @Test("Cli list with folder scopes results to that folder and its descendants")
+    func cliListWithFolderScopesResultsToThatFolderAndItsDescendants() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -165,8 +165,8 @@ struct CLITests {
         #expect(Set(summaries.map(\.folder)) == Set(["Work", "Work/Drafts"]))
     }
 
-    @Test
-    func `cli move relocates a note and creates intermediate folders`() throws {
+    @Test("Cli move relocates a note and creates intermediate folders")
+    func cliMoveRelocatesANoteAndCreatesIntermediateFolders() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -198,8 +198,8 @@ struct CLITests {
         #expect(back.folder == "")
     }
 
-    @Test
-    func `cli folders create makes a new folder and reflects it in folders output`() throws {
+    @Test("Cli folders create makes a new folder and reflects it in folders output")
+    func cliFoldersCreateMakesANewFolderAndReflectsItInFolders() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -218,8 +218,8 @@ struct CLITests {
         #expect(folders.contains("Work/Drafts"))
     }
 
-    @Test
-    func `cli folders rm refuses non empty folders without yes flag`() throws {
+    @Test("Cli folders rm refuses non empty folders without yes flag")
+    func cliFoldersRmRefusesNonEmptyFoldersWithoutYesFlag() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -250,8 +250,8 @@ struct CLITests {
         #expect(summaries.isEmpty)
     }
 
-    @Test
-    func `cli folders rm allows deleting an empty folder without yes`() throws {
+    @Test("Cli folders rm allows deleting an empty folder without yes")
+    func cliFoldersRmAllowsDeletingAnEmptyFolderWithoutYes() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -268,8 +268,8 @@ struct CLITests {
         #expect(result?.exitCode == 0)
     }
 
-    @Test
-    func `cli folders rename moves the folder and notes follow`() throws {
+    @Test("Cli folders rename moves the folder and notes follow")
+    func cliFoldersRenameMovesTheFolderAndNotesFollow() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -292,8 +292,8 @@ struct CLITests {
         #expect(summaries.first?.folder == "New")
     }
 
-    @Test
-    func `cli folders move relocates a folder under a new parent`() throws {
+    @Test("Cli folders move relocates a folder under a new parent")
+    func cliFoldersMoveRelocatesAFolderUnderANewParent() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -330,8 +330,8 @@ struct CLITests {
     // skipping these on macOS doesn't lose coverage of the CLI itself — only
     // of the subprocess plumbing, which is Linux-flathub specific anyway.
     #if !os(macOS)
-    @Test
-    func `cli executable round trips notes across processes`() throws {
+    @Test("Cli executable round trips notes across processes")
+    func cliExecutableRoundTripsNotesAcrossProcesses() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -374,8 +374,8 @@ struct CLITests {
         #expect(persisted.first?.content == "# Updated Process Note\n\nFrom file")
     }
 
-    @Test
-    func `cli executable uses default XDG notes directory`() throws {
+    @Test("Cli executable uses default XDG notes directory")
+    func cliExecutableUsesDefaultXDGNotesDirectory() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -408,8 +408,8 @@ struct CLITests {
         #expect(listed.first?.title == "Default Path")
     }
 
-    @Test
-    func `cli executable uses configured notes directory from settings`() throws {
+    @Test("Cli executable uses configured notes directory from settings")
+    func cliExecutableUsesConfiguredNotesDirectoryFromSettings() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -445,8 +445,8 @@ struct CLITests {
         #expect(!FileManager.default.fileExists(atPath: defaultDirectory.path()))
     }
 
-    @Test
-    func `cli executable falls back to flatpak default notes directory when host storage is empty`() throws {
+    @Test("Cli executable falls back to flatpak default notes directory when host storage is empty")
+    func cliExecutableFallsBackToFlatpakDefaultNotesDirectoryWhenHostStorage() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -479,8 +479,8 @@ struct CLITests {
         #expect(fetched.title == "Flatpak Default")
     }
 
-    @Test
-    func `cli executable falls back to flatpak configured notes directory when host storage is empty`() throws {
+    @Test("Cli executable falls back to flatpak configured notes directory when host storage is empty")
+    func cliExecutableFallsBackToFlatpakConfiguredNotesDirectoryWhenHostStorage() throws {
         let temp = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -517,8 +517,8 @@ struct CLITests {
         #expect(fetched.title == "Flatpak Configured")
     }
 
-    @Test
-    func `cli executable surfaces help and exit codes`() throws {
+    @Test("Cli executable surfaces help and exit codes")
+    func cliExecutableSurfacesHelpAndExitCodes() throws {
         let helpResult = try runCLIExecutable(arguments: ["cli", "help", "create"])
         #expect(helpResult.exitCode == 0)
         #expect(helpResult.stdout.contains("swiftynotes cli create"))

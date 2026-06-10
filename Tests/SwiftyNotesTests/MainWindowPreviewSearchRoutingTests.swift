@@ -29,8 +29,8 @@ struct MainWindowPreviewSearchRoutingTests {
         )
     }
 
-    @Test @MainActor
-    func `Ctrl+F in preview-only mode opens the preview bar, not the editor bar`() throws {
+    @Test("Ctrl+F in preview-only mode opens the preview bar, not the editor bar") @MainActor
+    func ctrlFInPreviewOnlyModeOpensThePreviewBarNotThe() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.previewonlyroute")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("# Why it stands out\n\nbody text")
@@ -41,8 +41,8 @@ struct MainWindowPreviewSearchRoutingTests {
         #expect(window.previewSearchController != nil)
     }
 
-    @Test @MainActor
-    func `Ctrl+F in editor-only mode opens the editor bar`() throws {
+    @Test("Ctrl+F in editor-only mode opens the editor bar") @MainActor
+    func ctrlFInEditorOnlyModeOpensTheEditorBar() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.editoronlyroute")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("# Why it stands out\n\nbody text")
@@ -52,8 +52,8 @@ struct MainWindowPreviewSearchRoutingTests {
         #expect(window.previewFindReplaceBar.isVisible == false)
     }
 
-    @Test @MainActor
-    func `Ctrl+H replace in preview-only mode still opens the editor bar`() throws {
+    @Test("Ctrl+H replace in preview-only mode still opens the editor bar") @MainActor
+    func ctrlHReplaceInPreviewOnlyModeStillOpensTheEditorBar() throws {
         // The preview bar is read-only, so replace must always land in the
         // editor even when preview-only is on screen.
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.previewreplace")
@@ -65,8 +65,8 @@ struct MainWindowPreviewSearchRoutingTests {
         #expect(window.previewFindReplaceBar.isVisible == false)
     }
 
-    @Test @MainActor
-    func `typing in the bar Ctrl+F opened paints highlights on the rendered preview label`() throws {
+    @Test("Typing in the bar Ctrl+F opened paints highlights on the rendered preview label") @MainActor
+    func typingInTheBarCtrlFOpenedPaintsHighlightsOnTheRendered() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.previewonlypaint")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("# Why it stands out\n\nbody text")

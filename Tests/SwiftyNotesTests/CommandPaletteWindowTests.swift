@@ -46,8 +46,8 @@
             .init(id: "search", level: 3, text: "Search v2", blockIndex: 4, line: 9),
         ]
 
-        @Test @MainActor
-        func `empty query shows recents first, then the rest in document order`() throws {
+        @Test("Empty query shows recents first, then the rest in document order") @MainActor
+        func emptyQueryShowsRecentsFirstThenTheRestInDocumentOrder() throws {
             let palette = try Self.makePalette(
                 suffix: "recents",
                 headings: Self.sampleHeadings,
@@ -58,14 +58,14 @@
             #expect(palette.debugItems.map(\.id) == ["search", "goals", "overview", "features", "outline"])
         }
 
-        @Test @MainActor
-        func `empty query falls back to document order when there are no recents`() throws {
+        @Test("Empty query falls back to document order when there are no recents") @MainActor
+        func emptyQueryFallsBackToDocumentOrderWhenThereAreNoRecents() throws {
             let palette = try Self.makePalette(suffix: "norecents", headings: Self.sampleHeadings)
             #expect(palette.debugItems.map(\.id) == ["overview", "goals", "features", "outline", "search"])
         }
 
-        @Test @MainActor
-        func `typing a query switches to ranked match list`() throws {
+        @Test("Typing a query switches to ranked match list") @MainActor
+        func typingAQuerySwitchesToRankedMatchList() throws {
             let palette = try Self.makePalette(suffix: "ranked", headings: Self.sampleHeadings)
             palette.debugSetQuery("outline")
             // Markdown Outline matches title-contains (rank 1); other rows
@@ -73,8 +73,8 @@
             #expect(palette.debugItems.map(\.id) == ["outline"])
         }
 
-        @Test @MainActor
-        func `currentID defaults the highlight to that row when query is empty`() throws {
+        @Test("currentID defaults the highlight to that row when query is empty") @MainActor
+        func currentIDDefaultsTheHighlightToThatRowWhenQueryIsEmpty() throws {
             let palette = try Self.makePalette(
                 suffix: "current",
                 headings: Self.sampleHeadings,
@@ -85,8 +85,8 @@
             #expect(palette.debugHighlightIndex == 2)
         }
 
-        @Test @MainActor
-        func `arrow-down moves highlight forward, clamped at the end`() throws {
+        @Test("Arrow-down moves highlight forward, clamped at the end") @MainActor
+        func arrowDownMovesHighlightForwardClampedAtTheEnd() throws {
             let palette = try Self.makePalette(suffix: "arrow", headings: Self.sampleHeadings)
             #expect(palette.debugHighlightIndex == 0)
             palette.debugMove(by: 1)
@@ -97,8 +97,8 @@
             #expect(palette.debugHighlightIndex == 0)
         }
 
-        @Test @MainActor
-        func `enter activates the highlighted row and calls onPick`() throws {
+        @Test("Enter activates the highlighted row and calls onPick") @MainActor
+        func enterActivatesTheHighlightedRowAndCallsOnPick() throws {
             @MainActor
             final class PickRecorder {
                 var picked: String?
@@ -127,8 +127,8 @@
         /// `dialog.close()` is called. We check `debugCloseCallCount` rather than
         /// `onClosed` because `adw_dialog_close` only emits the GLib `closed` signal
         /// for a dialog that has been presented to a window.
-        @Test @MainActor
-        func `Escape via stop-search signal closes the palette`() throws {
+        @Test("Escape via stop-search signal closes the palette") @MainActor
+        func escapeViaStopSearchSignalClosesThePalette() throws {
             let palette = try Self.makePalette(
                 suffix: "esc-stop-search",
                 headings: Self.sampleHeadings,

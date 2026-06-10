@@ -16,8 +16,8 @@ struct SidebarTreeFlattenerTests {
         )
     }
 
-    @Test
-    func `root only notes flatten to a flat list`() {
+    @Test("Root only notes flatten to a flat list")
+    func rootOnlyNotesFlattenToAFlatList() {
         let alpha = Self.note("Alpha", createdAt: Date(timeIntervalSince1970: 200))
         let beta = Self.note("Beta", createdAt: Date(timeIntervalSince1970: 100))
 
@@ -39,8 +39,8 @@ struct SidebarTreeFlattenerTests {
         #expect(header.isExpanded == false)
     }
 
-    @Test
-    func `folder children stay hidden until the folder is expanded`() {
+    @Test("Folder children stay hidden until the folder is expanded")
+    func folderChildrenStayHiddenUntilTheFolderIsExpanded() {
         let inside = Self.note("Inside", in: "Work")
         let items = SidebarTreeFlattener.flatten(
             notes: [inside],
@@ -66,8 +66,8 @@ struct SidebarTreeFlattenerTests {
         #expect(header.isExpanded == false)
     }
 
-    @Test
-    func `expanded folder reveals nested folders and notes at the right depth`() {
+    @Test("Expanded folder reveals nested folders and notes at the right depth")
+    func expandedFolderRevealsNestedFoldersAndNotesAtTheRightDepth() {
         let root = Self.note("Root")
         let work = Self.note("Work Note", in: "Work")
         let project = Self.note("Project Note", in: "Work/Projects")
@@ -121,8 +121,8 @@ struct SidebarTreeFlattenerTests {
         #expect(header.isExpanded == false)
     }
 
-    @Test
-    func `search collapses to flat matching notes ignoring folders`() {
+    @Test("Search collapses to flat matching notes ignoring folders")
+    func searchCollapsesToFlatMatchingNotesIgnoringFolders() {
         let workNote = Self.note("Find me", in: "Work")
         let other = Self.note("Skip", in: "Personal")
 
@@ -140,8 +140,8 @@ struct SidebarTreeFlattenerTests {
         }
     }
 
-    @Test
-    func `drag payload round trips through string encoding`() throws {
+    @Test("Drag payload round trips through string encoding")
+    func dragPayloadRoundTripsThroughStringEncoding() throws {
         let noteID = UUID()
         let notePayload = SidebarDragPayload.note(noteID)
         let folderPayload = SidebarDragPayload.folder(path: "Work/Drafts")
@@ -159,14 +159,14 @@ struct SidebarTreeFlattenerTests {
         #expect(decodedPath == "Work/Drafts")
     }
 
-    @Test
-    func `drag payload rejects unrelated text drops`() {
+    @Test("Drag payload rejects unrelated text drops")
+    func dragPayloadRejectsUnrelatedTextDrops() {
         #expect(SidebarDragPayload.parse("https://example.com") == nil)
         #expect(SidebarDragPayload.parse("swiftynotes/note/not-a-uuid") == nil)
     }
 
-    @Test
-    func `sidebar title label layout truncates with an ellipsis on a single line and keeps the full title in the tooltip`() {
+    @Test("Sidebar title label layout truncates with an ellipsis on a single line and keeps the full title in the tooltip")
+    func sidebarTitleLabelLayoutTruncatesWithAnEllipsisOnASingleLine() {
         let longTitle = String(repeating: "Very long heading ", count: 12)
         let note = Self.note(longTitle)
         let layout = NotesSidebar.titleLabelLayout(for: note)
@@ -179,8 +179,8 @@ struct SidebarTreeFlattenerTests {
         #expect(layout.wrap == false)
     }
 
-    @Test
-    func `empty folders still surface as collapsed rows so the user can rename or delete them`() {
+    @Test("Empty folders still surface as collapsed rows so the user can rename or delete them")
+    func emptyFoldersStillSurfaceAsCollapsedRowsSoTheUserCanRename() {
         let items = SidebarTreeFlattener.flatten(
             notes: [],
             folders: ["Work"],

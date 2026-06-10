@@ -5,8 +5,8 @@ import Foundation
 import Testing
 
 struct MainWindowActionsTests {
-    @Test @MainActor
-    func `main window selection change dismisses context menu before sidebar refresh`() throws {
+    @Test("Main window selection change dismisses context menu before sidebar refresh") @MainActor
+    func mainWindowSelectionChangeDismissesContextMenuBeforeSidebarRefresh() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -39,8 +39,8 @@ struct MainWindowActionsTests {
         #expect(window.debugSelectedNoteContent == SwiftyNotesOverviewSeed.content)
     }
 
-    @Test @MainActor
-    func `main window create note dismisses existing context menu before sidebar refresh`() throws {
+    @Test("Main window create note dismisses existing context menu before sidebar refresh") @MainActor
+    func mainWindowCreateNoteDismissesExistingContextMenuBeforeSidebarRefresh() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -68,8 +68,8 @@ struct MainWindowActionsTests {
         #expect(window.debugNotesCount == 4)
     }
 
-    @Test @MainActor
-    func `main window context menu actions execute for selected row after sidebar refresh`() throws {
+    @Test("Main window context menu actions execute for selected row after sidebar refresh") @MainActor
+    func mainWindowContextMenuActionsExecuteForSelectedRowAfterSidebarRefresh() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -130,8 +130,8 @@ struct MainWindowActionsTests {
         #expect(Set(window.debugDisplayedNoteStableIDs).count == window.debugDisplayedNoteStableIDs.count)
     }
 
-    @Test @MainActor
-    func `main window settings action presents settings window`() throws {
+    @Test("Main window settings action presents settings window") @MainActor
+    func mainWindowSettingsActionPresentsSettingsWindow() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -185,8 +185,8 @@ struct MainWindowActionsTests {
         ))
     }
 
-    @Test @MainActor
-    func `main window changing notes directory moves notes and persists setting`() throws {
+    @Test("Main window changing notes directory moves notes and persists setting") @MainActor
+    func mainWindowChangingNotesDirectoryMovesNotesAndPersistsSetting() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -231,8 +231,8 @@ struct MainWindowActionsTests {
         #expect(try settingsStore.load().customNotesDirectoryURL?.standardizedFileURL == destinationDirectory.standardizedFileURL)
     }
 
-    @Test @MainActor
-    func `main window settings window controls apply and persist preferences`() throws {
+    @Test("Main window settings window controls apply and persist preferences") @MainActor
+    func mainWindowSettingsWindowControlsApplyAndPersistPreferences() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -319,8 +319,8 @@ struct MainWindowActionsTests {
         #expect(relaunched.debugAppearanceMode == .dark)
     }
 
-    @Test @MainActor
-    func `main window updating preferences persists and applies them at runtime`() throws {
+    @Test("Main window updating preferences persists and applies them at runtime") @MainActor
+    func mainWindowUpdatingPreferencesPersistsAndAppliesThemAtRuntime() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -376,8 +376,8 @@ struct MainWindowActionsTests {
         #expect(stored.appearanceMode == .light)
     }
 
-    @Test @MainActor
-    func `main window open notes folder uses injected directory opener`() throws {
+    @Test("Main window open notes folder uses injected directory opener") @MainActor
+    func mainWindowOpenNotesFolderUsesInjectedDirectoryOpener() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -409,8 +409,8 @@ struct MainWindowActionsTests {
         #expect(isDirectory.boolValue)
     }
 
-    @Test @MainActor
-    func `main window open notes folder menu action uses injected directory opener`() throws {
+    @Test("Main window open notes folder menu action uses injected directory opener") @MainActor
+    func mainWindowOpenNotesFolderMenuActionUsesInjectedDirectoryOpener() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -438,8 +438,8 @@ struct MainWindowActionsTests {
         #expect(openedURL.snapshot()?.standardizedFileURL == temp.standardizedFileURL)
     }
 
-    @Test
-    func `open directory in system file manager uses default URI handler first`() throws {
+    @Test("Open directory in system file manager uses default URI handler first")
+    func openDirectoryInSystemFileManagerUsesDefaultURIHandlerFirst() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let expectedURI = temp.standardizedFileURL.absoluteString
 
@@ -460,8 +460,8 @@ struct MainWindowActionsTests {
         #expect(fallbackURIs.isEmpty)
     }
 
-    @Test
-    func `open directory in system file manager falls back to XDG open when default handler fails`() throws {
+    @Test("Open directory in system file manager falls back to XDG open when default handler fails")
+    func openDirectoryInSystemFileManagerFallsBackToXDGOpenWhen() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let expectedURI = temp.standardizedFileURL.absoluteString
 
@@ -483,8 +483,8 @@ struct MainWindowActionsTests {
         #expect(fallbackURIs == [expectedURI])
     }
 
-    @Test @MainActor
-    func `main window about menu action presents about dialog`() throws {
+    @Test("Main window about menu action presents about dialog") @MainActor
+    func mainWindowAboutMenuActionPresentsAboutDialog() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -520,8 +520,8 @@ struct MainWindowActionsTests {
         #expect(!window.debugHasAboutDialog)
     }
 
-    @Test @MainActor
-    func `main window about dialog uses release version environment when provided`() throws {
+    @Test("Main window about dialog uses release version environment when provided") @MainActor
+    func mainWindowAboutDialogUsesReleaseVersionEnvironmentWhenProvided() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -557,8 +557,8 @@ struct MainWindowActionsTests {
         window.debugCloseAboutDialog()
     }
 
-    @Test @MainActor
-    func `main window switching between notes refreshes preview`() async throws {
+    @Test("Main window switching between notes refreshes preview") @MainActor
+    func mainWindowSwitchingBetweenNotesRefreshesPreview() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -613,8 +613,8 @@ struct MainWindowActionsTests {
         #expect(window.debugPreviewText.contains("Two"))
     }
 
-    @Test @MainActor
-    func `main window sidebar sort control reflects and changes sort mode`() throws {
+    @Test("Main window sidebar sort control reflects and changes sort mode") @MainActor
+    func mainWindowSidebarSortControlReflectsAndChangesSortMode() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 

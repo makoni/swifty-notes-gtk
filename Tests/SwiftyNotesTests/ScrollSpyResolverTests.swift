@@ -3,13 +3,13 @@ import Foundation
 import Testing
 
 struct ScrollSpyResolverTests {
-    @Test
-    func `returns nil when there are no headings`() {
+    @Test("Returns nil when there are no headings")
+    func returnsNilWhenThereAreNoHeadings() {
         #expect(ScrollSpyResolver.activeHeadingID(positions: [], scrollTop: 0) == nil)
     }
 
-    @Test
-    func `single heading at the top is active as soon as the viewport opens`() {
+    @Test("Single heading at the top is active as soon as the viewport opens")
+    func singleHeadingAtTheTopIsActiveAsSoonAsTheViewport() {
         // y=0 means the heading sits at the very top of the document.
         // With scrollTop=0 and anchorOffset=80, anchor is at y=80, so the
         // heading is well above the anchor → active.
@@ -17,16 +17,16 @@ struct ScrollSpyResolverTests {
         #expect(ScrollSpyResolver.activeHeadingID(positions: positions, scrollTop: 0) == "intro")
     }
 
-    @Test
-    func `returns nil when every heading is still below the anchor`() {
+    @Test("Returns nil when every heading is still below the anchor")
+    func returnsNilWhenEveryHeadingIsStillBelowTheAnchor() {
         // First heading at y=200, scrollTop=0 → anchor is at y=80 → no
         // heading is at/above the anchor yet.
         let positions = [(id: "first", y: 200.0)]
         #expect(ScrollSpyResolver.activeHeadingID(positions: positions, scrollTop: 0) == nil)
     }
 
-    @Test
-    func `as user scrolls past a heading, that heading becomes active`() {
+    @Test("As user scrolls past a heading, that heading becomes active")
+    func asUserScrollsPastAHeadingThatHeadingBecomesActive() {
         let positions = [
             (id: "h1", y: 0.0),
             (id: "h2", y: 500.0),
@@ -42,8 +42,8 @@ struct ScrollSpyResolverTests {
         #expect(ScrollSpyResolver.activeHeadingID(positions: positions, scrollTop: 1500) == "h3")
     }
 
-    @Test
-    func `ties at the same y favour the later heading in document order`() {
+    @Test("Ties at the same y favour the later heading in document order")
+    func tiesAtTheSameYFavourTheLaterHeadingInDocumentOrder() {
         // Mirrors the JS "prefer the deepest (most recent) at the anchor"
         // behaviour: when two headings collide on y, the later one wins,
         // matching what the user visually sees as "the most recent
@@ -55,8 +55,8 @@ struct ScrollSpyResolverTests {
         #expect(ScrollSpyResolver.activeHeadingID(positions: positions, scrollTop: 100) == "second")
     }
 
-    @Test
-    func `custom anchor offset shifts the activation threshold`() {
+    @Test("Custom anchor offset shifts the activation threshold")
+    func customAnchorOffsetShiftsTheActivationThreshold() {
         // Anchor at scrollTop + 0 means the very first pixel into the
         // viewport activates a heading. Useful for headerless layouts.
         let positions = [(id: "h", y: 0.0), (id: "h2", y: 50.0)]

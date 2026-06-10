@@ -5,22 +5,22 @@ import Testing
 
     // MARK: - URL detection
 
-    @Test
-    func `recognises bare http and https URLs as pasteable`() {
+    @Test("Recognises bare http and https URLs as pasteable")
+    func recognisesBareHttpAndHttpsURLsAsPasteable() {
         #expect(MarkdownLinkPaste.isPasteableURL("http://example.com"))
         #expect(MarkdownLinkPaste.isPasteableURL("https://example.com"))
         #expect(MarkdownLinkPaste.isPasteableURL("https://github.com/makoni/swifty-notes-gtk"))
         #expect(MarkdownLinkPaste.isPasteableURL("https://example.com/path?query=value&other=1#fragment"))
     }
 
-    @Test
-    func `accepts uppercase scheme by lowercasing`() {
+    @Test("Accepts uppercase scheme by lowercasing")
+    func acceptsUppercaseSchemeByLowercasing() {
         #expect(MarkdownLinkPaste.isPasteableURL("HTTP://Example.COM"))
         #expect(MarkdownLinkPaste.isPasteableURL("HTTPS://example.com"))
     }
 
-    @Test
-    func `rejects strings that aren't single bare URLs`() {
+    @Test("Rejects strings that aren't single bare URLs")
+    func rejectsStringsThatArentSingleBareURLs() {
         #expect(!MarkdownLinkPaste.isPasteableURL(""))
         #expect(!MarkdownLinkPaste.isPasteableURL("not a url"))
         #expect(!MarkdownLinkPaste.isPasteableURL("foo"))
@@ -29,24 +29,24 @@ import Testing
         #expect(!MarkdownLinkPaste.isPasteableURL("https://example.com\nhttps://other.com"))
     }
 
-    @Test
-    func `rejects non-http schemes to avoid xss style wrapping`() {
+    @Test("Rejects non-http schemes to avoid xss style wrapping")
+    func rejectsNonHttpSchemesToAvoidXssStyleWrapping() {
         #expect(!MarkdownLinkPaste.isPasteableURL("javascript:alert(1)"))
         #expect(!MarkdownLinkPaste.isPasteableURL("file:///etc/passwd"))
         #expect(!MarkdownLinkPaste.isPasteableURL("mailto:test@example.com"))
         #expect(!MarkdownLinkPaste.isPasteableURL("ftp://example.com"))
     }
 
-    @Test
-    func `rejects URLs with empty host`() {
+    @Test("Rejects URLs with empty host")
+    func rejectsURLsWithEmptyHost() {
         #expect(!MarkdownLinkPaste.isPasteableURL("https://"))
         #expect(!MarkdownLinkPaste.isPasteableURL("http://"))
     }
 
     // MARK: - Code-context detection
 
-    @Test
-    func `cursor inside fenced code block is recognised as code context`() {
+    @Test("Cursor inside fenced code block is recognised as code context")
+    func cursorInsideFencedCodeBlockIsRecognisedAsCodeContext() {
         let textBefore = """
         Some text
 
@@ -57,8 +57,8 @@ import Testing
         #expect(MarkdownLinkPaste.isInCodeContext(textBefore: textBefore))
     }
 
-    @Test
-    func `cursor after closed fenced code block is plain text`() {
+    @Test("Cursor after closed fenced code block is plain text")
+    func cursorAfterClosedFencedCodeBlockIsPlainText() {
         let textBefore = """
         Some text
 
@@ -71,8 +71,8 @@ import Testing
         #expect(!MarkdownLinkPaste.isInCodeContext(textBefore: textBefore))
     }
 
-    @Test
-    func `language-tagged fence still counts as code context`() {
+    @Test("Language-tagged fence still counts as code context")
+    func languageTaggedFenceStillCountsAsCodeContext() {
         let textBefore = """
         Notes:
 
@@ -83,20 +83,20 @@ import Testing
         #expect(MarkdownLinkPaste.isInCodeContext(textBefore: textBefore))
     }
 
-    @Test
-    func `cursor inside unmatched inline backticks on the same line is code context`() {
+    @Test("Cursor inside unmatched inline backticks on the same line is code context")
+    func cursorInsideUnmatchedInlineBackticksOnTheSameLineIsCodeContext() {
         #expect(MarkdownLinkPaste.isInCodeContext(textBefore: "Run `swift build "))
         #expect(MarkdownLinkPaste.isInCodeContext(textBefore: "Use `git commit -m \"msg`. And `now another "))
     }
 
-    @Test
-    func `cursor after balanced inline backticks is plain text`() {
+    @Test("Cursor after balanced inline backticks is plain text")
+    func cursorAfterBalancedInlineBackticksIsPlainText() {
         #expect(!MarkdownLinkPaste.isInCodeContext(textBefore: "Run `swift build` and then "))
         #expect(!MarkdownLinkPaste.isInCodeContext(textBefore: "Plain old prose without any backticks"))
     }
 
-    @Test
-    func `inline backticks reset on newline so unmatched ticks earlier don't poison later lines`() {
+    @Test("Inline backticks reset on newline so unmatched ticks earlier don't poison later lines")
+    func inlineBackticksResetOnNewlineSoUnmatchedTicksEarlierDontPoisonLater() {
         let textBefore = """
         Earlier line with stray ` backtick
         Now a fresh line cursor-here
@@ -106,8 +106,8 @@ import Testing
 
     // MARK: - Transform decision
 
-    @Test
-    func `bare URL paste with no selection wraps as duplicate link`() {
+    @Test("Bare URL paste with no selection wraps as duplicate link")
+    func bareURLPasteWithNoSelectionWrapsAsDuplicateLink() {
         let action = MarkdownLinkPaste.transform(
             clipboardText: "https://example.com",
             selectedText: "",
@@ -116,8 +116,8 @@ import Testing
         #expect(action == .wrap("[https://example.com](https://example.com)"))
     }
 
-    @Test
-    func `bare URL paste with selection wraps the selection as link text`() {
+    @Test("Bare URL paste with selection wraps the selection as link text")
+    func bareURLPasteWithSelectionWrapsTheSelectionAsLinkText() {
         let action = MarkdownLinkPaste.transform(
             clipboardText: "https://example.com",
             selectedText: "click here",
@@ -126,8 +126,8 @@ import Testing
         #expect(action == .wrap("[click here](https://example.com)"))
     }
 
-    @Test
-    func `URL paste in code context falls through to plain text paste`() {
+    @Test("URL paste in code context falls through to plain text paste")
+    func uRLPasteInCodeContextFallsThroughToPlainTextPaste() {
         let action = MarkdownLinkPaste.transform(
             clipboardText: "https://example.com",
             selectedText: "",
@@ -136,8 +136,8 @@ import Testing
         #expect(action == .passThrough)
     }
 
-    @Test
-    func `non-URL text paste falls through to plain text paste`() {
+    @Test("non-URL text paste falls through to plain text paste")
+    func nonURLTextPasteFallsThroughToPlainTextPaste() {
         let action = MarkdownLinkPaste.transform(
             clipboardText: "just some text",
             selectedText: "",
@@ -146,8 +146,8 @@ import Testing
         #expect(action == .passThrough)
     }
 
-    @Test
-    func `URL surrounded by whitespace is trimmed before validation and wrap`() {
+    @Test("URL surrounded by whitespace is trimmed before validation and wrap")
+    func uRLSurroundedByWhitespaceIsTrimmedBeforeValidationAndWrap() {
         let action = MarkdownLinkPaste.transform(
             clipboardText: "  https://example.com  \n",
             selectedText: "",

@@ -83,14 +83,14 @@ struct MainWindowOutlineTests {
         }
     }
 
-    @Test @MainActor
-    func `default state has the outline panel visible`() throws {
+    @Test("Default state has the outline panel visible") @MainActor
+    func defaultStateHasTheOutlinePanelVisible() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.default")
         #expect(window.debugIsOutlineVisible == true)
     }
 
-    @Test @MainActor
-    func `persisted state with the panel hidden honours that on launch`() throws {
+    @Test("Persisted state with the panel hidden honours that on launch") @MainActor
+    func persistedStateWithThePanelHiddenHonoursThatOnLaunch() throws {
         let window = try Self.makeWindow(
             appID: "me.spaceinbox.swiftynotes.tests.outline.hiddenstart",
             isOutlineVisible: false,
@@ -98,8 +98,8 @@ struct MainWindowOutlineTests {
         #expect(window.debugIsOutlineVisible == false)
     }
 
-    @Test @MainActor
-    func `toggle action flips visibility and mirrors it back into AppState`() throws {
+    @Test("Toggle action flips visibility and mirrors it back into AppState") @MainActor
+    func toggleActionFlipsVisibilityAndMirrorsItBackIntoAppState() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.toggle")
         #expect(window.debugIsOutlineVisible == true)
 
@@ -112,8 +112,8 @@ struct MainWindowOutlineTests {
         #expect(window.debugAppStateIsOutlineVisible == true)
     }
 
-    @Test @MainActor
-    func `editing the note populates the outline panel with extracted headings`() throws {
+    @Test("Editing the note populates the outline panel with extracted headings") @MainActor
+    func editingTheNotePopulatesTheOutlinePanelWithExtractedHeadings() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.populate")
         window.debugLoadInitialNotes()
         // Replace the seeded content with a tiny TOC-worthy doc so we
@@ -142,8 +142,8 @@ struct MainWindowOutlineTests {
         #expect(headings.map(\.level) == [1, 2, 2, 3])
     }
 
-    @Test @MainActor
-    func `editing the note refreshes the breadcrumb's doc title segment`() throws {
+    @Test("Editing the note refreshes the breadcrumb's doc title segment") @MainActor
+    func editingTheNoteRefreshesTheBreadcrumbsDocTitleSegment() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.breadcrumb")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("# Roadmap\n\n## Overview\n\nBody.")
@@ -152,8 +152,8 @@ struct MainWindowOutlineTests {
         #expect(window.breadcrumb.label.markup.contains("Roadmap"))
     }
 
-    @Test @MainActor
-    func `collapse state is hydrated from AppState when the active note changes`() throws {
+    @Test("Collapse state is hydrated from AppState when the active note changes") @MainActor
+    func collapseStateIsHydratedFromAppStateWhenTheActiveNoteChanges() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.hydrate")
         window.debugLoadInitialNotes()
         guard let noteID = window.debugSelectedNoteID else {
@@ -174,8 +174,8 @@ struct MainWindowOutlineTests {
         #expect(window.debugOutlineRecentIDs == ["features", "goals"])
     }
 
-    @Test @MainActor
-    func `collapsing an H2 in the outline also folds the section in the editor`() throws {
+    @Test("Collapsing an H2 in the outline also folds the section in the editor") @MainActor
+    func collapsingAnH2InTheOutlineAlsoFoldsTheSectionInThe() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.editorfold")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("""
@@ -208,8 +208,8 @@ struct MainWindowOutlineTests {
         #expect(window.outlineSidebar.collapsedSections.contains("overview"))
     }
 
-    @Test @MainActor
-    func `drag-to-reorder rewrites the editor buffer in section-block order`() throws {
+    @Test("Drag-to-reorder rewrites the editor buffer in section-block order") @MainActor
+    func dragToReorderRewritesTheEditorBufferInSectionBlockOrder() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.reorder")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("""
@@ -233,8 +233,8 @@ struct MainWindowOutlineTests {
         }
     }
 
-    @Test @MainActor
-    func `clicking every outline row in turn leaves the clicked row active, never the one above`() throws {
+    @Test("Clicking every outline row in turn leaves the clicked row active, never the one above") @MainActor
+    func clickingEveryOutlineRowInTurnLeavesTheClickedRowActiveNever() throws {
         // Regression: with smooth-scroll animations enabled, an in-
         // flight scroll fires `onValueChanged` ticks at intermediate
         // scrollTop values, the resolver picked whichever heading was
@@ -293,8 +293,8 @@ struct MainWindowOutlineTests {
         }
     }
 
-    @Test @MainActor
-    func `heading block-indices map correctly to row indices when adjacent paragraphs are grouped`() throws {
+    @Test("Heading block-indices map correctly to row indices when adjacent paragraphs are grouped") @MainActor
+    func headingBlockIndicesMapCorrectlyToRowIndicesWhenAdjacentParagraphsAre() throws {
         // Regression: the showcase note has consecutive paragraphs +
         // list items between headings. `MarkdownPreview.makeRows`
         // collapses those into single rows, so a heading at
@@ -338,8 +338,8 @@ struct MainWindowOutlineTests {
         #expect(mapping[bHeading.blockIndex] == 2)
     }
 
-    @Test @MainActor
-    func `the empty-state link inserts a starter heading and focuses the editor`() throws {
+    @Test("The empty-state link inserts a starter heading and focuses the editor") @MainActor
+    func theEmptyStateLinkInsertsAStarterHeadingAndFocusesTheEditor() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.insertheading")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("Paragraph one.\n")
@@ -353,8 +353,8 @@ struct MainWindowOutlineTests {
         #expect(after.count > before.count)
     }
 
-    @Test @MainActor
-    func `outline panel falls back to empty-state when the note has no headings`() throws {
+    @Test("Outline panel falls back to empty-state when the note has no headings") @MainActor
+    func outlinePanelFallsBackToEmptyStateWhenTheNoteHasNo() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.emptynote")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("Just a paragraph.\n\nAnother one.")
@@ -363,8 +363,8 @@ struct MainWindowOutlineTests {
         #expect(window.outlineSidebar.emptyLabel.visible == true)
     }
 
-    @Test @MainActor
-    func `blockToRowIndex covers every block, not just headings`() throws {
+    @Test("blockToRowIndex covers every block, not just headings") @MainActor
+    func blockToRowIndexCoversEveryBlockNotJustHeadings() throws {
         // Regression guard for the preview-side find/replace work
         // (#26): the controller scrolls to a matched block by
         // looking up `block index → row index` on MarkdownPreview.
@@ -400,8 +400,8 @@ struct MainWindowOutlineTests {
         #expect(Set(mapping.keys) == Set(0..<blockCount))
     }
 
-    @Test @MainActor
-    func `Ctrl+G keeps a strong reference to the palette so signal handlers can fire`() throws {
+    @Test("Ctrl+G keeps a strong reference to the palette so signal handlers can fire") @MainActor
+    func ctrlGKeepsAStrongReferenceToThePaletteSoSignalHandlers() throws {
         // Regression: `openCommandPalette` used to leave the
         // `CommandPaletteWindow` in a local variable. The moment the
         // function returned the Swift wrapper was deallocated — GTK
@@ -428,8 +428,8 @@ struct MainWindowOutlineTests {
         #expect(window.activeCommandPalette?.debugItems.map(\.id) == ["a"])
     }
 
-    @Test @MainActor
-    func `Ctrl+G enables dialog backdrop dismiss and outside-click closes the palette`() throws {
+    @Test("Ctrl+G enables dialog backdrop dismiss and outside-click closes the palette") @MainActor
+    func ctrlGEnablesDialogBackdropDismissAndOutsideClickClosesThePalette() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.outline.palettebackdrop")
         window.present()
         window.debugLoadInitialNotes()
@@ -451,8 +451,8 @@ struct MainWindowOutlineTests {
         #expect(window.activeCommandPalette == nil)
     }
 
-    @Test @MainActor
-    func `rendering the preview does not fire gtk_scrolled_window_get_child on a non-ScrolledWindow`() throws {
+    @Test("Rendering the preview does not fire gtk_scrolled_window_get_child on a non-ScrolledWindow") @MainActor
+    func renderingThePreviewDoesNotFireGtkScrolledWindowGetChildOn() throws {
         // Regression: a Gtk-CRITICAL "gtk_scrolled_window_get_child:
         // assertion 'GTK_IS_SCROLLED_WINDOW (scrolled_window)' failed" fired
         // whenever the preview first rendered a note containing a code block.

@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct PreviewRemoteImageLoaderTests {
-    @Test
-    func `persistDownloadedImage writes into a cache directory whose path contains spaces`() throws {
+    @Test("persistDownloadedImage writes into a cache directory whose path contains spaces")
+    func persistDownloadedImageWritesIntoACacheDirectoryWhosePathContainsSpaces() throws {
         // The user-facing symptom that motivated the fix was that
         // remote images embedded in markdown previews re-downloaded on
         // every render for macOS users whose home directory contains a

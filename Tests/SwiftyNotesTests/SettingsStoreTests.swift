@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct SettingsStoreTests {
-    @Test
-    func `app settings store round trips custom notes directory and preferences`() throws {
+    @Test("App settings store round trips custom notes directory and preferences")
+    func appSettingsStoreRoundTripsCustomNotesDirectoryAndPreferences() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -39,8 +39,8 @@ struct SettingsStoreTests {
         )
     }
 
-    @Test
-    func `app settings decode older payload with new preference defaults`() throws {
+    @Test("App settings decode older payload with new preference defaults")
+    func appSettingsDecodeOlderPayloadWithNewPreferenceDefaults() throws {
         let payload = """
         {
           "customNotesDirectoryPath": "/tmp/notes"
@@ -70,8 +70,8 @@ struct SettingsStoreTests {
         #expect(settings.renderEmojiShortcodes == true)
     }
 
-    @Test
-    func `app settings store round trips outline tweaks`() throws {
+    @Test("App settings store round trips outline tweaks")
+    func appSettingsStoreRoundTripsOutlineTweaks() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -95,8 +95,8 @@ struct SettingsStoreTests {
         #expect(loaded.renderEmojiShortcodes == false)
     }
 
-    @Test
-    func `app settings store round trips trash retention`() throws {
+    @Test("App settings store round trips trash retention")
+    func appSettingsStoreRoundTripsTrashRetention() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -115,8 +115,8 @@ struct SettingsStoreTests {
         #expect(try store.load().trashRetention == .days(365))
     }
 
-    @Test
-    func `app settings store migrates oldest legacy default settings prefix`() throws {
+    @Test("App settings store migrates oldest legacy default settings prefix")
+    func appSettingsStoreMigratesOldestLegacyDefaultSettingsPrefix() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -150,8 +150,8 @@ struct SettingsStoreTests {
         ))
     }
 
-    @Test
-    func `notes directory relocator moves notes into existing empty folder and removes old path`() throws {
+    @Test("Notes directory relocator moves notes into existing empty folder and removes old path")
+    func notesDirectoryRelocatorMovesNotesIntoExistingEmptyFolderAndRemovesOld() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -175,8 +175,8 @@ struct SettingsStoreTests {
         #expect(FileManager.default.fileExists(atPath: destination.appendingPathComponent("asset.bin").path()))
     }
 
-    @Test
-    func `notes directory relocator rejects non empty destination`() throws {
+    @Test("Notes directory relocator rejects non empty destination")
+    func notesDirectoryRelocatorRejectsNonEmptyDestination() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -203,8 +203,8 @@ struct SettingsStoreTests {
         }
     }
 
-    @Test
-    func `notes directory relocator rolls partial moves back when a later move fails`() throws {
+    @Test("Notes directory relocator rolls partial moves back when a later move fails")
+    func notesDirectoryRelocatorRollsPartialMovesBackWhenALaterMoveFails() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -233,8 +233,8 @@ struct SettingsStoreTests {
         #expect(destinationContents == [])
     }
 
-    @Test
-    func `normalize against filesystem keeps custom notes directory when the folder exists`() throws {
+    @Test("Normalize against filesystem keeps custom notes directory when the folder exists")
+    func normalizeAgainstFilesystemKeepsCustomNotesDirectoryWhenTheFolderExists() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -245,8 +245,8 @@ struct SettingsStoreTests {
         #expect(normalized.customNotesDirectoryPath == temp.path(percentEncoded: false))
     }
 
-    @Test
-    func `normalize against filesystem clears stale custom notes directory pointing at a missing folder`() {
+    @Test("Normalize against filesystem clears stale custom notes directory pointing at a missing folder")
+    func normalizeAgainstFilesystemClearsStaleCustomNotesDirectoryPointingAtAMissing() {
         let missingPath = "/tmp/swifty-notes-test-\(UUID().uuidString)/notes"
         let settings = AppSettings(customNotesDirectoryPath: missingPath, editorFontSize: 18)
 
@@ -256,8 +256,8 @@ struct SettingsStoreTests {
         #expect(normalized.editorFontSize == 18)
     }
 
-    @Test
-    func `normalize against filesystem clears custom notes directory that points at a regular file instead of a folder`() throws {
+    @Test("Normalize against filesystem clears custom notes directory that points at a regular file instead of a folder")
+    func normalizeAgainstFilesystemClearsCustomNotesDirectoryThatPointsAtARegular() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: false)
         try "x".write(to: temp, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -268,8 +268,8 @@ struct SettingsStoreTests {
         #expect(normalized.customNotesDirectoryPath == nil)
     }
 
-    @Test
-    func `normalize against filesystem is a no-op when no custom notes directory is configured`() {
+    @Test("Normalize against filesystem is a no-op when no custom notes directory is configured")
+    func normalizeAgainstFilesystemIsANoOpWhenNoCustomNotesDirectory() {
         let settings = AppSettings()
 
         let normalized = settings.normalizedAgainstFilesystem()
@@ -343,8 +343,8 @@ struct SettingsStoreTests {
         #expect(updated.outlineBreadcrumbVisible == false)
     }
 
-    @Test
-    func `notes directory error message rewrites cocoa file write codes into user-friendly text`() {
+    @Test("Notes directory error message rewrites cocoa file write codes into user-friendly text")
+    func notesDirectoryErrorMessageRewritesCocoaFileWriteCodesIntoUserFriendly() {
         let permissionError = NSError(domain: NSCocoaErrorDomain, code: 512)
         let writeNoPermissionError = NSError(domain: NSCocoaErrorDomain, code: 513)
         let readNoPermissionError = NSError(domain: NSCocoaErrorDomain, code: 257)
@@ -360,8 +360,8 @@ struct SettingsStoreTests {
         #expect(!permissionText.contains("512"))
     }
 
-    @Test
-    func `notes directory error message keeps disk-full and read-only and relocation messages distinct`() {
+    @Test("Notes directory error message keeps disk-full and read-only and relocation messages distinct")
+    func notesDirectoryErrorMessageKeepsDiskFullAndReadOnlyAndRelocation() {
         let diskFullError = NSError(domain: NSCocoaErrorDomain, code: 640)
         let readOnlyVolumeError = NSError(domain: NSCocoaErrorDomain, code: 642)
         let relocationError = NotesDirectoryRelocator.RelocationError(message: "Choose an empty destination folder for your notes.")
@@ -371,8 +371,8 @@ struct SettingsStoreTests {
         #expect(NotesDirectoryErrorMessage.userFriendly(for: relocationError) == "Choose an empty destination folder for your notes.")
     }
 
-    @Test
-    func `notes directory relocator removes the destination it created when rollback runs`() throws {
+    @Test("Notes directory relocator removes the destination it created when rollback runs")
+    func notesDirectoryRelocatorRemovesTheDestinationItCreatedWhenRollbackRuns() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -412,8 +412,8 @@ struct SettingsStoreTests {
     // space — if any `URL.path(percentEncoded: false)` call regresses
     // back to the bare `URL.path()` form the assertions fail loudly.
 
-    @Test
-    func `app settings store round trips through a settings file URL whose path contains spaces`() throws {
+    @Test("App settings store round trips through a settings file URL whose path contains spaces")
+    func appSettingsStoreRoundTripsThroughASettingsFileURLWhosePath() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -440,8 +440,8 @@ struct SettingsStoreTests {
         #expect(loaded.editorFontSize == 14)
     }
 
-    @Test
-    func `workspace state store round trips through a state file URL whose path contains spaces`() throws {
+    @Test("Workspace state store round trips through a state file URL whose path contains spaces")
+    func workspaceStateStoreRoundTripsThroughAStateFileURLWhosePath() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -467,8 +467,8 @@ struct SettingsStoreTests {
         #expect(loaded.windowWidth == 1234)
     }
 
-    @Test
-    func `notes directory relocator moves contents when both source and destination paths contain spaces`() throws {
+    @Test("Notes directory relocator moves contents when both source and destination paths contain spaces")
+    func notesDirectoryRelocatorMovesContentsWhenBothSourceAndDestinationPathsContain() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 

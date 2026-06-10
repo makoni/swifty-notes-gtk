@@ -39,7 +39,7 @@ struct TableHighlightLayoutTests {
         #expect(String(labelText[start ..< end]) == expected, sourceLocation: sourceLocation)
     }
 
-    @Test func `header cells map to their padded positions in the label text`() {
+    @Test("Header cells map to their padded positions in the label text") func headerCellsMapToTheirPaddedPositionsInTheLabelText() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Area"), .plain("Note")],
             rows: [[.plain("A1"), .plain("B1")]],
@@ -50,7 +50,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 1, labelText: layout.labelPlainText, equals: "Note")
     }
 
-    @Test func `body cell offset skips the injected divider line`() {
+    @Test("Body cell offset skips the injected divider line") func bodyCellOffsetSkipsTheInjectedDividerLine() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Area"), .plain("Note")],
             rows: [[.plain("A1"), .plain("B1")]],
@@ -66,7 +66,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 3, labelText: layout.labelPlainText, equals: "B1")
     }
 
-    @Test func `ragged row with fewer cells than headers still maps its cells`() {
+    @Test("Ragged row with fewer cells than headers still maps its cells") func raggedRowWithFewerCellsThanHeadersStillMapsItsCells() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Col1"), .plain("Col2"), .plain("Col3")],
             rows: [[.plain("only")]], // 1 cell in a 3-column table
@@ -77,7 +77,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 3, labelText: layout.labelPlainText, equals: "only")
     }
 
-    @Test func `over-long row's extra cell is searchable but has no label field`() {
+    @Test("Over-long row's extra cell is searchable but has no label field") func overLongRowsExtraCellIsSearchableButHasNoLabelField() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("A"), .plain("B")],
             rows: [[.plain("x"), .plain("y"), .plain("z")]], // 3 cells, 2 columns
@@ -91,7 +91,7 @@ struct TableHighlightLayoutTests {
         #expect(layout.cells[4].searchableOffset > layout.cells[3].searchableOffset)
     }
 
-    @Test func `empty cell is zero-length and the following cell still maps`() {
+    @Test("Empty cell is zero-length and the following cell still maps") func emptyCellIsZeroLengthAndTheFollowingCellStillMaps() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("H1"), .plain("H2")],
             rows: [[.plain(""), .plain("val")]],
@@ -102,7 +102,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 3, labelText: layout.labelPlainText, equals: "val")
     }
 
-    @Test func `single-column table needs no inter-cell padding in offsets`() {
+    @Test("Single-column table needs no inter-cell padding in offsets") func singleColumnTableNeedsNoInterCellPaddingInOffsets() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Header")],
             rows: [[.plain("body")]],
@@ -112,7 +112,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 1, labelText: layout.labelPlainText, equals: "body")
     }
 
-    @Test func `header-only table maps header cells and has no body entries`() {
+    @Test("Header-only table maps header cells and has no body entries") func headerOnlyTableMapsHeaderCellsAndHasNoBodyEntries() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Only"), .plain("Headers")],
             rows: [],
@@ -123,7 +123,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 1, labelText: layout.labelPlainText, equals: "Headers")
     }
 
-    @Test func `trailing-aligned column offset includes the left pad`() {
+    @Test("Trailing-aligned column offset includes the left pad") func trailingAlignedColumnOffsetIncludesTheLeftPad() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Width")], // 5 chars sets the column width
             rows: [[.plain("x")]], // 1 char, right-aligned → 4 leading spaces
@@ -133,7 +133,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 1, labelText: layout.labelPlainText, equals: "x")
     }
 
-    @Test func `center-aligned column offset uses the floor-division left pad`() {
+    @Test("Center-aligned column offset uses the floor-division left pad") func centerAlignedColumnOffsetUsesTheFloorDivisionLeftPad() {
         // Odd pad so floor (2) and ceil (3) diverge: width 6, "x" → pad 5,
         // left = 5/2 = 2. A ceil-rounding bug would shift the offset and the
         // sliced substring would no longer be exactly "x".
@@ -154,7 +154,7 @@ struct TableHighlightLayoutTests {
         }
     }
 
-    @Test func `last body cell maps to the largest label offset`() {
+    @Test("Last body cell maps to the largest label offset") func lastBodyCellMapsToTheLargestLabelOffset() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("A"), .plain("B")],
             rows: [
@@ -169,7 +169,7 @@ struct TableHighlightLayoutTests {
         #expect(layout.cells[5].labelOffset == maxOffset)
     }
 
-    @Test func `emoji cell content maps by character count not byte count`() {
+    @Test("Emoji cell content maps by character count not byte count") func emojiCellContentMapsByCharacterCountNotByteCount() {
         let layout = MarkdownPreview.tableLayout(
             headers: [.plain("Mood"), .plain("Icon")],
             rows: [[.plain("happy"), .plain("😀")]],
@@ -180,7 +180,7 @@ struct TableHighlightLayoutTests {
         expectCell(layout.cells, 3, labelText: layout.labelPlainText, equals: "😀")
     }
 
-    @Test func `searchable offsets match the engine cell ordering`() {
+    @Test("Searchable offsets match the engine cell ordering") func searchableOffsetsMatchTheEngineCellOrdering() {
         let headers: [RenderedText] = [.plain("Area"), .plain("Note")]
         let rows: [[RenderedText]] = [[.plain("A1"), .plain("B1")]]
         let layout = MarkdownPreview.tableLayout(headers: headers, rows: rows, alignments: [.leading, .leading])

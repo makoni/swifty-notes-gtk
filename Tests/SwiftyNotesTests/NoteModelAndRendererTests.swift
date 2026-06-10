@@ -4,25 +4,25 @@ import Foundation
 import Testing
 
 struct NoteModelAndRendererTests {
-    @Test
-    func `derived title uses first meaningful line`() {
+    @Test("Derived title uses first meaningful line")
+    func derivedTitleUsesFirstMeaningfulLine() {
         let title = Note.derivedTitle(from: "\n\n# Hello world\nBody")
         #expect(title == "Hello world")
     }
 
-    @Test
-    func `derived title skips leading standalone image`() {
+    @Test("Derived title skips leading standalone image")
+    func derivedTitleSkipsLeadingStandaloneImage() {
         let title = Note.derivedTitle(from: "![Cover](assets/cover.png)\n\n# Hello world\nBody")
         #expect(title == "Hello world")
     }
 
-    @Test
-    func `derived title falls back for empty note`() {
+    @Test("Derived title falls back for empty note")
+    func derivedTitleFallsBackForEmptyNote() {
         #expect(Note.derivedTitle(from: " \n\n ") == "New Note")
     }
 
-    @Test
-    func `note retitle replaces first meaningful line`() {
+    @Test("Note retitle replaces first meaningful line")
+    func noteRetitleReplacesFirstMeaningfulLine() {
         let note = Note(
             id: UUID(),
             filename: "note.md",
@@ -36,8 +36,8 @@ struct NoteModelAndRendererTests {
         #expect(renamed.content.hasPrefix("Groceries"))
     }
 
-    @Test
-    func `note retitle preserves leading image and replaces heading after it`() {
+    @Test("Note retitle preserves leading image and replaces heading after it")
+    func noteRetitlePreservesLeadingImageAndReplacesHeadingAfterIt() {
         let note = Note(
             id: UUID(),
             filename: "note.md",
@@ -51,8 +51,8 @@ struct NoteModelAndRendererTests {
         #expect(renamed.content == "![Cover](assets/cover.png)\n\n# Updated\n\nBody")
     }
 
-    @Test
-    func `note search and export filename use readable title`() {
+    @Test("Note search and export filename use readable title")
+    func noteSearchAndExportFilenameUseReadableTitle() {
         let note = Note(
             id: UUID(),
             filename: "note.md",
@@ -66,8 +66,8 @@ struct NoteModelAndRendererTests {
         #expect(note.stableID == note.id.uuidString.lowercased())
     }
 
-    @Test
-    func `renderer builds heading and paragraph blocks`() {
+    @Test("Renderer builds heading and paragraph blocks")
+    func rendererBuildsHeadingAndParagraphBlocks() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: "# Title\n\nParagraph", darkAppearance: false)
         #expect(blocks.count >= 2)
@@ -75,8 +75,8 @@ struct NoteModelAndRendererTests {
         #expect(blocks.first?.text == "Title")
     }
 
-    @Test
-    func `renderer builds task list markers`() {
+    @Test("Renderer builds task list markers")
+    func rendererBuildsTaskListMarkers() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         - [x] Done
@@ -88,8 +88,8 @@ struct NoteModelAndRendererTests {
         #expect(blocks[1] == .listItem(text: .plain("Todo"), depth: 0, marker: "[ ]", loose: false, taskIndex: 1))
     }
 
-    @Test
-    func `renderer preserves task list markers when item contains inline markdown`() {
+    @Test("Renderer preserves task list markers when item contains inline markdown")
+    func rendererPreservesTaskListMarkersWhenItemContainsInlineMarkdown() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         - [ ] Если было выделено **слово**, то после нажатия должно быть `код`
@@ -106,8 +106,8 @@ struct NoteModelAndRendererTests {
         #expect(text.plainText == "Если было выделено слово, то после нажатия должно быть код")
     }
 
-    @Test
-    func `renderer uses theme aware inline code background`() {
+    @Test("Renderer uses theme aware inline code background")
+    func rendererUsesThemeAwareInlineCodeBackground() {
         let renderer = MarkdownRenderer()
         let lightBlocks = renderer.blocks(for: "Use `code` here", darkAppearance: false)
         let darkBlocks = renderer.blocks(for: "Use `code` here", darkAppearance: true)
@@ -125,8 +125,8 @@ struct NoteModelAndRendererTests {
         #expect(lightText.markup != darkText.markup)
     }
 
-    @Test
-    func `renderer builds standalone image block`() {
+    @Test("Renderer builds standalone image block")
+    func rendererBuildsStandaloneImageBlock() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(
             for: "![Swift and Adwaita showcase artwork](markdown-demo-image.png)",
@@ -142,8 +142,8 @@ struct NoteModelAndRendererTests {
         ])
     }
 
-    @Test
-    func `renderer builds standalone HTML image block`() {
+    @Test("Renderer builds standalone HTML image block")
+    func rendererBuildsStandaloneHTMLImageBlock() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(
             for: #"<img alt="Swift Adwaita" src="https://spaceinbox.me/images/swift-adwaita-2.webp">"#,
@@ -159,8 +159,8 @@ struct NoteModelAndRendererTests {
         ])
     }
 
-    @Test @MainActor
-    func `renderer builds image group for linked badge images`() {
+    @Test("Renderer builds image group for linked badge images") @MainActor
+    func rendererBuildsImageGroupForLinkedBadgeImages() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         [![CI](https://github.com/makoni/swift-adwaita/actions/workflows/ci.yml/badge.svg)](https://github.com/makoni/swift-adwaita/actions/workflows/ci.yml)
@@ -195,8 +195,8 @@ struct NoteModelAndRendererTests {
     // their own block, marking them as `.plain` so the preview renders
     // them in-flow without the heavier `.card` chrome.
 
-    @Test
-    func `renderer promotes an image right under a paragraph to a plain block image`() {
+    @Test("Renderer promotes an image right under a paragraph to a plain block image")
+    func rendererPromotesAnImageRightUnderAParagraphToAPlainBlock() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         Some paragraph text
@@ -217,8 +217,8 @@ struct NoteModelAndRendererTests {
         ))
     }
 
-    @Test
-    func `renderer promotes an image right above a paragraph to a plain block image`() {
+    @Test("Renderer promotes an image right above a paragraph to a plain block image")
+    func rendererPromotesAnImageRightAboveAParagraphToAPlainBlock() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         ![alt text](image.png)
@@ -239,8 +239,8 @@ struct NoteModelAndRendererTests {
         #expect(text.plainText.contains("More paragraph text"))
     }
 
-    @Test
-    func `renderer keeps card style for an image surrounded by blank lines`() {
+    @Test("Renderer keeps card style for an image surrounded by blank lines")
+    func rendererKeepsCardStyleForAnImageSurroundedByBlankLines() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         Above
@@ -260,8 +260,8 @@ struct NoteModelAndRendererTests {
         ))
     }
 
-    @Test
-    func `renderer splits a sentence that embeds an inline image into text image text blocks`() {
+    @Test("Renderer splits a sentence that embeds an inline image into text image text blocks")
+    func rendererSplitsASentenceThatEmbedsAnInlineImageIntoTextImage() {
         // The renderer can't draw an image mid-line in a Pango label, so an
         // image inside a sentence becomes its own block sandwiched between
         // the text segments on either side. Each segment renders as its
@@ -286,8 +286,8 @@ struct NoteModelAndRendererTests {
         #expect(blocks[1] == .image(alt: "icon", source: "icon.png", title: nil, style: .plain))
     }
 
-    @Test
-    func `renderer groups consecutive inline images into a horizontal imageGroup so badge rows stay in a row`() {
+    @Test("Renderer groups consecutive inline images into a horizontal imageGroup so badge rows stay in a row")
+    func rendererGroupsConsecutiveInlineImagesIntoAHorizontalImageGroupSoBadgeRows() {
         // Two badges next to each other inside a sentence must end up as
         // a single .imageGroup so the preview lays them out horizontally.
         // If we naively split per image, badges stack vertically and the
@@ -317,8 +317,8 @@ struct NoteModelAndRendererTests {
         #expect(items[1].alt == "B")
     }
 
-    @Test
-    func `renderer drops trailing whitespace after an image but keeps text before it`() {
+    @Test("Renderer drops trailing whitespace after an image but keeps text before it")
+    func rendererDropsTrailingWhitespaceAfterAnImageButKeepsTextBeforeIt() {
         // The whitespace immediately before an image becomes its own text
         // segment. It should not produce an empty paragraph — the trim in
         // flushText drops it. Equally, trailing whitespace after a final
@@ -338,8 +338,8 @@ struct NoteModelAndRendererTests {
         #expect(blocks[1] == .image(alt: "alone", source: "alone.png", title: nil, style: .plain))
     }
 
-    @Test
-    func `renderer splits multiple image-only lines mixed with text into separate plain blocks`() {
+    @Test("Renderer splits multiple image-only lines mixed with text into separate plain blocks")
+    func rendererSplitsMultipleImageOnlyLinesMixedWithTextIntoSeparatePlain() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         Look at these:
@@ -361,8 +361,8 @@ struct NoteModelAndRendererTests {
         #expect(blocks[3] == .image(alt: "three", source: "three.png", title: nil, style: .plain))
     }
 
-    @Test
-    func `renderer keeps a pure image-only paragraph as a card image group`() {
+    @Test("Renderer keeps a pure image-only paragraph as a card image group")
+    func rendererKeepsAPureImageOnlyParagraphAsACardImageGroup() {
         // No surrounding text in the paragraph at all — author wants a
         // gallery-style standalone block. Card stays.
         let renderer = MarkdownRenderer()
@@ -380,8 +380,8 @@ struct NoteModelAndRendererTests {
         #expect(items.count == 2)
     }
 
-    @Test
-    func `renderer marks list items preceded by a blank line as loose, leaving items in a tight run unflagged`() {
+    @Test("Renderer marks list items preceded by a blank line as loose, leaving items in a tight run unflagged")
+    func rendererMarksListItemsPrecededByABlankLineAsLooseLeaving() {
         // The flag is per-item, not per-list — this is what lets the
         // preview keep a contiguous tight run together while pushing
         // blank-separated items apart, matching what users expect
@@ -406,8 +406,8 @@ struct NoteModelAndRendererTests {
         #expect(looseFlags == [false, false, false, false, true, true])
     }
 
-    @Test
-    func `renderer marks every item of a tight list as not loose`() {
+    @Test("Renderer marks every item of a tight list as not loose")
+    func rendererMarksEveryItemOfATightListAsNotLoose() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         - First
@@ -425,8 +425,8 @@ struct NoteModelAndRendererTests {
         }
     }
 
-    @Test
-    func `renderer carries the loose flag through to task list items so blank-separated checkboxes get paragraph spacing`() {
+    @Test("Renderer carries the loose flag through to task list items so blank-separated checkboxes get paragraph spacing")
+    func rendererCarriesTheLooseFlagThroughToTaskListItemsSoBlank() {
         // Task lists go through a different listBlocks path: the
         // checkbox `<input>` is followed by a whitespace text node,
         // and HTMLFormatter wraps the rest of the item in `<p>`. An
@@ -457,8 +457,8 @@ struct NoteModelAndRendererTests {
         #expect(looseFlags == [false, true, true])
     }
 
-    @Test
-    func `toggleTaskItem flips an unchecked task at the given index to checked, leaving other task items untouched`() {
+    @Test("toggleTaskItem flips an unchecked task at the given index to checked, leaving other task items untouched")
+    func toggleTaskItemFlipsAnUncheckedTaskAtTheGivenIndexToCheckedLeaving() {
         let original = """
         # Plan
 
@@ -476,8 +476,8 @@ struct NoteModelAndRendererTests {
         """)
     }
 
-    @Test
-    func `toggleTaskItem flips a checked task to unchecked at the given index`() {
+    @Test("toggleTaskItem flips a checked task to unchecked at the given index")
+    func toggleTaskItemFlipsACheckedTaskToUncheckedAtTheGivenIndex() {
         let original = """
         - [x] Done
         - [ ] Pending
@@ -489,8 +489,8 @@ struct NoteModelAndRendererTests {
         """)
     }
 
-    @Test
-    func `toggleTaskItem leaves non-task content untouched even if it contains brackets that resemble checkbox markers`() {
+    @Test("toggleTaskItem leaves non-task content untouched even if it contains brackets that resemble checkbox markers")
+    func toggleTaskItemLeavesNonTaskContentUntouchedEvenIfItContainsBracketsThat() {
         // A standalone `[x]` inside prose isn't a task list marker —
         // only `[ ]` / `[x]` directly after a list bullet (and a
         // single space) should toggle. Otherwise a click could rewrite
@@ -508,8 +508,8 @@ struct NoteModelAndRendererTests {
         """)
     }
 
-    @Test
-    func `toggleTaskItem returns the input unchanged when the index is out of bounds`() {
+    @Test("toggleTaskItem returns the input unchanged when the index is out of bounds")
+    func toggleTaskItemReturnsTheInputUnchangedWhenTheIndexIsOutOfBounds() {
         let original = """
         - [ ] Only one
         """
@@ -517,8 +517,8 @@ struct NoteModelAndRendererTests {
         #expect(toggled == original)
     }
 
-    @Test
-    func `renderer assigns a stable task-item index in document order so the preview can wire clicks back to the source line`() {
+    @Test("Renderer assigns a stable task-item index in document order so the preview can wire clicks back to the source line")
+    func rendererAssignsAStableTaskItemIndexInDocumentOrderSoThe() {
         // Each `[x]` / `[ ]` item carries its own 0-based index among
         // every task item in the document. Non-task list items keep
         // `taskIndex == nil`. The preview wires a click handler to
@@ -553,8 +553,8 @@ struct NoteModelAndRendererTests {
         #expect(taskIndices[3].taskIndex == 2)
     }
 
-    @Test
-    func `renderer restarts ordered list numbering when the author writes a fresh ordinal after a blank line`() {
+    @Test("Renderer restarts ordered list numbering when the author writes a fresh ordinal after a blank line")
+    func rendererRestartsOrderedListNumberingWhenTheAuthorWritesAFreshOrdinal() {
         // CommonMark merges `1. a\n2. b\n3. c\n\n1. d` into one list
         // and renumbers the trailing `1.` as `4.` — the explicit
         // number in source is dropped. That's confusing for authors
@@ -576,8 +576,8 @@ struct NoteModelAndRendererTests {
         #expect(markers == ["1.", "2.", "3.", "1."])
     }
 
-    @Test
-    func `renderer trims trailing whitespace from list item text so wrapping labels don't grow an empty second line`() {
+    @Test("Renderer trims trailing whitespace from list item text so wrapping labels don't grow an empty second line")
+    func rendererTrimsTrailingWhitespaceFromListItemTextSoWrappingLabelsDont() {
         // swift-markdown's HTMLFormatter emits tight list items as
         // `<li>First\n</li>` with a literal trailing newline. A
         // GtkLabel with `wrap=true` renders that `\n` as an empty
@@ -605,8 +605,8 @@ struct NoteModelAndRendererTests {
         }
     }
 
-    @Test
-    func `renderer builds aligned table block`() {
+    @Test("Renderer builds aligned table block")
+    func rendererBuildsAlignedTableBlock() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: """
         | Feature | Example | Result |
@@ -627,8 +627,8 @@ struct NoteModelAndRendererTests {
         #expect(alignments == [.leading, .leading, .center])
     }
 
-    @Test
-    func `html subset parser treats unsupported tags as literal text`() {
+    @Test("Html subset parser treats unsupported tags as literal text")
+    func htmlSubsetParserTreatsUnsupportedTagsAsLiteralText() {
         let nodes = HTMLSubsetParser().parse("<pre><code>swiftynotes cli get <note-id></code></pre>")
         let blocks = HTMLPreviewDocumentBuilder(darkAppearance: false).blocks(from: nodes, listDepth: 0)
 
@@ -637,8 +637,8 @@ struct NoteModelAndRendererTests {
         ])
     }
 
-    @Test
-    func `renderer builds blocks for CLI seed note`() {
+    @Test("Renderer builds blocks for CLI seed note")
+    func rendererBuildsBlocksForCLISeedNote() {
         let renderer = MarkdownRenderer()
         let blocks = renderer.blocks(for: SwiftyNotesCLISeed.content, darkAppearance: false)
 
@@ -657,8 +657,8 @@ struct NoteModelAndRendererTests {
         })
     }
 
-    @Test
-    func `incremental preview block builder reparses only changed text segment in long safe document`() {
+    @Test("Incremental preview block builder reparses only changed text segment in long safe document")
+    func incrementalPreviewBlockBuilderReparsesOnlyChangedTextSegmentInLongSafe() {
         var builder = IncrementalPreviewBlockBuilder()
         let original = (1 ... 120).map { index in
             "## Section \(index)\n\nBody \(index) with **bold** text and `code`."
@@ -675,8 +675,8 @@ struct NoteModelAndRendererTests {
         #expect(builder.debugIncrementalRenderCount == 1)
     }
 
-    @Test
-    func `incremental preview block builder falls back for list documents`() {
+    @Test("Incremental preview block builder falls back for list documents")
+    func incrementalPreviewBlockBuilderFallsBackForListDocuments() {
         var builder = IncrementalPreviewBlockBuilder()
         let original = "# Title\n\n- One\n- Two"
         let updated = "# Title\n\n- One\n- Two\n- Three"
@@ -690,8 +690,8 @@ struct NoteModelAndRendererTests {
         #expect(builder.debugIncrementalRenderCount == 0)
     }
 
-    @Test
-    func `preview render deferral waits for visible allocated preview pane`() {
+    @Test("Preview render deferral waits for visible allocated preview pane")
+    func previewRenderDeferralWaitsForVisibleAllocatedPreviewPane() {
         #expect(MainWindow.shouldDeferPreviewRender(
             isPreviewPresented: true,
             windowWidth: 1200,
@@ -712,8 +712,8 @@ struct NoteModelAndRendererTests {
         ))
     }
 
-    @Test
-    func `preview render deferral skips detached or hidden preview pane`() {
+    @Test("Preview render deferral skips detached or hidden preview pane")
+    func previewRenderDeferralSkipsDetachedOrHiddenPreviewPane() {
         #expect(!MainWindow.shouldDeferPreviewRender(
             isPreviewPresented: true,
             windowWidth: 1200,
@@ -734,8 +734,8 @@ struct NoteModelAndRendererTests {
         ))
     }
 
-    @Test @MainActor
-    func `autosave coordinator runs latest task`() {
+    @Test("Autosave coordinator runs latest task") @MainActor
+    func autosaveCoordinatorRunsLatestTask() {
         let scheduler = TestMainActorScheduler()
         let autosave = AutosaveCoordinator(taskScheduler: scheduler.schedule(after:operation:))
         var values: [Int] = []

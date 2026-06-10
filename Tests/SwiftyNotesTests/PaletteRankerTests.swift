@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct PaletteRankerTests {
-    @Test
-    func `empty query returns headings in document order with no ranking applied`() {
+    @Test("Empty query returns headings in document order with no ranking applied")
+    func emptyQueryReturnsHeadingsInDocumentOrderWithNoRankingApplied() {
         let headings: [Heading] = [
             .init(id: "a", level: 2, text: "Alpha", blockIndex: 0, line: 1),
             .init(id: "b", level: 2, text: "Beta",  blockIndex: 1, line: 3),
@@ -13,8 +13,8 @@ struct PaletteRankerTests {
         #expect(ranked.map(\.id) == ["a", "b"])
     }
 
-    @Test
-    func `whitespace-only query behaves like an empty query`() {
+    @Test("Whitespace-only query behaves like an empty query")
+    func whitespaceOnlyQueryBehavesLikeAnEmptyQuery() {
         let headings: [Heading] = [
             .init(id: "a", level: 2, text: "Alpha", blockIndex: 0, line: 1),
             .init(id: "b", level: 2, text: "Beta",  blockIndex: 1, line: 3),
@@ -22,24 +22,24 @@ struct PaletteRankerTests {
         #expect(PaletteRanker.rank(headings: headings, query: "   ").map(\.id) == ["a", "b"])
     }
 
-    @Test
-    func `non-matches drop out`() {
+    @Test("Non-matches drop out")
+    func nonMatchesDropOut() {
         let headings: [Heading] = [
             .init(id: "a", level: 2, text: "Alpha", blockIndex: 0, line: 1),
         ]
         #expect(PaletteRanker.rank(headings: headings, query: "zzz").isEmpty)
     }
 
-    @Test
-    func `match is case-insensitive`() {
+    @Test("Match is case-insensitive")
+    func matchIsCaseInsensitive() {
         let headings: [Heading] = [
             .init(id: "outline", level: 2, text: "Outline", blockIndex: 0, line: 1),
         ]
         #expect(PaletteRanker.rank(headings: headings, query: "OUTLINE").first?.id == "outline")
     }
 
-    @Test
-    func `ranks title-start above title-contains above parent-contains`() {
+    @Test("Ranks title-start above title-contains above parent-contains")
+    func ranksTitleStartAboveTitleContainsAboveParentContains() {
         // Design rules (palette.jsx):
         //   score 0 — query matches at index 0 of the heading text
         //   score 1 — matches later in the heading text
@@ -60,8 +60,8 @@ struct PaletteRankerTests {
         #expect(ranked.map(\.id) == ["overview", "tail-match", "child-of-over"])
     }
 
-    @Test
-    func `within the same rank, document order is preserved`() {
+    @Test("Within the same rank, document order is preserved")
+    func withinTheSameRankDocumentOrderIsPreserved() {
         // All three score 0 (title-start). They should come out in the
         // order they appear in the source.
         let headings: [Heading] = [
@@ -73,8 +73,8 @@ struct PaletteRankerTests {
         #expect(ranked.map(\.id) == ["first", "second", "third"])
     }
 
-    @Test
-    func `H1 headings have no parent and rank only on own text`() {
+    @Test("H1 headings have no parent and rank only on own text")
+    func h1HeadingsHaveNoParentAndRankOnlyOnOwnText() {
         // Collapsing the document-level H1 would be surprising — in the
         // palette the same rule applies: H1 has no parent context.
         let docs: [Heading] = [
@@ -88,8 +88,8 @@ struct PaletteRankerTests {
         #expect(ranked.map(\.id) == ["body", "child"])
     }
 
-    @Test
-    func `parent-contains does not surface H2 rows whose own text misses`() {
+    @Test("Parent-contains does not surface H2 rows whose own text misses")
+    func parentContainsDoesNotSurfaceH2RowsWhoseOwnTextMisses() {
         // The parent rule lifts H3+ rows because the section above them
         // matched; it must not also re-match the H2 itself as a
         // "parent-of-myself" hit.

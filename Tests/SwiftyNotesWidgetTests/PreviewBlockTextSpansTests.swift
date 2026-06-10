@@ -19,8 +19,8 @@ struct PreviewBlockTextSpansTests {
         return MarkdownPreview(remoteImageLoader: { _, _ in })
     }
 
-    @Test @MainActor
-    func `heading-only row records a single-block span starting at offset 0`() throws {
+    @Test("Heading-only row records a single-block span starting at offset 0") @MainActor
+    func headingOnlyRowRecordsASingleBlockSpanStartingAtOffset0() throws {
         let preview = try Self.makePreview(suffix: "heading-only")
         preview.render(blocks: [
             .heading(level: 1, text: .plain("Doc Title")),
@@ -33,8 +33,8 @@ struct PreviewBlockTextSpansTests {
         #expect(span.labelPointer != nil)
     }
 
-    @Test @MainActor
-    func `richTextRun row records offsets stepped by heading + double-newline separator`() throws {
+    @Test("richTextRun row records offsets stepped by heading + double-newline separator") @MainActor
+    func richTextRunRowRecordsOffsetsSteppedByHeadingDoubleNewlineSeparator() throws {
         let preview = try Self.makePreview(suffix: "richtext")
         // Heading + 2 paragraphs gets coalesced into one
         // .richTextRun row backed by a single Label whose plain
@@ -63,8 +63,8 @@ struct PreviewBlockTextSpansTests {
         #expect(p1Span.labelPointer == p2Span.labelPointer)
     }
 
-    @Test @MainActor
-    func `multi-paragraph paragraphRun coalesces blocks with double-newline offsets`() throws {
+    @Test("Multi-paragraph paragraphRun coalesces blocks with double-newline offsets") @MainActor
+    func multiParagraphParagraphRunCoalescesBlocksWithDoubleNewlineOffsets() throws {
         let preview = try Self.makePreview(suffix: "para-run")
         preview.render(blocks: [
             .paragraph(.plain("First paragraph.")),
@@ -79,8 +79,8 @@ struct PreviewBlockTextSpansTests {
         #expect(s2.plainTextOffset == "First paragraph.".count + 2 + "Second paragraph.".count + 2)
     }
 
-    @Test @MainActor
-    func `single paragraph wraps in paragraphRun of one and still has offset 0`() throws {
+    @Test("Single paragraph wraps in paragraphRun of one and still has offset 0") @MainActor
+    func singleParagraphWrapsInParagraphRunOfOneAndStillHasOffset0() throws {
         let preview = try Self.makePreview(suffix: "para-single")
         preview.render(blocks: [
             .paragraph(.plain("Just one paragraph.")),
@@ -91,8 +91,8 @@ struct PreviewBlockTextSpansTests {
         #expect(span.labelPointer != nil)
     }
 
-    @Test @MainActor
-    func `consecutive blockquotes share a Label and step by double-newline`() throws {
+    @Test("Consecutive blockquotes share a Label and step by double-newline") @MainActor
+    func consecutiveBlockquotesShareALabelAndStepByDoubleNewline() throws {
         let preview = try Self.makePreview(suffix: "blockquote-run")
         preview.render(blocks: [
             .blockquote(.plain("First quoted.")),
@@ -107,8 +107,8 @@ struct PreviewBlockTextSpansTests {
         #expect(s0.labelPointer != nil)
     }
 
-    @Test @MainActor
-    func `non-task flat list records a per-item span shifted past the marker prefix`() throws {
+    @Test("Non-task flat list records a per-item span shifted past the marker prefix") @MainActor
+    func nonTaskFlatListRecordsAPerItemSpanShiftedPastThe() throws {
         let preview = try Self.makePreview(suffix: "list-flat")
         // Three items; `displayMarker` turns "-" into "•". The
         // prefix per line is "• " (marker + at least one space
@@ -137,8 +137,8 @@ struct PreviewBlockTextSpansTests {
         #expect(s1.labelPointer == s2.labelPointer)
     }
 
-    @Test @MainActor
-    func `nested non-task list uses depth-based indent in offsets`() throws {
+    @Test("Nested non-task list uses depth-based indent in offsets") @MainActor
+    func nestedNonTaskListUsesDepthBasedIndentInOffsets() throws {
         let preview = try Self.makePreview(suffix: "list-nested")
         preview.render(blocks: [
             .listItem(text: .plain("outer"), depth: 0, marker: "-"),
@@ -155,8 +155,8 @@ struct PreviewBlockTextSpansTests {
         #expect(inner.plainTextOffset == innerExpectedOffset)
     }
 
-    @Test @MainActor
-    func `task list intentionally has no span entries`() throws {
+    @Test("Task list intentionally has no span entries") @MainActor
+    func taskListIntentionallyHasNoSpanEntries() throws {
         let preview = try Self.makePreview(suffix: "list-task")
         preview.render(blocks: [
             .listItem(text: .plain("buy milk"), depth: 0, marker: "[ ]", taskIndex: 0),
@@ -168,8 +168,8 @@ struct PreviewBlockTextSpansTests {
         #expect(preview.blockTextSpans[1] == nil)
     }
 
-    @Test @MainActor
-    func `code block doesn't enter blockTextSpans but does retain a SourceBuffer`() throws {
+    @Test("Code block doesn't enter blockTextSpans but does retain a SourceBuffer") @MainActor
+    func codeBlockDoesntEnterBlockTextSpansButDoesRetainASourceBuffer() throws {
         let preview = try Self.makePreview(suffix: "code")
         preview.render(blocks: [
             .codeBlock(code: "let x = 1\nprint(x)\n", language: "swift"),
@@ -184,8 +184,8 @@ struct PreviewBlockTextSpansTests {
         #expect(buffer.text == "let x = 1\nprint(x)\n")
     }
 
-    @Test @MainActor
-    func `table block records per-cell highlight geometry with an attached label`() throws {
+    @Test("Table block records per-cell highlight geometry with an attached label") @MainActor
+    func tableBlockRecordsPerCellHighlightGeometryWithAnAttachedLabel() throws {
         let preview = try Self.makePreview(suffix: "table")
         preview.render(blocks: [
             .table(
@@ -207,8 +207,8 @@ struct PreviewBlockTextSpansTests {
         #expect(table.cells.allSatisfy { $0.labelOffset != nil })
     }
 
-    @Test @MainActor
-    func `image and thematicBreak blocks are not in the spans map`() throws {
+    @Test("Image and thematicBreak blocks are not in the spans map") @MainActor
+    func imageAndThematicBreakBlocksAreNotInTheSpansMap() throws {
         let preview = try Self.makePreview(suffix: "image-rule")
         preview.render(blocks: [
             .heading(level: 1, text: .plain("Doc")),
@@ -224,8 +224,8 @@ struct PreviewBlockTextSpansTests {
         #expect(preview.blockTextSpans[3] != nil)
     }
 
-    @Test @MainActor
-    func `rendering a fresh note clears the previous note's spans`() throws {
+    @Test("Rendering a fresh note clears the previous note's spans") @MainActor
+    func renderingAFreshNoteClearsThePreviousNotesSpans() throws {
         let preview = try Self.makePreview(suffix: "reset")
         preview.render(blocks: [
             .paragraph(.plain("first note")),
@@ -241,8 +241,8 @@ struct PreviewBlockTextSpansTests {
         #expect(preview.blockTextSpans[1] == nil)
     }
 
-    @Test @MainActor
-    func `empty preview drops the spans map`() throws {
+    @Test("Empty preview drops the spans map") @MainActor
+    func emptyPreviewDropsTheSpansMap() throws {
         let preview = try Self.makePreview(suffix: "empty")
         preview.render(blocks: [
             .paragraph(.plain("something")),

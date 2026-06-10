@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct SemanticVersionTests {
-    @Test
-    func `parses canonical x.y.z`() throws {
+    @Test("Parses canonical x.y.z")
+    func parsesCanonicalXYZ() throws {
         let v = try #require(SemanticVersion("1.2.3"))
         #expect(v.major == 1)
         #expect(v.minor == 2)
@@ -12,20 +12,20 @@ struct SemanticVersionTests {
         #expect(v.preRelease == nil)
     }
 
-    @Test
-    func `accepts leading v prefix from GitHub tags`() throws {
+    @Test("Accepts leading v prefix from GitHub tags")
+    func acceptsLeadingVPrefixFromGitHubTags() throws {
         #expect(SemanticVersion("v1.2.3") == SemanticVersion("1.2.3"))
         #expect(SemanticVersion("V1.2.3") == SemanticVersion("1.2.3"))
     }
 
-    @Test
-    func `pads missing patch with zero so 1_2 equals 1_2_0`() throws {
+    @Test("Pads missing patch with zero so 1_2 equals 1_2_0")
+    func padsMissingPatchWithZeroSo12Equals120() throws {
         #expect(SemanticVersion("1.2") == SemanticVersion("1.2.0"))
         #expect(SemanticVersion("1") == SemanticVersion("1.0.0"))
     }
 
-    @Test
-    func `ignores build metadata in equality and ordering`() throws {
+    @Test("Ignores build metadata in equality and ordering")
+    func ignoresBuildMetadataInEqualityAndOrdering() throws {
         let a = try #require(SemanticVersion("1.2.3+build.42"))
         let b = try #require(SemanticVersion("1.2.3+other.99"))
         #expect(a == b)
@@ -33,8 +33,8 @@ struct SemanticVersionTests {
         #expect(!(b < a))
     }
 
-    @Test
-    func `rejects non-numeric or garbage strings`() throws {
+    @Test("Rejects non-numeric or garbage strings")
+    func rejectsNonNumericOrGarbageStrings() throws {
         #expect(SemanticVersion("") == nil)
         #expect(SemanticVersion("not-a-version") == nil)
         #expect(SemanticVersion("1.x.3") == nil)
@@ -42,8 +42,8 @@ struct SemanticVersionTests {
         #expect(SemanticVersion("1.0.0.0") == nil)
     }
 
-    @Test
-    func `orders by major then minor then patch`() throws {
+    @Test("Orders by major then minor then patch")
+    func ordersByMajorThenMinorThenPatch() throws {
         let v100 = try #require(SemanticVersion("1.0.0"))
         let v101 = try #require(SemanticVersion("1.0.1"))
         let v110 = try #require(SemanticVersion("1.1.0"))
@@ -54,8 +54,8 @@ struct SemanticVersionTests {
         #expect(!(v200 < v100))
     }
 
-    @Test
-    func `pre-release version is lower than the same release`() throws {
+    @Test("Pre-release version is lower than the same release")
+    func preReleaseVersionIsLowerThanTheSameRelease() throws {
         let release = try #require(SemanticVersion("1.0.0"))
         let alpha = try #require(SemanticVersion("1.0.0-alpha"))
         let beta = try #require(SemanticVersion("1.0.0-beta"))
@@ -67,35 +67,35 @@ struct SemanticVersionTests {
         #expect(beta < rc)
     }
 
-    @Test
-    func `numeric pre-release identifiers compare numerically not lexically`() throws {
+    @Test("Numeric pre-release identifiers compare numerically not lexically")
+    func numericPreReleaseIdentifiersCompareNumericallyNotLexically() throws {
         let a = try #require(SemanticVersion("1.0.0-alpha.2"))
         let b = try #require(SemanticVersion("1.0.0-alpha.10"))
         #expect(a < b)
     }
 
-    @Test
-    func `numeric pre-release identifier is lower than alphanumeric`() throws {
+    @Test("Numeric pre-release identifier is lower than alphanumeric")
+    func numericPreReleaseIdentifierIsLowerThanAlphanumeric() throws {
         let numeric = try #require(SemanticVersion("1.0.0-1"))
         let alpha = try #require(SemanticVersion("1.0.0-alpha"))
         #expect(numeric < alpha)
     }
 
-    @Test
-    func `shorter pre-release identifier list is lower when prefix is equal`() throws {
+    @Test("Shorter pre-release identifier list is lower when prefix is equal")
+    func shorterPreReleaseIdentifierListIsLowerWhenPrefixIsEqual() throws {
         let short = try #require(SemanticVersion("1.0.0-alpha"))
         let long = try #require(SemanticVersion("1.0.0-alpha.1"))
         #expect(short < long)
     }
 
-    @Test
-    func `equality is symmetric across construction paths`() throws {
+    @Test("Equality is symmetric across construction paths")
+    func equalityIsSymmetricAcrossConstructionPaths() throws {
         #expect(SemanticVersion("1.2.0") == SemanticVersion("1.2"))
         #expect(SemanticVersion("v1.2.3+abc") == SemanticVersion("1.2.3"))
     }
 
-    @Test
-    func `update is available only when remote is strictly greater`() throws {
+    @Test("Update is available only when remote is strictly greater")
+    func updateIsAvailableOnlyWhenRemoteIsStrictlyGreater() throws {
         let current = try #require(SemanticVersion("1.2.3"))
         let same = try #require(SemanticVersion("1.2.3"))
         let older = try #require(SemanticVersion("1.2.2"))

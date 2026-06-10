@@ -16,8 +16,8 @@ struct PreviewRefreshSchedulerTests {
         [.paragraph(.plain("hello"))]
     }
 
-    @Test
-    func `flush after schedule renders the latest buffered blocks and base directory`() {
+    @Test("Flush after schedule renders the latest buffered blocks and base directory")
+    func flushAfterScheduleRendersTheLatestBufferedBlocksAndBaseDirectory() {
         let recorder = RenderRecorder()
         let baseDirectory = URL(fileURLWithPath: "/tmp/notes")
         let scheduler = PreviewRefreshScheduler(
@@ -33,8 +33,8 @@ struct PreviewRefreshSchedulerTests {
         #expect(recorder.calls.first?.baseDirectory == baseDirectory)
     }
 
-    @Test
-    func `schedule overwrites previous pending blocks`() {
+    @Test("Schedule overwrites previous pending blocks")
+    func scheduleOverwritesPreviousPendingBlocks() {
         let recorder = RenderRecorder()
         let firstDir = URL(fileURLWithPath: "/tmp/first")
         let secondDir = URL(fileURLWithPath: "/tmp/second")
@@ -52,8 +52,8 @@ struct PreviewRefreshSchedulerTests {
         #expect(recorder.calls.first?.baseDirectory == secondDir)
     }
 
-    @Test
-    func `cancel drops buffered work and prevents render on flush`() {
+    @Test("Cancel drops buffered work and prevents render on flush")
+    func cancelDropsBufferedWorkAndPreventsRenderOnFlush() {
         let recorder = RenderRecorder()
         let scheduler = PreviewRefreshScheduler(
             render: recorder.record,
@@ -68,8 +68,8 @@ struct PreviewRefreshSchedulerTests {
         #expect(recorder.calls.isEmpty)
     }
 
-    @Test
-    func `flush parks render when preview surface is not ready and replays after surface becomes ready`() {
+    @Test("Flush parks render when preview surface is not ready and replays after surface becomes ready")
+    func flushParksRenderWhenPreviewSurfaceIsNotReadyAndReplaysAfter() {
         let recorder = RenderRecorder()
         var deferring = true
         let baseDirectory = URL(fileURLWithPath: "/tmp/notes")
@@ -89,8 +89,8 @@ struct PreviewRefreshSchedulerTests {
         #expect(recorder.calls.first?.baseDirectory == baseDirectory)
     }
 
-    @Test
-    func `flush without prior schedule is a no-op and never calls render`() {
+    @Test("Flush without prior schedule is a no-op and never calls render")
+    func flushWithoutPriorScheduleIsANoOpAndNeverCallsRender() {
         let recorder = RenderRecorder()
         let scheduler = PreviewRefreshScheduler(
             render: recorder.record,
@@ -103,8 +103,8 @@ struct PreviewRefreshSchedulerTests {
         #expect(recorder.calls.isEmpty)
     }
 
-    @Test
-    func `deferred schedule only resolves markdown once when latest typing burst is flushed`() {
+    @Test("Deferred schedule only resolves markdown once when latest typing burst is flushed")
+    func deferredScheduleOnlyResolvesMarkdownOnceWhenLatestTypingBurstIsFlushed() {
         let recorder = RenderRecorder()
         let baseDirectory = URL(fileURLWithPath: "/tmp/notes")
         var resolveCount = 0
@@ -128,8 +128,8 @@ struct PreviewRefreshSchedulerTests {
         #expect(recorder.calls.first?.blocks == [.paragraph(.plain("latest"))])
     }
 
-    @Test
-    func `latest deferred schedule overwrites earlier typing work before any markdown is resolved`() {
+    @Test("Latest deferred schedule overwrites earlier typing work before any markdown is resolved")
+    func latestDeferredScheduleOverwritesEarlierTypingWorkBeforeAnyMarkdownIsResolved() {
         let recorder = RenderRecorder()
         let scheduler = PreviewRefreshScheduler(
             render: recorder.record,

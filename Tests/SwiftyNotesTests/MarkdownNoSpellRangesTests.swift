@@ -3,14 +3,14 @@ import Foundation
 import Testing
 
 struct MarkdownNoSpellRangesTests {
-    @Test
-    func `plain prose has no skip ranges`() {
+    @Test("Plain prose has no skip ranges")
+    func plainProseHasNoSkipRanges() {
         let ranges = MarkdownNoSpellRanges.ranges(in: "This is just a paragraph.\n")
         #expect(ranges.isEmpty)
     }
 
-    @Test
-    func `inline backtick span is skipped`() throws {
+    @Test("Inline backtick span is skipped")
+    func inlineBacktickSpanIsSkipped() throws {
         let text = "Use `printf` to write."
         let ranges = MarkdownNoSpellRanges.ranges(in: text)
         #expect(ranges.count == 1)
@@ -20,15 +20,15 @@ struct MarkdownNoSpellRangesTests {
         #expect(text[lower ..< upper] == "`printf`")
     }
 
-    @Test
-    func `unmatched inline backtick is left alone so the rest of the prose stays checkable`() {
+    @Test("Unmatched inline backtick is left alone so the rest of the prose stays checkable")
+    func unmatchedInlineBacktickIsLeftAloneSoTheRestOfTheProse() {
         let text = "We need a `lonely backtick to be ignored."
         let ranges = MarkdownNoSpellRanges.ranges(in: text)
         #expect(ranges.isEmpty)
     }
 
-    @Test
-    func `fenced code block from opener to closer is skipped including the fence lines`() throws {
+    @Test("Fenced code block from opener to closer is skipped including the fence lines")
+    func fencedCodeBlockFromOpenerToCloserIsSkippedIncludingTheFence() throws {
         let text = """
         Some prose.
         ```swift
@@ -47,8 +47,8 @@ struct MarkdownNoSpellRangesTests {
         #expect(captured.contains("```"))
     }
 
-    @Test
-    func `unterminated fence runs to the end of the document so trailing code keeps skipping`() throws {
+    @Test("Unterminated fence runs to the end of the document so trailing code keeps skipping")
+    func unterminatedFenceRunsToTheEndOfTheDocumentSoTrailingCode() throws {
         let text = """
         ```
         let x = misspeled
@@ -59,8 +59,8 @@ struct MarkdownNoSpellRangesTests {
         #expect(range.upperBound == text.count)
     }
 
-    @Test
-    func `inline backticks inside a fenced block do not produce extra ranges`() {
+    @Test("Inline backticks inside a fenced block do not produce extra ranges")
+    func inlineBackticksInsideAFencedBlockDoNotProduceExtraRanges() {
         let text = """
         ```
         echo `whoami`
@@ -70,8 +70,8 @@ struct MarkdownNoSpellRangesTests {
         #expect(ranges.count == 1)
     }
 
-    @Test
-    func `multiple inline spans on one line are reported separately`() {
+    @Test("Multiple inline spans on one line are reported separately")
+    func multipleInlineSpansOnOneLineAreReportedSeparately() {
         let text = "Run `git status` and then `git push`."
         let ranges = MarkdownNoSpellRanges.ranges(in: text)
         #expect(ranges.count == 2)

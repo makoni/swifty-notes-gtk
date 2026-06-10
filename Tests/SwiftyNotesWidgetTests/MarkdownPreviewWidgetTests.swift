@@ -10,8 +10,8 @@ import Testing
 /// referencing freed GObjects, which crash the next widget test that pumps
 /// the main context.
 struct MarkdownPreviewWidgetTests {
-    @Test @MainActor
-    func `preview loads remote image when loader provides local file after asynchronous completion`() async throws {
+    @Test("Preview loads remote image when loader provides local file after asynchronous completion") @MainActor
+    func previewLoadsRemoteImageWhenLoaderProvidesLocalFileAfterAsynchronousCompletion() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -49,8 +49,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(await waitForPaintable(picture, timeout: .seconds(3)))
     }
 
-    @Test @MainActor
-    func `preview loads remote linked image group when loader provides local file after asynchronous completion`() async throws {
+    @Test("Preview loads remote linked image group when loader provides local file after asynchronous completion") @MainActor
+    func previewLoadsRemoteLinkedImageGroupWhenLoaderProvidesLocalFileAfter() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -95,8 +95,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(await waitForPaintable(picture, timeout: .seconds(3)))
     }
 
-    @Test @MainActor
-    func `preview wraps linked badge in chromeless Box without inheriting Button min-height`() throws {
+    @Test("Preview wraps linked badge in chromeless Box without inheriting Button min-height") @MainActor
+    func previewWrapsLinkedBadgeInChromelessBoxWithoutInheritingButtonMinHeight() throws {
         // Regression: an earlier version wrapped linked badges in a
         // libadwaita `Button`. The Button enforced a ~30px min-height
         // that silently capped how tall the inner Picture could grow,
@@ -144,8 +144,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(wrapperHeight <= 22)
     }
 
-    @Test @MainActor
-    func `preview scales linked badge SVG to preferred height`() throws {
+    @Test("Preview scales linked badge SVG to preferred height") @MainActor
+    func previewScalesLinkedBadgeSVGToPreferredHeight() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -184,8 +184,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(size.height == 22)
     }
 
-    @Test @MainActor
-    func `badge Picture disables canShrink so async-loaded SVG honours its size request`() throws {
+    @Test("Badge Picture disables canShrink so async-loaded SVG honours its size request") @MainActor
+    func badgePictureDisablesCanShrinkSoAsyncLoadedSVGHonoursItsSizeRequest() throws {
         // Regression: before this fix the Picture had `canShrink = true`
         // unconditionally. A linked badge's remote SVG arrives async,
         // after initial layout has already settled on a zero-width
@@ -215,8 +215,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(picture.canShrink == false)
     }
 
-    @Test @MainActor
-    func `presented preview re-sizes block image when the preview pane is widened after initial layout`() throws {
+    @Test("Presented preview re-sizes block image when the preview pane is widened after initial layout") @MainActor
+    func presentedPreviewReSizesBlockImageWhenThePreviewPaneIsWidened() throws {
         // Regression: the previous resize hook used `notify::width`, which
         // GtkWidget never emits — so when the user widened the preview
         // pane after a note was already open, `Clamp.maximumSize` stayed
@@ -283,8 +283,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(resizedClamp.maximumSize > initialMax)
     }
 
-    @Test @MainActor
-    func `block image Picture keeps canShrink so wide images can scale into narrow preview columns`() throws {
+    @Test("Block image Picture keeps canShrink so wide images can scale into narrow preview columns") @MainActor
+    func blockImagePictureKeepsCanShrinkSoWideImagesCanScaleIntoNarrow() throws {
         // Block images (cards, plain in-flow) need to scale down when
         // the preview pane is narrow — that is `Picture.canShrink`'s
         // raison d'être. The fix above is targeted at badges via
@@ -310,8 +310,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(picture.canShrink == true)
     }
 
-    @Test @MainActor
-    func `preview measures badge group at constrained height without warnings`() throws {
+    @Test("Preview measures badge group at constrained height without warnings") @MainActor
+    func previewMeasuresBadgeGroupAtConstrainedHeightWithoutWarnings() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -347,8 +347,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(measurement.natural >= measurement.minimum)
     }
 
-    @Test @MainActor
-    func `preview table horizontal minimum fits inside narrow preview`() throws {
+    @Test("Preview table horizontal minimum fits inside narrow preview") @MainActor
+    func previewTableHorizontalMinimumFitsInsideNarrowPreview() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.table-horizontal-shrink")
         try app.register()
 
@@ -385,8 +385,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(measurement.minimum <= 320)
     }
 
-    @Test @MainActor
-    func `preview list item horizontal minimum fits inside narrow preview`() throws {
+    @Test("Preview list item horizontal minimum fits inside narrow preview") @MainActor
+    func previewListItemHorizontalMinimumFitsInsideNarrowPreview() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.list-item-horizontal-shrink")
         try app.register()
 
@@ -408,8 +408,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(measurement.minimum <= 320)
     }
 
-    @Test @MainActor
-    func `preview flattens depth-zero list runs into a smaller subtree`() throws {
+    @Test("Preview flattens depth-zero list runs into a smaller subtree") @MainActor
+    func previewFlattensDepthZeroListRunsIntoASmallerSubtree() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.list-run-flattening")
         try app.register()
 
@@ -429,8 +429,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(mergedText.contains("☑"))
     }
 
-    @Test @MainActor
-    func `preview collapses nested non-task list into a single Label too`() throws {
+    @Test("Preview collapses nested non-task list into a single Label too") @MainActor
+    func previewCollapsesNestedNonTaskListIntoASingleLabelToo() throws {
         // Phase B.2 (extended): the depth restriction is dropped for
         // non-task lists. A list with nested items still becomes one
         // Label — indent per depth level is rendered through leading
@@ -456,8 +456,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(texts.contains { $0.contains("Outer two") })
     }
 
-    @Test @MainActor
-    func `preview collapses flat non-task list into a single Label`() throws {
+    @Test("Preview collapses flat non-task list into a single Label") @MainActor
+    func previewCollapsesFlatNonTaskListIntoASingleLabel() throws {
         // Phase B.2: a depth-0 list with no checkbox markers no
         // longer materializes a Grid + 2N cell Labels. The whole
         // list becomes one Pango-markup Label so the per-frame
@@ -483,8 +483,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(texts.contains { $0.contains("Fourth") })
     }
 
-    @Test @MainActor
-    func `preview collapses table cells into a single monospaced Label inside the card wrapper`() throws {
+    @Test("Preview collapses table cells into a single monospaced Label inside the card wrapper") @MainActor
+    func previewCollapsesTableCellsIntoASingleMonospacedLabelInsideTheCard() throws {
         // Phase B.3 (scroll perf): the old Grid + cell-Labels layout
         // exposed ~12 widgets for a 4-row, 2-column table; per-frame
         // GTK snapshot walks dominated scroll CPU on notes that
@@ -517,8 +517,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(texts.contains { $0.contains("Automation") })
     }
 
-    @Test @MainActor
-    func `preview coalesces long paragraph runs into a single label subtree`() throws {
+    @Test("Preview coalesces long paragraph runs into a single label subtree") @MainActor
+    func previewCoalescesLongParagraphRunsIntoASingleLabelSubtree() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.paragraph-run-coalescing")
         try app.register()
 
@@ -533,8 +533,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(mergedText.contains("Paragraph 32"))
     }
 
-    @Test @MainActor
-    func `preview can force virtualization for long safe documents while preserving plain text`() throws {
+    @Test("Preview can force virtualization for long safe documents while preserving plain text") @MainActor
+    func previewCanForceVirtualizationForLongSafeDocumentsWhilePreservingPlainText() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.virtualized-preview-safe-doc")
         try app.register()
 
@@ -551,8 +551,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(preview.plainText.contains("let item160 = 160"))
     }
 
-    @Test @MainActor
-    func `preview incrementally reuses unchanged surrounding rows when middle row needs replacement`() throws {
+    @Test("Preview incrementally reuses unchanged surrounding rows when middle row needs replacement") @MainActor
+    func previewIncrementallyReusesUnchangedSurroundingRowsWhenMiddleRowNeedsReplacement() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.incremental-preview-middle-edit")
         try app.register()
 
@@ -580,8 +580,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(preview.plainText.contains("let bravo = 2"))
     }
 
-    @Test @MainActor
-    func `preview updates compatible text rows in place within stacked mode`() throws {
+    @Test("Preview updates compatible text rows in place within stacked mode") @MainActor
+    func previewUpdatesCompatibleTextRowsInPlaceWithinStackedMode() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.incremental-preview-in-place-text")
         try app.register()
 
@@ -620,8 +620,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(texts.contains(where: { $0.contains("Quote B") }))
     }
 
-    @Test @MainActor
-    func `preview can force custom text layout for long safe documents`() throws {
+    @Test("Preview can force custom text layout for long safe documents") @MainActor
+    func previewCanForceCustomTextLayoutForLongSafeDocuments() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-safe-doc")
         try app.register()
 
@@ -643,8 +643,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(labelTexts(in: preview.container).joined(separator: "\n").contains("Body 160"))
     }
 
-    @Test @MainActor
-    func `preview custom text layout updates existing label instead of rebuilding subtree`() throws {
+    @Test("Preview custom text layout updates existing label instead of rebuilding subtree") @MainActor
+    func previewCustomTextLayoutUpdatesExistingLabelInsteadOfRebuildingSubtree() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-reuse")
         try app.register()
 
@@ -674,8 +674,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(labelTexts(in: preview.container).joined(separator: "\n").contains("Body 80 updated"))
     }
 
-    @Test @MainActor
-    func `preview custom text layout refuses task lists so checkbox rows keep interactivity`() throws {
+    @Test("Preview custom text layout refuses task lists so checkbox rows keep interactivity") @MainActor
+    func previewCustomTextLayoutRefusesTaskListsSoCheckboxRowsKeepInteractivity() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.custom-text-preview-task-fallback")
         try app.register()
 
@@ -691,8 +691,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(labelTexts(in: preview.container).contains("☐"))
     }
 
-    @Test @MainActor
-    func `preview coalesces consecutive blockquotes but still breaks runs around non-text blocks`() throws {
+    @Test("Preview coalesces consecutive blockquotes but still breaks runs around non-text blocks") @MainActor
+    func previewCoalescesConsecutiveBlockquotesButStillBreaksRunsAroundNonTextBlocks() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.blockquote-run-coalescing")
         try app.register()
 
@@ -713,8 +713,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(firstSourceView(in: preview.container)?.buffer.text == "let answer = 42\n")
     }
 
-    @Test @MainActor
-    func `preview code block renders through a read-only SourceView with matching language`() throws {
+    @Test("Preview code block renders through a read-only SourceView with matching language") @MainActor
+    func previewCodeBlockRendersThroughAReadOnlySourceViewWithMatchingLanguage() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-source-view-swift")
         try app.register()
 
@@ -735,8 +735,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(sourceView.buffer.highlightSyntax == true)
     }
 
-    @Test @MainActor
-    func `preview code block maps common language aliases before looking up the SourceLanguageManager`() throws {
+    @Test("Preview code block maps common language aliases before looking up the SourceLanguageManager") @MainActor
+    func previewCodeBlockMapsCommonLanguageAliasesBeforeLookingUpTheSourceLanguageManager() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-language-aliases")
         try app.register()
 
@@ -763,8 +763,8 @@ struct MarkdownPreviewWidgetTests {
         }
     }
 
-    @Test @MainActor
-    func `preview code block falls back to a language-less SourceBuffer when info-string is missing or unknown`() throws {
+    @Test("Preview code block falls back to a language-less SourceBuffer when info-string is missing or unknown") @MainActor
+    func previewCodeBlockFallsBackToALanguageLessSourceBufferWhenInfo() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-language-fallback")
         try app.register()
 
@@ -789,8 +789,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(sourceViewUnknown.buffer.language == nil)
     }
 
-    @Test @MainActor
-    func `preview code block exposes a Copy button`() throws {
+    @Test("Preview code block exposes a Copy button") @MainActor
+    func previewCodeBlockExposesACopyButton() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-copy-button")
         try app.register()
 
@@ -808,8 +808,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(copyButton.hasCSSClass("preview-code-copy"))
     }
 
-    @Test @MainActor
-    func `preview code block Copy button swaps to a confirmation icon after click and restores`() throws {
+    @Test("Preview code block Copy button swaps to a confirmation icon after click and restores") @MainActor
+    func previewCodeBlockCopyButtonSwapsToAConfirmationIconAfterClick() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-copy-feedback")
         try app.register()
 
@@ -831,8 +831,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(copyButton.iconName == "edit-copy-symbolic")
     }
 
-    @Test @MainActor
-    func `preview code block horizontal minimum fits inside narrow preview`() throws {
+    @Test("Preview code block horizontal minimum fits inside narrow preview") @MainActor
+    func previewCodeBlockHorizontalMinimumFitsInsideNarrowPreview() throws {
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.code-block-horizontal-shrink")
         try app.register()
 
@@ -854,8 +854,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(measurement.minimum <= 320)
     }
 
-    @Test @MainActor
-    func `preview renders standalone image in responsive card with caption`() throws {
+    @Test("Preview renders standalone image in responsive card with caption") @MainActor
+    func previewRendersStandaloneImageInResponsiveCardWithCaption() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -905,8 +905,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(abs(Double(wideSize.height) - (Double(wideSize.width) * 90.0 / 160.0)) <= 4)
     }
 
-    @Test @MainActor
-    func `preview renders remote web P image after asynchronous completion`() async throws {
+    @Test("Preview renders remote web P image after asynchronous completion") @MainActor
+    func previewRendersRemoteWebPImageAfterAsynchronousCompletion() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -943,8 +943,8 @@ struct MarkdownPreviewWidgetTests {
         } ?? 0 > 0)
     }
 
-    @Test @MainActor
-    func `presented preview allocates remote web P image after asynchronous completion`() async throws {
+    @Test("Presented preview allocates remote web P image after asynchronous completion") @MainActor
+    func presentedPreviewAllocatesRemoteWebPImageAfterAsynchronousCompletion() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -1002,8 +1002,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(picture.height > 0)
     }
 
-    @Test @MainActor
-    func `preview renders remote GIF image after asynchronous completion`() async throws {
+    @Test("Preview renders remote GIF image after asynchronous completion") @MainActor
+    func previewRendersRemoteGIFImageAfterAsynchronousCompletion() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -1042,8 +1042,8 @@ struct MarkdownPreviewWidgetTests {
         } ?? 0 > 0)
     }
 
-    @Test @MainActor
-    func `presented preview allocates remote GIF image after asynchronous completion`() throws {
+    @Test("Presented preview allocates remote GIF image after asynchronous completion") @MainActor
+    func presentedPreviewAllocatesRemoteGIFImageAfterAsynchronousCompletion() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -1102,8 +1102,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(preview.debugAnimatedImagePlayerCount == 1)
     }
 
-    @Test @MainActor
-    func `presented preview allocates standalone remote images after badge rows`() throws {
+    @Test("Presented preview allocates standalone remote images after badge rows") @MainActor
+    func presentedPreviewAllocatesStandaloneRemoteImagesAfterBadgeRows() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -1170,8 +1170,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(imageClamps.allSatisfy { $0.height > 0 })
     }
 
-    @Test @MainActor
-    func `preview auto plays remote GIF image after asynchronous completion`() throws {
+    @Test("Preview auto plays remote GIF image after asynchronous completion") @MainActor
+    func previewAutoPlaysRemoteGIFImageAfterAsynchronousCompletion() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -1208,8 +1208,8 @@ struct MarkdownPreviewWidgetTests {
         #expect(waitForPaintableChange(in: picture, from: initialIdentity, timeout: .milliseconds(250)))
     }
 
-    @Test @MainActor
-    func `animated GIF player advances frames`() async throws {
+    @Test("Animated GIF player advances frames") @MainActor
+    func animatedGIFPlayerAdvancesFrames() async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)

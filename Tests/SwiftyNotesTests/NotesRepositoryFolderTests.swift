@@ -54,8 +54,8 @@ struct NotesRepositoryFolderTests {
         return try JSONDecoder().decode(StoredMeta.self, from: data).id
     }
 
-    @Test
-    func `loadNotes finds notes nested across folders and reports their folder paths`() throws {
+    @Test("loadNotes finds notes nested across folders and reports their folder paths")
+    func loadNotesFindsNotesNestedAcrossFoldersAndReportsTheirFolderPaths() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -74,8 +74,8 @@ struct NotesRepositoryFolderTests {
         #expect(folders[project.id] == "Work/Projects")
     }
 
-    @Test
-    func `listFolders returns every folder including empty ones`() throws {
+    @Test("listFolders returns every folder including empty ones")
+    func listFoldersReturnsEveryFolderIncludingEmptyOnes() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -87,8 +87,8 @@ struct NotesRepositoryFolderTests {
         #expect(folders == ["Personal", "Work", "Work/Active"])
     }
 
-    @Test
-    func `creating a folder twice fails with alreadyExists`() throws {
+    @Test("Creating a folder twice fails with alreadyExists")
+    func creatingAFolderTwiceFailsWithAlreadyExists() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -98,8 +98,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `creating a folder with empty or invalid name throws invalidName`() throws {
+    @Test("Creating a folder with empty or invalid name throws invalidName")
+    func creatingAFolderWithEmptyOrInvalidNameThrowsInvalidName() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -111,8 +111,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `renameFolder moves the directory and keeps notes loadable`() throws {
+    @Test("renameFolder moves the directory and keeps notes loadable")
+    func renameFolderMovesTheDirectoryAndKeepsNotesLoadable() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -125,8 +125,8 @@ struct NotesRepositoryFolderTests {
         #expect(notes.first?.folderPath == "New")
     }
 
-    @Test
-    func `renameFolder rejects a name that conflicts with an existing sibling`() throws {
+    @Test("renameFolder rejects a name that conflicts with an existing sibling")
+    func renameFolderRejectsANameThatConflictsWithAnExistingSibling() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -138,8 +138,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `deleteFolderRecursively soft-deletes nested notes into Trash and removes folder structure`() throws {
+    @Test("deleteFolderRecursively soft-deletes nested notes into Trash and removes folder structure")
+    func deleteFolderRecursivelySoftDeletesNestedNotesIntoTrashAndRemovesFolderStructure() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -166,8 +166,8 @@ struct NotesRepositoryFolderTests {
         #expect(innerTrashed?.originalFolderPath == "Top/Inner")
     }
 
-    @Test
-    func `deleteFolderRecursively followed by restore puts nested notes back in their original folders`() throws {
+    @Test("deleteFolderRecursively followed by restore puts nested notes back in their original folders")
+    func deleteFolderRecursivelyFollowedByRestorePutsNestedNotesBackInTheirOriginalFolders() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -189,8 +189,8 @@ struct NotesRepositoryFolderTests {
         #expect(folders.contains("Top/Inner"))
     }
 
-    @Test
-    func `move note relocates it on disk and preserves its identity`() throws {
+    @Test("Move note relocates it on disk and preserves its identity")
+    func moveNoteRelocatesItOnDiskAndPreservesItsIdentity() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -205,8 +205,8 @@ struct NotesRepositoryFolderTests {
         #expect(onDisk?.folderPath == "Inbox")
     }
 
-    @Test
-    func `move folder rejects placing it inside its own descendant`() throws {
+    @Test("Move folder rejects placing it inside its own descendant")
+    func moveFolderRejectsPlacingItInsideItsOwnDescendant() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -218,8 +218,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `moveFolder relocates folder under a new parent`() throws {
+    @Test("moveFolder relocates folder under a new parent")
+    func moveFolderRelocatesFolderUnderANewParent() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -237,8 +237,8 @@ struct NotesRepositoryFolderTests {
         #expect(loaded.first?.folderPath == "B/A")
     }
 
-    @Test
-    func `creating a note in a missing folder throws notFound`() throws {
+    @Test("Creating a note in a missing folder throws notFound")
+    func creatingANoteInAMissingFolderThrowsNotFound() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -247,8 +247,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `directorySnapshot filename includes the folder path so cross folder collisions are visible`() throws {
+    @Test("directorySnapshot filename includes the folder path so cross folder collisions are visible")
+    func directorySnapshotFilenameIncludesTheFolderPathSoCrossFolderCollisionsAreVisible() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -262,8 +262,8 @@ struct NotesRepositoryFolderTests {
         #expect(snapshot.entries.contains { !$0.filename.contains("/") })
     }
 
-    @Test
-    func `createFolder rejects a path that traverses an existing note directory`() throws {
+    @Test("createFolder rejects a path that traverses an existing note directory")
+    func createFolderRejectsAPathThatTraversesAnExistingNoteDirectory() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -281,8 +281,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `move note rejects a destination folder that is itself a note directory`() throws {
+    @Test("Move note rejects a destination folder that is itself a note directory")
+    func moveNoteRejectsADestinationFolderThatIsItselfANoteDirectory() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -297,8 +297,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `createNote rejects a folder path that lives inside an existing note directory`() throws {
+    @Test("createNote rejects a folder path that lives inside an existing note directory")
+    func createNoteRejectsAFolderPathThatLivesInsideAnExistingNoteDirectory() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -320,8 +320,8 @@ struct NotesRepositoryFolderTests {
         }
     }
 
-    @Test
-    func `loadNotes assigns a fresh UUID to a duplicate id and rewrites its meta json`() throws {
+    @Test("loadNotes assigns a fresh UUID to a duplicate id and rewrites its meta json")
+    func loadNotesAssignsAFreshUUIDToADuplicateIdAndRewritesIts() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -346,8 +346,8 @@ struct NotesRepositoryFolderTests {
         #expect([firstMetaID, secondMetaID].contains(sharedID))
     }
 
-    @Test
-    func `loadNotes is stable on reload after a duplicate id has been resolved`() throws {
+    @Test("loadNotes is stable on reload after a duplicate id has been resolved")
+    func loadNotesIsStableOnReloadAfterADuplicateIdHasBeenResolved() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -362,8 +362,8 @@ struct NotesRepositoryFolderTests {
         #expect(firstPass == secondPass)
     }
 
-    @Test
-    func `validation rejects names containing path separators`() throws {
+    @Test("Validation rejects names containing path separators")
+    func validationRejectsNamesContainingPathSeparators() throws {
         let (repository, directory) = Self.makeRepository()
         defer { try? FileManager.default.removeItem(at: directory) }
 

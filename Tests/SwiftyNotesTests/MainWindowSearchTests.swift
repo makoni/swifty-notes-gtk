@@ -22,8 +22,8 @@ struct MainWindowSearchTests {
         )
     }
 
-    @Test @MainActor
-    func `openFindBar in find mode reveals the bar and builds the controller lazily`() throws {
+    @Test("openFindBar in find mode reveals the bar and builds the controller lazily") @MainActor
+    func openFindBarInFindModeRevealsTheBarAndBuildsTheControllerLazily() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.openfind")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("alpha beta alpha gamma")
@@ -37,8 +37,8 @@ struct MainWindowSearchTests {
         #expect(window.editorSearchController != nil)
     }
 
-    @Test @MainActor
-    func `openFindBar in replace mode reveals the bar with the replace row`() throws {
+    @Test("openFindBar in replace mode reveals the bar with the replace row") @MainActor
+    func openFindBarInReplaceModeRevealsTheBarWithTheReplaceRow() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.openreplace")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("foo bar foo")
@@ -47,8 +47,8 @@ struct MainWindowSearchTests {
         #expect(window.findReplaceBar.isVisible == true)
     }
 
-    @Test @MainActor
-    func `openFindBar pre-fills the query from a single-line selection`() throws {
+    @Test("openFindBar pre-fills the query from a single-line selection") @MainActor
+    func openFindBarPreFillsTheQueryFromASingleLineSelection() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.prefill")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("the quick brown fox")
@@ -61,8 +61,8 @@ struct MainWindowSearchTests {
         #expect(window.editorSearchController?.debugMatchCount == 1)
     }
 
-    @Test @MainActor
-    func `openFindBar skips pre-fill for multi-line selections`() throws {
+    @Test("openFindBar skips pre-fill for multi-line selections") @MainActor
+    func openFindBarSkipsPreFillForMultiLineSelections() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.multiline")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("line one\nline two\nline three")
@@ -74,8 +74,8 @@ struct MainWindowSearchTests {
         #expect(window.findReplaceBar.query.isEmpty)
     }
 
-    @Test @MainActor
-    func `reopening the bar without a selection restores the previous query`() throws {
+    @Test("Reopening the bar without a selection restores the previous query") @MainActor
+    func reopeningTheBarWithoutASelectionRestoresThePreviousQuery() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.memory")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("alpha beta gamma")
@@ -90,8 +90,8 @@ struct MainWindowSearchTests {
         #expect(window.findReplaceBar.query == "beta")
     }
 
-    @Test @MainActor
-    func `selection wins over remembered query when both are available`() throws {
+    @Test("Selection wins over remembered query when both are available") @MainActor
+    func selectionWinsOverRememberedQueryWhenBothAreAvailable() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.selwins")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("the quick brown fox")
@@ -106,8 +106,8 @@ struct MainWindowSearchTests {
         #expect(window.findReplaceBar.query == "quick")
     }
 
-    @Test @MainActor
-    func `lastFocusedPane controls which bar Ctrl+F opens in split mode`() throws {
+    @Test("lastFocusedPane controls which bar Ctrl+F opens in split mode") @MainActor
+    func lastFocusedPaneControlsWhichBarCtrlFOpensInSplitMode() throws {
         let window = try Self.makeWindow(appID: "me.spaceinbox.swiftynotes.tests.search.focuspane")
         window.debugLoadInitialNotes()
         window.debugSetEditorText("alpha beta gamma")
@@ -135,8 +135,8 @@ struct MainWindowSearchTests {
         #expect(window.previewFindReplaceBar.isVisible == false)
     }
 
-    @Test @MainActor
-    func `replace-all completion shows a toast through the window`() throws {
+    @Test("Replace-all completion shows a toast through the window") @MainActor
+    func replaceAllCompletionShowsAToastThroughTheWindow() throws {
         // We can't introspect ToastOverlay's queue from headless
         // tests, but we can confirm the callback wiring runs — by
         // calling the controller path the bar would trigger and

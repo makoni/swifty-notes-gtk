@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct OutlineReorderTests {
-    @Test
-    func `moves an H2 section before another, taking its H3 children with it`() {
+    @Test("Moves an H2 section before another, taking its H3 children with it")
+    func movesAnH2SectionBeforeAnotherTakingItsH3ChildrenWithIt() {
         let markdown = """
         # Doc
 
@@ -54,8 +54,8 @@ struct OutlineReorderTests {
         #expect(moved == expected)
     }
 
-    @Test
-    func `dropping a section on itself is a no-op`() {
+    @Test("Dropping a section on itself is a no-op")
+    func droppingASectionOnItselfIsANoOp() {
         let markdown = "## A\nA body."
         let headings: [Heading] = [
             .init(id: "a", level: 2, text: "A", blockIndex: 0, line: 1),
@@ -63,8 +63,8 @@ struct OutlineReorderTests {
         #expect(OutlineReorder.movedMarkdown(markdown, movingID: "a", beforeTargetID: "a", headings: headings) == nil)
     }
 
-    @Test
-    func `rejects dropping a section onto a heading inside its own subtree`() {
+    @Test("Rejects dropping a section onto a heading inside its own subtree")
+    func rejectsDroppingASectionOntoAHeadingInsideItsOwnSubtree() {
         // Moving the H2 "A" "before" its own child "A1" would try to
         // insert A's section in the middle of itself. Reject.
         let markdown = """
@@ -81,8 +81,8 @@ struct OutlineReorderTests {
         #expect(OutlineReorder.movedMarkdown(markdown, movingID: "a", beforeTargetID: "a1", headings: headings) == nil)
     }
 
-    @Test
-    func `dropping on an unknown id returns nil`() {
+    @Test("Dropping on an unknown id returns nil")
+    func droppingOnAnUnknownIdReturnsNil() {
         let markdown = "## A\n## B"
         let headings: [Heading] = [
             .init(id: "a", level: 2, text: "A", blockIndex: 0, line: 1),
@@ -92,8 +92,8 @@ struct OutlineReorderTests {
         #expect(OutlineReorder.movedMarkdown(markdown, movingID: "a", beforeTargetID: "ghost", headings: headings) == nil)
     }
 
-    @Test
-    func `moves an H3 within its parent H2, leaving sibling H3s in place`() {
+    @Test("Moves an H3 within its parent H2, leaving sibling H3s in place")
+    func movesAnH3WithinItsParentH2LeavingSiblingH3sInPlace() {
         let markdown = """
         ## A
         ### A1
@@ -128,8 +128,8 @@ struct OutlineReorderTests {
         #expect(moved == expected)
     }
 
-    @Test
-    func `moving the last H2 to the front handles EOF correctly`() {
+    @Test("Moving the last H2 to the front handles EOF correctly")
+    func movingTheLastH2ToTheFrontHandlesEOFCorrectly() {
         let markdown = """
         ## A
         a body

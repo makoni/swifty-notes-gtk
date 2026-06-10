@@ -23,20 +23,20 @@ struct MarkdownSearchEngineTests {
         .thematicBreak,
     ]
 
-    @Test
-    func `empty query returns no matches`() {
+    @Test("Empty query returns no matches")
+    func emptyQueryReturnsNoMatches() {
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "", options: .init())
         #expect(result.isEmpty)
     }
 
-    @Test
-    func `whitespace-only query returns no matches`() {
+    @Test("Whitespace-only query returns no matches")
+    func whitespaceOnlyQueryReturnsNoMatches() {
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "   ", options: .init())
         #expect(result.isEmpty)
     }
 
-    @Test
-    func `case-insensitive is the default and catches every capitalisation`() {
+    @Test("Case-insensitive is the default and catches every capitalisation")
+    func caseInsensitiveIsTheDefaultAndCatchesEveryCapitalisation() {
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "search", options: .init())
         // First paragraph has 1 hit, second paragraph has 1 hit ("Search"),
         // blockquote has 1 hit ("Searching"), code block has 1 hit
@@ -47,8 +47,8 @@ struct MarkdownSearchEngineTests {
         #expect(blockIndices == [1, 2, 3, 4, 6, 7])
     }
 
-    @Test
-    func `case-sensitive excludes mismatched capitalisation`() {
+    @Test("Case-sensitive excludes mismatched capitalisation")
+    func caseSensitiveExcludesMismatchedCapitalisation() {
         var options = SearchOptions()
         options.caseSensitive = true
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "Search", options: options)
@@ -58,8 +58,8 @@ struct MarkdownSearchEngineTests {
         #expect(result.map(\.blockIndex) == [2, 3, 6])
     }
 
-    @Test
-    func `whole-word excludes partial matches`() {
+    @Test("Whole-word excludes partial matches")
+    func wholeWordExcludesPartialMatches() {
         var options = SearchOptions()
         options.wholeWord = true
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "search", options: options)
@@ -72,8 +72,8 @@ struct MarkdownSearchEngineTests {
         #expect(blockIndices.contains(2))  // second paragraph
     }
 
-    @Test
-    func `regex mode honours pattern syntax`() {
+    @Test("Regex mode honours pattern syntax")
+    func regexModeHonoursPatternSyntax() {
         var options = SearchOptions()
         options.regex = true
         // Matches the two consecutive capital-S Words "Search" and
@@ -86,8 +86,8 @@ struct MarkdownSearchEngineTests {
         #expect(result.count >= 5)
     }
 
-    @Test
-    func `regex mode with explicit case-sensitivity restricts matches`() {
+    @Test("Regex mode with explicit case-sensitivity restricts matches")
+    func regexModeWithExplicitCaseSensitivityRestrictsMatches() {
         var options = SearchOptions()
         options.regex = true
         options.caseSensitive = true
@@ -98,16 +98,16 @@ struct MarkdownSearchEngineTests {
         #expect(result.map(\.blockIndex) == [2, 3, 6])
     }
 
-    @Test
-    func `invalid regex produces no matches, no throw`() {
+    @Test("Invalid regex produces no matches, no throw")
+    func invalidRegexProducesNoMatchesNoThrow() {
         var options = SearchOptions()
         options.regex = true
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "[unclosed", options: options)
         #expect(result.isEmpty)
     }
 
-    @Test
-    func `images and thematic breaks are skipped even when their plainText would match`() {
+    @Test("Images and thematic breaks are skipped even when their plainText would match")
+    func imagesAndThematicBreaksAreSkippedEvenWhenTheirPlainTextWouldMatch() {
         // The image's alt text contains "Search icon" — but searching
         // by-alt is not a useful contract for an in-document text
         // search, so the engine pretends image blocks don't exist.
@@ -115,8 +115,8 @@ struct MarkdownSearchEngineTests {
         #expect(result.isEmpty)
     }
 
-    @Test
-    func `multiple matches inside one block are returned in document order`() {
+    @Test("Multiple matches inside one block are returned in document order")
+    func multipleMatchesInsideOneBlockAreReturnedInDocumentOrder() {
         let blocks: [RenderedBlock] = [
             .paragraph(.plain("alpha beta alpha gamma alpha")),
         ]
@@ -129,8 +129,8 @@ struct MarkdownSearchEngineTests {
         #expect(starts == [0, 11, 23])
     }
 
-    @Test
-    func `match snippet exposes the matched substring for highlight rendering`() {
+    @Test("Match snippet exposes the matched substring for highlight rendering")
+    func matchSnippetExposesTheMatchedSubstringForHighlightRendering() {
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "Search", options: .init())
         guard let first = result.first(where: { $0.blockIndex == 2 }) else {
             Issue.record("expected a match in paragraph 2")
@@ -142,8 +142,8 @@ struct MarkdownSearchEngineTests {
         #expect(first.blockText[first.range] == "Search")
     }
 
-    @Test
-    func `code block contents are searched, language string is not`() {
+    @Test("Code block contents are searched, language string is not")
+    func codeBlockContentsAreSearchedLanguageStringIsNot() {
         // The language string "swift" alone should not produce a hit
         // — only the actual `code` body. (RenderedBlock.plainText
         // prefixes the language for accessibility; the engine has its
@@ -155,8 +155,8 @@ struct MarkdownSearchEngineTests {
         #expect(codeResult.map(\.blockIndex) == [4])
     }
 
-    @Test
-    func `table cells are searched, separator pipes are not`() {
+    @Test("Table cells are searched, separator pipes are not")
+    func tableCellsAreSearchedSeparatorPipesAreNot() {
         let result = MarkdownSearchEngine.search(blocks: Self.sample, query: "settings", options: .init())
         #expect(result.map(\.blockIndex) == [7])
         // The pipe glyph used to join cells in the plainText
@@ -166,8 +166,8 @@ struct MarkdownSearchEngineTests {
         #expect(pipeResult.isEmpty)
     }
 
-    @Test
-    func `plain-text overload returns ranges into the source string`() {
+    @Test("Plain-text overload returns ranges into the source string")
+    func plainTextOverloadReturnsRangesIntoTheSourceString() {
         let text = "alpha beta alpha gamma"
         let ranges = MarkdownSearchEngine.matches(in: text, query: "alpha", options: .init())
         #expect(ranges.count == 2)
@@ -178,8 +178,8 @@ struct MarkdownSearchEngineTests {
         #expect(starts == [0, 11])
     }
 
-    @Test
-    func `plain-text overload honours whole-word, regex, and case options`() {
+    @Test("Plain-text overload honours whole-word, regex, and case options")
+    func plainTextOverloadHonoursWholeWordRegexAndCaseOptions() {
         let text = "Test the testing testTube"
         // Whole-word excludes "testing" and "testTube" (they're prefixes).
         var options = SearchOptions(wholeWord: true)
@@ -199,8 +199,8 @@ struct MarkdownSearchEngineTests {
         #expect(regex.count == 3)
     }
 
-    @Test
-    func `listItem marker glyph is not part of the searchable text`() {
+    @Test("listItem marker glyph is not part of the searchable text")
+    func listItemMarkerGlyphIsNotPartOfTheSearchableText() {
         // The plainText returned by RenderedBlock for a list item is
         // "- First task" — but searching for "- " is not what the user
         // means by "find" inside a list. The engine searches only the

@@ -5,8 +5,8 @@ import Foundation
 import Testing
 
 struct ExternalDocumentWindowTests {
-    @Test @MainActor
-    func `external document window loads markdown file and autosaves edits`() throws {
+    @Test("External document window loads markdown file and autosaves edits") @MainActor
+    func externalDocumentWindowLoadsMarkdownFileAndAutosavesEdits() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -50,8 +50,8 @@ struct ExternalDocumentWindowTests {
         #expect(window.debugPreviewText.contains("Saved from external window"))
     }
 
-    @Test @MainActor
-    func `external document window typing burst defers markdown rebuild until preview flush`() throws {
+    @Test("External document window typing burst defers markdown rebuild until preview flush") @MainActor
+    func externalDocumentWindowTypingBurstDefersMarkdownRebuildUntilPreviewFlush() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -81,8 +81,8 @@ struct ExternalDocumentWindowTests {
         #expect(window.debugPreviewBlockBuildCount == baselineBuildCount + 1)
     }
 
-    @Test @MainActor
-    func `external document window reloads changed file after poll`() throws {
+    @Test("External document window reloads changed file after poll") @MainActor
+    func externalDocumentWindowReloadsChangedFileAfterPoll() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -110,8 +110,8 @@ struct ExternalDocumentWindowTests {
         #expect(window.debugPreviewText.contains("Changed on disk"))
     }
 
-    @Test @MainActor
-    func `external document window reloads same size file change after poll`() throws {
+    @Test("External document window reloads same size file change after poll") @MainActor
+    func externalDocumentWindowReloadsSameSizeFileChangeAfterPoll() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)

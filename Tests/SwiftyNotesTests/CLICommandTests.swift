@@ -4,8 +4,8 @@ import Foundation
 import Testing
 
 struct CLICommandTests {
-    @Test
-    func `cli create list get and update note by ID`() throws {
+    @Test("Cli create list get and update note by ID")
+    func cliCreateListGetAndUpdateNoteByID() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
@@ -62,8 +62,8 @@ struct CLICommandTests {
         #expect(rawGetResult?.stdout == "# Updated\n\nReplaced\n")
     }
 
-    @Test
-    func `cli rejects unknown ID`() {
+    @Test("Cli rejects unknown ID")
+    func cliRejectsUnknownID() {
         let result = NotesCLI.runIfRequested(
             arguments: ["cli", "get", UUID().uuidString.lowercased()],
         )
@@ -71,8 +71,8 @@ struct CLICommandTests {
         #expect(result?.stderr.contains("No note found") == true)
     }
 
-    @Test
-    func `cli general help is available`() {
+    @Test("Cli general help is available")
+    func cliGeneralHelpIsAvailable() {
         let result = NotesCLI.runIfRequested(arguments: ["cli"])
         #expect(result?.exitCode == 0)
         #expect(result?.stdout.contains("SwiftyNotes CLI") == true)
@@ -81,8 +81,8 @@ struct CLICommandTests {
         #expect(result?.stdout.contains("swiftynotes cli help <command>") == true)
     }
 
-    @Test
-    func `cli command help is available`() {
+    @Test("Cli command help is available")
+    func cliCommandHelpIsAvailable() {
         let result = NotesCLI.runIfRequested(arguments: ["cli", "help", "update"])
         #expect(result?.exitCode == 0)
         #expect(result?.stdout.contains("swiftynotes cli update <note-id>") == true)
@@ -90,8 +90,8 @@ struct CLICommandTests {
         #expect(result?.stdout.contains("--stdin") == true)
     }
 
-    @Test
-    func `cli subcommand help flag is available`() {
+    @Test("Cli subcommand help flag is available")
+    func cliSubcommandHelpFlagIsAvailable() {
         let result = NotesCLI.runIfRequested(arguments: ["cli", "get", "--help"])
         #expect(result?.exitCode == 0)
         #expect(result?.stdout.contains("swiftynotes cli get <note-id>") == true)

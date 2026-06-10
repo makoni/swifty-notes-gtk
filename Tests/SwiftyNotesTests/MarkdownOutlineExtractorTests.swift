@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 struct MarkdownOutlineExtractorTests {
-    @Test
-    func `extracts a single heading`() {
+    @Test("Extracts a single heading")
+    func extractsASingleHeading() {
         let markdown = "# Roadmap\n\nSome paragraph."
         let blocks: [RenderedBlock] = [
             .heading(level: 1, text: .plain("Roadmap")),
@@ -16,8 +16,8 @@ struct MarkdownOutlineExtractorTests {
         ])
     }
 
-    @Test
-    func `extracts mixed levels in source order with stable IDs`() {
+    @Test("Extracts mixed levels in source order with stable IDs")
+    func extractsMixedLevelsInSourceOrderWithStableIDs() {
         let markdown = """
         # Doc
 
@@ -48,8 +48,8 @@ struct MarkdownOutlineExtractorTests {
         ])
     }
 
-    @Test
-    func `dedup gives -2, -3 to duplicate heading text in document order`() {
+    @Test("Dedup gives -2, -3 to duplicate heading text in document order")
+    func dedupGives23ToDuplicateHeadingTextInDocumentOrder() {
         let markdown = """
         ## Goals
         ## Goals
@@ -66,8 +66,8 @@ struct MarkdownOutlineExtractorTests {
         #expect(ids == ["goals", "goals-2", "non-goals", "goals-3"])
     }
 
-    @Test
-    func `returns empty when there are no headings`() {
+    @Test("Returns empty when there are no headings")
+    func returnsEmptyWhenThereAreNoHeadings() {
         let markdown = "Just a paragraph.\n\nAnother one."
         let blocks: [RenderedBlock] = [
             .paragraph(.plain("Just a paragraph.")),
@@ -76,8 +76,8 @@ struct MarkdownOutlineExtractorTests {
         #expect(MarkdownOutlineExtractor.extract(markdown: markdown, blocks: blocks).isEmpty)
     }
 
-    @Test
-    func `survives a markdown-blocks count mismatch by zipping up to min`() {
+    @Test("Survives a markdown-blocks count mismatch by zipping up to min")
+    func survivesAMarkdownBlocksCountMismatchByZippingUpToMin() {
         // If the renderer drops a heading (e.g. empty after trimming) but
         // swift-markdown still parses it, we should not crash — we just
         // skip the trailing slot. The reverse mismatch is handled the
@@ -95,8 +95,8 @@ struct MarkdownOutlineExtractorTests {
         ])
     }
 
-    @Test
-    func `H6 is the deepest level we surface`() {
+    @Test("H6 is the deepest level we surface")
+    func h6IsTheDeepestLevelWeSurface() {
         let markdown = """
         ###### Deep
         """
