@@ -24,25 +24,20 @@ msgstr " Заметки будут перемещены в корзину, чт�
 msgid " and "
 msgstr " и "
 
-#, fuzzy
 msgid "\"%@\" contains %@."
-msgstr " содержит %@."
+msgstr "«%@» содержит %@."
 
-#, fuzzy
 msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
-msgstr " содержит %@. Используйте --yes для рекурсивного удаления."
+msgstr "«%@» содержит %@. Чтобы удалить её рекурсивно, передайте --yes."
 
-#, fuzzy
 msgid "\"%@\" is empty."
-msgstr " пустой."
+msgstr "«%@» пуста."
 
-#, fuzzy
 msgid "\"%@\" is not a valid folder name."
-msgstr " не является допустимым именем папки."
+msgstr "«%@» — недопустимое имя папки."
 
-#, fuzzy
 msgid "%@ • %@ • %d %@"
-msgstr "%@ • %@ • %d слов"
+msgstr "%@ • %@ • %d %@"
 
 msgid "%@ • %@ • %d words"
 msgstr "%@ • %@ • %d слов"
@@ -65,9 +60,8 @@ msgstr "Таблица %d × %d — выравнивание столбцов"
 msgid "(Root)"
 msgstr "(Корень)"
 
-#, fuzzy
 msgid "A folder or note already exists at \"%@\"."
-msgstr "Папка или заметка уже существует по адресу \""
+msgstr "Папка или заметка с именем «%@» уже существует."
 
 msgid "About Swifty Notes"
 msgstr "О приложении Swifty Notes"
@@ -87,17 +81,15 @@ msgstr "Через год"
 msgid "All files"
 msgstr "Все файлы"
 
-#, fuzzy
 msgid ""
 "An \"assets\" folder already exists alongside the export. Merging will "
 "overwrite files with the same name."
 msgstr ""
-" папка уже существует рядом с экспортом. При слиянии файлы с одинаковыми "
-"именами будут перезаписаны."
+"Папка «assets» уже существует рядом с экспортом. При объединении файлы с "
+"одинаковыми именами будут перезаписаны."
 
-#, fuzzy
 msgid "An \"assets\" folder already exists at %@."
-msgstr " папка уже существует по адресу %@."
+msgstr "Папка «assets» уже существует в %@."
 
 msgid "Appearance"
 msgstr "Оформление"
@@ -130,14 +122,11 @@ msgstr "Маркеры"
 msgid "Cancel"
 msgstr "Отмена"
 
-#, fuzzy
 msgid "Cannot move \"%@\" into its own descendant \"%@\"."
-msgstr " в собственный дочерний элемент \""
+msgstr "Нельзя переместить «%@» в его собственный дочерний элемент «%@»."
 
-#, fuzzy
 msgid "Cannot place a folder or note inside the note directory at \"%@\"."
-msgstr ""
-"Нельзя разместить папку или заметку внутри каталога заметок по адресу \""
+msgstr "Нельзя поместить папку или заметку внутрь каталога заметок в «%@»."
 
 msgid "Case Sensitive"
 msgstr "С учётом регистра"
@@ -148,9 +137,8 @@ msgstr "По центру"
 msgid "Choose Notes Folder"
 msgstr "Выберите папку заметок"
 
-#, fuzzy
 msgid "Choose a destination folder for \"%@\"."
-msgstr "Выберите папку назначения для \""
+msgstr "Выберите папку назначения для «%@»."
 
 msgid "Choose a dictionary, or follow the system locale."
 msgstr "Выберите словарь или следуйте системной локали."
@@ -290,13 +278,11 @@ msgstr "Не удалось открыть диалог сохранения"
 msgid "Could not open settings"
 msgstr "Не удалось открыть настройки"
 
-#, fuzzy
 msgid "Could not parse current version \"%@\""
-msgstr "Не удалось разобрать текущую версию \""
+msgstr "Не удалось разобрать текущую версию «%@»"
 
-#, fuzzy
 msgid "Could not parse remote version \"%@\""
-msgstr "Не удалось разобрать удалённую версию \""
+msgstr "Не удалось разобрать удалённую версию «%@»"
 
 msgid "Could not paste files"
 msgstr "Не удалось вставить файлы"
@@ -403,7 +389,6 @@ msgstr "Только редактор"
 msgid "Empty Trash"
 msgstr "Очистить корзину"
 
-#, fuzzy
 msgid "Empty Trash (%d note)…"
 msgstr "Очистить корзину (%d заметка)…"
 
@@ -452,9 +437,8 @@ msgstr "Фильтр заголовков…"
 msgid "Find…"
 msgstr "Найти…"
 
-#, fuzzy
 msgid "Folder \"%@\" was not found."
-msgstr " не найден."
+msgstr "Папка «%@» не найдена."
 
 msgid "Folder %@"
 msgstr "Папка %@"
@@ -465,9 +449,8 @@ msgstr "Папка удалена"
 msgid "Folder name"
 msgstr "Имя папки"
 
-#, fuzzy
 msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
-msgstr " превышает ограничение файловой системы в %d байт."
+msgstr "Имя папки «%@» превышает ограничение файловой системы в %d байт."
 
 msgid "Folder name or Work/Drafts"
 msgstr "Имя папки или Работа/Черновики"
@@ -482,7 +465,7 @@ msgid "Follow system locale"
 msgstr "Следовать системной локали"
 
 msgid "H%d"
-msgstr ""
+msgstr "H%d"
 
 msgid "Heading"
 msgstr "Заголовок"
@@ -577,9 +560,8 @@ msgstr "Ссылка"
 msgid "Main Menu"
 msgstr "Главное меню"
 
-#, fuzzy
 msgid "Markdown"
-msgstr "Markdown-заметки"
+msgstr "Markdown"
 
 msgid "Markdown Editor"
 msgstr "Редактор Markdown"
@@ -617,9 +599,8 @@ msgstr "Переместить заметку"
 msgid "Move to…"
 msgstr "Переместить в…"
 
-#, fuzzy
 msgid "Moved \"%@\" to Trash"
-msgstr " в корзину"
+msgstr "«%@» перемещена в корзину"
 
 msgid "Never"
 msgstr "Никогда"
@@ -636,9 +617,8 @@ msgstr "Новая папка"
 msgid "New note here"
 msgstr "Создать заметку здесь"
 
-#, fuzzy
 msgid "New subfolder in \"%@\""
-msgstr "Новая подпапка в \""
+msgstr "Новая подпапка в «%@»"
 
 msgid "New subfolder…"
 msgstr "Новая подпапка…"
@@ -655,15 +635,15 @@ msgstr "Следующее совпадение"
 msgid "No headings in this note."
 msgstr "В этой заметке нет заголовков."
 
-#, fuzzy
 msgid ""
 "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</"
 "tt></a> to start."
-msgstr ">Добавьте <tt>## Заголовок</tt></a> чтобы начать."
+msgstr ""
+"В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-heading\"><tt>## Заголовок</"
+"tt></a>."
 
-#, fuzzy
 msgid "No headings match \"%@\""
-msgstr "Нет заголовков, совпадающих с \""
+msgstr "Нет заголовков, соответствующих «%@»"
 
 msgid "No headings match the filter."
 msgstr "Нет заголовков, соответствующих фильтру."
@@ -680,9 +660,8 @@ msgstr "Нет совпадений для замены."
 msgid "No note found for ID %@"
 msgstr "Заметка с ID %@ не найдена"
 
-#, fuzzy
 msgid "No notes match \"%@\"."
-msgstr "Нет заметок, совпадающих с \""
+msgstr "Нет заметок, соответствующих «%@»."
 
 msgid "No notes yet. Create one with +."
 msgstr "Заметок пока нет. Создайте одну с помощью +."
@@ -779,9 +758,8 @@ msgstr "Плотность содержания"
 msgid "Override the application theme or follow the system."
 msgstr "Переопределите тему приложения или следуйте системной."
 
-#, fuzzy
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
-msgstr " превышает ограничение файловой системы в %d байт."
+msgstr "Путь «%@» превышает ограничение файловой системы в %d байт."
 
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "Навсегда удалять удалённые заметки по истечении этого времени."
@@ -846,9 +824,8 @@ msgstr "Переименовать заметку"
 msgid "Rename note…"
 msgstr "Переименовать заметку…"
 
-#, fuzzy
 msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
-msgstr ". Имена папок не могут содержать слеш (/)."
+msgstr "Переименование «%@». Имена папок не могут содержать слэш (/)."
 
 msgid "Render emoji shortcodes"
 msgstr "Отображать эмодзи-короткие коды"
@@ -1154,7 +1131,7 @@ msgid "`move` expects exactly one note ID."
 msgstr "`move` необходимо указать ровно один ID заметки."
 
 msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
-msgstr ""
+msgstr "`move` необходимо указать --folder <путь> (используйте --folder \"\", чтобы переместить в корень)."
 
 msgid "`move` requires a note ID."
 msgstr "`move` необходимо указать ID заметки."
@@ -1210,26 +1187,20 @@ msgstr[0] "ресурс"
 msgstr[1] "ресурса"
 msgstr[2] "ресурсов"
 
-#, fuzzy
 msgid "%d matches"
-msgstr "%d совпадение"
+msgstr "%d совпадений"
 
-#, fuzzy
 msgid "%d notes"
-msgstr "%d заметка"
+msgstr "%d заметок"
 
-#, fuzzy
 msgid "%d sections"
-msgstr "%d раздел"
+msgstr "%d разделов"
 
-#, fuzzy
 msgid "%d subfolders"
-msgstr "%d подпапка"
+msgstr "%d подпапок"
 
-#, fuzzy
 msgid "%d subsections"
-msgstr "%d подраздел"
+msgstr "%d подразделов"
 
-#, fuzzy
 msgid "assets"
-msgstr "ресурс"
+msgstr "ресурсы"
