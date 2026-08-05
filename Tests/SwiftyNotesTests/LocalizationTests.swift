@@ -78,6 +78,37 @@ struct LocalizationTests {
         #expect(localeDirectoryContainsCatalog(populated.path))
     }
 
+    /// The catalogue has to sit at `<lang>/LC_MESSAGES/<domain>.mo`. A `.mo`
+    /// lying anywhere else — in particular flattened into the directory root,
+    /// which is what a `.process` resource rule produces — is unloadable, so
+    /// accepting it hands `bindtextdomain` a path that silently translates
+    /// nothing. This is the exact shape of the bug that survived five review
+    /// rounds; finding a `.mo` somewhere below the directory is not the same
+    /// question as the directory being a usable catalogue root.
+    @Test("A flattened catalogue is not mistaken for a locale directory")
+    func flattenedCatalogueIsNotMistakenForALocaleDirectory() throws {
+        let flattened = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: flattened) }
+        try Data().write(to: flattened.appendingPathComponent("\(Self.domain).mo", isDirectory: false))
+        #expect(
+            localeDirectoryContainsCatalog(flattened.path) == false,
+            "a .mo in the directory root is not a catalogue gettext can load",
+        )
+
+        let misplaced = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: misplaced) }
+        let wrongDepth = misplaced
+            .appendingPathComponent("ru", isDirectory: true)
+            .appendingPathComponent("LC_MESSAGES", isDirectory: true)
+            .appendingPathComponent("nested", isDirectory: true)
+        try FileManager.default.createDirectory(at: wrongDepth, withIntermediateDirectories: true)
+        try Data().write(to: wrongDepth.appendingPathComponent("\(Self.domain).mo", isDirectory: false))
+        #expect(
+            localeDirectoryContainsCatalog(misplaced.path) == false,
+            "a .mo below LC_MESSAGES is not on the path gettext resolves",
+        )
+    }
+
     // MARK: - End-to-end CLI output
 
     @Test("CLI errors are translated under LANGUAGE=ru")
