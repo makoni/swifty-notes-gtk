@@ -85,17 +85,21 @@ public func localeDirectoryPath() -> String? {
 /// i.e. `<path>/<lang>/LC_MESSAGES/me.spaceinbox.swiftynotes.mo` exists
 /// for at least one `<lang>` subdirectory.
 public func localeDirectoryContainsCatalog(_ path: String) -> Bool {
-    guard let enumerator = FileManager.default.enumerator(
-        at: URL(fileURLWithPath: path),
-        includingPropertiesForKeys: [.isRegularFileKey]) else {
+    guard FileManager.default.fileExists(atPath: path),
+          let subdirs = try? FileManager.default.contentsOfDirectory(
+              at: URL(fileURLWithPath: path),
+              includingPropertiesForKeys: nil
+          ) else {
         return false
     }
-    for case let url as URL in enumerator {
-        if url.pathExtension == "mo" {
-            let filename = url.deletingPathExtension().lastPathComponent
-            if filename == "me.spaceinbox.swiftynotes" {
-                return true
-            }
+
+    for subdir in subdirs {
+        let lang = subdir.path
+        let expected = URL(fileURLWithPath: lang)
+            .appendingPathComponent("LC_MESSAGES", isDirectory: true)
+            .appendingPathComponent("me.spaceinbox.swiftynotes.mo", isDirectory: false)
+        if FileManager.default.fileExists(atPath: expected.path) {
+            return true
         }
     }
     return false
