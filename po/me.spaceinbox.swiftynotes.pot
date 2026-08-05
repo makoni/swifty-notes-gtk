@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-08-05 18:28Indochina Time\n"
+"POT-Creation-Date: 2026-08-06 01:03Indochina Time\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""

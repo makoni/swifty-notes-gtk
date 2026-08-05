@@ -13,8 +13,8 @@ struct LocalizationCatalogTests {
     // MARK: - Catalogue coverage
 
     @Test("Every translatable source string has a catalogue entry")
-    func everyTranslatableSourceStringHasACatalogueEntry() throws {
-        let source = try LocalizationCatalogFixture.sourceMessageIDs()
+    func everyTranslatableSourceStringHasACatalogueEntry() async throws {
+        let source = try await LocalizationCatalogFixture.sourceMessageIDs()
         let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
             at: LocalizationCatalogFixture.russianCatalogueURL,
         )
@@ -31,8 +31,8 @@ struct LocalizationCatalogTests {
     }
 
     @Test("The catalogue carries no entries the source never asks for")
-    func catalogueCarriesNoEntriesTheSourceNeverAsksFor() throws {
-        let source = try LocalizationCatalogFixture.sourceMessageIDs()
+    func catalogueCarriesNoEntriesTheSourceNeverAsksFor() async throws {
+        let source = try await LocalizationCatalogFixture.sourceMessageIDs()
         let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
             at: LocalizationCatalogFixture.russianCatalogueURL,
         )
@@ -57,7 +57,7 @@ struct LocalizationCatalogTests {
     /// Without one, every fix is a hand-append that leaves the previous debris
     /// in place — which is how the same mangled msgids survived five rounds.
     @Test("A catalogue template exists and covers every source string")
-    func catalogueTemplateExistsAndCoversEverySourceString() throws {
+    func catalogueTemplateExistsAndCoversEverySourceString() async throws {
         let template = LocalizationCatalogFixture.templateURL
         #expect(
             FileManager.default.fileExists(atPath: template.path),
@@ -65,7 +65,7 @@ struct LocalizationCatalogTests {
         )
         guard FileManager.default.fileExists(atPath: template.path) else { return }
 
-        let source = try LocalizationCatalogFixture.sourceMessageIDs()
+        let source = try await LocalizationCatalogFixture.sourceMessageIDs()
         let templated = try LocalizationCatalogFixture.catalogueMessageIDs(at: template)
         let missing = source.subtracting(templated).sorted()
         #expect(
@@ -191,8 +191,8 @@ struct LocalizationCatalogTests {
     /// Two separate singular entries make `ngettext` return form 0 for every
     /// count, which reads as a grammatical error rather than a missing string.
     @Test("Every nlocalized pair is a plural entry in the catalogue")
-    func everyNlocalizedPairIsAPluralEntryInTheCatalogue() throws {
-        let pairs = try LocalizationCatalogFixture.sourcePluralPairs()
+    func everyNlocalizedPairIsAPluralEntryInTheCatalogue() async throws {
+        let pairs = try await LocalizationCatalogFixture.sourcePluralPairs()
         #expect(!pairs.isEmpty, "expected nlocalized call sites in Sources/")
 
         let entries = try LocalizationCatalogFixture.pluralEntries(
@@ -279,8 +279,8 @@ struct LocalizationCatalogTests {
     /// substitutes nothing at all, so the argument silently vanishes from
     /// user-visible text in every language.
     @Test("No localized format string uses %s")
-    func noLocalizedFormatStringUsesPercentS() throws {
-        let offenders = try LocalizationCatalogFixture.sourceMessageIDs()
+    func noLocalizedFormatStringUsesPercentS() async throws {
+        let offenders = try await LocalizationCatalogFixture.sourceMessageIDs()
             .filter { $0.contains("%s") }
             .sorted()
         #expect(
@@ -366,45 +366,119 @@ private enum LocalizationCatalogFixture {
         let translations: [String]
     }
 
-    // MARK: Source scanning
+    // MARK: Source scanning — delegates to extract-i18n.swift
 
-    private static func swiftSources() throws -> [(url: URL, text: String)] {
-        let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
-        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-            return []
+    private struct EmitResult: Codable {
+        let singletons: [String]
+        let plurals: [[String]]
+    }
+
+    private actor SourceScanner {
+        private var cache: EmitResult? = nil
+        var diagnostics: [String] = []
+
+        func run() throws -> EmitResult {
+            if let cached = cache {
+                return cached
+            }
+            let scriptURL = LocalizationCatalogFixture.packageRoot
+                .appendingPathComponent("scripts/extract-i18n.swift")
+            // Find swift in PATH
+            let swiftBin = { () -> URL? in
+                guard let path = ProcessInfo.processInfo.environment["PATH"] else { return nil }
+                for dir in path.split(separator: ":") {
+                    let candidate = URL(fileURLWithPath: String(dir)).appendingPathComponent("swift")
+                    if FileManager.default.fileExists(atPath: candidate.path) {
+                        return candidate
+                    }
+                }
+                return nil
+            }()
+            guard let swiftBin else { throw FixtureError.noJSONOutput }
+            let process = Process()
+            process.executableURL = swiftBin
+            process.arguments = [scriptURL.path, "--emit-msgids"]
+            let outPipe = Pipe()
+            let errPipe = Pipe()
+            process.standardOutput = outPipe
+            process.standardError = errPipe
+            try process.run()
+
+            // Read both pipes concurrently so stderr overflow can't block stdout.
+            let outQ = DispatchQueue(label: "swiftynotes.loc.out")
+            let errQ = DispatchQueue(label: "swiftynotes.loc.err")
+            let sem = DispatchSemaphore(value: 0)
+
+            var outData = Data()
+            var errData = Data()
+
+        let outWork = DispatchWorkItem {
+            outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+            sem.signal()
         }
-        var sources: [(URL, String)] = []
-        for case let url as URL in walker where url.pathExtension == "swift" {
-            sources.append((url, try String(contentsOf: url, encoding: .utf8)))
+        let errWork = DispatchWorkItem {
+            errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+            sem.signal()
         }
-        return sources
+        outQ.async(execute: outWork)
+        errQ.async(execute: errWork)
+        sem.wait()
+        sem.wait()
+            outWork.cancel()
+            errWork.cancel()
+            process.waitUntilExit()
+
+            if let diagText = String(data: errData, encoding: .utf8),
+               !diagText.isEmpty {
+                diagnostics = diagText.components(separatedBy: "\n").filter { !$0.isEmpty }
+            }
+
+            guard let json = String(data: outData, encoding: .utf8) else {
+                throw FixtureError.noJSONOutput
+            }
+            let decoded = try JSONDecoder().decode(EmitResult.self, from: json.data(using: .utf8)!)
+            cache = decoded
+            return decoded
+        }
+
+        func getDiagnostics() -> [String] {
+            diagnostics
+        }
+    }
+
+    private static let scanner = SourceScanner()
+    private enum FixtureError: Error {
+        case noJSONOutput
     }
 
     /// Every msgid the source actually looks up: single-line literals followed
     /// by `.localized`, plus both halves of every `nlocalized` pair.
-    static func sourceMessageIDs() throws -> Set<String> {
-        var ids: Set<String> = []
-        for (_, text) in try swiftSources() {
-            for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("//") else { continue }
-                ids.formUnion(localizedLiterals(in: String(line)))
-                for pair in pluralPairs(in: String(line)) {
-                    ids.insert(pair.singular)
-                    ids.insert(pair.plural)
-                }
+    static func sourceMessageIDs() async throws -> Set<String> {
+        let result = try await scanner.run()
+        let diags = await scanner.getDiagnostics()
+        if !diags.isEmpty {
+            throw FixtureError.noJSONOutput
+        }
+        var ids = Set(result.singletons)
+        for pair in result.plurals {
+            if pair.count >= 2 {
+                ids.insert(pair[0])
+                ids.insert(pair[1])
             }
         }
         return ids
     }
 
-    static func sourcePluralPairs() throws -> Set<PluralPair> {
+    static func sourcePluralPairs() async throws -> Set<PluralPair> {
+        let result = try await scanner.run()
+        let diags = await scanner.getDiagnostics()
+        if !diags.isEmpty {
+            throw FixtureError.noJSONOutput
+        }
         var pairs: Set<PluralPair> = []
-        for (_, text) in try swiftSources() {
-            for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("//") else { continue }
-                pairs.formUnion(pluralPairs(in: String(line)))
+        for arr in result.plurals {
+            if arr.count >= 2 {
+                pairs.insert(PluralPair(singular: arr[0], plural: arr[1]))
             }
         }
         return pairs
@@ -414,114 +488,76 @@ private enum LocalizationCatalogFixture {
     /// which are not handed to `String(format:)` on the same line.
     static func unformattedPluralCallSites() throws -> [String] {
         var offenders: [String] = []
-        for (url, text) in try swiftSources() {
+        let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
+        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            return offenders
+        }
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
             let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
             for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-                let text = String(line)
-                let trimmed = text.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("//"), text.contains("nlocalized(") else { continue }
-                let pairs = pluralPairs(in: text)
+                let lineText = String(line)
+                let trimmed = lineText.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.hasPrefix("//"), lineText.contains("nlocalized(") else { continue }
+                guard let pairs = try? scanPluralPairs(in: lineText) else { continue }
                 guard pairs.contains(where: { !formatSpecifiers(in: $0.singular).isEmpty }) else { continue }
-                guard !text.contains("String(format:") else { continue }
+                guard !lineText.contains("String(format:") else { continue }
                 offenders.append("\(relative):\(offset + 1): \(trimmed)")
             }
         }
         return offenders.sorted()
     }
 
-    private static func localizedLiterals(in line: String) -> Set<String> {
-        var found: Set<String> = []
-        for (literal, endIndex) in stringLiterals(in: line) {
-            let rest = line[endIndex...]
-            let afterWhitespace = rest.drop(while: { $0 == " " })
-            guard afterWhitespace.hasPrefix(".localized") else { continue }
-            // A literal carrying interpolation is computed at runtime and can
-            // never match a catalogue key, so it is not a msgid.
-            guard !literal.contains("\\(") else { continue }
-            if let unescaped = unescape(literal) {
-                found.insert(unescaped)
-            }
-        }
-        return found
-    }
-
-    private static func pluralPairs(in line: String) -> Set<PluralPair> {
+    private static func scanPluralPairs(in line: String) throws -> Set<PluralPair>? {
         var pairs: Set<PluralPair> = []
         var search = line.startIndex
         while let call = line.range(of: "nlocalized(", range: search ..< line.endIndex) {
-            let literals = stringLiterals(in: String(line[call.upperBound...]))
-            if literals.count >= 2,
-               let singular = unescape(literals[0].literal),
-               let plural = unescape(literals[1].literal) {
-                pairs.insert(PluralPair(singular: singular, plural: plural))
+            let afterOpen = line.index(after: call.upperBound)
+            let rest = line[afterOpen...]
+            var literals: [String] = []
+            var scan = rest.startIndex
+            while literals.count < 2, scan < rest.endIndex {
+                if rest[scan] == "\"" {
+                    var body = ""
+                    var closed = false
+                    var c = line.index(after: scan)
+                    while c < rest.endIndex {
+                        let ch = line[c]
+                        if ch == "\\" {
+                            let nx = line.index(after: c)
+                            guard nx < rest.endIndex else { break }
+                            body.append(ch)
+                            body.append(line[nx])
+                            c = line.index(after: nx)
+                            continue
+                        }
+                        if ch == "\"" {
+                            closed = true
+                            c = line.index(after: c)
+                            break
+                        }
+                        body.append(ch)
+                        c = line.index(after: c)
+                    }
+                    if closed, let unescaped = unescape(body) {
+                        literals.append(unescaped)
+                    }
+                    scan = c
+                } else if rest[scan] == "," || rest[scan] == " " || rest[scan] == "\t" {
+                    scan = line.index(after: scan)
+                } else {
+                    break
+                }
+            }
+            if literals.count >= 2 {
+                pairs.insert(PluralPair(singular: literals[0], plural: literals[1]))
             }
             search = call.upperBound
         }
-        return pairs
+        return pairs.isEmpty ? nil : pairs
     }
 
-    /// Scans one line for double-quoted literals, honouring backslash escapes.
-    /// Returns the raw (still-escaped) body and the index just past the closing
-    /// quote.
-    private static func stringLiterals(in line: String) -> [(literal: String, end: String.Index)] {
-        var results: [(String, String.Index)] = []
-        var index = line.startIndex
-        while index < line.endIndex {
-            guard line[index] == "\"" else {
-                index = line.index(after: index)
-                continue
-            }
-            var cursor = line.index(after: index)
-            var body = ""
-            var closed = false
-            while cursor < line.endIndex {
-                let character = line[cursor]
-                if character == "\\" {
-                    let next = line.index(after: cursor)
-                    guard next < line.endIndex else { break }
-                    body.append(character)
-                    body.append(line[next])
-                    cursor = line.index(after: next)
-                    continue
-                }
-                if character == "\"" {
-                    closed = true
-                    cursor = line.index(after: cursor)
-                    break
-                }
-                body.append(character)
-                cursor = line.index(after: cursor)
-            }
-            guard closed else { break }
-            results.append((body, cursor))
-            index = cursor
-        }
-        return results
-    }
-
-    private static func unescape(_ raw: String) -> String? {
-        var output = ""
-        var iterator = raw.makeIterator()
-        while let character = iterator.next() {
-            guard character == "\\" else {
-                output.append(character)
-                continue
-            }
-            guard let escaped = iterator.next() else { return nil }
-            switch escaped {
-            case "n": output.append("\n")
-            case "t": output.append("\t")
-            case "r": output.append("\r")
-            case "0": output.append("\0")
-            case "\"": output.append("\"")
-            case "\\": output.append("\\")
-            default: return nil
-            }
-        }
-        return output
-    }
-
-    // MARK: PO parsing
+    // MARK: PO parsing (keeps its own stringLiterals + unescape)
 
     static func catalogueMessageIDs(at url: URL) throws -> Set<String> {
         var ids: Set<String> = []
@@ -629,6 +665,69 @@ private enum LocalizationCatalogFixture {
         return entries
     }
 
+    /// Scans one line for double-quoted literals, honouring backslash escapes.
+    /// Returns the raw (still-escaped) body and the index just past the closing
+    /// quote. Used by the PO parser.
+    private static func stringLiterals(in line: String) -> [(literal: String, end: String.Index)] {
+        var results: [(String, String.Index)] = []
+        var index = line.startIndex
+        while index < line.endIndex {
+            guard line[index] == "\"" else {
+                index = line.index(after: index)
+                continue
+            }
+            var cursor = line.index(after: index)
+            var body = ""
+            var closed = false
+            while cursor < line.endIndex {
+                let character = line[cursor]
+                if character == "\\" {
+                    let next = line.index(after: cursor)
+                    guard next < line.endIndex else { break }
+                    body.append(character)
+                    body.append(line[next])
+                    cursor = line.index(after: next)
+                    continue
+                }
+                if character == "\"" {
+                    closed = true
+                    cursor = line.index(after: cursor)
+                    break
+                }
+                body.append(character)
+                cursor = line.index(after: cursor)
+            }
+            guard closed else { break }
+            results.append((body, cursor))
+            index = cursor
+        }
+        return results
+    }
+
+    /// Unescapes a single-quoted Swift string literal body. Used by the PO
+    /// parser, which reads PO files that may contain escaped characters.
+    private static func unescape(_ raw: String) -> String? {
+        var output = ""
+        var iterator = raw.makeIterator()
+        while let character = iterator.next() {
+            guard character == "\\" else {
+                output.append(character)
+                continue
+            }
+            guard let escaped = iterator.next() else { return nil }
+            switch escaped {
+            case "n": output.append("\n")
+            case "t": output.append("\t")
+            case "r": output.append("\r")
+            case "0": output.append("\0")
+            case "\"": output.append("\"")
+            case "\\": output.append("\\")
+            default: return nil
+            }
+        }
+        return output
+    }
+
     // MARK: Misc
 
     static func formatSpecifiers(in text: String) -> [String] {
@@ -652,6 +751,8 @@ private enum LocalizationCatalogFixture {
         let stderr: String
     }
 
+    /// Runs an external process, reading stdout and stderr concurrently so a
+    /// full stderr pipe cannot block reading stdout.
     static func run(_ executable: URL, _ arguments: [String]) throws -> ToolResult {
         let process = Process()
         process.executableURL = executable
@@ -661,9 +762,30 @@ private enum LocalizationCatalogFixture {
         process.standardOutput = out
         process.standardError = err
         try process.run()
-        let outData = out.fileHandleForReading.readDataToEndOfFile()
-        let errData = err.fileHandleForReading.readDataToEndOfFile()
+
+        let outQ = DispatchQueue(label: "swiftynotes.loc.run.out")
+        let errQ = DispatchQueue(label: "swiftynotes.loc.run.err")
+        let sem = DispatchSemaphore(value: 0)
+
+        var outData = Data()
+        var errData = Data()
+
+        let outWork = DispatchWorkItem {
+            outData = out.fileHandleForReading.readDataToEndOfFile()
+            sem.signal()
+        }
+        let errWork = DispatchWorkItem {
+            errData = err.fileHandleForReading.readDataToEndOfFile()
+            sem.signal()
+        }
+        outQ.async(execute: outWork)
+        errQ.async(execute: errWork)
+        sem.wait()
+        sem.wait()
+        outWork.cancel()
+        errWork.cancel()
         process.waitUntilExit()
+
         return ToolResult(
             status: process.terminationStatus,
             stdout: String(decoding: outData, as: UTF8.self),

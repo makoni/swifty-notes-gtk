@@ -63,12 +63,81 @@ private func unescape(_ raw: String) -> String? {
     return output
 }
 
-private func localizedLiterals(in line: String) -> Set<String> {
+/// Unescapes with `\u{...}` support. Returns `(value, diagnostics)` where diagnostics
+/// is non-empty if an unrecognised escape was encountered.
+private func unescapeWithSupport(_ raw: String, file: String) -> (value: String?, diagnostics: [String]) {
+    var output = ""
+    var iterator = raw.makeIterator()
+    var diagnostics: [String] = []
+    while let character = iterator.next() {
+        guard character == "\\" else {
+            output.append(character)
+            continue
+        }
+        guard let escaped = iterator.next() else {
+            diagnostics.append("\(file): unrecognised escape at end of literal: `\(raw)`")
+            return (nil, diagnostics)
+        }
+        switch escaped {
+        case "n": output.append("\n")
+        case "t": output.append("\t")
+        case "r": output.append("\r")
+        case "0": output.append("\0")
+        case "\"": output.append("\"")
+        case "\\": output.append("\\")
+        case "u":
+            // Parse \u{...}
+            var hex = ""
+            var foundOpen = false
+            var foundClose = false
+            while let ch = iterator.next() {
+                if !foundOpen && ch == "{" {
+                    foundOpen = true
+                    continue
+                }
+                if foundOpen {
+                    if ch == "}" {
+                        foundClose = true
+                        break
+                    }
+                    hex.append(ch)
+                }
+            }
+            if foundOpen && foundClose, let codePoint = UInt32(hex, radix: 16),
+               let scalar = UnicodeScalar(codePoint) {
+                output.append(String(scalar))
+            } else if foundOpen {
+                // Unterminated \u{ — skip it, treat as unrecognised
+                diagnostics.append("\(file): unterminated \\u{...} escape in literal: `\(raw)`")
+                return (nil, diagnostics)
+            } else {
+                diagnostics.append("\(file): unrecognised escape: `\(raw)`")
+                return (nil, diagnostics)
+            }
+        default:
+            diagnostics.append("\(file): unrecognised escape: `\(raw)`")
+            return (nil, diagnostics)
+        }
+    }
+    return (output, diagnostics)
+}
+
+private func localizedLiterals(in line: String, nextLine: String?) -> Set<String> {
     var found: Set<String> = []
     for (literal, endIndex) in stringLiterals(in: line) {
         let rest = line[endIndex...]
         let afterWhitespace = rest.drop(while: { $0 == " " })
-        guard afterWhitespace.hasPrefix(".localized") else { continue }
+        var isLocalized = afterWhitespace.hasPrefix(".localized")
+        if !isLocalized {
+            // Check if `.localized` is on the next line
+            if let next = nextLine {
+                let nextTrimmed = next.trimmingCharacters(in: .whitespaces)
+                if !nextTrimmed.hasPrefix("//"), nextTrimmed.hasPrefix(".localized") {
+                    isLocalized = true
+                }
+            }
+        }
+        guard isLocalized else { continue }
         guard !literal.contains("\\(") else { continue }
         if let unescaped = unescape(literal) {
             found.insert(unescaped)
@@ -99,9 +168,10 @@ private func pluralPairs(in line: String) -> Set<PluralPair> {
 
 // MARK: - Source scanning
 
-private func scanSources() throws -> (singletons: Set<String>, pairs: Set<PluralPair>) {
+private func scanSources() throws -> (singletons: Set<String>, pairs: Set<PluralPair>, diagnostics: [String]) {
     var singletons: Set<String> = []
     var pairs: Set<PluralPair> = []
+    var diagnostics: [String] = []
 
     let packageRoot = URL(fileURLWithPath: #file, isDirectory: true)
         .deletingLastPathComponent()
@@ -109,22 +179,49 @@ private func scanSources() throws -> (singletons: Set<String>, pairs: Set<Plural
     let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
 
     guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-        return (singletons, pairs)
+        return (singletons, pairs, diagnostics)
     }
 
     for case let url as URL in walker where url.pathExtension == "swift" {
         let text = try String(contentsOf: url, encoding: .utf8)
-        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
+
+        for i in 0..<lines.count {
+            let line = lines[i]
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.hasPrefix("//") else { continue }
-            singletons.formUnion(localizedLiterals(in: String(line)))
-            for pair in pluralPairs(in: String(line)) {
+
+            // Check for `"""` on this line — skip multi-line literals
+            let lineStr = String(line)
+            if lineStr.contains("\"\"\"") {
+                // Detect if a `"""` literal has `.localized` applied — that's an error
+                // Simple heuristic: if `.localized` appears on the same line as `"""`
+                // or within a few characters after the closing `"""`
+                let tripleQuoteCount = lineStr.components(separatedBy: "\"\"\"").count - 1
+                if tripleQuoteCount == 1 || tripleQuoteCount == 3 {
+                    // Odd number of `"""` delimiters means the literal spans this line
+                    // Check for `.localized` right after closing `"""`
+                    let afterTriple = lineStr.components(separatedBy: "\"\"\"")
+                    for part in afterTriple {
+                        if part.hasPrefix(".localized") || part.drop(while: { $0 == " " }).hasPrefix(".localized") {
+                            diagnostics.append("\(relative): .localized applied to \"\"\" literal: `\(lineStr)`")
+                            break
+                        }
+                    }
+                }
+                continue
+            }
+
+            let nextLine: String? = i + 1 < lines.count ? String(lines[i + 1]) : nil
+            singletons.formUnion(localizedLiterals(in: lineStr, nextLine: nextLine))
+            for pair in pluralPairs(in: lineStr) {
                 pairs.insert(pair)
             }
         }
     }
 
-    return (singletons, pairs)
+    return (singletons, pairs, diagnostics)
 }
 
 // MARK: - PO escaping
@@ -151,10 +248,44 @@ private func pluralFormsExpression() -> String {
     return "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 }
 
+// MARK: - JSON output (for --emit-msgids)
+
+private struct EmitMsgidsResult: Codable {
+    let singletons: [String]
+    let plurals: [[String]]
+}
+
 // MARK: - Main
 
 do {
-    let (singletons, pairs) = try scanSources()
+    if CommandLine.arguments.contains("--emit-msgids") {
+        let (singletons, pairs, diagnostics) = try scanSources()
+        let result = EmitMsgidsResult(
+            singletons: singletons.sorted(),
+            plurals: pairs.sorted(by: { $0.singular < $1.singular }).map { [$0.singular, $0.plural] }
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        if let data = try? encoder.encode(result),
+           let json = String(data: data, encoding: .utf8) {
+            print(json)
+        }
+        if !diagnostics.isEmpty {
+            for diag in diagnostics {
+                fputs(diag + "\n", stderr)
+            }
+            exit(1)
+        }
+        exit(0)
+    }
+
+    let (singletons, pairs, diagnostics) = try scanSources()
+    if !diagnostics.isEmpty {
+        for diag in diagnostics {
+            fputs(diag + "\n", stderr)
+        }
+        exit(1)
+    }
 
     let now = Date()
     let formatter = DateFormatter()
