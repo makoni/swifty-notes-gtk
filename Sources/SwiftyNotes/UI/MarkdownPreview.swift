@@ -2539,7 +2539,7 @@ final class MarkdownPreview {
         if descriptionParts.isEmpty {
             return source?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Image"
         }
-        return descriptionParts.joined(separator: " — ".localized)
+        return descriptionParts.joined(separator: " — ")
     }
 
     private func makeMarkupLabel(_ markup: String) -> Label {

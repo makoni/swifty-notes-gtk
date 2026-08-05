@@ -65,7 +65,7 @@ set -euo pipefail
 # -- locale compilation --------------------------------------------------------
 # .mo files are generated from .po and must be present before SwiftPM
 # resource bundling.  Run before any step that touches the .app bundle.
-echo "==> [0/5] Compiling locale files"
+echo "==> [0/6] Compiling locale files"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 bash "$SCRIPT_DIR/build-locales.sh"
 
@@ -143,7 +143,7 @@ echo "==> Bundling $APP_BUNDLE"
 # it copies in, so a single -x on the executable picks up the full
 # transitive graph (gtk4 → glib → ... → libintl).
 
-echo "==> [1/4] Vendoring dylibs via dylibbundler"
+echo "==> [1/6] Vendoring dylibs via dylibbundler"
 mkdir -p "$FRAMEWORKS_DIR"
 dylibbundler -od -b \
   -x "$EXECUTABLE" \
@@ -170,27 +170,27 @@ for stale in "@rpath/" "@executable_path/../Frameworks/" "@executable_path/../Fr
 done
 install_name_tool -add_rpath "@executable_path/../Frameworks/" "$EXECUTABLE"
 
-# -- 2. GSettings schemas ------------------------------------------------------
+# -- 3. GSettings schemas ------------------------------------------------------
 
-echo "==> [2/4] Vendoring GSettings schemas"
+echo "==> [2/6] Vendoring GSettings schemas"
 SCHEMAS_DEST="$RESOURCES_DIR/glib-2.0/schemas"
 mkdir -p "$SCHEMAS_DEST"
 # `gschemas.compiled` is the only file we need at runtime; the .xml
 # sources are descriptive and not consulted by libadwaita/Gio.
 cp "$BREW_PREFIX/share/glib-2.0/schemas/gschemas.compiled" "$SCHEMAS_DEST/"
 
-# -- 2. Locale catalogue -------------------------------------------------------
+# -- 4. Locale catalogue -------------------------------------------------------
 #
 # Mirrors `Sources/SwiftyNotes/locale/` into `Contents/Resources/locale/` so
 # the macOS `.app` ships the same `<lang>/LC_MESSAGES/<domain>.mo` layout
 # that `bindtextdomain()` expects.  `rsync -aL --delete` keeps re-runs
 # idempotent and matches the style already used for the icon trees.
-echo "==> [2/5] Vendoring locale catalogue"
+echo "==> [3/6] Vendoring locale catalogue"
 LOCALE_DEST="$RESOURCES_DIR/locale"
 mkdir -p "$LOCALE_DEST"
 rsync -aL --delete "$PROJECT_ROOT/Sources/SwiftyNotes/locale/" "$LOCALE_DEST/"
 
-# -- 3. Icon themes ------------------------------------------------------------
+# -- 5. Icon themes ------------------------------------------------------------
 #
 # The app references Adwaita symbolic icons by name (e.g. `list-add-symbolic`).
 # GTK searches `<XDG_DATA_DIR>/icons/<theme>/`, so we mirror exactly
@@ -206,13 +206,13 @@ rsync -aL --delete "$PROJECT_ROOT/Sources/SwiftyNotes/locale/" "$LOCALE_DEST/"
 # broken symlinks. `codesign --verify --strict` traverses every sealed
 # resource and fails with "No such file or directory" when it hits one,
 # which previously broke the entire release pipeline.
-echo "==> [3/5] Vendoring icon themes (Adwaita + hicolor)"
+echo "==> [4/6] Vendoring icon themes (Adwaita + hicolor)"
 ICONS_DEST="$RESOURCES_DIR/icons"
 mkdir -p "$ICONS_DEST"
 rsync -aL --delete "$BREW_PREFIX/share/icons/Adwaita/" "$ICONS_DEST/Adwaita/"
 rsync -aL --delete "$BREW_PREFIX/share/icons/hicolor/" "$ICONS_DEST/hicolor/"
 
-# -- 4. GdkPixbuf module loaders ----------------------------------------------
+# -- 6. GdkPixbuf module loaders ----------------------------------------------
 #
 # GdkPixbuf needs at least the SVG loader (`libpixbufloader_svg.so`) to
 # decode Adwaita's symbolic icons; PNG support is built into libgdk_pixbuf
@@ -231,7 +231,7 @@ rsync -aL --delete "$BREW_PREFIX/share/icons/hicolor/" "$ICONS_DEST/hicolor/"
 # which is exactly where we put the loaders. The result: a fully
 # self-contained, relocatable Resources/lib/gdk-pixbuf-2.0/... tree.
 
-echo "==> [4/5] Vendoring GdkPixbuf loaders + relocatable cache"
+echo "==> [5/6] Vendoring GdkPixbuf loaders + relocatable cache"
 LOADERS_DEST="$RESOURCES_DIR/lib/gdk-pixbuf-2.0/2.10.0/loaders"
 CACHE_DEST="$RESOURCES_DIR/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 mkdir -p "$LOADERS_DEST"
@@ -299,7 +299,7 @@ for loader in "$LOADERS_DEST"/*; do
   install_name_tool -id "@rpath/$(basename "$loader")" "$loader" 2>/dev/null || true
 done
 
-# -- 5. Re-sign ad-hoc --------------------------------------------------------
+# -- 7. Re-sign ad-hoc --------------------------------------------------------
 #
 # `install_name_tool` and `dylibbundler` rewrite every Mach-O they touch,
 # which invalidates whatever code signature Xcode applied during the
