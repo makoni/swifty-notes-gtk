@@ -61,7 +61,7 @@ msgid "(Root)"
 msgstr "(Корень)"
 
 msgid "A folder or note already exists at \"%@\"."
-msgstr "Папка или заметка с именем «%@» уже существует."
+msgstr "Папка или заметка по пути «%@» уже существует."
 
 msgid "About Swifty Notes"
 msgstr "О приложении Swifty Notes"
@@ -141,10 +141,10 @@ msgid "Choose a destination folder for \"%@\"."
 msgstr "Выберите папку назначения для «%@»."
 
 msgid "Choose a dictionary, or follow the system locale."
-msgstr "Выберите словарь или следуйте системной локали."
+msgstr "Выбирать словарь или следовать системной локали."
 
 msgid "Choose an empty destination folder for your notes."
-msgstr "Выберите пустую папку назначения для заметок."
+msgstr "Выбрать пустую папку назначения для заметок."
 
 msgid "Choose where Swifty Notes stores markdown files and companion assets."
 msgstr ""
@@ -152,7 +152,7 @@ msgstr ""
 "ресурсы."
 
 msgid "Choose whether Tab inserts spaces or hard tabs."
-msgstr "Укажите, вставляет ли клавиша Tab пробелы или символы табуляции."
+msgstr "Указывать, вставляет ли клавиша Tab пробелы или символы табуляции."
 
 msgid "Code"
 msgstr "Код"
@@ -179,11 +179,11 @@ msgstr "Компактный"
 
 msgid "Control how rendered Markdown appears in the preview."
 msgstr ""
-"Управляет отображением преобразованного Markdown в области предварительного "
+"Управлять отображением преобразованного Markdown в области предварительного "
 "просмотра."
 
 msgid "Control wrapping, indentation, and editor text size."
-msgstr "Управление переносом строк, отступами и размером шрифта редактора."
+msgstr "Переносить строки, управлять отступами и размером шрифта редактора."
 
 msgid "Copied note ID"
 msgstr "ID заметки скопирован"
@@ -252,7 +252,7 @@ msgid "Could not move note"
 msgstr "Не удалось переместить заметку"
 
 msgid "Could not open containing folder"
-msgstr "Не удалось открыть папку содержимого"
+msgstr "Не удалось открыть папку с файлом"
 
 msgid "Could not open export dialog"
 msgstr "Не удалось открыть диалог экспорта"
@@ -372,7 +372,7 @@ msgid "Document Menu"
 msgstr "Меню документа"
 
 msgid "Drag handles on hover"
-msgstr "Ручки перемещения при наведении"
+msgstr "Маркеры перетаскивания при наведении"
 
 msgid "Duplicate note"
 msgstr "Дублировать заметку"
@@ -429,7 +429,7 @@ msgid "File reloaded from disk"
 msgstr "Файл перезагружен с диска"
 
 msgid "Filter Outline"
-msgstr "Фильтр содержания"
+msgstr "Фильтр структуры"
 
 msgid "Filter headings…"
 msgstr "Фильтр заголовков…"
@@ -477,12 +477,12 @@ msgid "Hide Notes Sidebar"
 msgstr "Скрыть боковую панель заметок"
 
 msgid "Hide outline (F9)"
-msgstr "Скрыть содержание (F9)"
+msgstr "Скрыть структуру (F9)"
 
 msgid ""
 "Highlight misspellings inline using libspelling and the system dictionaries."
 msgstr ""
-"Подсвечивает ошибки орфографии в тексте с помощью libspelling и системных "
+"Подсвечивать ошибки орфографии в тексте с помощью libspelling и системных "
 "словарей."
 
 msgid "Hover to pick size"
@@ -498,7 +498,7 @@ msgid "Images added to note"
 msgstr "Изображения добавлены в заметку"
 
 msgid "Import"
-msgstr "Импорт"
+msgstr "Импортировать"
 
 msgid "Import into Library"
 msgstr "Импорт в библиотеку"
@@ -670,7 +670,7 @@ msgid "No other folders to move into"
 msgstr "Нет других папок для перемещения"
 
 msgid "Note Outline"
-msgstr "Содержание заметки"
+msgstr "Структура заметки"
 
 msgid "Note duplicated"
 msgstr "Заметка продублирована"
@@ -710,10 +710,10 @@ msgid "Notes folder updated"
 msgstr "Папка заметок обновлена"
 
 msgid "Notes reloaded from disk"
-msgstr "Заметки перезапущены с диска"
+msgstr "Заметки перезагружены с диска"
 
 msgid "Nothing to preview yet."
-msgstr "Показывать нечего."
+msgstr "Пока нечего показать."
 
 msgid "Numbered List"
 msgstr "Нумерованный список"
@@ -750,13 +750,13 @@ msgid "Outline"
 msgstr "Структура"
 
 msgid "Outline Sidebar"
-msgstr "Боковая панель содержания"
+msgstr "Боковая панель структуры"
 
 msgid "Outline density"
-msgstr "Плотность содержания"
+msgstr "Плотность структуры"
 
 msgid "Override the application theme or follow the system."
-msgstr "Переопределите тему приложения или следуйте системной."
+msgstr "Переопределять тему приложения или следовать системной."
 
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "Путь «%@» превышает ограничение файловой системы в %d байт."
@@ -771,22 +771,22 @@ msgid "Preferences"
 msgstr "Параметры"
 
 msgid "Prefix the selected lines as a bulleted list"
-msgstr "Выделить выбранные строки как маркированный список"
+msgstr "Оформить выделенные строки как маркированный список"
 
 msgid "Prefix the selected lines as a numbered list"
-msgstr "Выделить выбранные строки как нумерованный список"
+msgstr "Оформить выделенные строки как нумерованный список"
 
 msgid "Prefix the selected lines as a quote"
-msgstr "Отметить выбранные строки как цитату"
+msgstr "Оформить выделенные строки как цитату"
 
 msgid "Prefix the selected lines as a task list"
-msgstr "Выделить выбранные строки как список задач"
+msgstr "Оформить выделенные строки как список задач"
 
 msgid "Preview"
-msgstr "Просмотр"
+msgstr "Предварительный просмотр"
 
 msgid "Preview only"
-msgstr "Только просмотр"
+msgstr "Только предварительный просмотр"
 
 msgid "Previous Match"
 msgstr "Предыдущее совпадение"
@@ -828,7 +828,7 @@ msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
 msgstr "Переименование «%@». Имена папок не могут содержать слэш (/)."
 
 msgid "Render emoji shortcodes"
-msgstr "Отображать эмодзи-короткие коды"
+msgstr "Отображать короткие коды эмодзи"
 
 msgid "Replace"
 msgstr "Заменить"
@@ -913,7 +913,7 @@ msgid "Show Notes Sidebar"
 msgstr "Показать боковую панель заметок"
 
 msgid "Show outline (F9)"
-msgstr "Показать содержание (F9)"
+msgstr "Показать структуру (F9)"
 
 msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
 msgstr ""
@@ -1013,7 +1013,7 @@ msgid "Title"
 msgstr "Название"
 
 msgid "Toggle Outline"
-msgstr "Переключить содержание"
+msgstr "Показать структуру"
 
 msgid "Trash"
 msgstr "Корзина"
@@ -1030,13 +1030,13 @@ msgstr "Превратить текущую строку в заголовок"
 msgid ""
 "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
 msgstr ""
-"Настройте правую панель содержания и навигационную полоску над редактором."
+"Настройте правую панель структуры и навигационную полоску над редактором."
 
 msgid ""
 "Underline misspellings while you type and offer corrections in the right-"
 "click menu."
 msgstr ""
-"Подчёркивает ошибки орфографии при вводе и предлагает исправления в "
+"Подчёркивать ошибки орфографии при вводе и предлагать исправления в "
 "контекстном меню."
 
 msgid "Undo"
@@ -1090,54 +1090,54 @@ msgid "Wrap markdown paragraphs instead of scrolling horizontally."
 msgstr "Переносить абзацы markdown вместо горизонтальной прокрутки."
 
 msgid "Wrap the selection in bold markdown"
-msgstr "Обернуть выделение жирным markdown"
+msgstr "Обернуть выделение полужирным markdown"
 
 msgid "Wrap the selection in italic markdown"
 msgstr "Обернуть выделение курсивом markdown"
 
 msgid "`folders create` requires exactly one folder path."
-msgstr "`folders create` необходимо указать ровно один путь к папке."
+msgstr "Для `folders create` необходимо указать ровно один путь к папке."
 
 msgid "`folders move <path> --to <parent>` requires both a path and a parent."
 msgstr ""
-"`folders move <path> --to <parent>` необходимо указать и путь, и "
+"Для `folders move <path> --to <parent>` необходимо указать и путь, и "
 "родительскую папку."
 
 msgid "`folders move` accepts exactly one folder path."
-msgstr "`folders move` необходимо указать ровно один путь к папке."
+msgstr "Для `folders move` необходимо указать ровно один путь к папке."
 
 msgid "`folders rename` requires <path> <new-name>."
-msgstr "`folders rename` необходимо указать <path> <new-name>."
+msgstr "Для `folders rename` необходимо указать <path> <new-name>."
 
 msgid "`folders rm` accepts exactly one folder path."
-msgstr "`folders rm` необходимо указать ровно один путь к папке."
+msgstr "Для `folders rm` необходимо указать ровно один путь к папке."
 
 msgid "`folders rm` cannot delete the root."
-msgstr "`folders rm` не может удалить корневую папку."
+msgstr "Команда `folders rm` не может удалить корень."
 
 msgid "`folders rm` requires a folder path."
-msgstr "`folders rm` необходимо указать путь к папке."
+msgstr "Для `folders rm` необходимо указать путь к папке."
 
 msgid "`get` expects exactly one note ID."
-msgstr "`get` необходимо указать ровно один ID заметки."
+msgstr "Для `get` необходимо указать ровно один ID заметки."
 
 msgid "`get` requires a note ID."
-msgstr "`get` необходимо указать ID заметки."
+msgstr "Для `get` необходимо указать ID заметки."
 
 msgid "`help` accepts at most one command name."
-msgstr "`help` можно указать не более одного имени команды."
+msgstr "Для `help` можно указать не более одного имени команды."
 
 msgid "`move` expects exactly one note ID."
-msgstr "`move` необходимо указать ровно один ID заметки."
+msgstr "Для `move` необходимо указать ровно один ID заметки."
 
 msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
-msgstr "`move` необходимо указать --folder <путь> (используйте --folder \"\", чтобы переместить в корень)."
+msgstr "Для `move` необходимо указать --folder <путь> (используйте --folder \"\", чтобы переместить в корень)."
 
 msgid "`move` requires a note ID."
-msgstr "`move` необходимо указать ID заметки."
+msgstr "Для `move` необходимо указать ID заметки."
 
 msgid "`update` requires a note ID."
-msgstr "`update` необходимо указать ID заметки."
+msgstr "Для `update` необходимо указать ID заметки."
 
 msgid "current"
 msgstr "текущий"
@@ -1159,7 +1159,7 @@ msgstr[2] "%d совпадений"
 
 msgid "%d note"
 msgid_plural "%d notes"
-msgstr[0] "%d заметка"
+msgstr[0] "%d заметку"
 msgstr[1] "%d заметки"
 msgstr[2] "%d заметок"
 
@@ -1171,7 +1171,7 @@ msgstr[2] "%d разделов"
 
 msgid "%d subfolder"
 msgid_plural "%d subfolders"
-msgstr[0] "%d подпапка"
+msgstr[0] "%d подпапку"
 msgstr[1] "%d подпапки"
 msgstr[2] "%d подпапок"
 

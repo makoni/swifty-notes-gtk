@@ -165,10 +165,10 @@ struct LocalizationTests {
     @Test(
         "Folder delete confirmation agrees in Russian",
         arguments: [
-            (1, "1 заметка"),
+            (1, "1 заметку"),
             (2, "2 заметки"),
             (5, "5 заметок"),
-            (21, "21 заметка"),
+            (21, "21 заметку"),
         ],
     )
     func folderDeleteConfirmationAgreesInRussian(
