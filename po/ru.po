@@ -144,7 +144,7 @@ msgid "Choose a dictionary, or follow the system locale."
 msgstr "Выбирать словарь или следовать системной локали."
 
 msgid "Choose an empty destination folder for your notes."
-msgstr "Выбрать пустую папку назначения для заметок."
+msgstr "Выберите пустую папку назначения для заметок."
 
 msgid "Choose where Swifty Notes stores markdown files and companion assets."
 msgstr ""

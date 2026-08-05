@@ -965,7 +965,7 @@ private extension ExternalDocumentWindow {
     }
 
     func handleSaveFailure(_ error: Error) {
-            toastOverlay.showToast(String(format: "Could not save file: %@".localized, error.localizedDescription))
+        toastOverlay.showToast(String(format: "Could not save file: %@".localized, error.localizedDescription))
         updateHeaderSubtitle()
     }
 
@@ -988,8 +988,8 @@ private extension ExternalDocumentWindow {
             case let .success(value):
                 path = value
             case let .failure(error):
-                    presentError(
-                        heading: "Could not open save dialog".localized,
+                presentError(
+                    heading: "Could not open save dialog".localized,
                     body: error.message,
                 )
                 return

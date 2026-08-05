@@ -304,10 +304,10 @@ final class SettingsWindow {
             case let .success(value):
                 path = value
             case let .failure(error):
-            presentError(
-                heading: "Could not choose a notes folder".localized,
-                body: error.message,
-            )
+                presentError(
+                    heading: "Could not choose a notes folder".localized,
+                    body: error.message,
+                )
                 return
             }
             guard let path else { return }

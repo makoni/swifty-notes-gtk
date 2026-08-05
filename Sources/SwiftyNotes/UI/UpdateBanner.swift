@@ -11,7 +11,7 @@ final class UpdateBanner {
     let revealer = Revealer()
     private let container = Box(orientation: .horizontal, spacing: 8)
     private let label = Label("")
-        private let updateButton = Button(label: "Update".localized)
+    private let updateButton = Button(label: "Update".localized)
     private let closeButton = Button(icon: .windowClose)
 
     private var onUpdateHandler: (() -> Void)?

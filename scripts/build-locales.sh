@@ -20,27 +20,27 @@ if [[ ! -d "$PO_DIR" ]]; then
     exit 1
 fi
 
-LANGUAGES=("cs" "de" "es" "fr" "hi" "it" "ja" "ko" "ru" "tr" "uk" "zh-CN")
+LANGUAGES=("cs" "de" "es" "fr" "hi" "it" "ja" "ko" "ru" "tr" "uk" "zh_CN")
 
 DOMAIN="me.spaceinbox.swiftynotes"
 
-for LANG in "${LANGUAGES[@]}"; do
-    PO_FILE="$PO_DIR/${LANG}.po"
+for lang in "${LANGUAGES[@]}"; do
+    PO_FILE="$PO_DIR/${lang}.po"
 
     if [[ ! -f "$PO_FILE" ]]; then
-        echo "SKIP: $PO_FILE not found, skipping $LANG."
+        echo "SKIP: $PO_FILE not found, skipping $lang."
         continue
     fi
 
-    LC_DIR="$LOCALE_ROOT/${LANG}/LC_MESSAGES"
+    LC_DIR="$LOCALE_ROOT/${lang}/LC_MESSAGES"
     MO_FILE="$LC_DIR/${DOMAIN}.mo"
 
     mkdir -p "$LC_DIR"
 
     echo "Compiling $PO_FILE -> $MO_FILE"
-    msgfmt -o "$MO_FILE" "$PO_FILE"
+    msgfmt --check -o "$MO_FILE" "$PO_FILE"
 
-    echo "  Done: $LANG"
+    echo "  Done: $lang"
 done
 
 echo ""

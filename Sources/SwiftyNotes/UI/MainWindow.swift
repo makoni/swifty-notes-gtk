@@ -68,7 +68,7 @@ final class MainWindow {
     var outlineScrollSpyDriver: OutlineScrollSpyDriver?
     var editor = MarkdownEditor()
     let preview = MarkdownPreview()
-        let headerTitle = WindowTitle(title: "Swifty Notes", subtitle: "Markdown notes".localized)
+    let headerTitle = WindowTitle(title: "Swifty Notes", subtitle: "Markdown notes".localized)
     let sidebarToggle = MainWindow.iconButton(named: "sidebar-show-symbolic")
     /// Toggles the right-hand Outline panel. Active state CSS tracks
     /// ``AppState.isOutlineVisible``. Bound to F9 in `wireKeyboardShortcuts`.
