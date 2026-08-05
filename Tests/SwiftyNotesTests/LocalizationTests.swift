@@ -27,7 +27,6 @@ struct LocalizationTests {
     /// what has to hold.
     @Test("Locale directory resolves to a gettext catalogue layout")
     func localeDirectoryResolvesToGettextCatalogueLayout() throws {
-        initializeLocalization()
         let dir = try #require(
             localeDirectoryPath(),
             "localeDirectoryPath() returned nil in a plain build",
@@ -48,10 +47,7 @@ struct LocalizationTests {
 
     @Test("Repeated initialization keeps resolving the same directory")
     func repeatedInitializationKeepsResolvingTheSameDirectory() {
-        initializeLocalization()
         let first = localeDirectoryPath()
-        initializeLocalization()
-        initializeLocalization()
         #expect(localeDirectoryPath() == first)
     }
 

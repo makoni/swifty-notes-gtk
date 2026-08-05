@@ -44,7 +44,10 @@ struct LocalizationCatalogTests {
             """
             \(orphans.count) catalogue entry/entries match nothing in Sources/. \
             Leftover fragments and translated dialog response IDs both land \
-            here; regenerating the catalogue from a template clears them:
+            here. If the msgid is still referenced in the source, the scanner \
+            has lost sight of it (e.g. a wrapped String(format: nlocalized(...)) \
+            call across lines); look for a multi-line literal before \
+            regenerating:
             \(orphans.prefix(20).map { "  - \($0.debugDescription)" }.joined(separator: "\n"))
             """,
         )
@@ -71,6 +74,28 @@ struct LocalizationCatalogTests {
             the template is missing \(missing.count) source msgid(s), so \
             regenerating from it would silently drop them:
             \(missing.prefix(20).map { "  - \($0.debugDescription)" }.joined(separator: "\n"))
+            """,
+        )
+    }
+
+    /// A translation that reverted to English silently ships the source
+    /// strings to users. The specifier tests skip empty translations by
+    /// design, and the coverage test only checks that a msgid has a key —
+    /// neither catches an empty msgstr.
+    @Test("Russian translations are not empty")
+    func russianTranslationsAreNotEmpty() throws {
+        let entries = try LocalizationCatalogFixture.entries(
+            at: LocalizationCatalogFixture.russianCatalogueURL,
+        )
+        let empty = entries.filter { entry in
+            entry.translations.allSatisfy { $0.isEmpty }
+        }
+        #expect(
+            empty.isEmpty,
+            """
+            \(empty.count) entry/entries have an empty Russian translation
+            (msgstr is blank for singular, or all forms are blank for plural):
+            \(empty.map { "  - \($0.singular.debugDescription)" }.joined(separator: "\n"))
             """,
         )
     }
@@ -146,14 +171,18 @@ struct LocalizationCatalogTests {
         )
         let fuzzy = catalogue
             .split(separator: "\n", omittingEmptySubsequences: false)
-            .filter { $0.trimmingCharacters(in: .whitespaces).hasPrefix("#, ") }
-            .filter { $0.contains("fuzzy") }
+            .filter { $0.trimmingCharacters(in: .whitespaces).hasPrefix("#,") }
+            .filter {
+                let flags = $0.split(separator: ",")
+                return flags.contains { $0.trimmingCharacters(in: .whitespaces) == "fuzzy" }
+            }
         #expect(
             fuzzy.isEmpty,
             """
-            \(fuzzy.count) entry/entries are marked fuzzy. Review each one, fix \
-            the translation, and drop the flag — or run \
-            `msgattrib --clear-fuzzy --empty` to send them back to untranslated.
+            \(fuzzy.count) entry/entries are marked fuzzy. Review each one, \
+            fix the translation, and drop the flag. Emptying is acceptable \
+            only as a temporary step; the completeness test will then hold \
+            the line.
             """,
         )
     }
@@ -602,19 +631,19 @@ private enum LocalizationCatalogFixture {
 
     // MARK: Misc
 
-    static func formatSpecifiers(in text: String) -> Set<String> {
-        var specifiers: Set<String> = []
+    static func formatSpecifiers(in text: String) -> [String] {
+        var specifiers: [String] = []
         var index = text.startIndex
         while let percent = text[index...].firstIndex(of: "%") {
             let next = text.index(after: percent)
             guard next < text.endIndex else { break }
             let character = text[next]
             if character != "%" {
-                specifiers.insert("%\(character)")
+                specifiers.append("%\(character)")
             }
             index = text.index(after: next)
         }
-        return specifiers
+        return specifiers.sorted()
     }
 
     struct ToolResult {
