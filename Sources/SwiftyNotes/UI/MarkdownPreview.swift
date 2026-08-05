@@ -373,7 +373,7 @@ final class MarkdownPreview {
         rootScroll.kineticScrolling = true
         #endif
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
-        rootScroll.setAccessibleLabel("Markdown Preview")
+        rootScroll.setAccessibleLabel("Markdown Preview".localized)
         rootScroll.overlayScrolling = false
 
         // GtkWidget does not expose `width` as a GObject property, so
@@ -396,7 +396,7 @@ final class MarkdownPreview {
 
     var plainText: String {
         if lastRenderedBlocks.isEmpty {
-            return "Nothing to preview yet."
+            return "Nothing to preview yet.".localized
         }
         return lastRenderedBlocks.map(\.plainText)
             .filter { !$0.isEmpty }
@@ -526,7 +526,7 @@ final class MarkdownPreview {
             renderedBaseDirectory = standardizedBaseDirectory
             renderedRows = []
             renderMode = .stacked
-            container.append(makeParagraph(text: .plain("Nothing to preview yet.")))
+            container.append(makeParagraph(text: .plain("Nothing to preview yet.".localized)))
             return
         }
 
@@ -1706,8 +1706,8 @@ final class MarkdownPreview {
         button.valign = .start
         button.marginTop = 8
         button.marginEnd = 8
-        button.tooltipText = "Copy code to clipboard"
-        button.setAccessibleLabel("Copy code to clipboard")
+        button.tooltipText = "Copy code to clipboard".localized
+        button.setAccessibleLabel("Copy code to clipboard".localized)
         // Outer capture is strong on purpose: GTK owns the underlying
         // widget but nothing else holds the Swift Button wrapper, so a
         // weak capture here would dangle by the time the signal fires.
@@ -2539,7 +2539,7 @@ final class MarkdownPreview {
         if descriptionParts.isEmpty {
             return source?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Image"
         }
-        return descriptionParts.joined(separator: " — ")
+        return descriptionParts.joined(separator: " — ".localized)
     }
 
     private func makeMarkupLabel(_ markup: String) -> Label {

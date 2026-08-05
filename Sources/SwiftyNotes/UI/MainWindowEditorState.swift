@@ -8,7 +8,7 @@ extension MainWindow {
         refreshSidebar()
         persistWorkspaceState()
         toastOverlay.dismissAll()
-        toastOverlay.showToast("Sorting by \(sortMode.displayName.lowercased())")
+        toastOverlay.showToast(String(format: "Sorting by %@".localized, sortMode.displayName.lowercased()))
     }
 
     func focusSearch() {
@@ -23,12 +23,12 @@ extension MainWindow {
 
     func updateHeaderSubtitle() {
         guard let selected = state.selectedNote else {
-            headerTitle.subtitle = "Markdown notes"
+            headerTitle.subtitle = "Markdown notes".localized
             return
         }
         let wordCount = editor.buffer.text.split(whereSeparator: \.isWhitespace).count
-        let saveState = editor.buffer.modified ? "Unsaved changes" : "Saved"
-        headerTitle.subtitle = "\(selected.title) • \(saveState) • \(wordCount) words"
+        let saveState = editor.buffer.modified ? "Unsaved changes".localized : "Saved".localized
+        headerTitle.subtitle = String(format: "%@ • %@ • %d words".localized, selected.title, saveState, wordCount)
     }
 
     func saveSelectedNoteNow() {
@@ -91,13 +91,13 @@ extension MainWindow {
         refreshPreview()
         updateHeaderSubtitle()
         if announceSuccess {
-            toastOverlay.showToast("Note saved")
+            toastOverlay.showToast("Note saved".localized)
         }
         applyDeferredExternalReloadIfPossible()
     }
 
     func handleSaveFailure(_ error: Error) {
-        toastOverlay.showToast("Could not save note: \(error.localizedDescription)")
+        toastOverlay.showToast(String(format: "Could not save note: %@".localized, error.localizedDescription))
         updateHeaderSubtitle()
     }
 
@@ -105,17 +105,17 @@ extension MainWindow {
         guard let selected = state.selectedNote else { return }
 
         let entry = Entry()
-        entry.placeholderText = "Title"
+        entry.placeholderText = "Title".localized
         entry.text = selected.title
         entry.activatesDefault = true
 
         let dialog = AlertDialog(
-            heading: "Rename note",
-            body: "The note title is derived from the first meaningful line.",
+            heading: "Rename note".localized,
+            body: "The note title is derived from the first meaningful line.".localized,
         )
         dialog.extraChild = entry
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("rename", label: "Rename")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("rename", label: "Rename".localized)
         dialog.defaultResponse = "rename"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("rename", appearance: .suggested)
@@ -146,10 +146,10 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note renamed")
+            toastOverlay.showToast("Note renamed".localized)
         } catch {
             presentError(
-                heading: "Could not rename note",
+                heading: "Could not rename note".localized,
                 body: error.localizedDescription,
             )
         }

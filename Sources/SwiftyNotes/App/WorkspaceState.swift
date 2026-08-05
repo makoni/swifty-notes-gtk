@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 public enum NotesSortMode: String, Codable, CaseIterable, Sendable {
@@ -8,11 +9,11 @@ public enum NotesSortMode: String, Codable, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .newestFirst:
-            "Newest first"
+            "Newest first".localized
         case .oldestFirst:
-            "Oldest first"
+            "Oldest first".localized
         case .title:
-            "Title"
+            "Title".localized
         }
     }
 

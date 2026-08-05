@@ -28,8 +28,8 @@ extension MainWindow {
         } else {
             outlineToggleButton.removeCSSClass(.activeCSSClass)
         }
-        outlineToggleButton.tooltipText = state.isOutlineVisible ? "Hide outline (F9)" : "Show outline (F9)"
-        quickJumpButton.tooltipText = "Quick jump… (Ctrl+G)"
+        outlineToggleButton.tooltipText = state.isOutlineVisible ? "Hide outline (F9)".localized : "Show outline (F9)".localized
+        quickJumpButton.tooltipText = "Quick jump… (Ctrl+G)".localized
     }
 
     /// Opens the Ctrl+G command palette. Headings + recents + current
@@ -38,7 +38,7 @@ extension MainWindow {
     /// underneath them.
     func openCommandPalette() {
         guard !currentHeadings.isEmpty else {
-            toastOverlay.addToast(Toast(title: "No headings to jump to."))
+            toastOverlay.addToast(Toast(title: "No headings to jump to.".localized))
             return
         }
         // If a palette is already showing (rapid double-press of

@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 public enum EditorIndentStyle: String, Codable, CaseIterable, Equatable, Sendable {
@@ -7,9 +8,9 @@ public enum EditorIndentStyle: String, Codable, CaseIterable, Equatable, Sendabl
     public var displayName: String {
         switch self {
         case .spaces:
-            "Spaces"
+            "Spaces".localized
         case .tabs:
-            "Tabs"
+            "Tabs".localized
         }
     }
 }
@@ -25,9 +26,9 @@ public enum OutlineDensity: String, Codable, CaseIterable, Equatable, Sendable {
     public var displayName: String {
         switch self {
         case .comfortable:
-            "Comfortable"
+            "Comfortable".localized
         case .compact:
-            "Compact"
+            "Compact".localized
         }
     }
 }
@@ -40,11 +41,11 @@ public enum AppearanceMode: String, Codable, CaseIterable, Equatable, Sendable {
     public var displayName: String {
         switch self {
         case .system:
-            "Follow system"
+            "Follow system".localized
         case .light:
-            "Light"
+            "Light".localized
         case .dark:
-            "Dark"
+            "Dark".localized
         }
     }
 }

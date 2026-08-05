@@ -55,18 +55,18 @@ extension MainWindow {
             updateBanner.show(version: version)
         case .upToDate:
             if manual {
-                toastOverlay.addToast(Toast(title: "Swifty Notes is up to date."))
+                toastOverlay.addToast(Toast(title: "Swifty Notes is up to date.".localized))
             }
         case let .error(message):
             if manual {
-                toastOverlay.addToast(Toast(title: "Could not check for updates: \(message)"))
+                toastOverlay.addToast(Toast(title: String(format: "Could not check for updates: %@".localized, message)))
             }
         case .networkUnavailable:
             if manual {
                 // A transient outage on a network-capable install: keep the
                 // raw NSURLError soup out of the toast, keep the menu entry
                 // so the user can retry once they're back online.
-                toastOverlay.addToast(Toast(title: "Could not check for updates: no internet connection."))
+                toastOverlay.addToast(Toast(title: "Could not check for updates: no internet connection.".localized))
             } else if isSandboxedInstall {
                 // The silent launch probe couldn't reach the network AND we
                 // are provably inside a Flatpak/Snap sandbox — the combination
@@ -96,7 +96,7 @@ extension MainWindow {
         do {
             try directoryOpener(url)
         } catch {
-            toastOverlay.addToast(Toast(title: "Could not open release page: \(error.localizedDescription)"))
+            toastOverlay.addToast(Toast(title: String(format: "Could not open release page: %@".localized, error.localizedDescription)))
         }
     }
 }

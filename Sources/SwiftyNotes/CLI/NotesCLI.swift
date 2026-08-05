@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 struct NotesCLIExecutionResult {
@@ -90,7 +91,7 @@ enum NotesCLI {
             case let .foldersRm(path, yes):
                 let trimmed = NotesRepository.trimmedFolderPath(path)
                 guard !trimmed.isEmpty else {
-                    throw NotesCLIError.usage("`folders rm` cannot delete the root.")
+                    throw NotesCLIError.usage("`folders rm` cannot delete the root.".localized)
                 }
                 try assertFolderRemovable(trimmed, repository: repository, yes: yes)
                 try repository.deleteFolderRecursively(at: trimmed)
@@ -125,7 +126,7 @@ enum NotesCLI {
     private static func loadNote(id: UUID, repository: NotesRepository) throws -> Note {
         let notes = try repository.loadNotes()
         guard let note = notes.first(where: { $0.id == id }) else {
-            throw NotesCLIError.notFound("No note found for ID \(id.uuidString.lowercased())")
+            throw NotesCLIError.notFound(String(format: "No note found for ID %@".localized, id.uuidString.lowercased()))
         }
         return note
     }
@@ -166,10 +167,14 @@ enum NotesCLI {
         guard nestedNotes > 0 || nestedFolders > 0 else { return }
         if yes { return }
         var parts: [String] = []
-        if nestedNotes > 0 { parts.append(nestedNotes == 1 ? "1 note" : "\(nestedNotes) notes") }
-        if nestedFolders > 0 { parts.append(nestedFolders == 1 ? "1 subfolder" : "\(nestedFolders) subfolders") }
+        if nestedNotes > 0 {
+            parts.append(nlocalized("%d note", "%d notes", count: UInt(nestedNotes)))
+        }
+        if nestedFolders > 0 {
+            parts.append(nlocalized("%d subfolder", "%d subfolders", count: UInt(nestedFolders)))
+        }
         throw NotesCLIError.usage(
-            "\"\(folderPath)\" contains \(parts.joined(separator: " and ")). Pass --yes to delete it recursively.",
+            String(format: "\"%@\" contains %@. Pass --yes to delete it recursively.".localized, folderPath, parts.joined(separator: " and ".localized)),
         )
     }
 
@@ -179,7 +184,7 @@ enum NotesCLI {
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(value)
         guard let string = String(data: data, encoding: .utf8) else {
-            throw NotesCLIError.runtime("Could not encode CLI output")
+            throw NotesCLIError.runtime("Could not encode CLI output".localized)
         }
         return string
     }
@@ -203,7 +208,7 @@ enum NotesCLI {
               update    Replace a note's markdown content
               move      Move a note to another folder
               folders   List folders, or manage them via subcommands
-                        (folders create/rm/rename/move)
+                         (folders create/rm/rename/move)
               help      Show general or command-specific help
 
             Global options:
@@ -513,13 +518,13 @@ private struct ParsedInvocation {
             }
             command = try Self.parseUpdate(args, stdin: stdin)
         default:
-            throw NotesCLIError.usage("Unknown CLI command: \(subcommand)\n\n\(NotesCLI.help(for: .general))")
+            throw NotesCLIError.usage(String(format: "Unknown CLI command: %@".localized, subcommand) + "\n\n" + NotesCLI.help(for: .general))
         }
     }
 
     private static func parseHelp(_ arguments: [String]) throws -> Command {
         guard arguments.count <= 1 else {
-            throw NotesCLIError.usage("`help` accepts at most one command name.\n\n\(NotesCLI.help(for: .general))")
+            throw NotesCLIError.usage("`help` accepts at most one command name.".localized + "\n\n" + NotesCLI.help(for: .general))
         }
         guard let topic = arguments.first else {
             return .help(.general)
@@ -538,7 +543,7 @@ private struct ParsedInvocation {
         case "folders":
             return .help(.folders)
         default:
-            throw NotesCLIError.usage("Unknown command for help: \(topic)\n\n\(NotesCLI.help(for: .general))")
+            throw NotesCLIError.usage(String(format: "Unknown command for help: %@".localized, topic) + "\n\n" + NotesCLI.help(for: .general))
         }
     }
 
@@ -559,13 +564,13 @@ private struct ParsedInvocation {
             if Self.containsHelpFlag(rest) { return .help(.foldersMove) }
             return try Self.parseFoldersMove(rest)
         default:
-            throw NotesCLIError.usage("Unknown folders subcommand: \(first)\n\n\(NotesCLI.help(for: .folders))")
+            throw NotesCLIError.usage(String(format: "Unknown folders subcommand: %@".localized, first) + "\n\n" + NotesCLI.help(for: .folders))
         }
     }
 
     private static func parseFoldersCreate(_ arguments: [String]) throws -> Command {
         guard let path = arguments.first, arguments.count == 1 else {
-            throw NotesCLIError.usage("`folders create` requires exactly one folder path.\n\n\(NotesCLI.help(for: .foldersCreate))")
+            throw NotesCLIError.usage("`folders create` requires exactly one folder path.".localized + "\n\n" + NotesCLI.help(for: .foldersCreate))
         }
         return .foldersCreate(path: path)
     }
@@ -579,20 +584,20 @@ private struct ParsedInvocation {
                 yes = true
             default:
                 guard path == nil else {
-                    throw NotesCLIError.usage("`folders rm` accepts exactly one folder path.\n\n\(NotesCLI.help(for: .foldersRm))")
+                    throw NotesCLIError.usage("`folders rm` accepts exactly one folder path.".localized + "\n\n" + NotesCLI.help(for: .foldersRm))
                 }
                 path = token
             }
         }
         guard let path else {
-            throw NotesCLIError.usage("`folders rm` requires a folder path.\n\n\(NotesCLI.help(for: .foldersRm))")
+            throw NotesCLIError.usage("`folders rm` requires a folder path.".localized + "\n\n" + NotesCLI.help(for: .foldersRm))
         }
         return .foldersRm(path: path, yes: yes)
     }
 
     private static func parseFoldersRename(_ arguments: [String]) throws -> Command {
         guard arguments.count == 2 else {
-            throw NotesCLIError.usage("`folders rename` requires <path> <new-name>.\n\n\(NotesCLI.help(for: .foldersRename))")
+            throw NotesCLIError.usage("`folders rename` requires <path> <new-name>.".localized + "\n\n" + NotesCLI.help(for: .foldersRename))
         }
         return .foldersRename(path: arguments[0], newName: arguments[1])
     }
@@ -606,20 +611,20 @@ private struct ParsedInvocation {
             if token == "--to" {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
-                    throw NotesCLIError.usage("Missing value for --to.\n\n\(NotesCLI.help(for: .foldersMove))")
+                    throw NotesCLIError.usage("Missing value for --to.".localized + "\n\n" + NotesCLI.help(for: .foldersMove))
                 }
                 newParent = arguments[nextIndex]
                 index += 2
                 continue
             }
             guard path == nil else {
-                throw NotesCLIError.usage("`folders move` accepts exactly one folder path.\n\n\(NotesCLI.help(for: .foldersMove))")
+                throw NotesCLIError.usage("`folders move` accepts exactly one folder path.".localized + "\n\n" + NotesCLI.help(for: .foldersMove))
             }
             path = token
             index += 1
         }
         guard let path, let newParent else {
-            throw NotesCLIError.usage("`folders move <path> --to <parent>` requires both a path and a parent.\n\n\(NotesCLI.help(for: .foldersMove))")
+            throw NotesCLIError.usage("`folders move <path> --to <parent>` requires both a path and a parent.".localized + "\n\n" + NotesCLI.help(for: .foldersMove))
         }
         return .foldersMove(path: path, newParent: newParent)
     }
@@ -633,26 +638,26 @@ private struct ParsedInvocation {
             if token == "--folder" {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
-                    throw NotesCLIError.usage("Missing value for --folder.\n\n\(NotesCLI.help(for: .move))")
+                    throw NotesCLIError.usage("Missing value for --folder.".localized + "\n\n" + NotesCLI.help(for: .move))
                 }
                 folderPath = arguments[nextIndex]
                 index += 2
                 continue
             }
             guard noteID == nil else {
-                throw NotesCLIError.usage("`move` expects exactly one note ID.\n\n\(NotesCLI.help(for: .move))")
+                throw NotesCLIError.usage("`move` expects exactly one note ID.".localized + "\n\n" + NotesCLI.help(for: .move))
             }
             guard let parsed = UUID(uuidString: token) else {
-                throw NotesCLIError.usage("Invalid note ID: \(token)\n\n\(NotesCLI.help(for: .move))")
+                throw NotesCLIError.usage(String(format: "Invalid note ID: %@".localized, token) + "\n\n" + NotesCLI.help(for: .move))
             }
             noteID = parsed
             index += 1
         }
         guard let noteID else {
-            throw NotesCLIError.usage("`move` requires a note ID.\n\n\(NotesCLI.help(for: .move))")
+            throw NotesCLIError.usage("`move` requires a note ID.".localized + "\n\n" + NotesCLI.help(for: .move))
         }
         guard let folderPath else {
-            throw NotesCLIError.usage("`move` requires --folder PATH (use --folder \"\" to move to the root).\n\n\(NotesCLI.help(for: .move))")
+            throw NotesCLIError.usage("`move` requires --folder PATH (use --folder \"\" to move to the root).".localized + "\n\n" + NotesCLI.help(for: .move))
         }
         return .move(noteID, folderPath: folderPath)
     }
@@ -665,13 +670,13 @@ private struct ParsedInvocation {
             if current == "--folder" {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
-                    throw NotesCLIError.usage("Missing value for --folder.\n\n\(NotesCLI.help(for: .list))")
+                    throw NotesCLIError.usage("Missing value for --folder.".localized + "\n\n" + NotesCLI.help(for: .list))
                 }
                 folderScope = arguments[nextIndex]
                 index += 2
                 continue
             }
-            throw NotesCLIError.usage("Unknown option: \(current)\n\n\(NotesCLI.help(for: .list))")
+            throw NotesCLIError.usage(String(format: "Unknown option: %@".localized, current) + "\n\n" + NotesCLI.help(for: .list))
         }
         return .list(folderScope: folderScope)
     }
@@ -690,7 +695,7 @@ private struct ParsedInvocation {
             if current == "--notes-dir" {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
-                    throw NotesCLIError.usage("Missing value for --notes-dir.\n\n\(NotesCLI.help(for: .general))")
+                    throw NotesCLIError.usage("Missing value for --notes-dir.".localized + "\n\n" + NotesCLI.help(for: .general))
                 }
                 notesDirectory = URL(fileURLWithPath: arguments[nextIndex], isDirectory: true)
                 index += 2
@@ -715,10 +720,10 @@ private struct ParsedInvocation {
                 raw = true
             default:
                 guard noteID == nil else {
-                    throw NotesCLIError.usage("`get` expects exactly one note ID.\n\n\(NotesCLI.help(for: .get))")
+                    throw NotesCLIError.usage("`get` expects exactly one note ID.".localized + "\n\n" + NotesCLI.help(for: .get))
                 }
                 guard let parsedID = UUID(uuidString: current) else {
-                    throw NotesCLIError.usage("Invalid note ID: \(current)\n\n\(NotesCLI.help(for: .get))")
+                    throw NotesCLIError.usage(String(format: "Invalid note ID: %@".localized, current) + "\n\n" + NotesCLI.help(for: .get))
                 }
                 noteID = parsedID
             }
@@ -726,17 +731,17 @@ private struct ParsedInvocation {
         }
 
         guard let noteID else {
-            throw NotesCLIError.usage("`get` requires a note ID.\n\n\(NotesCLI.help(for: .get))")
+            throw NotesCLIError.usage("`get` requires a note ID.".localized + "\n\n" + NotesCLI.help(for: .get))
         }
         return .get(noteID, raw: raw)
     }
 
     private static func parseUpdate(_ arguments: [String], stdin: Data?) throws -> Command {
         guard let first = arguments.first else {
-            throw NotesCLIError.usage("`update` requires a note ID.\n\n\(NotesCLI.help(for: .update))")
+            throw NotesCLIError.usage("`update` requires a note ID.".localized + "\n\n" + NotesCLI.help(for: .update))
         }
         guard let noteID = UUID(uuidString: first) else {
-            throw NotesCLIError.usage("Invalid note ID: \(first)\n\n\(NotesCLI.help(for: .update))")
+            throw NotesCLIError.usage(String(format: "Invalid note ID: %@".localized, first) + "\n\n" + NotesCLI.help(for: .update))
         }
         let content = try parseContentSource(Array(arguments.dropFirst()), stdin: stdin, contentRequired: true)
         return .update(noteID, content)
@@ -761,7 +766,7 @@ private struct ParsedInvocation {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
                     let topic: CLIHelpTopic = contentRequired ? .update : .create
-                    throw NotesCLIError.usage("Missing value for --folder.\n\n\(NotesCLI.help(for: topic))")
+                    throw NotesCLIError.usage("Missing value for --folder.".localized + "\n\n" + NotesCLI.help(for: topic))
                 }
                 folderPath = arguments[nextIndex]
                 index += 2
@@ -791,7 +796,7 @@ private struct ParsedInvocation {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
                     let topic: CLIHelpTopic = contentRequired ? .update : .create
-                    throw NotesCLIError.usage("Missing value for --content.\n\n\(NotesCLI.help(for: topic))")
+                    throw NotesCLIError.usage("Missing value for --content.".localized + "\n\n" + NotesCLI.help(for: topic))
                 }
                 inlineContent = arguments[nextIndex]
                 index += 2
@@ -799,7 +804,7 @@ private struct ParsedInvocation {
                 let nextIndex = index + 1
                 guard nextIndex < arguments.count else {
                     let topic: CLIHelpTopic = contentRequired ? .update : .create
-                    throw NotesCLIError.usage("Missing value for --content-file.\n\n\(NotesCLI.help(for: topic))")
+                    throw NotesCLIError.usage("Missing value for --content-file.".localized + "\n\n" + NotesCLI.help(for: topic))
                 }
                 contentFile = arguments[nextIndex]
                 index += 2
@@ -808,14 +813,14 @@ private struct ParsedInvocation {
                 index += 1
             default:
                 let topic: CLIHelpTopic = contentRequired ? .update : .create
-                throw NotesCLIError.usage("Unknown option: \(current)\n\n\(NotesCLI.help(for: topic))")
+                throw NotesCLIError.usage(String(format: "Unknown option: %@".localized, current) + "\n\n" + NotesCLI.help(for: topic))
             }
         }
 
         let selectedSources = [inlineContent != nil, contentFile != nil, useStdin].count(where: { $0 })
         if selectedSources > 1 {
             let topic: CLIHelpTopic = contentRequired ? .update : .create
-            throw NotesCLIError.usage("Use only one of --content, --content-file, or --stdin.\n\n\(NotesCLI.help(for: topic))")
+            throw NotesCLIError.usage("Use only one of --content, --content-file, or --stdin.".localized + "\n\n" + NotesCLI.help(for: topic))
         }
 
         if let inlineContent {
@@ -827,12 +832,12 @@ private struct ParsedInvocation {
         if useStdin {
             let data = stdin ?? FileHandle.standardInput.readDataToEndOfFile()
             guard let content = String(data: data, encoding: .utf8) else {
-                throw NotesCLIError.runtime("Could not read UTF-8 content from stdin")
+                throw NotesCLIError.runtime("Could not read UTF-8 content from stdin".localized)
             }
             return content
         }
         if contentRequired {
-            throw NotesCLIError.usage("Replacement content is required.\n\n\(NotesCLI.help(for: .update))")
+            throw NotesCLIError.usage("Replacement content is required.".localized + "\n\n" + NotesCLI.help(for: .update))
         }
         return ""
     }

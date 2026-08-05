@@ -1,0 +1,91 @@
+import Adwaita
+import Foundation
+import CSpelling
+
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+
+/// Sets up gettext localization for the application.
+///
+/// Must be called once, before any `.localized` calls, in both the GUI
+/// and CLI entry points. Activates the process locale from environment
+/// (LC_ALL / LANG), sets the text domain, and binds the locale directory
+/// so that `swift-adwaita`'s `localized(_:)` and `String.localized`
+/// can find `.mo` translation files.
+public func initializeLocalization() {
+    // Activate the process locale from environment. `nil` only queries
+    // the locale; `""` sets it from the environment variables.
+    // Import Darwin or Glibc above so setlocale/LC_ALL resolve on both.
+    _ = setlocale(LC_ALL, "")
+    // Set the gettext text domain. Must match the app ID used in
+    // .desktop files and Flatpak manifests.
+    swifty_notes_textdomain("me.spaceinbox.swiftynotes")
+    if let localeDir = localeDirectoryPath() {
+        swifty_notes_bindtextdomain("me.spaceinbox.swiftynotes", localeDir)
+    }
+    _ = swifty_notes_bind_textdomain_codeset("me.spaceinbox.swiftynotes", "UTF-8")
+}
+
+/// Resolves the directory containing `.mo` translation files.
+///
+/// Priority:
+/// 1. `SWIFTY_NOTES_LOCALE_DIR` env var (testing / debugging)
+/// 2. Flatpak: `/app/share/locale`
+/// 3. macOS bundle: `<App>.app/Contents/Resources/locale`
+/// 4. SwiftPM dev build: `<project>/locale` (next to Resources/)
+/// 5. System: `/usr/share/locale`
+public func localeDirectoryPath() -> String? {
+    // 1. Env var override
+    if let envPath = ProcessInfo.processInfo.environment["SWIFTY_NOTES_LOCALE_DIR"],
+       FileManager.default.fileExists(atPath: envPath) {
+        return envPath
+    }
+
+    // 2. Flatpak
+    if FileManager.default.fileExists(atPath: "/app/share/locale") {
+        return "/app/share/locale"
+    }
+
+    // 3. macOS bundle — locale files sit in <App>.app/Contents/Resources/locale
+    #if os(macOS)
+    let bundleLocale = Bundle.main.bundleURL
+        .appendingPathComponent("Contents", isDirectory: true)
+        .appendingPathComponent("Resources", isDirectory: true)
+        .appendingPathComponent("locale", isDirectory: true)
+    if FileManager.default.fileExists(atPath: bundleLocale.path) {
+        return bundleLocale.path
+    }
+    #endif
+
+    // 4. SwiftPM dev build — `.copy("locale")` preserves the
+    //    ru/LC_MESSAGES/<domain>.mo layout gettext needs.
+    if let bundleResourceURL = Bundle.module.resourceURL {
+        let localeDir = bundleResourceURL.appendingPathComponent("locale")
+        if FileManager.default.fileExists(atPath: localeDir.path) {
+            return localeDir.path
+        }
+    }
+
+    // 5. System — only return if it contains our app's locale files
+    let systemLocale = "/usr/share/locale"
+    if FileManager.default.fileExists(atPath: systemLocale) {
+        if let enumerator = FileManager.default.enumerator(
+            at: URL(fileURLWithPath: systemLocale),
+            includingPropertiesForKeys: [.isRegularFileKey]) {
+            for case let url as URL in enumerator {
+                if url.pathExtension == "mo" {
+                    let filename = url.deletingPathExtension().lastPathComponent
+                    // Locale dir structure: <lang>/LC_MESSAGES/<domain>.mo
+                    if filename == "me.spaceinbox.swiftynotes" {
+                        return systemLocale
+                    }
+                }
+            }
+        }
+    }
+
+    return nil
+}

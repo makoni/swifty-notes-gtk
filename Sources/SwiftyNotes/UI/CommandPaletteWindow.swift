@@ -78,12 +78,12 @@ final class CommandPaletteWindow {
         // production-quality compromise the rest of the GNOME stack
         // uses.
         dialog = Dialog()
-        dialog.title = "Jump to heading"
+        dialog.title = "Jump to heading".localized
         dialog.contentWidth = 640
         dialog.contentHeight = 480
         dialog.presentationMode = .floating
         searchEntry = SearchEntry()
-        searchEntry.placeholderText = "Jump to heading…"
+        searchEntry.placeholderText = "Jump to heading…".localized
         searchEntry.hexpand = true
         searchEntry.searchDelay = 0 // palette should feel instant; debounce already happens at keystroke level
 
@@ -91,7 +91,7 @@ final class CommandPaletteWindow {
         list.selectionMode = .browse
         list.activateOnSingleClick = true
         list.addCSSClass("navigation-sidebar")
-        list.setAccessibleLabel("Jump-to-heading results")
+        list.setAccessibleLabel("Jump-to-heading results".localized)
 
         scroll = ScrolledWindow(child: list)
         scroll.setPolicy(horizontal: .never, vertical: .automatic)
@@ -123,7 +123,7 @@ final class CommandPaletteWindow {
         footerRow.marginEnd = 12
         footerRow.marginTop = 6
         footerRow.marginBottom = 8
-        let kbdHints = Label("↑↓ navigate · ↵ jump · Esc close")
+        let kbdHints = Label("↑↓ navigate · ↵ jump · Esc close".localized)
         kbdHints.addCSSClass(.dimLabel)
         kbdHints.addCSSClass("caption")
         kbdHints.xalign = 0
@@ -245,8 +245,8 @@ final class CommandPaletteWindow {
 
         if items.isEmpty {
             emptyLabel.text = trimmed.isEmpty
-                ? "No headings in this note."
-                : "No headings match \"\(trimmed)\""
+                ? "No headings in this note.".localized
+                : String(format: "No headings match \"%@\"".localized, trimmed)
             emptyLabel.visible = true
             scroll.visible = false
         } else {
@@ -254,7 +254,7 @@ final class CommandPaletteWindow {
             scroll.visible = true
         }
 
-        footerCount.text = "\(items.count) of \(headings.count)"
+        footerCount.text = String(format: "%d of %d".localized, items.count, headings.count)
 
         // Default highlight: currentID if visible, else first row.
         if trimmed.isEmpty,
@@ -287,7 +287,7 @@ final class CommandPaletteWindow {
         let row = ListBoxRow()
         row.addCSSClass("sn-pal-row")
 
-        let pill = Label("H\(heading.level)")
+        let pill = Label(String(format: "H%d".localized, heading.level))
         pill.addCSSClass("sn-pal-pill")
         pill.addCSSClass("sn-pal-pill-h\(heading.level)")
         pill.marginEnd = 6
@@ -322,7 +322,7 @@ final class CommandPaletteWindow {
         container.append(parentLabel)
         container.append(leafLabel)
         if heading.id == currentID {
-            let hint = Label("current")
+            let hint = Label("current".localized)
             hint.addCSSClass("sn-pal-hint")
             hint.addCSSClass(.dimLabel)
             container.append(hint)

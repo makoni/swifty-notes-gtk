@@ -17,34 +17,34 @@ final class SettingsWindow {
 
     let window: ApplicationWindow
 
-    private let notesFolderRow = ActionRow(title: "Notes folder")
-    private let resetToDefaultRow = ActionRow(title: "Use default location")
-    private let openCurrentFolderRow = ActionRow(title: "Open current folder")
-    private let trashRetentionRow = ComboRow(title: "Empty Trash automatically")
-    private let wrapLinesRow = SwitchRow(title: "Wrap long lines")
-    private let fontSizeRow = SpinRow(title: "Editor font size", min: 10, max: 32, step: 1)
-    private let tabWidthRow = SpinRow(title: "Tab width", min: 1, max: 8, step: 1)
-    private let indentStyleRow = ComboRow(title: "Indent style")
-    private let autosaveDelayRow = SpinRow(title: "Autosave delay", min: 1, max: 60, step: 1)
-    private let appearanceRow = ComboRow(title: "Appearance")
-    private let spellCheckEnabledRow = SwitchRow(title: "Enable spell-check")
-    private let spellCheckLanguageRow = ComboRow(title: "Spell-check language")
+    private let notesFolderRow = ActionRow(title: "Notes folder".localized)
+    private let resetToDefaultRow = ActionRow(title: "Use default location".localized)
+    private let openCurrentFolderRow = ActionRow(title: "Open current folder".localized)
+    private let trashRetentionRow = ComboRow(title: "Empty Trash automatically".localized)
+    private let wrapLinesRow = SwitchRow(title: "Wrap long lines".localized)
+    private let fontSizeRow = SpinRow(title: "Editor font size".localized, min: 10, max: 32, step: 1)
+    private let tabWidthRow = SpinRow(title: "Tab width".localized, min: 1, max: 8, step: 1)
+    private let indentStyleRow = ComboRow(title: "Indent style".localized)
+    private let autosaveDelayRow = SpinRow(title: "Autosave delay".localized, min: 1, max: 60, step: 1)
+    private let appearanceRow = ComboRow(title: "Appearance".localized)
+    private let spellCheckEnabledRow = SwitchRow(title: "Enable spell-check".localized)
+    private let spellCheckLanguageRow = ComboRow(title: "Spell-check language".localized)
     private let spellCheckLanguages: [SpellChecking.LanguageOption]
-    private let outlineDensityRow = ComboRow(title: "Outline density")
-    private let outlineTreeLinesRow = SwitchRow(title: "Tree lines under H2 sections")
-    private let outlineDragHandlesRow = SwitchRow(title: "Drag handles on hover")
-    private let outlineBreadcrumbRow = SwitchRow(title: "Breadcrumb strip above editor")
-    private let renderEmojiRow = SwitchRow(title: "Render emoji shortcodes")
+    private let outlineDensityRow = ComboRow(title: "Outline density".localized)
+    private let outlineTreeLinesRow = SwitchRow(title: "Tree lines under H2 sections".localized)
+    private let outlineDragHandlesRow = SwitchRow(title: "Drag handles on hover".localized)
+    private let outlineBreadcrumbRow = SwitchRow(title: "Breadcrumb strip above editor".localized)
+    private let renderEmojiRow = SwitchRow(title: "Render emoji shortcodes".localized)
     private let trashRetentionOptions: [(retention: TrashRetention, displayName: String)] = [
-        (.never, "Never"),
-        (.days(7), "After 7 days"),
-        (.days(30), "After 30 days"),
-        (.days(90), "After 90 days"),
-        (.days(365), "After a year"),
+        (.never, "Never".localized),
+        (.days(7), "After 7 days".localized),
+        (.days(30), "After 30 days".localized),
+        (.days(90), "After 90 days".localized),
+        (.days(365), "After a year".localized),
     ]
-    private let browseButton = Button(label: "Browse…")
-    private let resetButton = Button(label: "Reset")
-    private let openButton = Button(label: "Open")
+    private let browseButton = Button(label: "Browse…".localized)
+    private let resetButton = Button(label: "Reset".localized)
+    private let openButton = Button(label: "Open".localized)
     private var defaultNotesDirectory: URL
     private let applyNotesDirectoryChange: (URL) throws -> URL
     private let applySettingsChange: (AppSettings) throws -> AppSettings
@@ -73,7 +73,7 @@ final class SettingsWindow {
         self.openDirectory = openDirectory
         spellCheckLanguages = SpellChecking.availableLanguages()
 
-        window.title = "Settings"
+        window.title = "Settings".localized
         window.iconName = AppIdentity.identifier
         window.setDefaultSize(width: 640, height: 546)
         window.transientFor = parentWindow
@@ -112,13 +112,13 @@ final class SettingsWindow {
     }
 
     private func buildUI() {
-        let title = WindowTitle(title: "Settings", subtitle: "Preferences")
+        let title = WindowTitle(title: "Settings".localized, subtitle: "Preferences".localized)
         let headerBar = HeaderBar()
         headerBar.titleWidget = title
 
         let storageGroup = PreferencesGroup(
-            title: "Storage",
-            description: "Choose where Swifty Notes stores markdown files and companion assets.",
+            title: "Storage".localized,
+            description: "Choose where Swifty Notes stores markdown files and companion assets.".localized,
         )
 
         notesFolderRow.subtitleSelectable = true
@@ -142,7 +142,7 @@ final class SettingsWindow {
         resetToDefaultRow.activatableWidget = resetButton
         storageGroup.add(resetToDefaultRow)
 
-        openCurrentFolderRow.subtitle = "Reveal the active notes folder in your file manager."
+        openCurrentFolderRow.subtitle = "Reveal the active notes folder in your file manager.".localized
         openButton.valign = .center
         MacOSClickWorkaround.onClick(openButton) { [weak self] in
             self?.openCurrentNotesFolder()
@@ -151,7 +151,7 @@ final class SettingsWindow {
         openCurrentFolderRow.activatableWidget = openButton
         storageGroup.add(openCurrentFolderRow)
 
-        trashRetentionRow.subtitle = "Permanently delete trashed notes after this much time has passed."
+        trashRetentionRow.subtitle = "Permanently delete trashed notes after this much time has passed.".localized
         trashRetentionRow.setModel(StringList(trashRetentionOptions.map(\.displayName)))
         trashRetentionRow.onNotify(.selected) { [weak self] in
             self?.handleInlinePreferenceChange()
@@ -159,17 +159,17 @@ final class SettingsWindow {
         storageGroup.add(trashRetentionRow)
 
         let editorGroup = PreferencesGroup(
-            title: "Editor",
-            description: "Control wrapping, indentation, and editor text size.",
+            title: "Editor".localized,
+            description: "Control wrapping, indentation, and editor text size.".localized,
         )
 
-        wrapLinesRow.subtitle = "Wrap markdown paragraphs instead of scrolling horizontally."
+        wrapLinesRow.subtitle = "Wrap markdown paragraphs instead of scrolling horizontally.".localized
         wrapLinesRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
         editorGroup.add(wrapLinesRow)
 
-        fontSizeRow.subtitle = "Points"
+        fontSizeRow.subtitle = "Points".localized
         fontSizeRow.digits = 0
         fontSizeRow.numeric = true
         fontSizeRow.onNotify(.value) { [weak self] in
@@ -177,7 +177,7 @@ final class SettingsWindow {
         }
         editorGroup.add(fontSizeRow)
 
-        tabWidthRow.subtitle = "Columns"
+        tabWidthRow.subtitle = "Columns".localized
         tabWidthRow.digits = 0
         tabWidthRow.numeric = true
         tabWidthRow.onNotify(.value) { [weak self] in
@@ -185,7 +185,7 @@ final class SettingsWindow {
         }
         editorGroup.add(tabWidthRow)
 
-        indentStyleRow.subtitle = "Choose whether Tab inserts spaces or hard tabs."
+        indentStyleRow.subtitle = "Choose whether Tab inserts spaces or hard tabs.".localized
         indentStyleRow.setModel(StringList(EditorIndentStyle.allCases.map(\.displayName)))
         indentStyleRow.onNotify(.selected) { [weak self] in
             self?.handleInlinePreferenceChange()
@@ -193,20 +193,20 @@ final class SettingsWindow {
         editorGroup.add(indentStyleRow)
 
         let previewGroup = PreferencesGroup(
-            title: "Preview",
-            description: "Control how rendered Markdown appears in the preview.",
+            title: "Preview".localized,
+            description: "Control how rendered Markdown appears in the preview.".localized,
         )
-        renderEmojiRow.subtitle = "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+        renderEmojiRow.subtitle = "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged.".localized
         renderEmojiRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
         previewGroup.add(renderEmojiRow)
 
         let savingGroup = PreferencesGroup(
-            title: "Saving",
-            description: "Autosave runs after the last edit using the configured delay.",
+            title: "Saving".localized,
+            description: "Autosave runs after the last edit using the configured delay.".localized,
         )
-        autosaveDelayRow.subtitle = "Seconds"
+        autosaveDelayRow.subtitle = "Seconds".localized
         autosaveDelayRow.digits = 0
         autosaveDelayRow.numeric = true
         autosaveDelayRow.onNotify(.value) { [weak self] in
@@ -215,8 +215,8 @@ final class SettingsWindow {
         savingGroup.add(autosaveDelayRow)
 
         let appearanceGroup = PreferencesGroup(
-            title: "Appearance",
-            description: "Override the application theme or follow the system.",
+            title: "Appearance".localized,
+            description: "Override the application theme or follow the system.".localized,
         )
         appearanceRow.setModel(StringList(AppearanceMode.allCases.map(\.displayName)))
         appearanceRow.onNotify(.selected) { [weak self] in
@@ -225,18 +225,18 @@ final class SettingsWindow {
         appearanceGroup.add(appearanceRow)
 
         let spellCheckGroup = PreferencesGroup(
-            title: "Spell check",
-            description: "Underline misspellings while you type and offer corrections in the right-click menu.",
+            title: "Spell check".localized,
+            description: "Underline misspellings while you type and offer corrections in the right-click menu.".localized,
         )
-        spellCheckEnabledRow.subtitle = "Highlight misspellings inline using libspelling and the system dictionaries."
+        spellCheckEnabledRow.subtitle = "Highlight misspellings inline using libspelling and the system dictionaries.".localized
         spellCheckEnabledRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
         spellCheckGroup.add(spellCheckEnabledRow)
 
         if !spellCheckLanguages.isEmpty {
-            spellCheckLanguageRow.subtitle = "Choose a dictionary, or follow the system locale."
-            let displayNames = ["Follow system locale"] + spellCheckLanguages.map(\.displayName)
+            spellCheckLanguageRow.subtitle = "Choose a dictionary, or follow the system locale.".localized
+            let displayNames = ["Follow system locale".localized] + spellCheckLanguages.map(\.displayName)
             spellCheckLanguageRow.setModel(StringList(displayNames))
             spellCheckLanguageRow.onNotify(.selected) { [weak self] in
                 self?.handleInlinePreferenceChange()
@@ -245,26 +245,26 @@ final class SettingsWindow {
         }
 
         let outlineGroup = PreferencesGroup(
-            title: "Outline",
-            description: "Tweak the right-hand outline panel and the breadcrumb strip above the editor.",
+            title: "Outline".localized,
+            description: "Tweak the right-hand outline panel and the breadcrumb strip above the editor.".localized,
         )
-        outlineDensityRow.subtitle = "Comfortable matches the default; Compact tightens row padding."
+        outlineDensityRow.subtitle = "Comfortable matches the default; Compact tightens row padding.".localized
         outlineDensityRow.setModel(StringList(OutlineDensity.allCases.map(\.displayName)))
         outlineDensityRow.onNotify(.selected) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
         outlineGroup.add(outlineDensityRow)
-        outlineTreeLinesRow.subtitle = "Vertical guides linking H3+ subsections to their H2 parent."
+        outlineTreeLinesRow.subtitle = "Vertical guides linking H3+ subsections to their H2 parent.".localized
         outlineTreeLinesRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
         outlineGroup.add(outlineTreeLinesRow)
-        outlineDragHandlesRow.subtitle = "Show the drag affordance on hover. Drag-to-reorder ships separately."
+        outlineDragHandlesRow.subtitle = "Show the drag affordance on hover. Drag-to-reorder ships separately.".localized
         outlineDragHandlesRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
         outlineGroup.add(outlineDragHandlesRow)
-        outlineBreadcrumbRow.subtitle = "“You are here” strip above the editor toolbar."
+        outlineBreadcrumbRow.subtitle = "“You are here” strip above the editor toolbar.".localized
         outlineBreadcrumbRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
@@ -291,7 +291,7 @@ final class SettingsWindow {
 
     private func chooseNotesFolder() {
         let dialog = FileDialog()
-        dialog.title = "Choose Notes Folder"
+        dialog.title = "Choose Notes Folder".localized
         dialog.modal = true
         activeFileDialog = dialog
         dialog.selectFolder(parent: window) { [weak self, weak dialog] result in
@@ -304,10 +304,10 @@ final class SettingsWindow {
             case let .success(value):
                 path = value
             case let .failure(error):
-                presentError(
-                    heading: "Could not choose a notes folder",
-                    body: error.message,
-                )
+            presentError(
+                heading: "Could not choose a notes folder".localized,
+                body: error.message,
+            )
                 return
             }
             guard let path else { return }
@@ -326,7 +326,7 @@ final class SettingsWindow {
             )
         } catch {
             presentError(
-                heading: "Could not change the notes folder",
+                heading: "Could not change the notes folder".localized,
                 body: NotesDirectoryErrorMessage.userFriendly(for: error),
             )
         }
@@ -337,7 +337,7 @@ final class SettingsWindow {
             try openDirectory(currentNotesDirectory)
         } catch {
             presentError(
-                heading: "Could not open notes folder",
+                heading: "Could not open notes folder".localized,
                 body: NotesDirectoryErrorMessage.userFriendly(for: error),
             )
         }
@@ -441,7 +441,7 @@ final class SettingsWindow {
         } catch {
             updateSettings(currentSettings)
             presentError(
-                heading: "Could not update settings",
+                heading: "Could not update settings".localized,
                 body: error.localizedDescription,
             )
         }
@@ -449,7 +449,7 @@ final class SettingsWindow {
 
     private func presentError(heading: String, body: String) {
         let dialog = AlertDialog(heading: heading, body: body)
-        dialog.addResponse("ok", label: "OK")
+        dialog.addResponse("ok", label: "OK".localized)
         dialog.defaultResponse = "ok"
         dialog.closeResponse = "ok"
         dialog.present(window)

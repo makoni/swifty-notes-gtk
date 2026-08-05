@@ -138,23 +138,23 @@ final class FindReplaceBar {
         root.showCloseButton = true
 
         findEntry = SearchEntry()
-        findEntry.placeholderText = "Find…"
+        findEntry.placeholderText = "Find…".localized
         findEntry.hexpand = true
         findEntry.searchDelay = 0
 
         caseSensitiveToggle = ToggleButton(label: "Aa")
-        caseSensitiveToggle.tooltipText = "Case Sensitive"
-        caseSensitiveToggle.setAccessibleLabel("Case Sensitive")
+        caseSensitiveToggle.tooltipText = "Case Sensitive".localized
+        caseSensitiveToggle.setAccessibleLabel("Case Sensitive".localized)
         caseSensitiveToggle.addCSSClass(.flat)
 
         wholeWordToggle = ToggleButton(label: "ab")
-        wholeWordToggle.tooltipText = "Whole Word Match"
-        wholeWordToggle.setAccessibleLabel("Whole Word Match")
+        wholeWordToggle.tooltipText = "Whole Word Match".localized
+        wholeWordToggle.setAccessibleLabel("Whole Word Match".localized)
         wholeWordToggle.addCSSClass(.flat)
 
         regexToggle = ToggleButton(label: ".*")
-        regexToggle.tooltipText = "Regular Expression"
-        regexToggle.setAccessibleLabel("Regular Expression")
+        regexToggle.tooltipText = "Regular Expression".localized
+        regexToggle.setAccessibleLabel("Regular Expression".localized)
         regexToggle.addCSSClass(.flat)
 
         countLabel = Label("")
@@ -164,24 +164,24 @@ final class FindReplaceBar {
         countLabel.marginEnd = 4
 
         prevButton = Button(icon: .custom("go-up-symbolic"))
-        prevButton.tooltipText = "Previous Match"
-        prevButton.setAccessibleLabel("Previous Match")
+        prevButton.tooltipText = "Previous Match".localized
+        prevButton.setAccessibleLabel("Previous Match".localized)
         prevButton.addCSSClass(.flat)
 
         nextButton = Button(icon: .custom("go-down-symbolic"))
-        nextButton.tooltipText = "Next Match"
-        nextButton.setAccessibleLabel("Next Match")
+        nextButton.tooltipText = "Next Match".localized
+        nextButton.setAccessibleLabel("Next Match".localized)
         nextButton.addCSSClass(.flat)
 
         replaceEntry = Entry()
-        replaceEntry.placeholderText = "Replace…"
+        replaceEntry.placeholderText = "Replace…".localized
         replaceEntry.hexpand = true
 
-        replaceButton = Button(label: "Replace")
-        replaceButton.tooltipText = "Replace the current match"
+        replaceButton = Button(label: "Replace".localized)
+        replaceButton.tooltipText = "Replace the current match".localized
 
-        replaceAllButton = Button(label: "Replace All")
-        replaceAllButton.tooltipText = "Replace every match"
+        replaceAllButton = Button(label: "Replace All".localized)
+        replaceAllButton.tooltipText = "Replace every match".localized
         // GNOME convention: Replace All is mutating-without-confirm,
         // so it's not a `suggested-action` (which is reserved for
         // primary positive actions). GNOME Text Editor and Builder
@@ -250,15 +250,15 @@ final class FindReplaceBar {
                 countLabel.text = ""
                 countLabel.visible = false
             } else {
-                countLabel.text = "No matches"
+                countLabel.text = "No matches".localized
                 countLabel.visible = true
             }
             return
         }
         if let activeDisplayIndex {
-            countLabel.text = "\(activeDisplayIndex) of \(total)"
+            countLabel.text = String(format: "%d of %d".localized, activeDisplayIndex, total)
         } else {
-            countLabel.text = "\(total) match\(total == 1 ? "" : "es")"
+            countLabel.text = String(format: nlocalized("%d match", "%d matches", count: UInt(total)), total)
         }
         countLabel.visible = true
     }

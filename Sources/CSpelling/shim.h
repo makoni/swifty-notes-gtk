@@ -281,4 +281,27 @@ swifty_notes_search_apply_tag(gpointer source_buffer, gpointer tag,
     }
 }
 
+// ---------------------------------------------------------------------------
+// Gettext locale helpers — static inline wrappers around the POSIX
+// gettext / libc functions.  Swift can call them directly once the
+// CSpelling module is imported.
+
+#include <libgen.h>
+#include <libintl.h>
+
+static inline void
+swifty_notes_textdomain(const char *domainname) {
+    textdomain(domainname);
+}
+
+static inline void
+swifty_notes_bindtextdomain(const char *domainname, const char *dirname) {
+    bindtextdomain(domainname, dirname);
+}
+
+static inline char *
+swifty_notes_bind_textdomain_codeset(const char *domainname, const char *codeset) {
+    return bind_textdomain_codeset(domainname, codeset);
+}
+
 #endif /* SWIFTYNOTES_CSPELLING_SHIM_H */

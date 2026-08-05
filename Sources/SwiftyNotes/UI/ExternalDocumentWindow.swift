@@ -82,9 +82,9 @@ final class ExternalDocumentWindow {
     let preview = MarkdownPreview()
     var editor = MarkdownEditor()
     let headerTitle = WindowTitle(title: "", subtitle: "")
-    let editorModeToggle = ToggleButton(label: "Editor")
-    let splitModeToggle = ToggleButton(label: "Split")
-    let previewModeToggle = ToggleButton(label: "Preview")
+    let editorModeToggle = ToggleButton(label: "Editor".localized)
+    let splitModeToggle = ToggleButton(label: "Split".localized)
+    let previewModeToggle = ToggleButton(label: "Preview".localized)
     let viewModeSwitcher = Box(orientation: .horizontal, spacing: 0)
     let contentHost = Box(orientation: .vertical, spacing: 0)
     let editorContent = Box(orientation: .vertical, spacing: 0)
@@ -288,11 +288,11 @@ private extension ExternalDocumentWindow {
         header.packEnd(viewModeSwitcher)
 
         outlineToggleButton.addCSSClass(.flat)
-        outlineToggleButton.setAccessibleLabel("Toggle Outline")
-        outlineToggleButton.tooltipText = "Show outline (F9)"
+        outlineToggleButton.setAccessibleLabel("Toggle Outline".localized)
+        outlineToggleButton.tooltipText = "Show outline (F9)".localized
         quickJumpButton.addCSSClass(.flat)
-        quickJumpButton.setAccessibleLabel("Quick Jump")
-        quickJumpButton.tooltipText = "Quick jump… (Ctrl+G)"
+        quickJumpButton.setAccessibleLabel("Quick Jump".localized)
+        quickJumpButton.tooltipText = "Quick jump… (Ctrl+G)".localized
 
         editorScroll.child = editor.view
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
@@ -471,38 +471,38 @@ private extension ExternalDocumentWindow {
         window.addAction(reloadAction)
 
         let documentSection = GMenuRef()
-        documentSection.append("Save As…", action: "win.save-document-as")
-        documentSection.append("Import into Library…", action: "win.import-document-into-library")
-        documentSection.append("Reveal in Folder", action: "win.reveal-document-folder")
+        documentSection.append("Save As…".localized, action: "win.save-document-as")
+        documentSection.append("Import into Library…".localized, action: "win.import-document-into-library")
+        documentSection.append("Reveal in Folder".localized, action: "win.reveal-document-folder")
 
         let menu = GMenuRef()
-        menu.appendSection("Document", section: documentSection)
-        overflowMenuSectionTitles = ["Document"]
+        menu.appendSection("Document".localized, section: documentSection)
+        overflowMenuSectionTitles = ["Document".localized]
         overflowMenuItemsBySection = [
             "Document": [
-                "Save As…",
-                "Import into Library…",
-                "Reveal in Folder",
+                "Save As…".localized,
+                "Import into Library…".localized,
+                "Reveal in Folder".localized,
             ],
         ]
         menuButton.setMenuModel(menu)
     }
 
     func configureToolbarAccessibility() {
-        saveButton.setAccessibleLabel("Save File")
-        menuButton.setAccessibleLabel("Document Menu")
-        editorModeToggle.setAccessibleLabel("Editor")
-        splitModeToggle.setAccessibleLabel("Split")
-        previewModeToggle.setAccessibleLabel("Preview")
+        saveButton.setAccessibleLabel("Save File".localized)
+        menuButton.setAccessibleLabel("Document Menu".localized)
+        editorModeToggle.setAccessibleLabel("Editor".localized)
+        splitModeToggle.setAccessibleLabel("Split".localized)
+        previewModeToggle.setAccessibleLabel("Preview".localized)
         updateViewModeToggleState()
     }
 
     func configureToolbarTooltips() {
-        saveButton.tooltipText = "Save File"
-        menuButton.tooltipText = "Document Menu"
-        editorModeToggle.tooltipText = "Editor only"
-        splitModeToggle.tooltipText = "Split view"
-        previewModeToggle.tooltipText = "Preview only"
+        saveButton.tooltipText = "Save File".localized
+        menuButton.tooltipText = "Document Menu".localized
+        editorModeToggle.tooltipText = "Editor only".localized
+        splitModeToggle.tooltipText = "Split view".localized
+        previewModeToggle.tooltipText = "Preview only".localized
         updateViewModeToggleState()
     }
 
@@ -519,7 +519,7 @@ private extension ExternalDocumentWindow {
         // "/Users/me/My Notes/foo.md" instead of the URL-encoded
         // "/Users/me/My%20Notes/foo.md" when the path contains
         // spaces or other reserved characters.
-        headerTitle.subtitle = "\(fileURL.path(percentEncoded: false)) • \(saveState) • \(wordCount) \(wordLabel)"
+        headerTitle.subtitle = String(format: "%@ • %@ • %d %@".localized, fileURL.path(percentEncoded: false), saveState, wordCount, wordLabel)
     }
 
     func loadDocument(_ document: ExternalMarkdownDocument) {
@@ -839,17 +839,17 @@ private extension ExternalDocumentWindow {
     func configureViewModeToggleContent() {
         setToggleContent(
             editorModeToggle,
-            label: "Editor",
+            label: "Editor".localized,
             iconName: "document-edit-symbolic",
         )
         setToggleContent(
             splitModeToggle,
-            label: "Split",
+            label: "Split".localized,
             iconName: "view-dual-symbolic",
         )
         setToggleContent(
             previewModeToggle,
-            label: "Preview",
+            label: "Preview".localized,
             iconName: "text-x-generic-symbolic",
         )
     }
@@ -965,19 +965,19 @@ private extension ExternalDocumentWindow {
     }
 
     func handleSaveFailure(_ error: Error) {
-        toastOverlay.showToast("Could not save file: \(error.localizedDescription)")
+            toastOverlay.showToast(String(format: "Could not save file: %@".localized, error.localizedDescription))
         updateHeaderSubtitle()
     }
 
     func saveDocumentAs() {
         let dialog = FileDialog()
-        dialog.title = "Save Markdown File As"
+        dialog.title = "Save Markdown File As".localized
         dialog.modal = true
-        dialog.acceptLabel = "Save"
+        dialog.acceptLabel = "Save".localized
         dialog.initialName = fileURL.lastPathComponent
         dialog.setFilters([
-            FileFilter(name: "Markdown", suffixes: ["md", "markdown", "txt"]),
-            FileFilter(name: "All files", patterns: ["*"]),
+            FileFilter(name: "Markdown".localized, suffixes: ["md", "markdown", "txt"]),
+            FileFilter(name: "All files".localized, patterns: ["*"]),
         ])
         activeFileDialog = dialog
         dialog.save(parent: window.root ?? window) { [weak self] result in
@@ -988,8 +988,8 @@ private extension ExternalDocumentWindow {
             case let .success(value):
                 path = value
             case let .failure(error):
-                presentError(
-                    heading: "Could not open save dialog",
+                    presentError(
+                        heading: "Could not open save dialog".localized,
                     body: error.message,
                 )
                 return
@@ -998,7 +998,7 @@ private extension ExternalDocumentWindow {
             let savedURL = URL(fileURLWithPath: path)
             if saveDocument(
                 to: savedURL,
-                successMessage: "Saved as \(savedURL.lastPathComponent)",
+                successMessage: String(format: "Saved as %@".localized, savedURL.lastPathComponent),
             ) {
                 autosave.cancel()
             }
@@ -1013,10 +1013,10 @@ private extension ExternalDocumentWindow {
 
         do {
             let importedNote = try importIntoLibrary(fileURL)
-            toastOverlay.showToast("Imported \(importedNote.title) into library")
+            toastOverlay.showToast(String(format: "Imported %@ into library".localized, importedNote.title))
         } catch {
             presentError(
-                heading: "Could not import file into library",
+                heading: "Could not import file into library".localized,
                 body: error.localizedDescription,
             )
         }
@@ -1027,7 +1027,7 @@ private extension ExternalDocumentWindow {
             try directoryOpener(fileURL.deletingLastPathComponent())
         } catch {
             presentError(
-                heading: "Could not open containing folder",
+                heading: "Could not open containing folder".localized,
                 body: error.localizedDescription,
             )
         }
@@ -1038,8 +1038,8 @@ private extension ExternalDocumentWindow {
             if !externalReloadDeferred {
                 externalReloadDeferred = true
                 toastOverlay.showToast(
-                    "File changed on disk. Save or reload to sync.",
-                    button: "Reload",
+                    "File changed on disk. Save or reload to sync.".localized,
+                    button: "Reload".localized,
                 ) { [weak self] in
                     self?.reloadFromDisk(announce: true, forceDiscardingUnsavedChanges: true)
                 }
@@ -1051,11 +1051,11 @@ private extension ExternalDocumentWindow {
             let document = try ExternalMarkdownDocumentStore.load(from: fileURL)
             loadDocument(document)
             if announce {
-                toastOverlay.showToast("File reloaded from disk")
+                toastOverlay.showToast("File reloaded from disk".localized)
             }
         } catch {
             presentError(
-                heading: "Could not reload file",
+                heading: "Could not reload file".localized,
                 body: error.localizedDescription,
             )
         }
@@ -1102,7 +1102,7 @@ private extension ExternalDocumentWindow {
 
             reloadFromDisk(announce: true, forceDiscardingUnsavedChanges: true)
         } catch {
-            toastOverlay.showToast("Could not inspect markdown file")
+            toastOverlay.showToast("Could not inspect markdown file".localized)
         }
     }
 
@@ -1113,7 +1113,7 @@ private extension ExternalDocumentWindow {
 
     func presentError(heading: String, body: String) {
         let dialog = AlertDialog(heading: heading, body: body)
-        dialog.addResponse("ok", label: "OK")
+        dialog.addResponse("ok", label: "OK".localized)
         dialog.defaultResponse = "ok"
         dialog.closeResponse = "ok"
         dialog.present(window)

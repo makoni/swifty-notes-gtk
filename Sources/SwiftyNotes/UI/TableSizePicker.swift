@@ -84,10 +84,10 @@ final class TableSizePicker {
         backButton = Button()
         backButton.child = Self.makeBackButtonContent()
         backButton.addCSSClass(.flat)
-        backButton.tooltipText = "Back to size picker"
+        backButton.tooltipText = "Back to size picker".localized
         backButton.halign = .start
 
-        insertButton = Button(label: "Insert")
+        insertButton = Button(label: "Insert".localized)
         insertButton.addCSSClass("suggested-action")
         insertButton.halign = .end
 
@@ -256,9 +256,9 @@ final class TableSizePicker {
 
     private func updateReadout(rows: Int, cols: Int) {
         if rows > 0, cols > 0 {
-            readout.text = "\(rows) × \(cols) table"
+            readout.text = String(format: "%d × %d table".localized, rows, cols)
         } else {
-            readout.text = "Hover to pick size"
+            readout.text = "Hover to pick size".localized
         }
     }
 
@@ -271,7 +271,7 @@ final class TableSizePicker {
     // MARK: - Alignment phase
 
     private func showAlignmentPhase() {
-        alignmentPhaseRowsLabel.text = "\(selectedRows) × \(selectedCols) table — column alignment"
+        alignmentPhaseRowsLabel.text = String(format: "%d × %d table — column alignment".localized, selectedRows, selectedCols)
         rebuildAlignmentRow()
         sizePhase.visible = false
         alignmentPhase.visible = true
@@ -360,12 +360,12 @@ final class TableSizePicker {
     }
 
     private static func tooltip(for alignment: MarkdownTableAlignment, column: Int) -> String {
-        let base = switch alignment {
-        case .left: "Left-aligned"
-        case .center: "Centred"
-        case .right: "Right-aligned"
+        let base: String = switch alignment {
+        case .left: "Left-aligned".localized
+        case .center: "Centred".localized
+        case .right: "Right-aligned".localized
         }
-        return "Column \(column): \(base) — click to change"
+        return String(format: "Column %d: %@ — click to change".localized, column, base)
     }
 
     private static func makeBackButtonContent() -> Widget {
@@ -374,7 +374,7 @@ final class TableSizePicker {
         box.marginEnd = 6
         let icon = Image(iconName: "go-previous-symbolic")
         icon.pixelSize = 14
-        let label = Label("Size")
+        let label = Label("Size".localized)
         box.append(icon)
         box.append(label)
         return box

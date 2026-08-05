@@ -104,9 +104,9 @@ final class FindReplaceCoordinator {
         )
         controller.onReplaceAllCompleted = { [weak self] count in
             let message = switch count {
-            case 0: "No matches to replace."
-            case 1: "Replaced 1 occurrence."
-            default: "Replaced \(count) occurrences."
+            case 0: "No matches to replace.".localized
+            case 1: "Replaced 1 occurrence.".localized
+            default: String(format: "Replaced %d occurrences.".localized, count)
             }
             self?.presentToast(message)
         }

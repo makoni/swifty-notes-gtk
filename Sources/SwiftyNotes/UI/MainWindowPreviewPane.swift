@@ -422,11 +422,11 @@ extension MainWindow {
     /// "Check for Updates…" gets dropped (see ``handleUpdateCheckResult``).
     func rebuildOverflowMenu() {
         let libraryItems: [(label: String, action: String)] = [
-            ("Settings", "win.settings"),
-            ("Open Markdown File…", "win.open-markdown-file"),
-            ("Import into Library…", "win.import-note"),
-            ("Reload from disk", "win.reload-notes"),
-            ("Open notes folder", "win.open-notes-folder"),
+            ("Settings".localized, "win.settings"),
+            ("Open Markdown File…".localized, "win.open-markdown-file"),
+            ("Import into Library…".localized, "win.import-note"),
+            ("Reload from disk".localized, "win.reload-notes"),
+            ("Open notes folder".localized, "win.open-notes-folder"),
         ]
         #if os(macOS)
         // Hand-built popover (not GMenu/setMenuModel) so the items
@@ -438,17 +438,17 @@ extension MainWindow {
         // and release silently eats the click. Linux doesn't have this
         // bug and keeps the native GMenu look-and-feel below.
         let library: [(label: String, handler: @MainActor () -> Void)] = [
-            ("Settings", { [weak self] in self?.presentSettingsWindow() }),
-            ("Open Markdown File…", { [weak self] in self?.openMarkdownFile() }),
-            ("Import into Library…", { [weak self] in self?.importNote() }),
-            ("Reload from disk", { [weak self] in self?.reloadFromDisk(announce: true) }),
-            ("Open notes folder", { [weak self] in self?.openNotesFolder() }),
+            ("Settings".localized, { [weak self] in self?.presentSettingsWindow() }),
+            ("Open Markdown File…".localized, { [weak self] in self?.openMarkdownFile() }),
+            ("Import into Library…".localized, { [weak self] in self?.importNote() }),
+            ("Reload from disk".localized, { [weak self] in self?.reloadFromDisk(announce: true) }),
+            ("Open notes folder".localized, { [weak self] in self?.openNotesFolder() }),
         ]
         var help: [(label: String, handler: @MainActor () -> Void)] = []
         if !updateCheckMenuItemHidden {
-            help.append((Self.checkForUpdatesMenuLabel, { [weak self] in self?.checkForUpdates(manual: true) }))
+            help.append((Self.checkForUpdatesMenuLabel.localized, { [weak self] in self?.checkForUpdates(manual: true) }))
         }
-        help.append(("About Swifty Notes", { [weak self] in self?.presentAboutDialog() }))
+        help.append(("About Swifty Notes".localized, { [weak self] in self?.presentAboutDialog() }))
 
         let popover = Popover()
         popover.hasArrow = true
@@ -472,9 +472,9 @@ extension MainWindow {
         #else
         var helpItems: [(label: String, action: String)] = []
         if !updateCheckMenuItemHidden {
-            helpItems.append((Self.checkForUpdatesMenuLabel, "win.check-for-updates"))
+            helpItems.append((Self.checkForUpdatesMenuLabel.localized, "win.check-for-updates"))
         }
-        helpItems.append(("About Swifty Notes", "win.about"))
+        helpItems.append(("About Swifty Notes".localized, "win.about"))
 
         let librarySection = GMenuRef()
         for item in libraryItems {
@@ -485,13 +485,13 @@ extension MainWindow {
             helpSection.append(item.label, action: item.action)
         }
         let menu = GMenuRef()
-        menu.appendSection("Library", section: librarySection)
-        menu.appendSection("Help", section: helpSection)
+        menu.appendSection("Library".localized, section: librarySection)
+        menu.appendSection("Help".localized, section: helpSection)
         menuButton.setMenuModel(menu)
         let helpLabels = helpItems.map(\.label)
         #endif
 
-        overflowMenuSectionTitles = ["Library", "Help"]
+        overflowMenuSectionTitles = ["Library".localized, "Help".localized]
         overflowMenuItemsBySection = [
             "Library": libraryItems.map(\.label),
             "Help": helpLabels,
@@ -526,37 +526,37 @@ extension MainWindow {
     #endif
 
     func configureToolbarAccessibility() {
-        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
-        newNoteButton.setAccessibleLabel("New Note")
-        newFolderButton.setAccessibleLabel("New Folder")
-        saveNoteButton.setAccessibleLabel("Save Note")
-        deleteNoteButton.setAccessibleLabel("Delete Note")
-        menuButton.setAccessibleLabel("Main Menu")
-        editorModeToggle.setAccessibleLabel("Editor")
-        splitModeToggle.setAccessibleLabel("Split")
-        previewModeToggle.setAccessibleLabel("Preview")
+        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized)
+        newNoteButton.setAccessibleLabel("New Note".localized)
+        newFolderButton.setAccessibleLabel("New Folder".localized)
+        saveNoteButton.setAccessibleLabel("Save Note".localized)
+        deleteNoteButton.setAccessibleLabel("Delete Note".localized)
+        menuButton.setAccessibleLabel("Main Menu".localized)
+        editorModeToggle.setAccessibleLabel("Editor".localized)
+        splitModeToggle.setAccessibleLabel("Split".localized)
+        previewModeToggle.setAccessibleLabel("Preview".localized)
         updateViewModeToggleState()
     }
 
     func configureToolbarTooltips() {
-        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar"
-        newNoteButton.tooltipText = "New Note"
-        newFolderButton.tooltipText = "New Folder"
-        saveNoteButton.tooltipText = "Save Note"
-        deleteNoteButton.tooltipText = "Delete Note"
-        menuButton.tooltipText = "Main Menu"
-        editorModeToggle.tooltipText = "Editor only"
-        splitModeToggle.tooltipText = "Split view"
-        previewModeToggle.tooltipText = "Preview only"
+        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized
+        newNoteButton.tooltipText = "New Note".localized
+        newFolderButton.tooltipText = "New Folder".localized
+        saveNoteButton.tooltipText = "Save Note".localized
+        deleteNoteButton.tooltipText = "Delete Note".localized
+        menuButton.tooltipText = "Main Menu".localized
+        editorModeToggle.tooltipText = "Editor only".localized
+        splitModeToggle.tooltipText = "Split view".localized
+        previewModeToggle.tooltipText = "Preview only".localized
         updateViewModeToggleState()
     }
 
     func updateSidebarToggleAccessibility() {
-        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
+        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized)
     }
 
     func updateSidebarToggleTooltip() {
-        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar"
+        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized
     }
 
     func updateActionAvailability() {

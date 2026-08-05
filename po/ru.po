@@ -1,0 +1,1200 @@
+# Russian translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+# Sergey Armodin <support@spaceinbox.me>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-08-04 21:34+0300\n"
+"PO-Revision-Date: 2026-08-04 21:34+0300\n"
+"Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
+"Language: ru\n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+"X-Generator: Local\n"
+
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d заметка"
+msgstr[1] "%d заметки"
+msgstr[2] "%d заметок"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d подпапка"
+msgstr[1] "%d подпапки"
+msgstr[2] "%d подпапок"
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d совпадение"
+msgstr[1] "%d совпадения"
+msgstr[2] "%d совпадений"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d раздел"
+msgstr[1] "%d раздела"
+msgstr[2] "%d разделов"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d подраздел"
+msgstr[1] "%d подраздела"
+msgstr[2] "%d подразделов"
+
+msgid "About Swifty Notes"
+msgstr "О приложении Swifty Notes"
+
+msgid "A folder or note already exists at \""
+msgstr "Папка или заметка уже существует по адресу \""
+
+msgid "After 30 days"
+msgstr "Через 30 дней"
+
+msgid "After 7 days"
+msgstr "Через 7 дней"
+
+msgid "After 90 days"
+msgstr "Через 90 дней"
+
+msgid "After a year"
+msgstr "Через год"
+
+msgid "All files"
+msgstr "Все файлы"
+
+msgid "An \""
+msgstr "«"
+
+msgid " and "
+msgstr " и "
+
+msgid "Appearance"
+msgstr "Оформление"
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "ресурс"
+msgstr[1] "ресурса"
+msgstr[2] "ресурсов"
+
+msgid "Autosave delay"
+msgstr "Задержка автосохранения"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "Автосохранение выполняется после последнего изменения с указанной задержкой."
+
+msgid "Back to size picker"
+msgstr "Назад к выбору размера"
+
+msgid "Bold"
+msgstr "Полужирный"
+
+msgid "Breadcrumb strip above editor"
+msgstr "Навигационная полоска над редактором"
+
+msgid "Browse…"
+msgstr "Обзор…"
+
+msgid "Bulleted List"
+msgstr "Маркированный список"
+
+msgid "Bullets"
+msgstr "Маркеры"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Cannot move \""
+msgstr "Невозможно переместить \""
+
+msgid "Cannot place a folder or note inside the note directory at \""
+msgstr "Нельзя разместить папку или заметку внутри каталога заметок по адресу \""
+
+msgid "Case Sensitive"
+msgstr "С учётом регистра"
+
+msgid "Choose a destination folder for \""
+msgstr "Выберите папку назначения для \""
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "Выберите словарь или следуйте системной локали."
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "Выберите пустую папку назначения для заметок."
+
+msgid "Choose Notes Folder"
+msgstr "Выберите папку заметок"
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "Выберите, где Swifty Notes будет хранить markdown-файлы и сопутствующие ресурсы."
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "Укажите, вставляет ли клавиша Tab пробелы или символы табуляции."
+
+msgid "Code"
+msgstr "Код"
+
+msgid "Collapse section"
+msgstr "Свернуть раздел"
+
+msgid "Column %d: %@ — click to change"
+msgstr "Столбец %d: %@ — нажмите, чтобы изменить"
+
+msgid "Columns"
+msgstr "Столбцы"
+
+msgid "Comfortable"
+msgstr "Комфортный"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "Комфортный соответствует настройке по умолчанию; Компактный уменьшает отступы строк."
+
+msgid "Compact"
+msgstr "Компактный"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "Управляет отображением преобразованного Markdown в области предварительного просмотра."
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "Управление переносом строк, отступами и размером шрифта редактора."
+
+msgid "Copied note ID"
+msgstr "ID заметки скопирован"
+
+msgid "Copy code to clipboard"
+msgstr "Скопировать код в буфер обмена"
+
+msgid "Copy note ID"
+msgstr "Скопировать ID заметки"
+
+msgid "Could not add image"
+msgstr "Не удалось добавить изображение"
+
+msgid "Could not change the notes folder"
+msgstr "Не удалось изменить папку заметок"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "Не удалось проверить обновления: нет подключения к интернету."
+
+msgid "Could not check for updates: %@"
+msgstr "Не удалось проверить обновления: %@"
+
+msgid "Could not choose a notes folder"
+msgstr "Не удалось выбрать папку заметок"
+
+msgid "Could not create folder"
+msgstr "Не удалось создать папку"
+
+msgid "Could not create note"
+msgstr "Не удалось создать заметку"
+
+msgid "Could not delete folder"
+msgstr "Не удалось удалить папку"
+
+msgid "Could not delete note"
+msgstr "Не удалось удалить заметку"
+
+msgid "Could not duplicate note"
+msgstr "Не удалось продублировать заметку"
+
+msgid "Could not empty Trash"
+msgstr "Не удалось очистить корзину"
+
+msgid "Could not encode CLI output"
+msgstr "Не удалось кодировать вывод CLI"
+
+msgid "Could not export note"
+msgstr "Не удалось экспортировать заметку"
+
+msgid "Could not import file into library"
+msgstr "Не удалось импортировать файл в библиотеку"
+
+msgid "Could not import note"
+msgstr "Не удалось импортировать заметку"
+
+msgid "Could not inspect markdown file"
+msgstr "Не удалось просмотреть markdown-файл"
+
+msgid "Could not inspect notes directory"
+msgstr "Не удалось просмотреть каталог заметок"
+
+msgid "Could not load notes"
+msgstr "Не удалось загрузить заметки"
+
+msgid "Could not move note"
+msgstr "Не удалось переместить заметку"
+
+msgid "Could not open containing folder"
+msgstr "Не удалось открыть папку содержимого"
+
+msgid "Could not open export dialog"
+msgstr "Не удалось открыть диалог экспорта"
+
+msgid "Could not open file dialog"
+msgstr "Не удалось открыть диалог файлов"
+
+msgid "Could not open import dialog"
+msgstr "Не удалось открыть диалог импорта"
+
+msgid "Could not open markdown file"
+msgstr "Не удалось открыть markdown-файл"
+
+msgid "Could not open notes folder"
+msgstr "Не удалось открыть папку заметок"
+
+msgid "Could not open release page: %@"
+msgstr "Не удалось открыть страницу выпуска: %@"
+
+msgid "Could not open save dialog"
+msgstr "Не удалось открыть диалог сохранения"
+
+msgid "Could not open settings"
+msgstr "Не удалось открыть настройки"
+
+msgid "Could not parse current version \""
+msgstr "Не удалось разобрать текущую версию \""
+
+msgid "Could not parse remote version \""
+msgstr "Не удалось разобрать удалённую версию \""
+
+msgid "Could not paste files"
+msgstr "Не удалось вставить файлы"
+
+msgid "Could not paste image"
+msgstr "Не удалось вставить изображение"
+
+msgid "Could not permanently delete note"
+msgstr "Не удалось навсегда удалить заметку"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "Не удалось прочитать UTF-8 содержимое из stdin"
+
+msgid "Could not reload file"
+msgstr "Не удалось перезагрузить файл"
+
+msgid "Could not reload notes"
+msgstr "Не удалось перезагрузить заметки"
+
+msgid "Could not rename folder"
+msgstr "Не удалось переименовать папку"
+
+msgid "Could not rename note"
+msgstr "Не удалось переименовать заметку"
+
+msgid "Could not restore note"
+msgstr "Не удалось восстановить заметку"
+
+msgid "Could not store workspace state"
+msgstr "Не удалось сохранить состояние рабочей области"
+
+msgid "Could not update notes index"
+msgstr "Не удалось обновить индекс заметок"
+
+msgid "Could not update settings"
+msgstr "Не удалось обновить настройки"
+
+msgid "create"
+msgstr "создать"
+
+msgid "Create"
+msgstr "Создать"
+
+msgid "current"
+msgstr "текущий"
+
+msgid "%d × %d table"
+msgstr "Таблица %d × %d"
+
+msgid "%d × %d table — column alignment"
+msgstr "Таблица %d × %d — выравнивание столбцов"
+
+msgid "Dark"
+msgstr "Тёмная"
+
+msgid "Delete…"
+msgstr "Удалить…"
+
+msgid "Deleted"
+msgstr "Удалено"
+
+msgid "Delete folder…"
+msgstr "Удалить папку…"
+
+msgid "Delete forever"
+msgstr "Удалить навсегда"
+
+msgid "Delete Note"
+msgstr "Удалить заметку"
+
+msgid "Dismiss"
+msgstr "Закрыть"
+
+msgid "Dismiss update notification"
+msgstr "Отклонить уведомление об обновлении"
+
+msgid "%d notes will be permanently deleted. This action can't be undone."
+msgstr "%d заметок будет удалено навсегда. Это действие нельзя отменить."
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgstr "%d заметка будет удалена навсегда. Это действие нельзя отменить."
+
+msgid "Document"
+msgstr "Документ"
+
+msgid "Document Menu"
+msgstr "Меню документа"
+
+msgid "%d of %d"
+msgstr "%d из %d"
+
+msgid "Drag handles on hover"
+msgstr "Ручки перемещения при наведении"
+
+msgid "Duplicate note"
+msgstr "Дублировать заметку"
+
+msgid "Editor"
+msgstr "Редактор"
+
+msgid "Editor font size"
+msgstr "Размер шрифта редактора"
+
+msgid "Editor only"
+msgstr "Только редактор"
+
+msgid "empty"
+msgstr "пусто"
+
+msgid "Empty Trash?"
+msgstr "Очистить корзину?"
+
+msgid "Empty Trash automatically"
+msgstr "Очищать корзину автоматически"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "Очистить корзину (%d заметка)…"
+msgstr[1] "Очистить корзину (%d заметки)…"
+msgstr[2] "Очистить корзину (%d заметок)…"
+
+msgid "Enable spell-check"
+msgstr "Включить проверку орфографии"
+
+msgid " exceeds the file system limit of %d bytes."
+msgstr " превышает ограничение файловой системы в %d байт."
+
+msgid "Expand section"
+msgstr "Развернуть раздел"
+
+msgid "Export"
+msgstr "Экспортировать"
+
+msgid "Exported %@ with %d %@"
+msgstr "Экспортировано %@ с %d %@"
+
+msgid "Export note…"
+msgstr "Экспортировать заметку…"
+
+msgid "Export Note"
+msgstr "Экспортировать заметку"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "Файл изменён на диске. Сохраните или перезагрузите для синхронизации."
+
+msgid "File reloaded from disk"
+msgstr "Файл перезагружен с диска"
+
+
+msgid "Filter headings…"
+msgstr "Фильтр заголовков…"
+
+msgid "Filter Outline"
+msgstr "Фильтр содержания"
+
+msgid "Find…"
+msgstr "Найти…"
+
+msgid "Folder \""
+msgstr "Папка \""
+
+msgid " folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr " папка уже существует рядом с экспортом. При слиянии файлы с одинаковыми именами будут перезаписаны."
+
+msgid " folder already exists at %@."
+msgstr " папка уже существует по адресу %@."
+
+msgid "Folder deleted"
+msgstr "Папка удалена"
+
+msgid "Folder name \""
+msgstr "Имя папки \""
+
+msgid "Folder name or Work/Drafts"
+msgstr "Имя папки или Работа/Черновики"
+
+msgid ". Folder names cannot contain slashes (/)."
+msgstr ". Имена папок не могут содержать слеш (/)."
+
+msgid "Folder renamed"
+msgstr "Папка переименована"
+
+msgid "Folder %@"
+msgstr "Папка %@"
+
+msgid "Follow system"
+msgstr "Следовать системе"
+
+msgid "Follow system locale"
+msgstr "Следовать системной локали"
+
+
+msgid "Heading"
+msgstr "Заголовок"
+
+msgid "Help"
+msgstr "Справка"
+
+msgid "Hide Notes Sidebar"
+msgstr "Скрыть боковую панель заметок"
+
+msgid "Hide outline (F9)"
+msgstr "Скрыть содержание (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "Подсвечивает ошибки орфографии в тексте с помощью libspelling и системных словарей."
+
+msgid "Hover to pick size"
+msgstr "Наведите, чтобы выбрать размер"
+
+msgid "Image"
+msgstr "Изображение"
+
+msgid "Image added to note"
+msgstr "Изображение добавлено в заметку"
+
+msgid "Image pasted into note"
+msgstr "Изображение вставлено в заметку"
+
+msgid "Images added to note"
+msgstr "Изображения добавлены в заметку"
+
+msgid "Import"
+msgstr "Импорт"
+
+msgid "Import into Library"
+msgstr "Импорт в библиотеку"
+
+msgid "Indent style"
+msgstr "Стиль отступа"
+
+msgid "Insert"
+msgstr "Вставить"
+
+msgid "Insert a markdown link"
+msgstr "Вставить ссылку markdown"
+
+msgid "Insert a markdown table"
+msgstr "Вставить таблицу markdown"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "Вставить встроенный код или блок кода"
+
+msgid "Insert Table"
+msgstr "Вставить таблицу"
+
+msgid " into its own descendant \""
+msgstr " в собственный дочерний элемент \""
+
+msgid "Invalid note ID: %@"
+msgstr "Неверный ID заметки: %@"
+
+msgid " is empty."
+msgstr " пустой."
+
+msgid " is not a valid folder name."
+msgstr " не является допустимым именем папки."
+
+msgid "Italic"
+msgstr "Курсив"
+
+msgid "Jump to heading"
+msgstr "Переход к заголовку"
+
+msgid "Jump-to-heading results"
+msgstr "Результаты перехода к заголовку"
+
+msgid "Library"
+msgstr "Библиотека"
+
+msgid "Light"
+msgstr "Светлая"
+
+msgid "Link"
+msgstr "Ссылка"
+
+
+msgid ".localized)). Pass --yes to delete it recursively."
+msgstr ".localized)). Передайте --yes для удаления рекурсивно."
+
+msgid "Main Menu"
+msgstr "Главное меню"
+
+
+
+msgid "Markdown Editor"
+msgstr "Редактор Markdown"
+
+msgid "Markdown notes"
+msgstr "Markdown-заметки"
+
+msgid "Markdown Preview"
+msgstr "Предварительный просмотр Markdown"
+
+msgid "Merge"
+msgstr "Объединить"
+
+msgid "Missing value for --content."
+msgstr "Отсутствует значение для --content."
+
+msgid "Missing value for --content-file."
+msgstr "Отсутствует значение для --content-file."
+
+msgid "Missing value for --folder."
+msgstr "Отсутствует значение для --folder."
+
+msgid "Missing value for --notes-dir."
+msgstr "Отсутствует значение для --notes-dir."
+
+msgid "Missing value for --to."
+msgstr "Отсутствует значение для --to."
+
+msgid "move"
+msgstr "переместить"
+
+msgid "Move"
+msgstr "Переместить"
+
+msgid "Moved \""
+msgstr "Перемещено \""
+
+msgid "Move note"
+msgstr "Переместить заметку"
+
+msgid "Move to…"
+msgstr "Переместить в…"
+
+msgid "Never"
+msgstr "Никогда"
+
+msgid "Newest First"
+msgstr "Сначала новые"
+
+msgid "New folder"
+msgstr "Новая папка"
+
+msgid "New Folder"
+msgstr "Новая папка"
+
+msgid "New Note"
+msgstr "Новая заметка"
+
+msgid "New note here"
+msgstr "Создать заметку здесь"
+
+msgid "New subfolder…"
+msgstr "Новая подпапка…"
+
+msgid "New subfolder in \""
+msgstr "Новая подпапка в \""
+
+msgid "Next Match"
+msgstr "Следующее совпадение"
+
+
+msgid "No headings in this note."
+msgstr "В этой заметке нет заголовков."
+
+msgid "No headings in this note. <a href=\""
+msgstr "В этой заметке нет заголовков. <a href=\""
+
+msgid "No headings match \""
+msgstr "Нет заголовков, совпадающих с \""
+
+msgid "No headings match the filter."
+msgstr "Нет заголовков, соответствующих фильтру."
+
+msgid "No headings to jump to."
+msgstr "Нет заголовков для перехода."
+
+msgid "No matches"
+msgstr "Нет совпадений"
+
+msgid "No matches to replace."
+msgstr "Нет совпадений для замены."
+
+msgid "No note found for ID %@"
+msgstr "Заметка с ID %@ не найдена"
+
+msgid "No notes match \""
+msgstr "Нет заметок, совпадающих с \""
+
+msgid "No notes yet. Create one with +."
+msgstr "Заметок пока нет. Создайте одну с помощью +."
+
+msgid "No other folders to move into"
+msgstr "Нет других папок для перемещения"
+
+msgid "Note duplicated"
+msgstr "Заметка продублирована"
+
+msgid "Note moved"
+msgstr "Заметка перемещена"
+
+msgid "Note Outline"
+msgstr "Содержание заметки"
+
+msgid "Note permanently deleted"
+msgstr "Заметка удалена навсегда"
+
+msgid "Note renamed"
+msgstr "Заметка переименована"
+
+msgid "Note restored"
+msgstr "Заметка восстановлена"
+
+msgid "Notes"
+msgstr "Заметки"
+
+msgid "Note saved"
+msgstr "Заметка сохранена"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "Заметки изменены на диске. Сохраните или перезагрузите для синхронизации."
+
+msgid "Notes (%d)"
+msgstr "Заметки (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "Заметки (%d/%d)"
+
+msgid "Notes folder"
+msgstr "Папка заметок"
+
+msgid "Notes folder updated"
+msgstr "Папка заметок обновлена"
+
+msgid "Notes reloaded from disk"
+msgstr "Заметки перезапущены с диска"
+
+msgid "Nothing to preview yet."
+msgstr "Показывать нечего."
+
+msgid "Numbered List"
+msgstr "Нумерованный список"
+
+msgid "OK"
+msgstr "ОК"
+
+msgid "Oldest First"
+msgstr "Сначала старые"
+
+msgid "Open"
+msgstr "Открыть"
+
+msgid "Open current folder"
+msgstr "Открыть текущую папку"
+
+msgid "Open Markdown File"
+msgstr "Открыть markdown-файл"
+
+msgid "Open notes folder"
+msgstr "Открыть папку заметок"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "Откройте или создайте заметку перед перетаскиванием или вставкой изображений."
+
+msgid "Outline"
+msgstr "Структура"
+
+msgid "Outline density"
+msgstr "Плотность содержания"
+
+msgid "Outline Sidebar"
+msgstr "Боковая панель содержания"
+
+msgid "Override the application theme or follow the system."
+msgstr "Переопределите тему приложения или следуйте системной."
+
+msgid "Path \""
+msgstr "Путь \""
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "Навсегда удалять удалённые заметки по истечении этого времени."
+
+msgid "Points"
+msgstr "Пункты"
+
+msgid "Preferences"
+msgstr "Параметры"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "Выделить выбранные строки как маркированный список"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "Выделить выбранные строки как нумерованный список"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "Отметить выбранные строки как цитату"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "Выделить выбранные строки как список задач"
+
+msgid "Preview"
+msgstr "Просмотр"
+
+msgid "Preview only"
+msgstr "Только просмотр"
+
+msgid "Previous Match"
+msgstr "Предыдущее совпадение"
+
+msgid "Quick Jump"
+msgstr "Быстрый переход"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "Быстрый переход… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "Цитата"
+
+msgid "Regular Expression"
+msgstr "Регулярное выражение"
+
+msgid "Reload"
+msgstr "Перезагрузить"
+
+msgid "Reload from disk"
+msgstr "Перезагрузить с диска"
+
+msgid "rename"
+msgstr "переименовать"
+
+msgid "Rename"
+msgstr "Переименовать"
+
+msgid "Rename folder…"
+msgstr "Переименовать папку…"
+
+msgid "Rename note"
+msgstr "Переименовать заметку"
+
+msgid "Renaming \""
+msgstr "Переименование \""
+
+msgid "Render emoji shortcodes"
+msgstr "Отображать эмодзи-короткие коды"
+
+msgid "Replace…"
+msgstr "Заменить…"
+
+msgid "Replace All"
+msgstr "Заменить всё"
+
+msgid "Replaced 1 occurrence."
+msgstr "Заменено 1 вхождение."
+
+msgid "Replaced %d occurrences."
+msgstr "Заменено %d вхождений."
+
+msgid "Replace every match"
+msgstr "Заменить все совпадения"
+
+msgid "Replace existing assets?"
+msgstr "Заменить существующие ресурсы?"
+
+msgid "Replacement content is required."
+msgstr "Требуется новое содержимое."
+
+msgid "Replace the current match"
+msgstr "Заменить текущее совпадение"
+
+msgid "Reset"
+msgstr "Сбросить"
+
+msgid "Restore"
+msgstr "Восстановить"
+
+msgid "Reveal in Folder"
+msgstr "Показать в папке"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "Показать активную папку заметок в файловом менеджере."
+
+
+msgid "(Root)"
+msgstr "(Корень)"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Save As…"
+msgstr "Сохранить как…"
+
+msgid "Saved"
+msgstr "Сохранено"
+
+msgid "Save File"
+msgstr "Сохранить файл"
+
+msgid "Save Markdown File As"
+msgstr "Сохранить markdown-файл как"
+
+msgid "Save Note"
+msgstr "Сохранить заметку"
+
+msgid "Saving"
+msgstr "Сохранение"
+
+msgid "Seconds"
+msgstr "Секунды"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Show Notes Sidebar"
+msgstr "Показать боковую панель заметок"
+
+msgid "Show outline (F9)"
+msgstr "Показать содержание (F9)"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr "Отображать псевдонимы :shortcode: (например, :rocket:) как эмодзи. Исходный текст и код остаются без изменений."
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "Показывать индикатор перетаскивания при наведении. Перетаскивание для изменения порядка реализуется отдельно."
+
+msgid "Size"
+msgstr "Размер"
+
+msgid "Sort by Title"
+msgstr "Сортировать по названию"
+
+msgid "Sort Notes"
+msgstr "Сортировать заметки"
+
+msgid "Sort Notes by Newest First"
+msgstr "Сортировать заметки: сначала новые"
+
+msgid "Sort Notes by Oldest First"
+msgstr "Сортировать заметки: сначала старые"
+
+msgid "Sort Notes by Title"
+msgstr "Сортировать заметки по названию"
+
+msgid "Spaces"
+msgstr "Пробелы"
+
+msgid "Spell check"
+msgstr "Проверка орфографии"
+
+msgid "Spell-check language"
+msgstr "Язык проверки орфографии"
+
+msgid "Split"
+msgstr "Разделить"
+
+msgid "Split view"
+msgstr "Разделённый вид"
+
+msgid "%@ • %@ • %d words"
+msgstr "%@ • %@ • %d слов"
+
+msgid "Storage"
+msgstr "Хранилище"
+
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "У Swifty Notes нет разрешения на доступ к этой папке. Попробуйте выбрать другое расположение."
+
+msgid "Swifty Notes is up to date."
+msgstr "Swifty Notes не требует обновлений."
+
+msgid "Table"
+msgstr "Таблица"
+
+msgid "Tabs"
+msgstr "Табуляция"
+
+msgid "Tab width"
+msgstr "Ширина табуляции"
+
+msgid "Task List"
+msgstr "Список задач"
+
+msgid "The application instance is not available."
+msgstr "Экземпляр приложения недоступен."
+
+msgid "The current notes folder could not be found."
+msgstr "Текущая папка заметок не найдена."
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "Новая папка заметок не может находиться внутри текущей папки заметок."
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " Заметки будут перемещены в корзину, чтобы вы могли их восстановить."
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "Название заметки берётся из первой содержательной строки."
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "На диске недостаточно места для перемещения заметок в эту папку."
+
+msgid "The selected destination is not a folder."
+msgstr "Выбранное назначение не является папкой."
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "Выбранная папка находится на файловой системе, предназначенной только для чтения, и не может хранить заметки."
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "Это навсегда удалит заметку с диска. Это действие нельзя отменить."
+
+msgid "Title"
+msgstr "Название"
+
+msgid "Toggle Outline"
+msgstr "Переключить содержание"
+
+msgid " to move to the root)."
+msgstr " для перемещения в корень)."
+
+msgid " to Trash"
+msgstr " в корзину"
+
+msgid "Trash"
+msgstr "Корзина"
+
+msgid "Trash emptied"
+msgstr "Корзина очищена"
+
+msgid "Tree lines under H2 sections"
+msgstr "Древовидные линии под разделами H2"
+
+msgid "Turn the current line into a heading"
+msgstr "Превратить текущую строку в заголовок"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "Настройте правую панель содержания и навигационную полоску над редактором."
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "Подчёркивает ошибки орфографии при вводе и предлагает исправления в контекстном меню."
+
+msgid "Undo"
+msgstr "Отменить"
+
+msgid "Unknown CLI command: %@"
+msgstr "Неизвестная команда CLI: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "Неизвестная команда для справки: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "Неизвестная подкоманда для папок: %@"
+
+msgid "Unknown option: %@"
+msgstr "Неизвестный параметр: %@"
+
+msgid "Unsaved changes"
+msgstr "Несохранённые изменения"
+
+msgid "Unsupported image type for %@."
+msgstr "Неподдерживаемый тип изображения для %@."
+
+msgid "Update"
+msgstr "Обновить"
+
+msgid "Use default location"
+msgstr "Использовать расположение по умолчанию"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "Используйте только один из: --content, --content-file или --stdin."
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "Используйте / для создания вложенных папок за один шаг, например, Работа/Черновики."
+
+msgid "Version %@ is available."
+msgstr "Доступна версия %@."
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "Вертикальные линии, связывающие подразделы H3+ с родительским H2."
+
+msgid " was not found."
+msgstr " не найден."
+
+msgid "Whole Word Match"
+msgstr "Целое слово"
+
+msgid "Wrap long lines"
+msgstr "Переносить длинные строки"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "Переносить абзацы markdown вместо горизонтальной прокрутки."
+
+msgid "Wrap the selection in bold markdown"
+msgstr "Обернуть выделение жирным markdown"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "Обернуть выделение курсивом markdown"
+
+msgid ""
+"“%@” is in the Trash"
+msgstr ""
+"«%@» находится в корзине"
+
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ навигация · ↵ переход · Esc закрытие"
+
+
+msgid " could not be saved: %@"
+msgstr " не может быть сохранён: %@"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Delete folder?"
+msgstr "Удалить папку?"
+
+msgid "Delete forever…"
+msgstr "Удалить навсегда…"
+
+
+msgid "Empty Trash"
+msgstr "Очистить корзину"
+
+msgid "Empty Trash (%d notes)…"
+msgstr "Очистить корзину (%d заметок)…"
+
+msgid "Exported %@"
+msgstr "Экспортировано %@"
+
+msgid "Folder name"
+msgstr "Имя папки"
+
+msgid "Import into Library…"
+msgstr "Импортировать в библиотеку…"
+
+msgid "Imported %@"
+msgstr "Импортировано %@"
+
+msgid "Imported %@ into library"
+msgstr "Импортировано %@ в библиотеку"
+
+msgid "Jump to heading…"
+msgstr "Перейти к заголовку…"
+
+msgid "Left-aligned"
+msgstr "По левому краю"
+
+msgid "Newest first"
+msgstr "Сначала новые"
+
+msgid "Oldest first"
+msgstr "Сначала старые"
+
+msgid "Open Markdown File…"
+msgstr "Открыть файл markdown…"
+
+msgid "Rename folder"
+msgstr "Переименовать папку"
+
+msgid "Rename note…"
+msgstr "Переименовать заметку…"
+
+msgid "Replace"
+msgstr "Заменить"
+
+msgid "Right-aligned"
+msgstr "По правому краю"
+
+msgid "Saved as %@"
+msgstr "Сохранено как %@"
+
+msgid "Sorting by %@"
+msgstr "Сортировка по %@"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "`folders create` необходимо указать ровно один путь к папке."
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "`folders move <path> --to <parent>` необходимо указать и путь, и родительскую папку."
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "`folders move` необходимо указать ровно один путь к папке."
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "`folders rename` необходимо указать <path> <new-name>."
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "`folders rm` необходимо указать ровно один путь к папке."
+
+msgid "`folders rm` cannot delete the root."
+msgstr "`folders rm` не может удалить корневую папку."
+
+msgid "`folders rm` requires a folder path."
+msgstr "`folders rm` необходимо указать путь к папке."
+
+msgid "`get` expects exactly one note ID."
+msgstr "`get` необходимо указать ровно один ID заметки."
+
+msgid "`get` requires a note ID."
+msgstr "`get` необходимо указать ID заметки."
+
+msgid "`help` accepts at most one command name."
+msgstr "`help` можно указать не более одного имени команды."
+
+msgid "`move` expects exactly one note ID."
+msgstr "`move` необходимо указать ровно один ID заметки."
+
+msgid "`move` requires a note ID."
+msgstr "`move` необходимо указать ID заметки."
+
+msgid "`update` requires a note ID."
+msgstr "`update` необходимо указать ID заметки."
+
+
+msgid "Centred"
+msgstr "По центру"
+
+msgid "Could not save file: %@"
+msgstr "Не удалось сохранить файл: %@"
+
+msgid "Could not save note: %@"
+msgstr "Не удалось сохранить заметку: %@"
+
+
+msgid ""
+" contains %@."
+msgstr " содержит %@."
+
+msgid ""
+" contains %@. Pass --yes to delete it recursively."
+msgstr " содержит %@. Используйте --yes для рекурсивного удаления."
+
+
+msgid ">Add <tt>## Heading</tt></a> to start."
+msgstr ">Добавьте <tt>## Заголовок</tt></a> чтобы начать."
+
+msgid ""
+"“You are here” strip above the editor toolbar."
+msgstr ""
+"Полоска «Вы здесь» над панелью инструментов редактора."
+msgid "Delete “%@” forever?"
+msgstr "Удалить “%@” навсегда?"
+

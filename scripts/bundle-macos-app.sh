@@ -57,6 +57,13 @@
 
 set -euo pipefail
 
+# -- locale compilation --------------------------------------------------------
+# .mo files are generated from .po and must be present before SwiftPM
+# resource bundling.  Run before any step that touches the .app bundle.
+echo "==> [0/5] Compiling locale files"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+bash "$SCRIPT_DIR/build-locales.sh" || true
+
 # -- arg parsing ---------------------------------------------------------------
 
 if [[ $# -ne 1 ]]; then

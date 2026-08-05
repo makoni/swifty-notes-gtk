@@ -102,9 +102,17 @@ let package = Package(
             dependencies: [
                 .product(name: "Adwaita", package: "swift-adwaita"),
                 .product(name: "Markdown", package: "swift-markdown"),
-                "CSpelling"
+                "CSpelling",
             ],
             resources: [
+                // The `locale/` directory is inside the target so SwiftPM
+                // preserves the `ru/LC_MESSAGES/domain.mo` layout gettext
+                // expects.  `.process` would flatten it to just
+                // `domain.mo` and `ngettext()` would never find the right
+                // language subdir.
+                .copy("locale"),
+                // Other Resources files (emoji table, license, demo image)
+                // These don't need subdirectory structure so .process is fine.
                 .process("Resources"),
                 .copy("Icons"),
                 // AppIcons/hicolor/scalable/apps/me.spaceinbox.swiftynotes.svg

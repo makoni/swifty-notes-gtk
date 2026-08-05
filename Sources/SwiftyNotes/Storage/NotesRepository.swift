@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 #if canImport(Glibc)
 import Glibc
@@ -73,7 +74,7 @@ public enum NoteExportError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case let .assetsDestinationExists(url):
-            "An \"assets\" folder already exists at \(url.path(percentEncoded: false))."
+            String(format: "An \"assets\" folder already exists at %@.".localized, url.path(percentEncoded: false))
         }
     }
 }
@@ -84,7 +85,7 @@ enum NotesRepositoryAssetImportError: Error, LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .unsupportedImageType(filename):
-            "Unsupported image type for \(filename)."
+            String(format: "Unsupported image type for %@.".localized, filename)
         }
     }
 }
@@ -101,19 +102,19 @@ public enum NotesRepositoryFolderError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case let .invalidName(name):
-            "\"\(name)\" is not a valid folder name."
+            String(format: "\"%@\" is not a valid folder name.".localized, name)
         case let .nameTooLong(name, limit):
-            "Folder name \"\(name)\" exceeds the file system limit of \(limit) bytes."
+            String(format: "Folder name \"%@\" exceeds the file system limit of %d bytes.".localized, name, limit)
         case let .pathTooLong(path, limit):
-            "Path \"\(path)\" exceeds the file system limit of \(limit) bytes."
+            String(format: "Path \"%@\" exceeds the file system limit of %d bytes.".localized, path, limit)
         case let .alreadyExists(path):
-            "A folder or note already exists at \"\(path)\"."
+            String(format: "A folder or note already exists at \"%@\".".localized, path)
         case let .notFound(path):
-            "Folder \"\(path)\" was not found."
+            String(format: "Folder \"%@\" was not found.".localized, path)
         case let .wouldNestInsideSelf(source, destination):
-            "Cannot move \"\(source)\" into its own descendant \"\(destination)\"."
+            String(format: "Cannot move \"%@\" into its own descendant \"%@\".".localized, source, destination)
         case let .cannotNestInsideNote(notePath):
-            "Cannot place a folder or note inside the note directory at \"\(notePath)\"."
+            String(format: "Cannot place a folder or note inside the note directory at \"%@\".".localized, notePath)
         }
     }
 }

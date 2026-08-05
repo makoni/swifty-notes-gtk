@@ -32,12 +32,16 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            gettext \
             libadwaita-1-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
             libspelling-1-dev \
             webp-pixbuf-loader \
             xvfb
+
+      - name: Compile locale files
+        run: bash scripts/build-locales.sh
 
       - name: Build project
         run: swift build
@@ -74,7 +78,10 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
 
       - name: Install GTK + libspelling stack via Homebrew
-        run: brew install libadwaita gtksourceview5 libspelling pkgconf
+        run: brew install libadwaita gettext gtksourceview5 libspelling pkgconf
+
+      - name: Compile locale files
+        run: bash scripts/build-locales.sh
 
       - name: Swift version
         run: swift --version

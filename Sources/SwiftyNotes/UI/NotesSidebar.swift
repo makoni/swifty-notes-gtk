@@ -58,7 +58,7 @@ struct NotesSidebar {
 
         sortButton = SplitButton()
         sortButton.canShrink = true
-        sortButton.dropdownTooltip = "Sort Notes"
+        sortButton.dropdownTooltip = "Sort Notes".localized
         sortButton.direction = .down
 
         sortPopover = Popover()
@@ -196,15 +196,15 @@ struct NotesSidebar {
         }
 
         if totalCount == 0 {
-            titleLabel.text = "Notes"
-            emptyLabel.text = "No notes yet. Create one with +."
+            titleLabel.text = "Notes".localized
+            emptyLabel.text = "No notes yet. Create one with +.".localized
         } else if visibleNoteCount == 0 && items.isEmpty {
-            titleLabel.text = "Notes"
-            emptyLabel.text = "No notes match “\(searchQuery)”."
+            titleLabel.text = "Notes".localized
+            emptyLabel.text = String(format: "No notes match \"%@\".".localized, searchQuery)
         } else {
             titleLabel.text = searchQuery.isEmpty
-                ? "Notes (\(totalCount))"
-                : "Notes (\(visibleNoteCount)/\(totalCount))"
+                ? String(format: "Notes (%d)".localized, totalCount)
+                : String(format: "Notes (%d/%d)".localized, visibleNoteCount, totalCount)
         }
         emptyLabel.visible = items.isEmpty
     }
@@ -239,7 +239,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = false
-        row.setAccessibleLabel("Trash")
+        row.setAccessibleLabel("Trash".localized)
         row.addCSSClass("dim-label")
 
         let rowBox = Box(orientation: .horizontal, spacing: 6)
@@ -256,7 +256,7 @@ struct NotesSidebar {
         icon.pixelSize = 14
         rowBox.append(icon)
 
-        let title = Label("Trash")
+        let title = Label("Trash".localized)
         title.xalign = 0
         title.hexpand = true
         rowBox.append(title)
@@ -294,9 +294,9 @@ struct NotesSidebar {
 
     private static func trashedNoteSubtitle(for note: Note) -> String {
         guard let deletedAt = note.deletedAt else {
-            return "Deleted"
+            return "Deleted".localized
         }
-        return "Deleted \(displayDate(deletedAt))"
+        return "\("Deleted".localized) \(displayDate(deletedAt))"
     }
 
     private static func makeNoteRow(_ noteItem: SidebarNote) -> ListBoxRow {
@@ -364,7 +364,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = false
-        row.setAccessibleLabel("Folder \(folder.path)")
+        row.setAccessibleLabel(String(format: "Folder %@".localized, folder.path))
         row.addCSSClass("dim-label")
 
         let rowBox = Box(orientation: .horizontal, spacing: 6)
@@ -482,22 +482,22 @@ struct NotesSidebar {
     private static func tooltip(for mode: NotesSortMode) -> String {
         switch mode {
         case .newestFirst:
-            "Newest First"
+            "Newest First".localized
         case .oldestFirst:
-            "Oldest First"
+            "Oldest First".localized
         case .title:
-            "Sort by Title"
+            "Sort by Title".localized
         }
     }
 
     private static func accessibilityLabel(for mode: NotesSortMode) -> String {
         switch mode {
         case .newestFirst:
-            "Sort Notes by Newest First"
+            "Sort Notes by Newest First".localized
         case .oldestFirst:
-            "Sort Notes by Oldest First"
+            "Sort Notes by Oldest First".localized
         case .title:
-            "Sort Notes by Title"
+            "Sort Notes by Title".localized
         }
     }
 
