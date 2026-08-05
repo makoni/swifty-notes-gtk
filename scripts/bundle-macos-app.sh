@@ -29,7 +29,12 @@
 #      icons from these themes; the lookup is rooted at directories named
 #      by `XDG_DATA_DIRS`.
 #
-#   4. Vendor GdkPixbuf module loaders into
+#   4. Vendor the compiled gettext locale catalogue into
+#      `Contents/Resources/locale/`. Mirrors `Sources/SwiftyNotes/locale/`
+#      so the macOS `.app` ships the same `<lang>/LC_MESSAGES/<domain>.mo`
+#      layout that `bindtextdomain()` expects.
+#
+#   5. Vendor GdkPixbuf module loaders into
 #      `Contents/Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/`, and emit a
 #      bundle-local `loaders.cache` that lists each loader by a
 #      *relative* path (just `loaders/libpixbufloader_svg.so`, no
@@ -62,7 +67,7 @@ set -euo pipefail
 # resource bundling.  Run before any step that touches the .app bundle.
 echo "==> [0/5] Compiling locale files"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-bash "$SCRIPT_DIR/build-locales.sh" || true
+bash "$SCRIPT_DIR/build-locales.sh"
 
 # -- arg parsing ---------------------------------------------------------------
 
@@ -90,6 +95,7 @@ BREW_PREFIX="/opt/homebrew"
 EXECUTABLE="$APP_BUNDLE/Contents/MacOS/swiftynotes"
 FRAMEWORKS_DIR="$APP_BUNDLE/Contents/Frameworks"
 RESOURCES_DIR="$APP_BUNDLE/Contents/Resources"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Idempotency guard. `dylibbundler` walks the executable's LC_LOAD_DYLIB
 # entries, copies referenced dylibs, and rewrites the install names to
@@ -173,6 +179,17 @@ mkdir -p "$SCHEMAS_DEST"
 # sources are descriptive and not consulted by libadwaita/Gio.
 cp "$BREW_PREFIX/share/glib-2.0/schemas/gschemas.compiled" "$SCHEMAS_DEST/"
 
+# -- 2. Locale catalogue -------------------------------------------------------
+#
+# Mirrors `Sources/SwiftyNotes/locale/` into `Contents/Resources/locale/` so
+# the macOS `.app` ships the same `<lang>/LC_MESSAGES/<domain>.mo` layout
+# that `bindtextdomain()` expects.  `rsync -aL --delete` keeps re-runs
+# idempotent and matches the style already used for the icon trees.
+echo "==> [2/5] Vendoring locale catalogue"
+LOCALE_DEST="$RESOURCES_DIR/locale"
+mkdir -p "$LOCALE_DEST"
+rsync -aL --delete "$PROJECT_ROOT/Sources/SwiftyNotes/locale/" "$LOCALE_DEST/"
+
 # -- 3. Icon themes ------------------------------------------------------------
 #
 # The app references Adwaita symbolic icons by name (e.g. `list-add-symbolic`).
@@ -189,7 +206,7 @@ cp "$BREW_PREFIX/share/glib-2.0/schemas/gschemas.compiled" "$SCHEMAS_DEST/"
 # broken symlinks. `codesign --verify --strict` traverses every sealed
 # resource and fails with "No such file or directory" when it hits one,
 # which previously broke the entire release pipeline.
-echo "==> [3/4] Vendoring icon themes (Adwaita + hicolor)"
+echo "==> [3/5] Vendoring icon themes (Adwaita + hicolor)"
 ICONS_DEST="$RESOURCES_DIR/icons"
 mkdir -p "$ICONS_DEST"
 rsync -aL --delete "$BREW_PREFIX/share/icons/Adwaita/" "$ICONS_DEST/Adwaita/"
@@ -214,7 +231,7 @@ rsync -aL --delete "$BREW_PREFIX/share/icons/hicolor/" "$ICONS_DEST/hicolor/"
 # which is exactly where we put the loaders. The result: a fully
 # self-contained, relocatable Resources/lib/gdk-pixbuf-2.0/... tree.
 
-echo "==> [4/4] Vendoring GdkPixbuf loaders + relocatable cache"
+echo "==> [4/5] Vendoring GdkPixbuf loaders + relocatable cache"
 LOADERS_DEST="$RESOURCES_DIR/lib/gdk-pixbuf-2.0/2.10.0/loaders"
 CACHE_DEST="$RESOURCES_DIR/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 mkdir -p "$LOADERS_DEST"
@@ -295,7 +312,7 @@ done
 # with `--sign "Developer ID Application: <Name>"` and follow up with
 # notarytool — see packaging/macos/README.md.
 
-echo "==> [5/5] Re-signing bundle (ad-hoc) so macOS lets it launch"
+echo "==> [6/6] Re-signing bundle (ad-hoc) so macOS lets it launch"
 codesign --force --deep --sign - "$APP_BUNDLE" 2>&1 \
   | grep -v "replacing existing signature" \
   || true
