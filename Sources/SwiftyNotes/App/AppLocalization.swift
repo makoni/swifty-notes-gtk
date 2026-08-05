@@ -40,12 +40,14 @@ public func initializeLocalization() {
 public func localeDirectoryPath() -> String? {
     // 1. Env var override
     if let envPath = ProcessInfo.processInfo.environment["SWIFTY_NOTES_LOCALE_DIR"],
-       FileManager.default.fileExists(atPath: envPath) {
+       FileManager.default.fileExists(atPath: envPath),
+       localeDirectoryContainsCatalog(envPath) {
         return envPath
     }
 
     // 2. Flatpak
-    if FileManager.default.fileExists(atPath: "/app/share/locale") {
+    if FileManager.default.fileExists(atPath: "/app/share/locale"),
+       localeDirectoryContainsCatalog("/app/share/locale") {
         return "/app/share/locale"
     }
 
@@ -55,7 +57,8 @@ public func localeDirectoryPath() -> String? {
         .appendingPathComponent("Contents", isDirectory: true)
         .appendingPathComponent("Resources", isDirectory: true)
         .appendingPathComponent("locale", isDirectory: true)
-    if FileManager.default.fileExists(atPath: bundleLocale.path) {
+    if FileManager.default.fileExists(atPath: bundleLocale.path),
+       localeDirectoryContainsCatalog(bundleLocale.path) {
         return bundleLocale.path
     }
     #endif
@@ -64,28 +67,36 @@ public func localeDirectoryPath() -> String? {
     //    ru/LC_MESSAGES/<domain>.mo layout gettext needs.
     if let bundleResourceURL = Bundle.module.resourceURL {
         let localeDir = bundleResourceURL.appendingPathComponent("locale")
-        if FileManager.default.fileExists(atPath: localeDir.path) {
+        if localeDirectoryContainsCatalog(localeDir.path) {
             return localeDir.path
         }
     }
 
-    // 5. System — only return if it contains our app's locale files
+    // 5. System
     let systemLocale = "/usr/share/locale"
-    if FileManager.default.fileExists(atPath: systemLocale) {
-        if let enumerator = FileManager.default.enumerator(
-            at: URL(fileURLWithPath: systemLocale),
-            includingPropertiesForKeys: [.isRegularFileKey]) {
-            for case let url as URL in enumerator {
-                if url.pathExtension == "mo" {
-                    let filename = url.deletingPathExtension().lastPathComponent
-                    // Locale dir structure: <lang>/LC_MESSAGES/<domain>.mo
-                    if filename == "me.spaceinbox.swiftynotes" {
-                        return systemLocale
-                    }
-                }
-            }
-        }
+    if localeDirectoryContainsCatalog(systemLocale) {
+        return systemLocale
     }
 
     return nil
+}
+
+/// Returns `true` if `path` contains a gettext catalogue for this app,
+/// i.e. `<path>/<lang>/LC_MESSAGES/me.spaceinbox.swiftynotes.mo` exists
+/// for at least one `<lang>` subdirectory.
+public func localeDirectoryContainsCatalog(_ path: String) -> Bool {
+    guard let enumerator = FileManager.default.enumerator(
+        at: URL(fileURLWithPath: path),
+        includingPropertiesForKeys: [.isRegularFileKey]) else {
+        return false
+    }
+    for case let url as URL in enumerator {
+        if url.pathExtension == "mo" {
+            let filename = url.deletingPathExtension().lastPathComponent
+            if filename == "me.spaceinbox.swiftynotes" {
+                return true
+            }
+        }
+    }
+    return false
 }

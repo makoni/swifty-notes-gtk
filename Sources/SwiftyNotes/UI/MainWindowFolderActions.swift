@@ -257,10 +257,10 @@ extension MainWindow {
             }
             var parts: [String] = []
             if nestedNotes > 0 {
-                parts.append(nlocalized("%d note", "%d notes", count: UInt(nestedNotes)))
+                parts.append(String(format: nlocalized("%d note", "%d notes", count: UInt(nestedNotes)), nestedNotes))
             }
             if nestedFolders > 0 {
-                parts.append(nlocalized("%d subfolder", "%d subfolders", count: UInt(nestedFolders)))
+                parts.append(String(format: nlocalized("%d subfolder", "%d subfolders", count: UInt(nestedFolders)), nestedFolders))
             }
             let suffix = nestedNotes > 0
                 ? " The notes will move to Trash so you can restore them.".localized

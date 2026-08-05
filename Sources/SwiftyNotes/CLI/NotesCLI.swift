@@ -168,10 +168,10 @@ enum NotesCLI {
         if yes { return }
         var parts: [String] = []
         if nestedNotes > 0 {
-            parts.append(nlocalized("%d note", "%d notes", count: UInt(nestedNotes)))
+            parts.append(String(format: nlocalized("%d note", "%d notes", count: UInt(nestedNotes)), nestedNotes))
         }
         if nestedFolders > 0 {
-            parts.append(nlocalized("%d subfolder", "%d subfolders", count: UInt(nestedFolders)))
+            parts.append(String(format: nlocalized("%d subfolder", "%d subfolders", count: UInt(nestedFolders)), nestedFolders))
         }
         throw NotesCLIError.usage(
             String(format: "\"%@\" contains %@. Pass --yes to delete it recursively.".localized, folderPath, parts.joined(separator: " and ".localized)),

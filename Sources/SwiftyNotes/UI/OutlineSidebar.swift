@@ -223,10 +223,8 @@ struct OutlineSidebar {
         countBadge.text = "\(total)"
         let h2 = renderState.allHeadings.lazy.filter { $0.level == 2 }.count
         let h3 = renderState.allHeadings.lazy.filter { $0.level == 3 }.count
-        let sectionStr = nlocalized("%d section", "%d sections", count: UInt(h2))
-        let subsectionStr = nlocalized("%d subsection", "%d subsections", count: UInt(h3))
-        let sectionNum = sectionStr.replacingOccurrences(of: "%d", with: "\(h2)")
-        let subsectionNum = subsectionStr.replacingOccurrences(of: "%d", with: "\(h3)")
+        let sectionNum = String(format: nlocalized("%d section", "%d sections", count: UInt(h2)), h2)
+        let subsectionNum = String(format: nlocalized("%d subsection", "%d subsections", count: UInt(h3)), h3)
         footerLabel.text = "\(sectionNum) · \(subsectionNum)"
 
         if renderState.treeLines {
