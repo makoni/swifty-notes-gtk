@@ -106,6 +106,58 @@ struct LocalizationCatalogTests {
         }
     }
 
+    /// A translation has to carry exactly the specifiers its msgid declares.
+    /// `String(format:)` matches them positionally, so a missing one shifts
+    /// every later argument into the wrong slot and an extra one reads past the
+    /// end of the argument list.
+    @Test("Translations carry the same format specifiers as their msgid")
+    func translationsCarryTheSameFormatSpecifiersAsTheirMsgid() throws {
+        let mismatches = try LocalizationCatalogFixture
+            .entries(at: LocalizationCatalogFixture.russianCatalogueURL)
+            .filter { entry in
+                guard entry.plural == nil, let translation = entry.translations.first,
+                      !translation.isEmpty else { return false }
+                return LocalizationCatalogFixture.formatSpecifiers(in: entry.singular)
+                    != LocalizationCatalogFixture.formatSpecifiers(in: translation)
+            }
+            .map { entry in
+                "  - \(entry.singular.debugDescription)\n    -> \(entry.translations[0].debugDescription)"
+            }
+        #expect(
+            mismatches.isEmpty,
+            """
+            \(mismatches.count) translation(s) do not carry their msgid's format \
+            specifiers:
+            \(mismatches.prefix(12).joined(separator: "\n"))
+            """,
+        )
+    }
+
+    /// `msgmerge` pairs a new msgid with the most similar old one and copies its
+    /// translation across, flagging the guess `#, fuzzy`. That is a proposal,
+    /// not a translation — merging the template over a catalogue full of
+    /// mangled fragments produced exactly the wrong pairings, and shipping them
+    /// unreviewed is worse than shipping English.
+    @Test("The catalogue contains no unreviewed fuzzy translations")
+    func catalogueContainsNoUnreviewedFuzzyTranslations() throws {
+        let catalogue = try String(
+            contentsOf: LocalizationCatalogFixture.russianCatalogueURL,
+            encoding: .utf8,
+        )
+        let fuzzy = catalogue
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { $0.trimmingCharacters(in: .whitespaces).hasPrefix("#, ") }
+            .filter { $0.contains("fuzzy") }
+        #expect(
+            fuzzy.isEmpty,
+            """
+            \(fuzzy.count) entry/entries are marked fuzzy. Review each one, fix \
+            the translation, and drop the flag — or run \
+            `msgattrib --clear-fuzzy --empty` to send them back to untranslated.
+            """,
+        )
+    }
+
     /// Every `nlocalized` pair the source asks for must be a real plural entry.
     /// Two separate singular entries make `ngettext` return form 0 for every
     /// count, which reads as a grammatical error rather than a missing string.
@@ -463,6 +515,18 @@ private enum LocalizationCatalogFixture {
                 translations: entry.translations,
             )
         }
+    }
+
+    struct Entry {
+        let singular: String
+        let plural: String?
+        let translations: [String]
+    }
+
+    static func entries(at url: URL) throws -> [Entry] {
+        try parse(url)
+            .filter { !$0.singular.isEmpty }
+            .map { Entry(singular: $0.singular, plural: $0.plural, translations: $0.translations) }
     }
 
     private struct RawEntry {
