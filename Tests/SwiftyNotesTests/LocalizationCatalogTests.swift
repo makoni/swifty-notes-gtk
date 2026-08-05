@@ -88,13 +88,13 @@ struct LocalizationCatalogTests {
             at: LocalizationCatalogFixture.russianCatalogueURL,
         )
         let empty = entries.filter { entry in
-            entry.translations.allSatisfy { $0.isEmpty }
+            entry.translations.contains { $0.isEmpty }
         }
         #expect(
             empty.isEmpty,
             """
             \(empty.count) entry/entries have an empty Russian translation
-            (msgstr is blank for singular, or all forms are blank for plural):
+            (msgstr is blank for singular, or any form is blank for plural):
             \(empty.map { "  - \($0.singular.debugDescription)" }.joined(separator: "\n"))
             """,
         )
