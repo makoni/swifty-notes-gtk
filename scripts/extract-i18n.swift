@@ -41,27 +41,6 @@ private func stringLiterals(in line: String) -> [(literal: String, end: String.I
     return results
 }
 
-private func unescape(_ raw: String) -> String? {
-    var output = ""
-    var iterator = raw.makeIterator()
-    while let character = iterator.next() {
-        guard character == "\\" else {
-            output.append(character)
-            continue
-        }
-        guard let escaped = iterator.next() else { return nil }
-        switch escaped {
-        case "n": output.append("\n")
-        case "t": output.append("\t")
-        case "r": output.append("\r")
-        case "0": output.append("\0")
-        case "\"": output.append("\"")
-        case "\\": output.append("\\")
-        default: return nil
-        }
-    }
-    return output
-}
 
 /// Unescapes with `\u{...}` support. Returns `(value, diagnostics)` where diagnostics
 /// is non-empty if an unrecognised escape was encountered.
@@ -122,8 +101,9 @@ private func unescapeWithSupport(_ raw: String, file: String) -> (value: String?
     return (output, diagnostics)
 }
 
-private func localizedLiterals(in line: String, nextLine: String?) -> Set<String> {
+private func localizedLiterals(in line: String, nextLine: String?, file: String) -> (found: Set<String>, diagnostics: [String]) {
     var found: Set<String> = []
+    var diagnostics: [String] = []
     for (literal, endIndex) in stringLiterals(in: line) {
         let rest = line[endIndex...]
         let afterWhitespace = rest.drop(while: { $0 == " " })
@@ -139,11 +119,15 @@ private func localizedLiterals(in line: String, nextLine: String?) -> Set<String
         }
         guard isLocalized else { continue }
         guard !literal.contains("\\(") else { continue }
-        if let unescaped = unescape(literal) {
+        let (unescaped, diag) = unescapeWithSupport(literal, file: file)
+        if !diag.isEmpty {
+            diagnostics.append(contentsOf: diag)
+        }
+        if let unescaped = unescaped {
             found.insert(unescaped)
         }
     }
-    return found
+    return (found, diagnostics)
 }
 
 private struct PluralPair: Hashable {
@@ -151,19 +135,24 @@ private struct PluralPair: Hashable {
     let plural: String
 }
 
-private func pluralPairs(in line: String) -> Set<PluralPair> {
+private func pluralPairs(in line: String, file: String) -> (pairs: Set<PluralPair>, diagnostics: [String]) {
     var pairs: Set<PluralPair> = []
+    var diagnostics: [String] = []
     var search = line.startIndex
     while let call = line.range(of: "nlocalized(", range: search ..< line.endIndex) {
         let literals = stringLiterals(in: String(line[call.upperBound...]))
-        if literals.count >= 2,
-           let singular = unescape(literals[0].literal),
-           let plural = unescape(literals[1].literal) {
-            pairs.insert(PluralPair(singular: singular, plural: plural))
+        if literals.count >= 2 {
+            let (singular, diag1) = unescapeWithSupport(literals[0].literal, file: file)
+            let (plural, diag2) = unescapeWithSupport(literals[1].literal, file: file)
+            if !diag1.isEmpty { diagnostics.append(contentsOf: diag1) }
+            if !diag2.isEmpty { diagnostics.append(contentsOf: diag2) }
+            if let singular = singular, let plural = plural {
+                pairs.insert(PluralPair(singular: singular, plural: plural))
+            }
         }
         search = call.upperBound
     }
-    return pairs
+    return (pairs, diagnostics)
 }
 
 // MARK: - Source scanning
@@ -214,10 +203,12 @@ private func scanSources() throws -> (singletons: Set<String>, pairs: Set<Plural
             }
 
             let nextLine: String? = i + 1 < lines.count ? String(lines[i + 1]) : nil
-            singletons.formUnion(localizedLiterals(in: lineStr, nextLine: nextLine))
-            for pair in pluralPairs(in: lineStr) {
-                pairs.insert(pair)
-            }
+            let (found, localDiag) = localizedLiterals(in: lineStr, nextLine: nextLine, file: relative)
+            singletons.formUnion(found)
+            diagnostics.append(contentsOf: localDiag)
+            let (pairResult, pairDiag) = pluralPairs(in: lineStr, file: relative)
+            pairs.formUnion(pairResult)
+            diagnostics.append(contentsOf: pairDiag)
         }
     }
 
