@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-08-05 18:28Indochina Time\n"
+"POT-Creation-Date: 2026-08-06 15:26Indochina Time\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -35,18 +35,6 @@ msgstr "«%@» пуста."
 
 msgid "\"%@\" is not a valid folder name."
 msgstr "«%@» — недопустимое имя папки."
-
-msgid "%@ • %@ • %d %@"
-msgstr "%@ • %@ • %d %@"
-
-msgid "%@ • %@ • %d words"
-msgstr "%@ • %@ • %d слов"
-
-msgid "%d note will be permanently deleted. This action can't be undone."
-msgstr "%d заметка будет удалена навсегда. Это действие нельзя отменить."
-
-msgid "%d notes will be permanently deleted. This action can't be undone."
-msgstr "%d заметок будет удалено навсегда. Это действие нельзя отменить."
 
 msgid "%d of %d"
 msgstr "%d из %d"
@@ -389,12 +377,6 @@ msgstr "Только редактор"
 msgid "Empty Trash"
 msgstr "Очистить корзину"
 
-msgid "Empty Trash (%d note)…"
-msgstr "Очистить корзину (%d заметка)…"
-
-msgid "Empty Trash (%d notes)…"
-msgstr "Очистить корзину (%d заметок)…"
-
 msgid "Empty Trash automatically"
 msgstr "Очищать корзину автоматически"
 
@@ -639,8 +621,8 @@ msgid ""
 "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</"
 "tt></a> to start."
 msgstr ""
-"В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-heading\"><tt>## Заголовок</"
-"tt></a>."
+"В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-"
+"heading\"><tt>## Заголовок</tt></a>."
 
 msgid "No headings match \"%@\""
 msgstr "Нет заголовков, соответствующих «%@»"
@@ -844,12 +826,6 @@ msgstr "Заменить существующие ресурсы?"
 
 msgid "Replace the current match"
 msgstr "Заменить текущее совпадение"
-
-msgid "Replaced %d occurrences."
-msgstr "Заменено %d вхождений."
-
-msgid "Replaced 1 occurrence."
-msgstr "Заменено 1 вхождение."
 
 msgid "Replacement content is required."
 msgstr "Требуется новое содержимое."
@@ -1131,7 +1107,9 @@ msgid "`move` expects exactly one note ID."
 msgstr "Для `move` необходимо указать ровно один ID заметки."
 
 msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
-msgstr "Для `move` необходимо указать --folder <путь> (используйте --folder \"\", чтобы переместить в корень)."
+msgstr ""
+"Для `move` необходимо указать --folder <путь> (используйте --folder \"\", "
+"чтобы переместить в корень)."
 
 msgid "`move` requires a note ID."
 msgstr "Для `move` необходимо указать ID заметки."
@@ -1163,6 +1141,13 @@ msgstr[0] "%d заметку"
 msgstr[1] "%d заметки"
 msgstr[2] "%d заметок"
 
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural ""
+"%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "%d заметка будет удалена навсегда. Это действие нельзя отменить."
+msgstr[1] "%d заметки будет удалено. Это действие нельзя отменить."
+msgstr[2] "%d заметок будет удалено. Это действие нельзя отменить."
+
 msgid "%d section"
 msgid_plural "%d sections"
 msgstr[0] "%d раздел"
@@ -1181,6 +1166,24 @@ msgstr[0] "%d подраздел"
 msgstr[1] "%d подраздела"
 msgstr[2] "%d подразделов"
 
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d слово"
+msgstr[1] "%d слова"
+msgstr[2] "%d слов"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "Очистить корзину (%d заметка)…"
+msgstr[1] "Очистить корзину (%d заметки)…"
+msgstr[2] "Очистить корзину (%d заметок)…"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "Заменено %d вхождение."
+msgstr[1] "Заменено %d вхождения."
+msgstr[2] "Заменено %d вхождений."
+
 msgid "asset"
 msgid_plural "assets"
 msgstr[0] "ресурс"
@@ -1193,6 +1196,9 @@ msgstr "%d совпадений"
 msgid "%d notes"
 msgstr "%d заметок"
 
+msgid "%d notes will be permanently deleted. This action can't be undone."
+msgstr "%d заметок будет удалено навсегда. Это действие нельзя отменить."
+
 msgid "%d sections"
 msgstr "%d разделов"
 
@@ -1201,6 +1207,15 @@ msgstr "%d подпапок"
 
 msgid "%d subsections"
 msgstr "%d подразделов"
+
+msgid "%d words"
+msgstr "%d слов"
+
+msgid "Empty Trash (%d notes)…"
+msgstr "Очистить корзину (%d заметок)…"
+
+msgid "Replaced %d occurrences."
+msgstr "Заменено %d вхождений."
 
 msgid "assets"
 msgstr "ресурсы"

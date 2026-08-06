@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-08-06 01:08Indochina Time\n"
+"POT-Creation-Date: 2026-08-06 15:26Indochina Time\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -24,18 +24,6 @@ msgid "\"%@\" is empty."
 msgstr ""
 
 msgid "\"%@\" is not a valid folder name."
-msgstr ""
-
-msgid "%@ • %@ • %d %@"
-msgstr ""
-
-msgid "%@ • %@ • %d words"
-msgstr ""
-
-msgid "%d note will be permanently deleted. This action can't be undone."
-msgstr ""
-
-msgid "%d notes will be permanently deleted. This action can't be undone."
 msgstr ""
 
 msgid "%d of %d"
@@ -366,12 +354,6 @@ msgid "Editor only"
 msgstr ""
 
 msgid "Empty Trash"
-msgstr ""
-
-msgid "Empty Trash (%d note)…"
-msgstr ""
-
-msgid "Empty Trash (%d notes)…"
 msgstr ""
 
 msgid "Empty Trash automatically"
@@ -815,12 +797,6 @@ msgstr ""
 msgid "Replace the current match"
 msgstr ""
 
-msgid "Replaced %d occurrences."
-msgstr ""
-
-msgid "Replaced 1 occurrence."
-msgstr ""
-
 msgid "Replacement content is required."
 msgstr ""
 
@@ -1109,6 +1085,12 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 msgid "%d section"
 msgid_plural "%d sections"
 msgstr[0] ""
@@ -1127,6 +1109,24 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 msgid "asset"
 msgid_plural "assets"
 msgstr[0] ""
@@ -1139,6 +1139,9 @@ msgstr ""
 msgid "%d notes"
 msgstr ""
 
+msgid "%d notes will be permanently deleted. This action can't be undone."
+msgstr ""
+
 msgid "%d sections"
 msgstr ""
 
@@ -1146,6 +1149,15 @@ msgid "%d subfolders"
 msgstr ""
 
 msgid "%d subsections"
+msgstr ""
+
+msgid "%d words"
+msgstr ""
+
+msgid "Empty Trash (%d notes)…"
+msgstr ""
+
+msgid "Replaced %d occurrences."
 msgstr ""
 
 msgid "assets"

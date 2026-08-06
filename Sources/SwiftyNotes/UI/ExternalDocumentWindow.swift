@@ -513,13 +513,14 @@ private extension ExternalDocumentWindow {
 
     func updateHeaderSubtitle() {
         let wordCount = editor.buffer.text.split(whereSeparator: \.isWhitespace).count
-        let saveState = editor.buffer.modified ? "Unsaved changes" : "Saved"
-        let wordLabel = wordCount == 1 ? "word" : "words"
+        let saveState = editor.buffer.modified ? "Unsaved changes".localized : "Saved".localized
+        let wordLabel = String(format: nlocalized("%d word", "%d words", count: UInt(wordCount)), wordCount)
         // `percentEncoded: false` so the header reads
         // "/Users/me/My Notes/foo.md" instead of the URL-encoded
         // "/Users/me/My%20Notes/foo.md" when the path contains
         // spaces or other reserved characters.
-        headerTitle.subtitle = String(format: "%@ • %@ • %d %@".localized, fileURL.path(percentEncoded: false), saveState, wordCount, wordLabel)
+        let separator = " • "
+        headerTitle.subtitle = fileURL.path(percentEncoded: false) + separator + saveState + separator + wordLabel
     }
 
     func loadDocument(_ document: ExternalMarkdownDocument) {

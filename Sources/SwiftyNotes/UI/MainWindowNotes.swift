@@ -312,9 +312,7 @@ extension MainWindow {
         guard count > 0 else { return }
         let dialog = AlertDialog(
             heading: "Empty Trash?".localized,
-            body: count == 1
-                ? String(format: "%d note will be permanently deleted. This action can't be undone.".localized, 1)
-                : String(format: "%d notes will be permanently deleted. This action can't be undone.".localized, count),
+            body: String(format: nlocalized("%d note will be permanently deleted. This action can't be undone.", "%d notes will be permanently deleted. This action can't be undone.", count: UInt(count)), count),
         )
         dialog.addResponse("cancel", label: "Cancel".localized)
         dialog.addResponse("empty", label: "Empty Trash".localized)
@@ -395,9 +393,7 @@ extension MainWindow {
 
         let content = Box(orientation: .vertical, spacing: 2)
         content.setMargins(4)
-        let label = count == 1
-            ? String(format: "Empty Trash (%d note)…".localized, 1)
-            : String(format: "Empty Trash (%d notes)…".localized, count)
+        let label = String(format: nlocalized("Empty Trash (%d note)…", "Empty Trash (%d notes)…", count: UInt(count)), count)
         let emptyButton = makeNoteContextButton(label: label, destructive: true) { [weak self] in
             self?.dismissTrashContextMenu()
             self?.presentEmptyTrashConfirmation()

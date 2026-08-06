@@ -28,7 +28,9 @@ extension MainWindow {
         }
         let wordCount = editor.buffer.text.split(whereSeparator: \.isWhitespace).count
         let saveState = editor.buffer.modified ? "Unsaved changes".localized : "Saved".localized
-        headerTitle.subtitle = String(format: "%@ • %@ • %d words".localized, selected.title, saveState, wordCount)
+        let wordLabel = String(format: nlocalized("%d word", "%d words", count: UInt(wordCount)), wordCount)
+        let separator = " • "
+        headerTitle.subtitle = selected.title + separator + saveState + separator + wordLabel
     }
 
     func saveSelectedNoteNow() {
