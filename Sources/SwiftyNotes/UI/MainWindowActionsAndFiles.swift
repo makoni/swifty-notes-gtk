@@ -390,7 +390,7 @@ extension MainWindow {
 
         refreshDirectorySnapshot()
         editor.buffer.insertAtCursor(snippets.joined(separator: "\n"))
-        toastOverlay.showToast(sourceURLs.count == 1 ? "Image added to note".localized : "Images added to note".localized)
+        toastOverlay.showToast(nlocalized("Image added to note", "Images added to note", count: UInt(sourceURLs.count)))
     }
 
     /// Saves clipboard image bytes into the active note's `assets/`

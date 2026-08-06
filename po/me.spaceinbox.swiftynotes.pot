@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-08-06 15:36+0700\n"
+"POT-Creation-Date: 2026-08-06 15:48+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -105,6 +105,9 @@ msgid "Case Sensitive"
 msgstr ""
 
 msgid "Centred"
+msgstr ""
+
+msgid "Check for Updates…"
 msgstr ""
 
 msgid "Choose Notes Folder"
@@ -213,6 +216,9 @@ msgid "Could not inspect notes directory"
 msgstr ""
 
 msgid "Could not load notes"
+msgstr ""
+
+msgid "Could not move folder"
 msgstr ""
 
 msgid "Could not move note"
@@ -407,6 +413,9 @@ msgstr ""
 msgid "Folder deleted"
 msgstr ""
 
+msgid "Folder moved"
+msgstr ""
+
 msgid "Folder name"
 msgstr ""
 
@@ -446,13 +455,7 @@ msgstr ""
 msgid "Hover to pick size"
 msgstr ""
 
-msgid "Image added to note"
-msgstr ""
-
 msgid "Image pasted into note"
-msgstr ""
-
-msgid "Images added to note"
 msgstr ""
 
 msgid "Import"
@@ -878,7 +881,13 @@ msgstr ""
 msgid "Sort by Title"
 msgstr ""
 
-msgid "Sorting by %@"
+msgid "Sorting by newest first"
+msgstr ""
+
+msgid "Sorting by oldest first"
+msgstr ""
+
+msgid "Sorting by title"
 msgstr ""
 
 msgid "Spaces"
@@ -1110,6 +1119,11 @@ msgstr[1] ""
 
 msgid "Empty Trash (%d note)…"
 msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
 msgstr[0] ""
 msgstr[1] ""
 

@@ -411,10 +411,6 @@ extension MainWindow {
         rebuildOverflowMenu()
     }
 
-    /// Single source for the menu label so the Linux GMenu entry, the
-    /// macOS popover button, and the hide filter can never drift apart.
-    static let checkForUpdatesMenuLabel = "Check for Updates…"
-
     /// (Re)composes the hamburger menu. Called once from
     /// ``configureActionsAndMenu()`` and again whenever the menu's
     /// composition changes at runtime — currently only when the
@@ -446,7 +442,7 @@ extension MainWindow {
         ]
         var help: [(label: String, handler: @MainActor () -> Void)] = []
         if !updateCheckMenuItemHidden {
-            help.append((Self.checkForUpdatesMenuLabel.localized, { [weak self] in self?.checkForUpdates(manual: true) }))
+            help.append(("Check for Updates…".localized, { [weak self] in self?.checkForUpdates(manual: true) }))
         }
         help.append(("About Swifty Notes".localized, { [weak self] in self?.presentAboutDialog() }))
 
@@ -472,7 +468,7 @@ extension MainWindow {
         #else
         var helpItems: [(label: String, action: String)] = []
         if !updateCheckMenuItemHidden {
-            helpItems.append((Self.checkForUpdatesMenuLabel.localized, "win.check-for-updates"))
+            helpItems.append(("Check for Updates…".localized, "win.check-for-updates"))
         }
         helpItems.append(("About Swifty Notes".localized, "win.about"))
 

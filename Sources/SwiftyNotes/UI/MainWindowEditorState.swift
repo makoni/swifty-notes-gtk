@@ -8,7 +8,7 @@ extension MainWindow {
         refreshSidebar()
         persistWorkspaceState()
         toastOverlay.dismissAll()
-        toastOverlay.showToast(String(format: "Sorting by %@".localized, sortMode.displayName.lowercased()))
+        toastOverlay.showToast(sortMode.sortingMessage.localized)
     }
 
     func focusSearch() {

@@ -17,6 +17,17 @@ public enum NotesSortMode: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    var sortingMessage: String {
+        switch self {
+        case .newestFirst:
+            "Sorting by newest first".localized
+        case .oldestFirst:
+            "Sorting by oldest first".localized
+        case .title:
+            "Sorting by title".localized
+        }
+    }
+
     public func sort(notes: [Note]) -> [Note] {
         notes.sorted { lhs, rhs in
             switch self {

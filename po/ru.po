@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-08-06 15:34+0700\n"
+"POT-Creation-Date: 2026-08-06 15:48+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -122,6 +122,9 @@ msgstr "С учётом регистра"
 msgid "Centred"
 msgstr "По центру"
 
+msgid "Check for Updates…"
+msgstr "Проверить обновления…"
+
 msgid "Choose Notes Folder"
 msgstr "Выберите папку заметок"
 
@@ -235,6 +238,9 @@ msgstr "Не удалось просмотреть каталог заметок
 
 msgid "Could not load notes"
 msgstr "Не удалось загрузить заметки"
+
+msgid "Could not move folder"
+msgstr "Не удалось переместить папку"
 
 msgid "Could not move note"
 msgstr "Не удалось переместить заметку"
@@ -428,6 +434,9 @@ msgstr "Папка %@"
 msgid "Folder deleted"
 msgstr "Папка удалена"
 
+msgid "Folder moved"
+msgstr "Папка перемещена"
+
 msgid "Folder name"
 msgstr "Имя папки"
 
@@ -470,14 +479,8 @@ msgstr ""
 msgid "Hover to pick size"
 msgstr "Наведите, чтобы выбрать размер"
 
-msgid "Image added to note"
-msgstr "Изображение добавлено в заметку"
-
 msgid "Image pasted into note"
 msgstr "Изображение вставлено в заметку"
-
-msgid "Images added to note"
-msgstr "Изображения добавлены в заметку"
 
 msgid "Import"
 msgstr "Импортировать"
@@ -914,8 +917,14 @@ msgstr "Сортировать заметки по названию"
 msgid "Sort by Title"
 msgstr "Сортировать по названию"
 
-msgid "Sorting by %@"
-msgstr "Сортировка по %@"
+msgid "Sorting by newest first"
+msgstr "Сортировка: сначала новые"
+
+msgid "Sorting by oldest first"
+msgstr "Сортировка: сначала старые"
+
+msgid "Sorting by title"
+msgstr "Сортировка по названию"
 
 msgid "Spaces"
 msgstr "Пробелы"
@@ -1177,6 +1186,12 @@ msgid_plural "Empty Trash (%d notes)…"
 msgstr[0] "Очистить корзину (%d заметка)…"
 msgstr[1] "Очистить корзину (%d заметки)…"
 msgstr[2] "Очистить корзину (%d заметок)…"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "Изображение добавлено в заметку"
+msgstr[1] "Изображения добавлены в заметку"
+msgstr[2] "Изображений добавлено в заметку"
 
 msgid "Replaced %d occurrence."
 msgid_plural "Replaced %d occurrences."
