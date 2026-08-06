@@ -232,11 +232,11 @@ private func escapePO(_ string: String) -> String {
     return output
 }
 
-// MARK: - Catalogue plural forms (Russian-style)
+// MARK: - Catalogue plural forms (xgettext convention for .pot)
 
 private func pluralFormsExpression() -> String {
-    // Russian plural forms: n%100==1 ? 0 : n%100>=2 && n%100<=4 ? 1 : 2
-    return "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
+    // xgettext convention: nplurals=INTEGER; plural=EXPRESSION;
+    return "nplurals=INTEGER; plural=EXPRESSION;"
 }
 
 // MARK: - JSON output (for --emit-msgids)
@@ -281,7 +281,7 @@ do {
     let now = Date()
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.dateFormat = "yyyy-MM-dd HH:mmzzzz"
+    formatter.dateFormat = "yyyy-MM-dd HH:mmZ"
     let timestamp = formatter.string(from: now)
 
     var lines: [String] = []
@@ -302,14 +302,9 @@ do {
     let remaining = singletons.subtracting(pluralSingles).subtracting(pluralPlurals)
 
     // Sort all entries for stable output
-    let sorted: [String] = remaining.sorted() + pairs.map { $0.singular }.sorted() + pairs.map { $0.plural }.sorted()
-
-    // Deduplicate while writing (singulars can appear in both sets)
-    var written: Set<String> = []
+    let sorted: [String] = remaining.sorted() + pairs.map { $0.singular }.sorted()
 
     for msgid in sorted {
-        guard !written.contains(msgid) else { continue }
-        written.insert(msgid)
 
         let escaped = escapePO(msgid)
         lines.append("msgid \"\(escaped)\"")
@@ -319,7 +314,6 @@ do {
             lines.append("msgid_plural \"\(escapePO(pair.plural))\"")
             lines.append("msgstr[0] \"\"")
             lines.append("msgstr[1] \"\"")
-            lines.append("msgstr[2] \"\"")
         } else {
             lines.append("msgstr \"\"")
         }
@@ -334,7 +328,7 @@ do {
     let content = lines.joined(separator: "\n") + "\n"
     try content.write(to: potURL, atomically: true, encoding: .utf8)
 
-    print("Wrote \(written.count) entries to \(potURL.path)")
+    print("Wrote \(sorted.count) entries to \(potURL.path)")
 } catch {
     fputs("Error: \(error)\n", stderr)
     exit(1)

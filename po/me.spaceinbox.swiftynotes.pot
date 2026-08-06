@@ -3,10 +3,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-08-06 15:26Indochina Time\n"
+"POT-Creation-Date: 2026-08-06 15:36+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -1077,89 +1077,49 @@ msgid "%d match"
 msgid_plural "%d matches"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "%d note"
 msgid_plural "%d notes"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "%d note will be permanently deleted. This action can't be undone."
 msgid_plural "%d notes will be permanently deleted. This action can't be undone."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "%d section"
 msgid_plural "%d sections"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "%d subfolder"
 msgid_plural "%d subfolders"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "%d subsection"
 msgid_plural "%d subsections"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "%d word"
 msgid_plural "%d words"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "Empty Trash (%d note)…"
 msgid_plural "Empty Trash (%d notes)…"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "Replaced %d occurrence."
 msgid_plural "Replaced %d occurrences."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
 
 msgid "asset"
 msgid_plural "assets"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-
-msgid "%d matches"
-msgstr ""
-
-msgid "%d notes"
-msgstr ""
-
-msgid "%d notes will be permanently deleted. This action can't be undone."
-msgstr ""
-
-msgid "%d sections"
-msgstr ""
-
-msgid "%d subfolders"
-msgstr ""
-
-msgid "%d subsections"
-msgstr ""
-
-msgid "%d words"
-msgstr ""
-
-msgid "Empty Trash (%d notes)…"
-msgstr ""
-
-msgid "Replaced %d occurrences."
-msgstr ""
-
-msgid "assets"
-msgstr ""
 
