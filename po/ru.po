@@ -111,7 +111,7 @@ msgid "Cancel"
 msgstr "Отмена"
 
 msgid "Cannot move \"%@\" into its own descendant \"%@\"."
-msgstr "Нельзя переместить «%@» в его собственный дочерний элемент «%@»."
+msgstr "Нельзя переместить «%@» во вложенную в неё папку «%@»."
 
 msgid "Cannot place a folder or note inside the note directory at \"%@\"."
 msgstr "Нельзя поместить папку или заметку внутрь каталога заметок в «%@»."
@@ -129,7 +129,7 @@ msgid "Choose a destination folder for \"%@\"."
 msgstr "Выберите папку назначения для «%@»."
 
 msgid "Choose a dictionary, or follow the system locale."
-msgstr "Выбирать словарь или следовать системной локали."
+msgstr "Словарь для проверки или системная локаль."
 
 msgid "Choose an empty destination folder for your notes."
 msgstr "Выберите пустую папку назначения для заметок."
@@ -140,7 +140,7 @@ msgstr ""
 "ресурсы."
 
 msgid "Choose whether Tab inserts spaces or hard tabs."
-msgstr "Указывать, вставляет ли клавиша Tab пробелы или символы табуляции."
+msgstr "Вставлять пробелы или символы табуляции при нажатии Tab."
 
 msgid "Code"
 msgstr "Код"
@@ -216,7 +216,7 @@ msgid "Could not empty Trash"
 msgstr "Не удалось очистить корзину"
 
 msgid "Could not encode CLI output"
-msgstr "Не удалось кодировать вывод CLI"
+msgstr "Не удалось закодировать вывод CLI"
 
 msgid "Could not export note"
 msgstr "Не удалось экспортировать заметку"
@@ -339,7 +339,7 @@ msgid "Delete forever…"
 msgstr "Удалить навсегда…"
 
 msgid "Delete “%@” forever?"
-msgstr "Удалить “%@” навсегда?"
+msgstr "Удалить «%@» навсегда?"
 
 msgid "Deleted"
 msgstr "Удалено"
@@ -351,7 +351,7 @@ msgid "Dismiss"
 msgstr "Закрыть"
 
 msgid "Dismiss update notification"
-msgstr "Отклонить уведомление об обновлении"
+msgstr "Закрыть уведомление об обновлении"
 
 msgid "Document"
 msgstr "Документ"
@@ -649,7 +649,7 @@ msgid "No notes yet. Create one with +."
 msgstr "Заметок пока нет. Создайте одну с помощью +."
 
 msgid "No other folders to move into"
-msgstr "Нет других папок для перемещения"
+msgstr "Нет других папок, куда можно переместить"
 
 msgid "Note Outline"
 msgstr "Структура заметки"
@@ -1025,7 +1025,7 @@ msgid "Unknown command for help: %@"
 msgstr "Неизвестная команда для справки: %@"
 
 msgid "Unknown folders subcommand: %@"
-msgstr "Неизвестная подкоманда для папок: %@"
+msgstr "Неизвестная подкоманда `folders`: %@"
 
 msgid "Unknown option: %@"
 msgstr "Неизвестный параметр: %@"
@@ -1145,8 +1145,8 @@ msgid "%d note will be permanently deleted. This action can't be undone."
 msgid_plural ""
 "%d notes will be permanently deleted. This action can't be undone."
 msgstr[0] "%d заметка будет удалена навсегда. Это действие нельзя отменить."
-msgstr[1] "%d заметки будет удалено. Это действие нельзя отменить."
-msgstr[2] "%d заметок будет удалено. Это действие нельзя отменить."
+msgstr[1] "%d заметки будет удалено навсегда. Это действие нельзя отменить."
+msgstr[2] "%d заметок будет удалено навсегда. Это действие нельзя отменить."
 
 msgid "%d section"
 msgid_plural "%d sections"
@@ -1186,6 +1186,6 @@ msgstr[2] "Заменено %d вхождений."
 
 msgid "asset"
 msgid_plural "assets"
-msgstr[0] "ресурс"
-msgstr[1] "ресурса"
-msgstr[2] "ресурсов"
+msgstr[0] "ресурсом"
+msgstr[1] "ресурсами"
+msgstr[2] "ресурсами"
