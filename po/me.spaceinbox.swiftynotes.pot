@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-08-06 15:48+0700\n"
+"POT-Creation-Date: 2026-08-31 21:17+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -39,6 +39,9 @@ msgid "(Root)"
 msgstr ""
 
 msgid "A folder or note already exists at \"%@\"."
+msgstr ""
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
 msgstr ""
 
 msgid "About Swifty Notes"
@@ -395,6 +398,9 @@ msgstr ""
 msgid "File reloaded from disk"
 msgstr ""
 
+msgid "File saved"
+msgstr ""
+
 msgid "Filter Outline"
 msgstr ""
 
@@ -620,6 +626,9 @@ msgstr ""
 msgid "No notes match \"%@\"."
 msgstr ""
 
+msgid "No notes yet."
+msgstr ""
+
 msgid "No notes yet. Create one with +."
 msgstr ""
 
@@ -654,6 +663,12 @@ msgid "Notes (%d)"
 msgstr ""
 
 msgid "Notes (%d/%d)"
+msgstr ""
+
+msgid "Notes List"
+msgstr ""
+
+msgid "Notes Sidebar"
 msgstr ""
 
 msgid "Notes changed on disk. Save or reload to sync."
@@ -845,6 +860,12 @@ msgstr ""
 msgid "Saving"
 msgstr ""
 
+msgid "Search Notes"
+msgstr ""
+
+msgid "Search notes"
+msgstr ""
+
 msgid "Seconds"
 msgstr ""
 
@@ -890,6 +911,9 @@ msgstr ""
 msgid "Sorting by title"
 msgstr ""
 
+msgid "Source Code"
+msgstr ""
+
 msgid "Spaces"
 msgstr ""
 
@@ -906,6 +930,9 @@ msgid "Split view"
 msgstr ""
 
 msgid "Storage"
+msgstr ""
+
+msgid "Swifty Notes can only open local markdown files."
 msgstr ""
 
 msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."

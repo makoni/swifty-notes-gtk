@@ -18,7 +18,7 @@ struct NoteModelAndRendererTests {
 
     @Test("Derived title falls back for empty note")
     func derivedTitleFallsBackForEmptyNote() {
-        #expect(Note.derivedTitle(from: " \n\n ") == "New Note")
+        #expect(Note.derivedTitle(from: " \n\n ") == "New Note".localized)
     }
 
     @Test("Note retitle replaces first meaningful line")

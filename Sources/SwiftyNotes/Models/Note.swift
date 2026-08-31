@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 public struct Note: Identifiable, Sendable, Equatable {
@@ -99,7 +100,7 @@ public struct Note: Identifiable, Sendable, Equatable {
                 return String(cleaned.prefix(80))
             }
         }
-        return "New Note"
+        return "New Note".localized
     }
 
     public static func sanitizedFilenameStem(from rawValue: String, defaultStem: String) -> String {

@@ -611,9 +611,9 @@ extension MainWindow {
             copyright: "© 2026 Sergey Armodin",
             licenseType: .mit,
         )
-        about.comments = "A native GTK markdown notes app written in Swift using swift-adwaita."
+        about.comments = "A native GTK markdown notes app written in Swift using swift-adwaita.".localized
         about.supportUrl = "https://github.com/makoni/swifty-notes-gtk"
-        about.addLink("Source Code", url: "https://github.com/makoni/swifty-notes-gtk")
+        about.addLink("Source Code".localized, url: "https://github.com/makoni/swifty-notes-gtk")
         about.onClosed { [weak self, weak about] in
             guard let self, let about, activeAboutDialog === about else { return }
             activeAboutDialog = nil

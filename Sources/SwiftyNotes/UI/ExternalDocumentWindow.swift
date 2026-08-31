@@ -935,7 +935,7 @@ private extension ExternalDocumentWindow {
     func saveCurrentDocument(announceSuccess: Bool) {
         _ = saveDocument(
             to: fileURL,
-            successMessage: announceSuccess ? "File saved" : nil,
+            successMessage: announceSuccess ? "File saved".localized : nil,
         )
     }
 
@@ -1092,8 +1092,8 @@ private extension ExternalDocumentWindow {
                 if !externalReloadDeferred {
                     externalReloadDeferred = true
                     toastOverlay.showToast(
-                        "File changed on disk. Save or reload to sync.",
-                        button: "Reload",
+                        "File changed on disk. Save or reload to sync.".localized,
+                        button: "Reload".localized,
                     ) { [weak self] in
                         self?.reloadFromDisk(announce: true, forceDiscardingUnsavedChanges: true)
                     }

@@ -13,7 +13,7 @@ private enum ExternalDocumentOpenError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedLocation:
-            "Swifty Notes can only open local markdown files."
+            "Swifty Notes can only open local markdown files.".localized
         }
     }
 }
@@ -178,12 +178,12 @@ final class AppController {
 
         if let mainWindow {
             mainWindow.present()
-            mainWindow.presentError(heading: "Could not open markdown file", body: body)
+            mainWindow.presentError(heading: "Could not open markdown file".localized, body: body)
             return
         }
 
         activate(app: application)
-        mainWindow?.presentError(heading: "Could not open markdown file", body: body)
+        mainWindow?.presentError(heading: "Could not open markdown file".localized, body: body)
     }
 
     private func displayLocation(for fileURL: URL) -> String {

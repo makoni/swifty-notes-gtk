@@ -412,7 +412,7 @@ final class MainWindow {
         installEditorImageDropTarget()
         installEditorClipboardImagePaste()
 
-        trashedNoteBanner.buttonLabel = "Restore"
+        trashedNoteBanner.buttonLabel = "Restore".localized
         trashedNoteBanner.revealed = false
         trashedNoteBanner.onButtonClicked { [weak self] in
             guard let self, let id = previewedTrashedNoteID else { return }

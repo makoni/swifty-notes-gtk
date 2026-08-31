@@ -50,7 +50,7 @@ final class HTMLPreviewDocumentBuilder {
             ),
         )
         if rendered.isEmpty, markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return [.paragraph(.plain("Nothing to preview yet."))]
+            return [.paragraph(.plain("Nothing to preview yet.".localized))]
         }
         return rendered
     }

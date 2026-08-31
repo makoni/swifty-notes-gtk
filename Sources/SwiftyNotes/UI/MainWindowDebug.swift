@@ -315,7 +315,7 @@ import Foundation
                 try directoryOpener(folderURL)
             } catch {
                 presentError(
-                    heading: "Could not open notes folder",
+                    heading: "Could not open notes folder".localized,
                     body: NotesDirectoryErrorMessage.userFriendly(for: error),
                 )
             }

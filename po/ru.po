@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-08-06 15:48+0700\n"
+"POT-Creation-Date: 2026-08-31 21:17+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -50,6 +50,9 @@ msgstr "(Корень)"
 
 msgid "A folder or note already exists at \"%@\"."
 msgstr "Папка или заметка по пути «%@» уже существует."
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "Нативное GTK-приложение для заметок в Markdown, написанное на Swift с использованием swift-adwaita."
 
 msgid "About Swifty Notes"
 msgstr "О приложении Swifty Notes"
@@ -138,9 +141,7 @@ msgid "Choose an empty destination folder for your notes."
 msgstr "Выберите пустую папку назначения для заметок."
 
 msgid "Choose where Swifty Notes stores markdown files and companion assets."
-msgstr ""
-"Выберите, где Swifty Notes будет хранить markdown-файлы и сопутствующие "
-"ресурсы."
+msgstr "Выберите, где Swifty Notes будет хранить Markdown-файлы и сопутствующие ресурсы."
 
 msgid "Choose whether Tab inserts spaces or hard tabs."
 msgstr "Вставлять пробелы или символы табуляции при нажатии Tab."
@@ -169,12 +170,10 @@ msgid "Compact"
 msgstr "Компактный"
 
 msgid "Control how rendered Markdown appears in the preview."
-msgstr ""
-"Управлять отображением преобразованного Markdown в области предварительного "
-"просмотра."
+msgstr "Настройка отображения Markdown в области предварительного просмотра."
 
 msgid "Control wrapping, indentation, and editor text size."
-msgstr "Переносить строки, управлять отступами и размером шрифта редактора."
+msgstr "Настройка переноса строк, отступов и размера шрифта редактора."
 
 msgid "Copied note ID"
 msgstr "ID заметки скопирован"
@@ -231,10 +230,10 @@ msgid "Could not import note"
 msgstr "Не удалось импортировать заметку"
 
 msgid "Could not inspect markdown file"
-msgstr "Не удалось просмотреть markdown-файл"
+msgstr "Не удалось проверить Markdown-файл"
 
 msgid "Could not inspect notes directory"
-msgstr "Не удалось просмотреть каталог заметок"
+msgstr "Не удалось проверить каталог заметок"
 
 msgid "Could not load notes"
 msgstr "Не удалось загрузить заметки"
@@ -258,7 +257,7 @@ msgid "Could not open import dialog"
 msgstr "Не удалось открыть диалог импорта"
 
 msgid "Could not open markdown file"
-msgstr "Не удалось открыть markdown-файл"
+msgstr "Не удалось открыть Markdown-файл"
 
 msgid "Could not open notes folder"
 msgstr "Не удалось открыть папку заметок"
@@ -288,7 +287,7 @@ msgid "Could not permanently delete note"
 msgstr "Не удалось навсегда удалить заметку"
 
 msgid "Could not read UTF-8 content from stdin"
-msgstr "Не удалось прочитать UTF-8 содержимое из stdin"
+msgstr "Не удалось прочитать содержимое в кодировке UTF-8 из stdin"
 
 msgid "Could not reload file"
 msgstr "Не удалось перезагрузить файл"
@@ -405,16 +404,19 @@ msgid "Export note…"
 msgstr "Экспортировать заметку…"
 
 msgid "Exported %@"
-msgstr "Экспортировано %@"
+msgstr "Экспортировано: %@"
 
 msgid "Exported %@ with %d %@"
-msgstr "Экспортировано %@ с %d %@"
+msgstr "Экспортировано: %@ с %d %@"
 
 msgid "File changed on disk. Save or reload to sync."
 msgstr "Файл изменён на диске. Сохраните или перезагрузите для синхронизации."
 
 msgid "File reloaded from disk"
 msgstr "Файл перезагружен с диска"
+
+msgid "File saved"
+msgstr "Файл сохранён"
 
 msgid "Filter Outline"
 msgstr "Фильтр структуры"
@@ -492,10 +494,10 @@ msgid "Import into Library…"
 msgstr "Импортировать в библиотеку…"
 
 msgid "Imported %@"
-msgstr "Импортировано %@"
+msgstr "Импортировано: %@"
 
 msgid "Imported %@ into library"
-msgstr "Импортировано %@ в библиотеку"
+msgstr "Импортировано в библиотеку: %@"
 
 msgid "Indent style"
 msgstr "Стиль отступа"
@@ -507,10 +509,10 @@ msgid "Insert Table"
 msgstr "Вставить таблицу"
 
 msgid "Insert a markdown link"
-msgstr "Вставить ссылку markdown"
+msgstr "Вставить Markdown-ссылку"
 
 msgid "Insert a markdown table"
-msgstr "Вставить таблицу markdown"
+msgstr "Вставить Markdown-таблицу"
 
 msgid "Insert inline code or a fenced code block"
 msgstr "Вставить встроенный код или блок кода"
@@ -623,9 +625,7 @@ msgstr "В этой заметке нет заголовков."
 msgid ""
 "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</"
 "tt></a> to start."
-msgstr ""
-"В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-"
-"heading\"><tt>## Заголовок</tt></a>."
+msgstr "В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-heading\"><tt>## Heading</tt></a>."
 
 msgid "No headings match \"%@\""
 msgstr "Нет заголовков, соответствующих «%@»"
@@ -648,8 +648,11 @@ msgstr "Заметка с ID %@ не найдена"
 msgid "No notes match \"%@\"."
 msgstr "Нет заметок, соответствующих «%@»."
 
+msgid "No notes yet."
+msgstr "Заметок пока нет."
+
 msgid "No notes yet. Create one with +."
-msgstr "Заметок пока нет. Создайте одну с помощью +."
+msgstr "Заметок пока нет. Создайте первую кнопкой +."
 
 msgid "No other folders to move into"
 msgstr "Нет других папок, куда можно переместить"
@@ -684,6 +687,12 @@ msgstr "Заметки (%d)"
 msgid "Notes (%d/%d)"
 msgstr "Заметки (%d/%d)"
 
+msgid "Notes List"
+msgstr "Список заметок"
+
+msgid "Notes Sidebar"
+msgstr "Боковая панель заметок"
+
 msgid "Notes changed on disk. Save or reload to sync."
 msgstr ""
 "Заметки изменены на диске. Сохраните или перезагрузите для синхронизации."
@@ -716,10 +725,10 @@ msgid "Open"
 msgstr "Открыть"
 
 msgid "Open Markdown File"
-msgstr "Открыть markdown-файл"
+msgstr "Открыть Markdown-файл"
 
 msgid "Open Markdown File…"
-msgstr "Открыть файл markdown…"
+msgstr "Открыть Markdown-файл…"
 
 msgid "Open current folder"
 msgstr "Открыть текущую папку"
@@ -747,7 +756,7 @@ msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "Путь «%@» превышает ограничение файловой системы в %d байт."
 
 msgid "Permanently delete trashed notes after this much time has passed."
-msgstr "Навсегда удалять удалённые заметки по истечении этого времени."
+msgstr "Навсегда удалять заметки из корзины по истечении этого времени."
 
 msgid "Points"
 msgstr "Пункты"
@@ -813,7 +822,7 @@ msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
 msgstr "Переименование «%@». Имена папок не могут содержать слэш (/)."
 
 msgid "Render emoji shortcodes"
-msgstr "Отображать короткие коды эмодзи"
+msgstr "Отображать псевдонимы эмодзи"
 
 msgid "Replace"
 msgstr "Заменить"
@@ -861,7 +870,7 @@ msgid "Save File"
 msgstr "Сохранить файл"
 
 msgid "Save Markdown File As"
-msgstr "Сохранить markdown-файл как"
+msgstr "Сохранить Markdown-файл как"
 
 msgid "Save Note"
 msgstr "Сохранить заметку"
@@ -874,6 +883,12 @@ msgstr "Сохранено как %@"
 
 msgid "Saving"
 msgstr "Сохранение"
+
+msgid "Search Notes"
+msgstr "Поиск заметок"
+
+msgid "Search notes"
+msgstr "Поиск заметок"
 
 msgid "Seconds"
 msgstr "Секунды"
@@ -926,6 +941,9 @@ msgstr "Сортировка: сначала старые"
 msgid "Sorting by title"
 msgstr "Сортировка по названию"
 
+msgid "Source Code"
+msgstr "Исходный код"
+
 msgid "Spaces"
 msgstr "Пробелы"
 
@@ -936,13 +954,16 @@ msgid "Spell-check language"
 msgstr "Язык проверки орфографии"
 
 msgid "Split"
-msgstr "Разделить"
+msgstr "Разделённый"
 
 msgid "Split view"
 msgstr "Разделённый вид"
 
 msgid "Storage"
 msgstr "Хранилище"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "Swifty Notes может открывать только локальные Markdown-файлы."
 
 msgid ""
 "Swifty Notes does not have permission to access that folder. Try choosing a "
@@ -983,9 +1004,7 @@ msgstr "Выбранное назначение не является папко
 
 msgid ""
 "The selected folder is on a read-only filesystem and cannot store notes."
-msgstr ""
-"Выбранная папка находится на файловой системе, предназначенной только для "
-"чтения, и не может хранить заметки."
+msgstr "Выбранная папка находится на файловой системе, доступной только для чтения, и не может хранить заметки."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "На диске недостаточно места для перемещения заметок в эту папку."
@@ -998,7 +1017,7 @@ msgid "Title"
 msgstr "Название"
 
 msgid "Toggle Outline"
-msgstr "Показать структуру"
+msgstr "Показать или скрыть структуру"
 
 msgid "Trash"
 msgstr "Корзина"
@@ -1072,13 +1091,13 @@ msgid "Wrap long lines"
 msgstr "Переносить длинные строки"
 
 msgid "Wrap markdown paragraphs instead of scrolling horizontally."
-msgstr "Переносить абзацы markdown вместо горизонтальной прокрутки."
+msgstr "Переносить абзацы Markdown вместо горизонтальной прокрутки."
 
 msgid "Wrap the selection in bold markdown"
-msgstr "Обернуть выделение полужирным markdown"
+msgstr "Сделать выделенный текст полужирным"
 
 msgid "Wrap the selection in italic markdown"
-msgstr "Обернуть выделение курсивом markdown"
+msgstr "Сделать выделенный текст курсивом"
 
 msgid "`folders create` requires exactly one folder path."
 msgstr "Для `folders create` необходимо указать ровно один путь к папке."
@@ -1154,7 +1173,7 @@ msgid "%d note will be permanently deleted. This action can't be undone."
 msgid_plural ""
 "%d notes will be permanently deleted. This action can't be undone."
 msgstr[0] "%d заметка будет удалена навсегда. Это действие нельзя отменить."
-msgstr[1] "%d заметки будет удалено навсегда. Это действие нельзя отменить."
+msgstr[1] "%d заметки будут удалены навсегда. Это действие нельзя отменить."
 msgstr[2] "%d заметок будет удалено навсегда. Это действие нельзя отменить."
 
 msgid "%d section"
@@ -1191,7 +1210,7 @@ msgid "Image added to note"
 msgid_plural "Images added to note"
 msgstr[0] "Изображение добавлено в заметку"
 msgstr[1] "Изображения добавлены в заметку"
-msgstr[2] "Изображений добавлено в заметку"
+msgstr[2] "Изображения добавлены в заметку"
 
 msgid "Replaced %d occurrence."
 msgid_plural "Replaced %d occurrences."
