@@ -310,6 +310,53 @@ struct LocalizationCatalogTests {
         )
     }
 
+    /// A msgid in the catalogue proves the string is meant to be translated.
+    /// A call site that writes the same literal without `.localized` therefore
+    /// shows English to a Russian user while a finished translation sits in the
+    /// catalogue unused — invisible to every other test here, because the
+    /// extractor only ever sees the sites that *are* marked.
+    @Test("Every call site of a translatable string is localized")
+    func everyCallSiteOfATranslatableStringIsLocalized() throws {
+        let offenders = try LocalizationCatalogFixture.unlocalizedCatalogueLiterals()
+        #expect(
+            offenders.isEmpty,
+            """
+            \(offenders.count) literal(s) match a catalogue msgid but are not \
+            marked .localized, so they stay English no matter what the \
+            catalogue says. Add .localized, or — if the literal is a canonical \
+            key rather than user-visible text — list it in \
+            LocalizationCatalogFixture.permittedBareLiterals with a reason:
+            \(offenders.map { "  - \($0)" }.joined(separator: "\n"))
+            """,
+        )
+    }
+
+    /// `ngettext` picks a form from the count even when the message never
+    /// prints it. Russian form 1 (2–4) and form 2 (5+) differ only by the
+    /// number that would precede them, so for a countless message the two must
+    /// read identically — otherwise adding a fifth image turns a correct toast
+    /// into "Изображений добавлено в заметку".
+    @Test("A plural entry that prints no count reads the same for every plural form")
+    func pluralEntryThatPrintsNoCountReadsTheSameForEveryPluralForm() throws {
+        let entries = try LocalizationCatalogFixture.pluralEntries(
+            at: LocalizationCatalogFixture.russianCatalogueURL,
+        )
+        for entry in entries {
+            guard LocalizationCatalogFixture.formatSpecifiers(in: entry.singular).isEmpty,
+                  LocalizationCatalogFixture.formatSpecifiers(in: entry.plural).isEmpty
+            else { continue }
+            let pluralForms = Set(entry.translations.dropFirst())
+            #expect(
+                pluralForms.count <= 1,
+                """
+                \(entry.singular.debugDescription) substitutes no count, so \
+                nothing on screen distinguishes 2 from 5 — yet its plural forms \
+                differ: \(entry.translations.dropFirst().map(\.debugDescription).joined(separator: " vs "))
+                """,
+            )
+        }
+    }
+
     // MARK: - Packaging
 
     /// `localeDirectoryPath()` probes `<App>.app/Contents/Resources/locale` on
@@ -555,6 +602,66 @@ private enum LocalizationCatalogFixture {
             search = call.upperBound
         }
         return pairs.isEmpty ? nil : pairs
+    }
+
+    /// Literals that match a catalogue msgid but must stay bare, keyed by the
+    /// source file that holds them. These are canonical keys and seed content,
+    /// not user-visible chrome: translating them breaks a lookup or rewrites a
+    /// note's body.
+    static let permittedBareLiterals: [String: Set<String>] = [
+        // Seed note body — sample prose, not UI chrome.
+        "Sources/SwiftyNotes/Storage/MarkdownShowcaseSeed.swift": ["Editor", "Split", "Preview"],
+        // On-disk directory name.
+        "Sources/SwiftyNotes/Storage/NotesRepository.swift": ["assets"],
+        // Debug/introspection dictionary keys; the displayed values beside them
+        // are localized, and the tests address these sections in English.
+        "Sources/SwiftyNotes/UI/ExternalDocumentWindow.swift": ["Document"],
+        "Sources/SwiftyNotes/UI/MainWindowPreviewPane.swift": ["Library", "Help"],
+        // Context-menu handler keys — debugInvokeContextMenuAction(label:)
+        // looks actions up by their canonical English label.
+        "Sources/SwiftyNotes/UI/MainWindowActionsAndFiles.swift": [
+            "Rename note…", "Duplicate note", "Move to…", "Export note…", "Copy note ID", "Delete…",
+        ],
+        // "Editor"/"Split"/"Preview": placeholder labels, replaced wholesale by
+        // configureViewModeToggleContent() before the window is presented.
+        // "Save"/"Delete": MacOSClickWorkaround labels, which only reach
+        // debugLog.
+        "Sources/SwiftyNotes/UI/MainWindow.swift": [
+            "Editor", "Split", "Preview", "Save", "Delete",
+        ],
+    ]
+
+    /// Literals in `Sources/` that appear verbatim in the catalogue yet carry
+    /// no `.localized`. Lines that hand their literals to `nlocalized` are
+    /// skipped — that call localizes them itself.
+    static func unlocalizedCatalogueLiterals() throws -> [String] {
+        let catalogue = try catalogueMessageIDs(at: russianCatalogueURL)
+        var offenders: [String] = []
+        let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
+        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            return offenders
+        }
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
+            let permitted = permittedBareLiterals[relative] ?? []
+            for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+                let lineText = String(line)
+                let trimmed = lineText.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.hasPrefix("//"), !lineText.contains("nlocalized(") else { continue }
+                for hit in stringLiterals(in: lineText) {
+                    guard let literal = unescape(hit.literal),
+                          !literal.isEmpty,
+                          catalogue.contains(literal),
+                          !permitted.contains(literal)
+                    else { continue }
+                    let rest = lineText[hit.end...].drop(while: { $0 == " " })
+                    guard !rest.hasPrefix(".localized") else { continue }
+                    offenders.append("\(relative):\(offset + 1): \(literal.debugDescription)")
+                }
+            }
+        }
+        return offenders.sorted()
     }
 
     // MARK: PO parsing (keeps its own stringLiterals + unescape)
