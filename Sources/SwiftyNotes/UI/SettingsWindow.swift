@@ -289,7 +289,9 @@ final class SettingsWindow {
         notesFolderRow.title = "Notes folder".localized
         browseButton.label = "Browse…".localized
         resetToDefaultRow.title = "Use default location".localized
-        resetToDefaultRow.subtitle = defaultNotesDirectory.path(percentEncoded: false)
+        resetToDefaultRow.subtitle = Self.directionIsolated(
+            defaultNotesDirectory.path(percentEncoded: false),
+        )
         resetButton.label = "Reset".localized
         openCurrentFolderRow.title = "Open current folder".localized
         openCurrentFolderRow.subtitle = "Reveal the active notes folder in your file manager.".localized
@@ -424,7 +426,9 @@ final class SettingsWindow {
 
     private func updateNotesDirectory(_ folderURL: URL) {
         currentNotesDirectory = folderURL.standardizedFileURL
-        notesFolderRow.subtitle = currentNotesDirectory.path(percentEncoded: false)
+        notesFolderRow.subtitle = Self.directionIsolated(
+            currentNotesDirectory.path(percentEncoded: false),
+        )
         let usesDefaultLocation = currentNotesDirectory == defaultNotesDirectory
         resetButton.sensitive = !usesDefaultLocation
         resetToDefaultRow.sensitive = !usesDefaultLocation
@@ -530,6 +534,18 @@ final class SettingsWindow {
                 body: error.localizedDescription,
             )
         }
+    }
+
+    /// Wraps `text` in a left-to-right isolate so it keeps its own direction
+    /// inside a mirrored row.
+    ///
+    /// A filesystem path in a right-to-left interface would otherwise have its
+    /// separators reordered by the bidi algorithm — `/home/user/Notes` reading
+    /// as `Notes/user/home/`. Isolating the run is the Unicode answer, and it
+    /// leaves the row's own title mirroring as it should, which pinning the
+    /// whole widget's direction would not.
+    private static func directionIsolated(_ text: String) -> String {
+        "\u{2066}\(text)\u{2069}"
     }
 
     private func presentError(heading: String, body: String) {

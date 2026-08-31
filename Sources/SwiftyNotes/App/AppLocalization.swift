@@ -16,47 +16,15 @@ import Glibc
 /// so that `swift-adwaita`'s `localized(_:)` and `String.localized`
 /// can find `.mo` translation files.
 public func initializeLocalization(language: AppLanguage = .system) {
-    // Activate the process locale from environment. `nil` only queries
-    // the locale; `""` sets it from the environment variables.
-    // Import Darwin or Glibc above so setlocale/LC_ALL resolve on both.
-    _ = setlocale(LC_ALL, "")
-    // Set the gettext text domain. Must match the app ID used in
-    // .desktop files and Flatpak manifests.
-    swifty_notes_textdomain("me.spaceinbox.swiftynotes")
-    if let localeDir = localeDirectoryPath() {
-        swifty_notes_bindtextdomain("me.spaceinbox.swiftynotes", localeDir)
-    }
-    _ = swifty_notes_bind_textdomain_codeset("me.spaceinbox.swiftynotes", "UTF-8")
-    AppLocalizationState.captureSessionLanguage()
-    _ = applyLanguage(language)
-}
-
-/// The session's own `LANGUAGE`, captured before the app ever overrides it.
-///
-/// Selecting ``AppLanguage.system`` has to put back what the session asked
-/// for, which is unrecoverable once the picker has assigned its own value.
-enum AppLocalizationState {
-    nonisolated(unsafe) private static var sessionLanguage: String?
-    nonisolated(unsafe) private static var didCaptureSessionLanguage = false
-
-    static func captureSessionLanguage() {
-        guard !didCaptureSessionLanguage else { return }
-        didCaptureSessionLanguage = true
-        sessionLanguage = ProcessInfo.processInfo.environment["LANGUAGE"]
-    }
-
-    static var capturedSessionLanguage: String? {
-        sessionLanguage
-    }
-
-    #if DEBUG
-        /// Lets a test start from a known session, since the capture is
-        /// deliberately one-shot in the app.
-        static func resetForTesting(sessionLanguage: String?) {
-            didCaptureSessionLanguage = true
-            self.sessionLanguage = sessionLanguage
-        }
-    #endif
+    // swift-adwaita owns the gettext plumbing: activating the locale from the
+    // environment, binding the domain to the catalogue directory, pinning the
+    // codeset, and capturing the session's own LANGUAGE so "follow the
+    // system" stays recoverable.
+    configureLocalization(
+        domain: AppIdentity.identifier,
+        localeDirectory: localeDirectoryPath(),
+    )
+    applyLanguage(language)
 }
 
 /// Whether this build can change the interface language without a restart.
@@ -64,17 +32,15 @@ enum AppLocalizationState {
 /// False only where libintl does not export the catalogue-cache counter; the
 /// preference is still recorded and takes effect at the next launch.
 public func canSwitchLanguageAtRuntime() -> Bool {
-    swifty_notes_can_switch_language_at_runtime() != 0
+    canChangeLanguageAtRuntime
 }
 
-/// Points gettext at `language` and drops its cached catalogue.
+/// Points the interface at `language`: translations *and* layout.
 ///
-/// `LANGUAGE` is the only lever that selects a catalogue independently of the
-/// locale, and gettext reads it once per catalogue load — hence the cache
-/// invalidation. The catch is that gettext ignores `LANGUAGE` completely while
-/// `LC_MESSAGES` is `C`, `POSIX` or `C.UTF-8`, so a session started without a
-/// locale needs one installed first; any generated locale will do, which is
-/// why the candidates are not limited to the requested language's own.
+/// The two halves are separate calls in swift-adwaita because they answer to
+/// different mechanisms — `setLanguage` moves gettext, `applyTextDirection`
+/// moves GTK — and an app that changed only the first would show Arabic text
+/// in a left-to-right window.
 ///
 /// - Returns: `true` when subsequent lookups will use `language`. `false`
 ///   means the session locale is `C` and no candidate locale is generated on
@@ -82,21 +48,56 @@ public func canSwitchLanguageAtRuntime() -> Bool {
 ///   without a picker.
 @discardableResult
 public func applyLanguage(_ language: AppLanguage) -> Bool {
-    guard let code = language.catalogueCode else {
-        // Follow the session again: restore the LANGUAGE it was started with.
-        if let sessionLanguage = AppLocalizationState.capturedSessionLanguage {
-            setEnvironmentVariable("LANGUAGE", sessionLanguage)
-        } else {
-            unsetEnvironmentVariable("LANGUAGE")
-        }
-        swifty_notes_invalidate_translation_cache()
-        return true
-    }
+    let applied = setLanguage(
+        language.catalogueCode,
+        localeCandidates: language.messagesLocaleCandidates.isEmpty
+            ? nil
+            : language.messagesLocaleCandidates,
+    )
+    applyInterfaceDirection(for: language)
+    return applied
+}
 
-    let escapedCLocale = ensureMessagesLocaleIsNotC(candidates: language.messagesLocaleCandidates)
-    setEnvironmentVariable("LANGUAGE", code)
-    swifty_notes_invalidate_translation_cache()
-    return escapedCLocale
+/// Points GTK's layout at the reading direction `language` is written in.
+///
+/// Called twice on the way up, deliberately. `initializeLocalization` runs
+/// before `Application.run()`, and `gtk_init` sets the default direction from
+/// GTK's *own* catalogue, discarding whatever was there — so the pre-init call
+/// only covers the case where GTK never gets that far, and the launcher
+/// re-applies this once the application is activated. Measured rather than
+/// assumed: a direction set before `gtk_init` reads back as GTK's choice
+/// afterwards.
+public func applyInterfaceDirection(for language: AppLanguage) {
+    applyTextDirection(forLanguage: language.catalogueCode)
+}
+
+/// Whether the interface should read right-to-left for `language`, without
+/// touching GTK.
+///
+/// Split from ``applyInterfaceDirection(for:)`` so the decision — the part
+/// this app owns — is testable in a process that holds windows. Assigning
+/// GTK's default direction walks every live toplevel: safe in the app, but not
+/// in a shared test process where earlier suites left windows behind whose
+/// application has since been released. That the assignment actually mirrors a
+/// realized window is swift-adwaita's test to make.
+///
+/// Returns `Bool` rather than `GtkTextDirection` deliberately: CSpelling and
+/// CAdwaita both pull in `gtk/gtk.h`, so the app sees two distinct Swift types
+/// of that name and cannot name either one usefully.
+public func interfaceIsRightToLeft(for language: AppLanguage) -> Bool {
+    isRightToLeft(language: language.catalogueCode)
+}
+
+/// Foundation locale matching the interface language, for anything Foundation
+/// formats rather than gettext: dates, times, numbers.
+///
+/// `Locale.current` follows `LC_ALL` / `LANG`, not `LANGUAGE`, so a pinned
+/// interface language would otherwise print Russian labels beside an English
+/// date — which is exactly what the Russian build did before the picker had
+/// this.
+public func interfaceLocale() -> Locale {
+    guard let code = currentLanguage else { return .current }
+    return Locale(identifier: code)
 }
 
 /// Language codes with a catalogue installed next to the running build.
@@ -117,51 +118,11 @@ public func installedCatalogueLanguages() -> Set<String> {
             FileManager.default.fileExists(
                 atPath: entry
                     .appendingPathComponent("LC_MESSAGES", isDirectory: true)
-                    .appendingPathComponent("me.spaceinbox.swiftynotes.mo", isDirectory: false)
+                    .appendingPathComponent("\(AppIdentity.identifier).mo", isDirectory: false)
                     .path,
             )
         }.map(\.lastPathComponent),
     )
-}
-
-/// Installs a locale that gettext will honour `LANGUAGE` under.
-///
-/// Returns `true` when `LC_MESSAGES` already names a real locale, or when one
-/// of `candidates` could be installed.
-private func ensureMessagesLocaleIsNotC(candidates: [String]) -> Bool {
-    if let current = swifty_notes_current_messages_locale(),
-       !isCLocale(String(cString: current)) {
-        return true
-    }
-
-    for candidate in candidates {
-        if let applied = candidate.withCString({ swifty_notes_set_messages_locale($0) }),
-           !isCLocale(String(cString: applied)) {
-            return true
-        }
-    }
-    return false
-}
-
-/// `C.UTF-8` counts as the C locale for gettext's purposes: it suppresses
-/// `LANGUAGE` exactly as bare `C` does.
-private func isCLocale(_ locale: String) -> Bool {
-    let name = locale.split(separator: ".").first.map(String.init) ?? locale
-    return name == "C" || name == "POSIX"
-}
-
-private func setEnvironmentVariable(_ name: String, _ value: String) {
-    name.withCString { nameC in
-        value.withCString { valueC in
-            _ = setenv(nameC, valueC, 1)
-        }
-    }
-}
-
-private func unsetEnvironmentVariable(_ name: String) {
-    name.withCString { nameC in
-        _ = unsetenv(nameC)
-    }
 }
 
 /// Resolves the directory containing `.mo` translation files.
@@ -217,7 +178,7 @@ public func localeDirectoryPath() -> String? {
 }
 
 /// Returns `true` if `path` contains a gettext catalogue for this app,
-/// i.e. `<path>/<lang>/LC_MESSAGES/me.spaceinbox.swiftynotes.mo` exists
+/// i.e. `<path>/<lang>/LC_MESSAGES/<app id>.mo` exists
 /// for at least one `<lang>` subdirectory.
 public func localeDirectoryContainsCatalog(_ path: String) -> Bool {
     guard FileManager.default.fileExists(atPath: path),
@@ -232,7 +193,7 @@ public func localeDirectoryContainsCatalog(_ path: String) -> Bool {
         let lang = subdir.path
         let expected = URL(fileURLWithPath: lang)
             .appendingPathComponent("LC_MESSAGES", isDirectory: true)
-            .appendingPathComponent("me.spaceinbox.swiftynotes.mo", isDirectory: false)
+            .appendingPathComponent("\(AppIdentity.identifier).mo", isDirectory: false)
         if FileManager.default.fileExists(atPath: expected.path) {
             return true
         }

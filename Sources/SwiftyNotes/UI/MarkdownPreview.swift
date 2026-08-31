@@ -1604,6 +1604,10 @@ final class MarkdownPreview {
 
         let buffer = Self.makeSourceBuffer(for: code, language: language)
         let view = SourceView(buffer: buffer)
+        // Code reads left-to-right whatever language the interface is in:
+        // mirroring a fenced block would right-align it and reorder its
+        // punctuation runs.
+        view.forceLeftToRight()
         view.editable = false
         view.cursorVisible = false
         view.isFocusable = false
@@ -2076,6 +2080,10 @@ final class MarkdownPreview {
         wrapper.overflow = .hidden
 
         let label = makeMarkupLabel(tableMarkup(headers: headers, rows: rows, alignments: alignments))
+        // The columns are held apart by character-count padding in a
+        // monospace font, which only lines up if the run is laid out
+        // left-to-right — a mirrored table would shift every column.
+        label.forceLeftToRight()
         label.addCSSClass("preview-table-body")
         label.marginStart = 14
         label.marginEnd = 14

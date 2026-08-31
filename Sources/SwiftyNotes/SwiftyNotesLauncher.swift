@@ -58,6 +58,12 @@ final class AppController {
     }
 
     func activate(app: Application) {
+        // gtk_init discards a direction set before it ran, so the pinned
+        // language's reading direction has to be re-applied here — before the
+        // first window is built, so an RTL interface comes up mirrored rather
+        // than flipping after the fact.
+        applyInterfaceDirection(for: currentAppSettings().appLanguage)
+
         if let mainWindow {
             if allowsWindowPresentation {
                 mainWindow.present()

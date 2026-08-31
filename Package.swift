@@ -72,11 +72,14 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            // Pinned past the 1.5.0 release to pick up Window.isActive
-            // (routing app-level accelerators to the focused external
-            // document window). Bump deliberately when validating a newer
-            // upstream rather than via SemVer auto-resolution.
-            revision: "e725f39c4308138da251a8181beb0a40d86efea9"
+            // Pinned past the 1.5.0 release for two things this app needs:
+            // Window.isActive (routing app-level accelerators to the focused
+            // external document window) and the localization API — gettext
+            // setup, runtime language switching and reading direction, which
+            // replaced a hand-written C shim here. Bump deliberately when
+            // validating a newer upstream rather than via SemVer
+            // auto-resolution.
+            revision: "db760b81c848aba7de7dc9e9c79d8c05492031bc"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",

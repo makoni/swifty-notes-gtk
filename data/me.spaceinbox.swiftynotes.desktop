@@ -1,16 +1,19 @@
 [Desktop Entry]
 Name=Swifty Notes
 Comment=Native GTK markdown notes with preview and CLI automation
+Comment[ru]=Нативные Markdown-заметки на GTK с предпросмотром и автоматизацией через CLI
 Exec=swiftynotes %F
 Icon=me.spaceinbox.swiftynotes
 Terminal=false
 Type=Application
 Categories=Utility;TextEditor;GTK;GNOME;
 Keywords=notes;markdown;editor;text;cli;automation;
+Keywords[ru]=заметки;markdown;редактор;текст;cli;автоматизация;
 MimeType=text/markdown;
 StartupNotify=true
 Actions=new-window;
 
 [Desktop Action new-window]
 Name=New Window
+Name[ru]=Новое окно
 Exec=swiftynotes

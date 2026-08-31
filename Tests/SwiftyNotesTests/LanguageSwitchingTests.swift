@@ -89,7 +89,7 @@ struct LanguageSwitchingTests {
     @Test("Following the system restores the language the session asked for") @MainActor
     func followingTheSystemRestoresTheLanguageTheSessionAskedFor() throws {
         try withRestoredLanguage {
-            AppLocalizationState.resetForTesting(sessionLanguage: nil)
+            applySessionLanguage(nil)
             try #require(applyLanguage(.russian))
             #expect("Notes".localized == "Заметки")
 
@@ -342,6 +342,72 @@ struct LanguageSwitchingTests {
         }
     }
 
+    // MARK: - Reading direction
+
+    /// The case behind the Flathub complaint: an Arabic desktop, no Arabic
+    /// catalogue of our own. The interface stays English, but the layout has
+    /// to mirror — and it cannot be left to GTK, which decides direction from
+    /// *its* catalogue and so comes up left-to-right wherever GTK's own
+    /// Arabic translation is not installed, which is most bare systems.
+    @Test("Following a right-to-left session asks for a mirrored layout") @MainActor
+    func followingARightToLeftSessionAsksForAMirroredLayout() throws {
+        try withRestoredLanguage {
+            applySessionLanguage("ar")
+            #expect(interfaceIsRightToLeft(for: .system))
+
+            applySessionLanguage("he_IL.UTF-8")
+            #expect(interfaceIsRightToLeft(for: .system), "a full locale resolves too")
+
+            applySessionLanguage("fa")
+            #expect(interfaceIsRightToLeft(for: .system))
+
+            applySessionLanguage("ru_RU.UTF-8")
+            #expect(!interfaceIsRightToLeft(for: .system))
+        }
+    }
+
+    /// Pinning a language pins its direction too, regardless of the session —
+    /// so a Russian interface on an Arabic desktop reads left-to-right, and an
+    /// Arabic interface on an English desktop reads right-to-left.
+    @Test("A pinned language decides the direction, not the session") @MainActor
+    func pinnedLanguageDecidesTheDirectionNotTheSession() throws {
+        try withRestoredLanguage {
+            applySessionLanguage("ar")
+            #expect(!interfaceIsRightToLeft(for: .russian))
+            #expect(!interfaceIsRightToLeft(for: .english))
+        }
+    }
+
+    // MARK: - Dates
+
+    /// `Locale.current` follows `LC_ALL` / `LANG`, the interface language
+    /// follows `LANGUAGE`. Without ``interfaceLocale()`` bridging them, a
+    /// Russian sidebar printed English dates.
+    @Test("Dates follow the interface language, not the session locale") @MainActor
+    func datesFollowTheInterfaceLanguageNotTheSessionLocale() throws {
+        try withRestoredLanguage {
+            let date = Date(timeIntervalSince1970: 1_756_600_000)
+
+            try #require(
+                applyLanguage(.russian),
+                "no usable locale on this host — gettext ignores LANGUAGE under C",
+            )
+            let russian = NotesSidebar.displayDate(date)
+
+            _ = applyLanguage(.english)
+            let english = NotesSidebar.displayDate(date)
+
+            #expect(
+                russian != english,
+                "the same instant rendered identically in both languages: \(russian)",
+            )
+            #expect(
+                russian.contains("авг") || russian.contains("Авг"),
+                "expected a Russian month name, got: \(russian)",
+            )
+        }
+    }
+
     // MARK: - The real binary's startup path
 
     /// In-process tests drive ``applyLanguage(_:)`` directly. This one checks
@@ -446,12 +512,24 @@ struct LanguageSwitchingTests {
     private func withRestoredLanguage(_ body: () throws -> Void) throws {
         let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
         defer {
-            AppLocalizationState.resetForTesting(sessionLanguage: previous)
+            applySessionLanguage(previous)
             _ = applyLanguage(.system)
         }
         initializeLocalization()
-        AppLocalizationState.resetForTesting(sessionLanguage: previous)
+        applySessionLanguage(previous)
         try body()
+    }
+
+    /// Installs `language` as the session's own LANGUAGE, which is the
+    /// baseline ``AppLanguage.system`` returns to.
+    @MainActor
+    private func applySessionLanguage(_ language: String?) {
+        if let language {
+            setenv("LANGUAGE", language, 1)
+        } else {
+            unsetenv("LANGUAGE")
+        }
+        recaptureSessionLanguage()
     }
 }
 #endif
