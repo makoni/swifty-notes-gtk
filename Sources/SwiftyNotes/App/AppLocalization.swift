@@ -15,7 +15,7 @@ import Glibc
 /// (LC_ALL / LANG), sets the text domain, and binds the locale directory
 /// so that `swift-adwaita`'s `localized(_:)` and `String.localized`
 /// can find `.mo` translation files.
-public func initializeLocalization() {
+public func initializeLocalization(language: AppLanguage = .system) {
     // Activate the process locale from environment. `nil` only queries
     // the locale; `""` sets it from the environment variables.
     // Import Darwin or Glibc above so setlocale/LC_ALL resolve on both.
@@ -27,6 +27,141 @@ public func initializeLocalization() {
         swifty_notes_bindtextdomain("me.spaceinbox.swiftynotes", localeDir)
     }
     _ = swifty_notes_bind_textdomain_codeset("me.spaceinbox.swiftynotes", "UTF-8")
+    AppLocalizationState.captureSessionLanguage()
+    _ = applyLanguage(language)
+}
+
+/// The session's own `LANGUAGE`, captured before the app ever overrides it.
+///
+/// Selecting ``AppLanguage.system`` has to put back what the session asked
+/// for, which is unrecoverable once the picker has assigned its own value.
+enum AppLocalizationState {
+    nonisolated(unsafe) private static var sessionLanguage: String?
+    nonisolated(unsafe) private static var didCaptureSessionLanguage = false
+
+    static func captureSessionLanguage() {
+        guard !didCaptureSessionLanguage else { return }
+        didCaptureSessionLanguage = true
+        sessionLanguage = ProcessInfo.processInfo.environment["LANGUAGE"]
+    }
+
+    static var capturedSessionLanguage: String? {
+        sessionLanguage
+    }
+
+    #if DEBUG
+        /// Lets a test start from a known session, since the capture is
+        /// deliberately one-shot in the app.
+        static func resetForTesting(sessionLanguage: String?) {
+            didCaptureSessionLanguage = true
+            self.sessionLanguage = sessionLanguage
+        }
+    #endif
+}
+
+/// Whether this build can change the interface language without a restart.
+///
+/// False only where libintl does not export the catalogue-cache counter; the
+/// preference is still recorded and takes effect at the next launch.
+public func canSwitchLanguageAtRuntime() -> Bool {
+    swifty_notes_can_switch_language_at_runtime() != 0
+}
+
+/// Points gettext at `language` and drops its cached catalogue.
+///
+/// `LANGUAGE` is the only lever that selects a catalogue independently of the
+/// locale, and gettext reads it once per catalogue load — hence the cache
+/// invalidation. The catch is that gettext ignores `LANGUAGE` completely while
+/// `LC_MESSAGES` is `C`, `POSIX` or `C.UTF-8`, so a session started without a
+/// locale needs one installed first; any generated locale will do, which is
+/// why the candidates are not limited to the requested language's own.
+///
+/// - Returns: `true` when subsequent lookups will use `language`. `false`
+///   means the session locale is `C` and no candidate locale is generated on
+///   this machine — in which case nothing is translated at all, with or
+///   without a picker.
+@discardableResult
+public func applyLanguage(_ language: AppLanguage) -> Bool {
+    guard let code = language.catalogueCode else {
+        // Follow the session again: restore the LANGUAGE it was started with.
+        if let sessionLanguage = AppLocalizationState.capturedSessionLanguage {
+            setEnvironmentVariable("LANGUAGE", sessionLanguage)
+        } else {
+            unsetEnvironmentVariable("LANGUAGE")
+        }
+        swifty_notes_invalidate_translation_cache()
+        return true
+    }
+
+    let escapedCLocale = ensureMessagesLocaleIsNotC(candidates: language.messagesLocaleCandidates)
+    setEnvironmentVariable("LANGUAGE", code)
+    swifty_notes_invalidate_translation_cache()
+    return escapedCLocale
+}
+
+/// Language codes with a catalogue installed next to the running build.
+///
+/// English is absent by design: it is the msgid language and ships no `.mo`.
+public func installedCatalogueLanguages() -> Set<String> {
+    guard let localeDir = localeDirectoryPath(),
+          let entries = try? FileManager.default.contentsOfDirectory(
+              at: URL(fileURLWithPath: localeDir, isDirectory: true),
+              includingPropertiesForKeys: nil,
+          )
+    else {
+        return []
+    }
+
+    return Set(
+        entries.filter { entry in
+            FileManager.default.fileExists(
+                atPath: entry
+                    .appendingPathComponent("LC_MESSAGES", isDirectory: true)
+                    .appendingPathComponent("me.spaceinbox.swiftynotes.mo", isDirectory: false)
+                    .path,
+            )
+        }.map(\.lastPathComponent),
+    )
+}
+
+/// Installs a locale that gettext will honour `LANGUAGE` under.
+///
+/// Returns `true` when `LC_MESSAGES` already names a real locale, or when one
+/// of `candidates` could be installed.
+private func ensureMessagesLocaleIsNotC(candidates: [String]) -> Bool {
+    if let current = swifty_notes_current_messages_locale(),
+       !isCLocale(String(cString: current)) {
+        return true
+    }
+
+    for candidate in candidates {
+        if let applied = candidate.withCString({ swifty_notes_set_messages_locale($0) }),
+           !isCLocale(String(cString: applied)) {
+            return true
+        }
+    }
+    return false
+}
+
+/// `C.UTF-8` counts as the C locale for gettext's purposes: it suppresses
+/// `LANGUAGE` exactly as bare `C` does.
+private func isCLocale(_ locale: String) -> Bool {
+    let name = locale.split(separator: ".").first.map(String.init) ?? locale
+    return name == "C" || name == "POSIX"
+}
+
+private func setEnvironmentVariable(_ name: String, _ value: String) {
+    name.withCString { nameC in
+        value.withCString { valueC in
+            _ = setenv(nameC, valueC, 1)
+        }
+    }
+}
+
+private func unsetEnvironmentVariable(_ name: String) {
+    name.withCString { nameC in
+        _ = unsetenv(nameC)
+    }
 }
 
 /// Resolves the directory containing `.mo` translation files.

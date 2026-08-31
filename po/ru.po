@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-08-31 21:17+0700\n"
+"POT-Creation-Date: 2026-08-31 22:01+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -52,7 +52,9 @@ msgid "A folder or note already exists at \"%@\"."
 msgstr "Папка или заметка по пути «%@» уже существует."
 
 msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
-msgstr "Нативное GTK-приложение для заметок в Markdown, написанное на Swift с использованием swift-adwaita."
+msgstr ""
+"Нативное GTK-приложение для заметок в Markdown, написанное на Swift с "
+"использованием swift-adwaita."
 
 msgid "About Swifty Notes"
 msgstr "О приложении Swifty Notes"
@@ -84,6 +86,9 @@ msgstr "Папка «assets» уже существует в %@."
 
 msgid "Appearance"
 msgstr "Оформление"
+
+msgid "Applies immediately — no restart."
+msgstr "Применяется сразу, без перезапуска."
 
 msgid "Autosave delay"
 msgstr "Задержка автосохранения"
@@ -141,7 +146,9 @@ msgid "Choose an empty destination folder for your notes."
 msgstr "Выберите пустую папку назначения для заметок."
 
 msgid "Choose where Swifty Notes stores markdown files and companion assets."
-msgstr "Выберите, где Swifty Notes будет хранить Markdown-файлы и сопутствующие ресурсы."
+msgstr ""
+"Выберите, где Swifty Notes будет хранить Markdown-файлы и сопутствующие "
+"ресурсы."
 
 msgid "Choose whether Tab inserts spaces or hard tabs."
 msgstr "Вставлять пробелы или символы табуляции при нажатии Tab."
@@ -457,6 +464,9 @@ msgstr "Следовать системе"
 msgid "Follow system locale"
 msgstr "Следовать системной локали"
 
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "Следовать системе или закрепить язык интерфейса."
+
 msgid "H%d"
 msgstr "H%d"
 
@@ -517,6 +527,9 @@ msgstr "Вставить Markdown-таблицу"
 msgid "Insert inline code or a fenced code block"
 msgstr "Вставить встроенный код или блок кода"
 
+msgid "Interface language"
+msgstr "Язык интерфейса"
+
 msgid "Invalid note ID: %@"
 msgstr "Неверный ID заметки: %@"
 
@@ -531,6 +544,9 @@ msgstr "Перейти к заголовку…"
 
 msgid "Jump-to-heading results"
 msgstr "Результаты перехода к заголовку"
+
+msgid "Language"
+msgstr "Язык"
 
 msgid "Left-aligned"
 msgstr "По левому краю"
@@ -625,7 +641,9 @@ msgstr "В этой заметке нет заголовков."
 msgid ""
 "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</"
 "tt></a> to start."
-msgstr "В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-heading\"><tt>## Heading</tt></a>."
+msgstr ""
+"В этой заметке нет заголовков. Чтобы начать, добавьте <a href=\"insert-"
+"heading\"><tt>## Heading</tt></a>."
 
 msgid "No headings match \"%@\""
 msgstr "Нет заголовков, соответствующих «%@»"
@@ -975,6 +993,9 @@ msgstr ""
 msgid "Swifty Notes is up to date."
 msgstr "Swifty Notes не требует обновлений."
 
+msgid "System language"
+msgstr "Системный язык"
+
 msgid "Tab width"
 msgstr "Ширина табуляции"
 
@@ -983,6 +1004,9 @@ msgstr "Таблица"
 
 msgid "Tabs"
 msgstr "Табуляция"
+
+msgid "Takes effect the next time the app starts."
+msgstr "Вступит в силу при следующем запуске приложения."
 
 msgid "Task List"
 msgstr "Список задач"
@@ -1004,7 +1028,9 @@ msgstr "Выбранное назначение не является папко
 
 msgid ""
 "The selected folder is on a read-only filesystem and cannot store notes."
-msgstr "Выбранная папка находится на файловой системе, доступной только для чтения, и не может хранить заметки."
+msgstr ""
+"Выбранная папка находится на файловой системе, доступной только для чтения, "
+"и не может хранить заметки."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "На диске недостаточно места для перемещения заметок в эту папку."

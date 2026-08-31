@@ -180,16 +180,36 @@ final class EditorFormattingToolbar {
         }
     }
 
-    private func makeButton(for action: MarkdownFormattingAction) -> Button {
-        let button = Button()
-        button.tooltipText = action.tooltip
-        button.setAccessibleLabel(action.accessibilityLabel)
-        let configuration = ToolbarButtonContentConfiguration(
+    /// Re-reads every tooltip, accessible label and button caption.
+    ///
+    /// The captions live in ``configurations``, which caches the translated
+    /// text, so a language change has to rebuild those entries before
+    /// ``refreshButtons()`` can put the new text on screen.
+    func retranslate() {
+        for (action, button) in buttons {
+            button.tooltipText = action.tooltip
+            button.setAccessibleLabel(action.accessibilityLabel)
+            configurations[action] = Self.configuration(for: action)
+        }
+        refreshButtons()
+    }
+
+    private static func configuration(
+        for action: MarkdownFormattingAction,
+    ) -> ToolbarButtonContentConfiguration {
+        ToolbarButtonContentConfiguration(
             primaryText: action.shortLabel ?? action.accessibilityLabel,
             iconName: action.iconName,
             prefersCompactLabel: action.iconName != nil && action.shortLabel == nil,
             hidesLabelWhenCompact: action.iconName != nil,
         )
+    }
+
+    private func makeButton(for action: MarkdownFormattingAction) -> Button {
+        let button = Button()
+        button.tooltipText = action.tooltip
+        button.setAccessibleLabel(action.accessibilityLabel)
+        let configuration = Self.configuration(for: action)
         configurations[action] = configuration
         button.child = ToolbarButtonContent.make(configuration: configuration, isCompact: isCompact)
         MacOSClickWorkaround.onClick(button) { [weak self] in

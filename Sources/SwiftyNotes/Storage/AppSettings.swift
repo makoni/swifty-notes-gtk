@@ -69,6 +69,9 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// dictionary that matches it.
     public var spellCheckLanguage: String?
     public var trashRetention: TrashRetention
+    /// Interface language. ``AppLanguage.system`` follows the session
+    /// locale, which is the behaviour that predates the picker.
+    public var appLanguage: AppLanguage
     /// Outline panel row density. Defaults to ``OutlineDensity.comfortable``,
     /// matching the design.
     public var outlineDensity: OutlineDensity
@@ -100,6 +103,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         spellCheckEnabled: Bool = true,
         spellCheckLanguage: String? = nil,
         trashRetention: TrashRetention = .days(30),
+        appLanguage: AppLanguage = .system,
         outlineDensity: OutlineDensity = .comfortable,
         outlineTreeLines: Bool = true,
         outlineDragHandles: Bool = true,
@@ -119,6 +123,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nilIfEmpty
         self.trashRetention = trashRetention
+        self.appLanguage = appLanguage
         self.outlineDensity = outlineDensity
         self.outlineTreeLines = outlineTreeLines
         self.outlineDragHandles = outlineDragHandles
@@ -157,6 +162,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 spellCheckEnabled: spellCheckEnabled,
                 spellCheckLanguage: spellCheckLanguage,
                 trashRetention: trashRetention,
+                appLanguage: appLanguage,
                 outlineDensity: outlineDensity,
                 outlineTreeLines: outlineTreeLines,
                 outlineDragHandles: outlineDragHandles,
@@ -175,6 +181,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
             trashRetention: trashRetention,
+            appLanguage: appLanguage,
             outlineDensity: outlineDensity,
             outlineTreeLines: outlineTreeLines,
             outlineDragHandles: outlineDragHandles,
@@ -224,6 +231,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
             trashRetention: trashRetention,
+            appLanguage: appLanguage,
             outlineDensity: outlineDensity,
             outlineTreeLines: outlineTreeLines,
             outlineDragHandles: outlineDragHandles,
@@ -243,6 +251,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case spellCheckEnabled
         case spellCheckLanguage
         case trashRetention
+        case appLanguage
         case outlineDensity
         case outlineTreeLines
         case outlineDragHandles
@@ -263,6 +272,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: container.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled) ?? true,
             spellCheckLanguage: container.decodeIfPresent(String.self, forKey: .spellCheckLanguage),
             trashRetention: container.decodeIfPresent(TrashRetention.self, forKey: .trashRetention) ?? .days(30),
+            appLanguage: container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .system,
             outlineDensity: container.decodeIfPresent(OutlineDensity.self, forKey: .outlineDensity) ?? .comfortable,
             outlineTreeLines: container.decodeIfPresent(Bool.self, forKey: .outlineTreeLines) ?? true,
             outlineDragHandles: container.decodeIfPresent(Bool.self, forKey: .outlineDragHandles) ?? true,

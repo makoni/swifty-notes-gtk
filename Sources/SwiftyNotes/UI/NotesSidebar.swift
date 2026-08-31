@@ -169,6 +169,23 @@ struct NotesSidebar {
     var debugRenderCount: Int { renderState.renderCount }
 #endif
 
+    /// Re-applies every string the sidebar sets once at construction.
+    ///
+    /// The count-bearing labels (`titleLabel`, `emptyLabel`) are deliberately
+    /// left out: they are a function of the current items, so the caller
+    /// re-renders instead of guessing counts here.
+    func retranslate() {
+        list.setAccessibleLabel("Notes List".localized)
+        root.setAccessibleLabel("Notes Sidebar".localized)
+        searchEntry.placeholderText = "Search notes".localized
+        searchEntry.setAccessibleLabel("Search Notes".localized)
+        sortButton.dropdownTooltip = "Sort Notes".localized
+        for (mode, button) in sortOptionButtons {
+            Self.applySortOptionContent(to: button, mode: mode)
+        }
+        setSortMode(sortState.currentMode)
+    }
+
     func render(
         items: [SidebarItem],
         selectedNoteID: UUID?,
@@ -509,6 +526,20 @@ struct NotesSidebar {
 
     private static func makeSortOptionButton(for mode: NotesSortMode) -> Button {
         let button = Button()
+        button.addCSSClass("flat")
+        button.halign = .fill
+        button.hexpand = true
+        applySortOptionContent(to: button, mode: mode)
+        return button
+    }
+
+    /// Builds (or rebuilds) the icon-plus-label row inside a sort option.
+    ///
+    /// Separate from ``makeSortOptionButton(for:)`` so ``retranslate()`` can
+    /// replace the label without recreating the button — the click handler
+    /// ``onSortModeChanged(_:)`` installed on it has to survive a language
+    /// change.
+    private static func applySortOptionContent(to button: Button, mode: NotesSortMode) {
         let row = Box(orientation: .horizontal, spacing: 8)
         row.hexpand = true
         row.halign = .fill
@@ -523,9 +554,5 @@ struct NotesSidebar {
         row.append(label)
 
         button.child = row
-        button.addCSSClass("flat")
-        button.halign = .fill
-        button.hexpand = true
-        return button
     }
 }

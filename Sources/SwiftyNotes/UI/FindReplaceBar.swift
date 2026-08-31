@@ -133,6 +133,29 @@ final class FindReplaceBar {
     /// active match highlights.
     var onClose: (() -> Void)?
 
+    /// Re-applies every string the bar sets once at construction.
+    ///
+    /// `countLabel` is excluded: ``setMatchCount(_:total:)`` owns it and the
+    /// controller refreshes it on the next query.
+    func retranslate() {
+        findEntry.placeholderText = "Find…".localized
+        caseSensitiveToggle.tooltipText = "Case Sensitive".localized
+        caseSensitiveToggle.setAccessibleLabel("Case Sensitive".localized)
+        wholeWordToggle.tooltipText = "Whole Word Match".localized
+        wholeWordToggle.setAccessibleLabel("Whole Word Match".localized)
+        regexToggle.tooltipText = "Regular Expression".localized
+        regexToggle.setAccessibleLabel("Regular Expression".localized)
+        prevButton.tooltipText = "Previous Match".localized
+        prevButton.setAccessibleLabel("Previous Match".localized)
+        nextButton.tooltipText = "Next Match".localized
+        nextButton.setAccessibleLabel("Next Match".localized)
+        replaceEntry.placeholderText = "Replace…".localized
+        replaceButton.label = "Replace".localized
+        replaceButton.tooltipText = "Replace the current match".localized
+        replaceAllButton.label = "Replace All".localized
+        replaceAllButton.tooltipText = "Replace every match".localized
+    }
+
     init() {
         root = SearchBar()
         root.showCloseButton = true

@@ -288,11 +288,8 @@ private extension ExternalDocumentWindow {
         header.packEnd(viewModeSwitcher)
 
         outlineToggleButton.addCSSClass(.flat)
-        outlineToggleButton.setAccessibleLabel("Toggle Outline".localized)
-        outlineToggleButton.tooltipText = "Show outline (F9)".localized
         quickJumpButton.addCSSClass(.flat)
-        quickJumpButton.setAccessibleLabel("Quick Jump".localized)
-        quickJumpButton.tooltipText = "Quick jump… (Ctrl+G)".localized
+        configureOutlineToolbarButtons()
 
         editorScroll.child = editor.view
         editorScroll.setPolicy(horizontal: .automatic, vertical: .automatic)
@@ -464,6 +461,19 @@ private extension ExternalDocumentWindow {
         outlineScrollSpyDriver?.rebind(mode: viewMode)
     }
 
+    /// Labels and tooltips for the outline / quick-jump header buttons.
+    ///
+    /// Separate from ``buildUI()`` so ``retranslate()`` has one place to
+    /// re-read them instead of a second copy of the same four strings.
+    func configureOutlineToolbarButtons() {
+        outlineToggleButton.setAccessibleLabel("Toggle Outline".localized)
+        outlineToggleButton.tooltipText = isOutlineVisible
+            ? "Hide outline (F9)".localized
+            : "Show outline (F9)".localized
+        quickJumpButton.setAccessibleLabel("Quick Jump".localized)
+        quickJumpButton.tooltipText = "Quick jump… (Ctrl+G)".localized
+    }
+
     func configureActionsAndMenu() {
         window.addAction(saveAsAction)
         window.addAction(importIntoLibraryAction)
@@ -546,6 +556,35 @@ extension ExternalDocumentWindow {
     // MainWindow.applyRuntimeSettings so a future settings fan-out can
     // push live changes into open standalone windows, and tests can
     // exercise the outline-tweaks path.
+    /// Re-applies every user-visible string after the interface language
+    /// changed.
+    ///
+    /// Same reasoning as ``MainWindow/retranslate()``: the widgets stay and
+    /// the strings are re-read, so an unsaved buffer, the cursor and both
+    /// scroll positions survive a language switch. Lives in this file because
+    /// the `configure*` helpers it drives are private to it.
+    func retranslate() {
+        configureToolbarAccessibility()
+        configureToolbarTooltips()
+        configureViewModeToggleContent()
+        configureActionsAndMenu()
+        configureOutlineToolbarButtons()
+        editorFormattingToolbar.retranslate()
+        applyOutlineVisibility()
+
+        outlineSidebar.retranslate()
+        findReplace.retranslate()
+        // The picker caches its popover with the alignment wording baked in.
+        tableSizePicker = nil
+
+        updateHeaderSubtitle()
+        // The outline footer counts are translated, and ``refreshPreview()``
+        // debounces its render — so re-extract the outline directly rather
+        // than leave one panel a beat behind the rest of the window.
+        refreshOutline(markdown: editor.buffer.text, blocks: buildPreviewBlocks(for: editor.buffer.text))
+        refreshPreview()
+    }
+
     func applyRuntimeSettings(_ settings: AppSettings, shouldRefreshPreview: Bool = true) {
         editor.applySettings(settings)
         renderEmojiShortcodes = settings.renderEmojiShortcodes
@@ -1141,6 +1180,32 @@ private extension ExternalDocumentWindow {
 
         var debugEditorModified: Bool {
             editor.buffer.modified
+        }
+
+        /// The persistent translated chrome, matching
+        /// ``MainWindow/debugLocalizedChrome`` so both windows' retranslation
+        /// can be asserted the same way.
+        var debugLocalizedChrome: [String: String] {
+            var chrome: [String: String] = [
+                "headerSubtitle": headerTitle.subtitle,
+                "outlineFilterPlaceholder": outlineSidebar.searchEntry.placeholderText ?? "",
+                "outlineFooter": outlineSidebar.footerLabel.text,
+                "outlineToggleTooltip": outlineToggleButton.tooltipText ?? "",
+                "quickJumpTooltip": quickJumpButton.tooltipText ?? "",
+                "findPlaceholder": findReplaceBar.findEntry.placeholderText ?? "",
+                "replaceAllLabel": findReplaceBar.replaceAllButton.label ?? "",
+                "formatBoldTooltip": editorFormattingToolbar.buttons[.bold]?.tooltipText ?? "",
+                "saveTooltip": saveButton.tooltipText ?? "",
+            ]
+            for (index, title) in overflowMenuSectionTitles.enumerated() {
+                chrome["menuSection.\(index)"] = title
+            }
+            for (section, items) in overflowMenuItemsBySection {
+                for (index, item) in items.enumerated() {
+                    chrome["menuItem.\(section).\(index)"] = item
+                }
+            }
+            return chrome
         }
 
         var debugOverflowMenuSectionTitles: [String] {

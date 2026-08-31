@@ -20,7 +20,11 @@ extension MainWindow {
     }
 
     func applyRuntimeSettings(_ settings: AppSettings, shouldRefreshPreview: Bool = true) {
+        let languageChanged = settings.appLanguage != appSettings.appLanguage
         appSettings = settings
+        if languageChanged {
+            applyLanguage(settings.appLanguage)
+        }
         editor.applySettings(settings)
         autosaveDelay = autosaveDelayOverride ?? .seconds(settings.autosaveDelaySeconds)
 
@@ -34,6 +38,15 @@ extension MainWindow {
         )
 
         applyOutlineTweaks(settings)
+
+        if languageChanged {
+            // Retranslating repeats the preview refresh, so skip the one
+            // below rather than rendering the same note twice.
+            retranslate()
+            activeSettingsWindow?.retranslate()
+            onLanguageChanged()
+            return
+        }
 
         guard shouldRefreshPreview else { return }
         refreshPreview()

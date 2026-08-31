@@ -83,6 +83,9 @@ final class AppController {
                 guard let self, let app else { return }
                 try openExternalDocument(at: fileURL, application: app)
             },
+            onLanguageChanged: { [weak self] in
+                self?.retranslateExternalDocumentWindows()
+            },
         )
         window.window.onDestroy { [weak self] in
             self?.releaseMainWindow()
@@ -95,6 +98,14 @@ final class AppController {
 
     func releaseMainWindow() {
         mainWindow = nil
+    }
+
+    /// Standalone document windows belong to the launcher, not to the main
+    /// window, so the interface-language change reaches them from here.
+    func retranslateExternalDocumentWindows() {
+        for window in externalDocumentWindows.values {
+            window.retranslate()
+        }
     }
 
     private func currentAppSettings() -> AppSettings {
@@ -198,7 +209,7 @@ public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
         ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded()
-        initializeLocalization()
+        initializeLocalization(language: storedInterfaceLanguage())
         MainContext.silenceSpuriousScrollbarWarnings()
         if let cliResult = NotesCLI.runIfRequested(arguments: arguments) {
             if !cliResult.stdout.isEmpty, let data = cliResult.stdout.data(using: .utf8) {
@@ -363,6 +374,18 @@ public enum SwiftyNotesLauncher {
         setenv("XDG_DATA_DIRS", combined, 1)
         #endif
     }
+
+    /// The interface language recorded in settings.
+    ///
+    /// Read before anything is drawn and before command dispatch: the CLI
+    /// reports its errors through the same catalogue, so `swiftynotes cli`
+    /// has to honour the picker too. Best-effort — an unreadable settings
+    /// file just means the session locale wins, which is the old behaviour.
+    @MainActor
+    private static func storedInterfaceLanguage() -> AppLanguage {
+        ((try? AppSettingsStore().load()) ?? .default).appLanguage
+    }
+
 }
 
 #if DEBUG

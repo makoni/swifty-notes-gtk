@@ -214,6 +214,32 @@ import Foundation
             overflowMenuItemsBySection
         }
 
+        /// Every persistent translated label the window shows with no dialog
+        /// open — the exact surface ``retranslate()`` has to cover, so a
+        /// language-switch test can assert the whole chrome moved rather than
+        /// spot-check one tooltip.
+        var debugLocalizedChrome: [String: String] {
+            var chrome: [String: String] = [
+                "headerSubtitle": headerTitle.subtitle,
+                "sidebarTitle": sidebar.titleLabel.text,
+                "sidebarSearchPlaceholder": sidebar.searchEntry.placeholderText ?? "",
+                "sidebarSortTooltip": sidebar.sortButton.tooltipText ?? "",
+                "outlineFilterPlaceholder": outlineSidebar.searchEntry.placeholderText ?? "",
+                "outlineFooter": outlineSidebar.footerLabel.text,
+                "trashBannerButton": trashedNoteBanner.buttonLabel ?? "",
+                "findPlaceholder": findReplaceBar.findEntry.placeholderText ?? "",
+                "replaceAllLabel": findReplaceBar.replaceAllButton.label ?? "",
+                "formatBoldTooltip": editorFormattingToolbar.buttons[.bold]?.tooltipText ?? "",
+            ]
+            for (key, value) in debugToolbarTooltips {
+                chrome["tooltip.\(key)"] = value ?? ""
+            }
+            for (index, title) in overflowMenuSectionTitles.enumerated() {
+                chrome["menuSection.\(index)"] = title
+            }
+            return chrome
+        }
+
         var debugToolbarTooltips: [String: String?] {
             [
                 "sidebar": sidebarToggle.tooltipText,

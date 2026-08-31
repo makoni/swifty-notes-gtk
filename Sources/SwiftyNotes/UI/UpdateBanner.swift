@@ -14,6 +14,9 @@ final class UpdateBanner {
     private let updateButton = Button(label: "Update".localized)
     private let closeButton = Button(icon: .windowClose)
 
+    /// Version the banner is currently announcing, kept so
+    /// ``retranslate()`` can rebuild the sentence around it.
+    private var shownVersion: String?
     private var onUpdateHandler: (() -> Void)?
     private var onDismissHandler: (() -> Void)?
 
@@ -66,8 +69,19 @@ final class UpdateBanner {
     }
 
     func show(version: String) {
+        shownVersion = version
         label.text = String(format: "Version %@ is available.".localized, version)
         revealer.revealChild = true
+    }
+
+    /// Re-reads the banner's strings after a language change.
+    func retranslate() {
+        updateButton.label = "Update".localized
+        closeButton.tooltipText = "Dismiss".localized
+        closeButton.setAccessibleLabel("Dismiss update notification".localized)
+        if let shownVersion {
+            label.text = String(format: "Version %@ is available.".localized, shownVersion)
+        }
     }
 
     func dismiss() {

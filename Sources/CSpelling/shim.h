@@ -288,6 +288,7 @@ swifty_notes_search_apply_tag(gpointer source_buffer, gpointer tag,
 
 #include <libgen.h>
 #include <libintl.h>
+#include <locale.h>
 
 static inline void
 swifty_notes_textdomain(const char *domainname) {
@@ -302,6 +303,47 @@ swifty_notes_bindtextdomain(const char *domainname, const char *dirname) {
 static inline char *
 swifty_notes_bind_textdomain_codeset(const char *domainname, const char *codeset) {
     return bind_textdomain_codeset(domainname, codeset);
+}
+
+// ---------------------------------------------------------------------------
+// Runtime language switching.
+//
+// glibc and GNU libintl resolve a domain's catalogue once and cache it, so
+// assigning LANGUAGE mid-process changes nothing until the internal counter
+// `_nl_msg_cat_cntr` is bumped. That counter is the mechanism the GNU gettext
+// manual documents for changing the language at runtime; it has been exported
+// since glibc 2.2.
+//
+// Declared weak so a libintl that does not export it still links — the
+// capability probe then reports false and the app keeps the language it
+// started with until the next launch.
+
+extern int _nl_msg_cat_cntr __attribute__((weak));
+
+static inline int
+swifty_notes_can_switch_language_at_runtime(void) {
+    return (&_nl_msg_cat_cntr) != NULL;
+}
+
+static inline void
+swifty_notes_invalidate_translation_cache(void) {
+    if (&_nl_msg_cat_cntr) {
+        ++_nl_msg_cat_cntr;
+    }
+}
+
+// LANGUAGE is ignored outright while LC_MESSAGES is "C" or "POSIX" — and
+// "C.UTF-8" counts as C. Escaping that needs any generated locale, not the
+// one for the language being requested, so the caller tries candidates and
+// keeps whichever this returns non-NULL for.
+static inline const char *
+swifty_notes_set_messages_locale(const char *locale) {
+    return setlocale(LC_MESSAGES, locale);
+}
+
+static inline const char *
+swifty_notes_current_messages_locale(void) {
+    return setlocale(LC_MESSAGES, NULL);
 }
 
 #endif /* SWIFTYNOTES_CSPELLING_SHIM_H */

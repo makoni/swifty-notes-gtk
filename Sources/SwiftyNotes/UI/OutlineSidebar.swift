@@ -12,6 +12,7 @@ struct OutlineSidebar {
     let emptyLabel: Label
     let footerLabel: Label
 
+    private let titleLabel: Label
     private let scroll: ScrolledWindow
     private let renderState: RenderState
 
@@ -76,7 +77,7 @@ struct OutlineSidebar {
         footerLabel.marginStart = 4
         footerLabel.marginEnd = 4
 
-        let titleLabel = Label("Outline".localized)
+        titleLabel = Label("Outline".localized)
         titleLabel.addCSSClass("heading")
         titleLabel.xalign = 0
         titleLabel.hexpand = true
@@ -210,6 +211,19 @@ struct OutlineSidebar {
     func render(headings: [Heading]) { setHeadings(headings) }
 
     // MARK: — Rendering
+    /// Re-applies the strings the panel sets once at construction.
+    ///
+    /// Everything derived from the current headings — the footer counts and
+    /// the empty state — is left to ``rerender()``, which the caller runs
+    /// straight after.
+    func retranslate() {
+        list.setAccessibleLabel("Note Outline".localized)
+        root.setAccessibleLabel("Outline Sidebar".localized)
+        titleLabel.text = "Outline".localized
+        searchEntry.placeholderText = "Filter headings…".localized
+        searchEntry.setAccessibleLabel("Filter Outline".localized)
+    }
+
 
     private func rerender() {
         let visible = OutlineFilter.visible(

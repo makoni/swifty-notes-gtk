@@ -107,7 +107,12 @@ final class MainWindow {
     /// editing is disabled until the note is restored — without it
     /// edits to a "previewed" trashed note silently saved into the
     /// previously-active regular note instead.
-    let trashedNoteBanner = Banner(title: "This note is in the Trash")
+    ///
+    /// Built untitled: ``previewTrashedNote(_:)`` names the note in the title
+    /// before revealing it. A placeholder here would never be displayed, but
+    /// it does reach the accessibility tree, where it read as untranslated
+    /// English regardless of the interface language.
+    let trashedNoteBanner = Banner(title: "")
     /// Banner shown above the editor when the launch-time update check
     /// finds a newer GitHub release than the running build. Carries an
     /// "Update" button that opens the release page, plus a dismiss
@@ -243,6 +248,11 @@ final class MainWindow {
     /// Lazily built on first table-button click; re-used across the
     /// window's lifetime so the popover's widget tree doesn't churn.
     var tableSizePicker: TableSizePicker?
+
+    /// Called after this window has re-read its own strings in a new
+    /// interface language, so the launcher can pass the change on to any
+    /// open standalone document windows — which this window does not own.
+    var onLanguageChanged: () -> Void = {}
     var noteContextMenu: Popover?
     var noteContextMenuRequestID: UInt = 0
     var noteContextHandlers: [String: @MainActor () -> Void] = [:]
@@ -285,6 +295,7 @@ final class MainWindow {
         forceUpdateAvailable: Bool = false,
         isSandboxedInstall: Bool = AppSandbox.isSandboxed,
         openExternalDocumentHandler: @escaping (URL) throws -> Void = { _ in },
+        onLanguageChanged: @escaping () -> Void = {},
         directoryOpener: @escaping (URL) throws -> Void = MainWindow.openDirectoryInSystemFileManager,
         deferredUIActionScheduler: @escaping (@escaping @MainActor () -> Void) -> Void = { action in
             MainContext.idle { action() }
@@ -302,6 +313,7 @@ final class MainWindow {
         self.forceUpdateAvailable = forceUpdateAvailable
         self.isSandboxedInstall = isSandboxedInstall
         self.openExternalDocumentHandler = openExternalDocumentHandler
+        self.onLanguageChanged = onLanguageChanged
         self.directoryOpener = directoryOpener
         self.deferredUIActionScheduler = deferredUIActionScheduler
 

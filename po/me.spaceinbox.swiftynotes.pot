@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-08-31 21:17+0700\n"
+"POT-Creation-Date: 2026-08-31 22:01+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -69,6 +69,9 @@ msgid "An \"assets\" folder already exists at %@."
 msgstr ""
 
 msgid "Appearance"
+msgstr ""
+
+msgid "Applies immediately — no restart."
 msgstr ""
 
 msgid "Autosave delay"
@@ -440,6 +443,9 @@ msgstr ""
 msgid "Follow system locale"
 msgstr ""
 
+msgid "Follow the system, or pin the language the interface uses."
+msgstr ""
+
 msgid "H%d"
 msgstr ""
 
@@ -497,6 +503,9 @@ msgstr ""
 msgid "Insert inline code or a fenced code block"
 msgstr ""
 
+msgid "Interface language"
+msgstr ""
+
 msgid "Invalid note ID: %@"
 msgstr ""
 
@@ -510,6 +519,9 @@ msgid "Jump to heading…"
 msgstr ""
 
 msgid "Jump-to-heading results"
+msgstr ""
+
+msgid "Language"
 msgstr ""
 
 msgid "Left-aligned"
@@ -941,6 +953,9 @@ msgstr ""
 msgid "Swifty Notes is up to date."
 msgstr ""
 
+msgid "System language"
+msgstr ""
+
 msgid "Tab width"
 msgstr ""
 
@@ -948,6 +963,9 @@ msgid "Table"
 msgstr ""
 
 msgid "Tabs"
+msgstr ""
+
+msgid "Takes effect the next time the app starts."
 msgstr ""
 
 msgid "Task List"
