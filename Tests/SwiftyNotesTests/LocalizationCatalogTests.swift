@@ -36,7 +36,9 @@ struct LocalizationCatalogTests {
         let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
             at: LocalizationCatalogFixture.russianCatalogueURL,
         )
+        let metadata = try LocalizationCatalogFixture.metadataMessageIDs()
         let orphans = catalogue.subtracting(source)
+            .subtracting(metadata)
             .subtracting(LocalizationCatalogFixture.permittedOrphans)
             .sorted()
         #expect(
@@ -316,8 +318,20 @@ struct LocalizationCatalogTests {
     /// catalogue unused — invisible to every other test here, because the
     /// extractor only ever sees the sites that *are* marked.
     @Test("Every call site of a translatable string is localized")
-    func everyCallSiteOfATranslatableStringIsLocalized() throws {
-        let offenders = try LocalizationCatalogFixture.unlocalizedCatalogueLiterals()
+    func everyCallSiteOfATranslatableStringIsLocalized() async throws {
+        // Metadata-only msgids prove nothing about Swift code. The desktop
+        // entry's keywords are "notes", "markdown", "cli"; the metainfo names
+        // the app and its developer. Those collide with ordinary identifiers
+        // — a directory name, a file extension, a window title — that must
+        // stay bare. A msgid the Swift scanner also sees stays guarded, so a
+        // real UI string is still caught when one of its call sites drops
+        // `.localized`.
+        let source = try await LocalizationCatalogFixture.sourceMessageIDs()
+        let metadataOnly = try LocalizationCatalogFixture.metadataMessageIDs()
+            .subtracting(source)
+        let offenders = try LocalizationCatalogFixture.unlocalizedCatalogueLiterals(
+            ignoring: metadataOnly,
+        )
         #expect(
             offenders.isEmpty,
             """
@@ -355,6 +369,93 @@ struct LocalizationCatalogTests {
                 """,
             )
         }
+    }
+
+    /// The desktop entry and the AppStream metainfo are English templates;
+    /// their translations come from `po/` at build time via
+    /// `scripts/render-metadata.sh`. A hand-written `xml:lang` or `Name[xx]`
+    /// in a template is a second, silent source of truth — it survives the
+    /// merge and then disagrees with the catalogue as soon as one of them is
+    /// edited.
+    @Test("Metadata templates carry no hand-written translations")
+    func metadataTemplatesCarryNoHandWrittenTranslations() throws {
+        let metainfo = try String(
+            contentsOf: LocalizationCatalogFixture.metainfoTemplateURL,
+            encoding: .utf8,
+        )
+        #expect(
+            !metainfo.contains("xml:lang="),
+            """
+            the metainfo template carries an xml:lang variant. Translations \
+            belong in po/; scripts/render-metadata.sh merges them in.
+            """,
+        )
+
+        let desktop = try String(
+            contentsOf: LocalizationCatalogFixture.desktopTemplateURL,
+            encoding: .utf8,
+        )
+        let localizedKeys = desktop
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { $0.range(of: #"^[A-Za-z]+\[[a-zA-Z_@.-]+\]="#, options: .regularExpression) != nil }
+        #expect(
+            localizedKeys.isEmpty,
+            """
+            the desktop template carries translated keys: \
+            \(localizedKeys.joined(separator: ", ")). Translations belong in \
+            po/; scripts/render-metadata.sh merges them in.
+            """,
+        )
+    }
+
+    /// Every string the metadata templates expose must reach the catalogue,
+    /// or it ships English in the store listing while the rest of the app is
+    /// translated.
+    @Test("The catalogue covers the packaging metadata too")
+    func catalogueCoversThePackagingMetadataToo() throws {
+        let metadata = try LocalizationCatalogFixture.metadataMessageIDs()
+        try #require(!metadata.isEmpty, "xgettext or the AppStream ITS rules are missing")
+
+        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
+            at: LocalizationCatalogFixture.russianCatalogueURL,
+        )
+        let missing = metadata.subtracting(catalogue).sorted()
+        #expect(
+            missing.isEmpty,
+            """
+            \(missing.count) metadata string(s) are not in po/ru.po, so the \
+            desktop entry or store listing stays English. Re-run \
+            scripts/extract-i18n.sh and translate them:
+            \(missing.prefix(10).map { "  - \($0.debugDescription)" }.joined(separator: "\n"))
+            """,
+        )
+    }
+
+    /// `po/LINGUAS` drives both the catalogue compilation and the metadata
+    /// merge, so a language present as a `.po` but missing from LINGUAS
+    /// silently ships untranslated metadata.
+    @Test("Every catalogue in po/ is listed in LINGUAS")
+    func everyCatalogueInPoIsListedInLinguas() throws {
+        let poDirectory = LocalizationCatalogFixture.packageRoot
+            .appendingPathComponent("po", isDirectory: true)
+        let catalogues = try FileManager.default
+            .contentsOfDirectory(at: poDirectory, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "po" }
+            .map { $0.deletingPathExtension().lastPathComponent }
+
+        let linguas = try String(
+            contentsOf: poDirectory.appendingPathComponent("LINGUAS", isDirectory: false),
+            encoding: .utf8,
+        )
+        .split(separator: "\n")
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+
+        let unlisted = Set(catalogues).subtracting(linguas).sorted()
+        #expect(
+            unlisted.isEmpty,
+            "\(unlisted.joined(separator: ", ")) has a .po but is missing from po/LINGUAS",
+        )
     }
 
     // MARK: - Packaging
@@ -604,6 +705,44 @@ private enum LocalizationCatalogFixture {
         return pairs.isEmpty ? nil : pairs
     }
 
+    static let metainfoTemplateURL = packageRoot
+        .appendingPathComponent("data/me.spaceinbox.swiftynotes.metainfo.xml.in")
+
+    static let desktopTemplateURL = packageRoot
+        .appendingPathComponent("data/me.spaceinbox.swiftynotes.desktop.in")
+
+    /// msgids contributed by the AppStream metainfo and the desktop entry
+    /// rather than by Swift source.
+    ///
+    /// Extracted with the same xgettext invocations `scripts/extract-i18n.sh`
+    /// uses, so the tests cannot drift from the build.
+    static func metadataMessageIDs() throws -> Set<String> {
+        guard let xgettext = toolURL(named: "xgettext") else { return [] }
+        let itsRules = "/usr/share/gettext/its/metainfo.its"
+        guard FileManager.default.fileExists(atPath: itsRules) else { return [] }
+
+        let scratch = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swiftynotes-metadata-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+
+        var ids: Set<String> = []
+        let extractions: [(arguments: [String], input: URL)] = [
+            (["--from-code=UTF-8", "--its=\(itsRules)", "--omit-header"], metainfoTemplateURL),
+            (["-L", "Desktop", "--omit-header"], desktopTemplateURL),
+        ]
+        for (index, extraction) in extractions.enumerated() {
+            let output = scratch.appendingPathComponent("meta-\(index).pot", isDirectory: false)
+            let result = try run(
+                xgettext,
+                extraction.arguments + ["--output=\(output.path)", extraction.input.path],
+            )
+            guard result.status == 0 else { continue }
+            ids.formUnion(try catalogueMessageIDs(at: output))
+        }
+        return ids
+    }
+
     /// Literals that match a catalogue msgid but must stay bare, keyed by the
     /// source file that holds them. These are canonical keys and seed content,
     /// not user-visible chrome: translating them breaks a lookup or rewrites a
@@ -634,8 +773,10 @@ private enum LocalizationCatalogFixture {
     /// Literals in `Sources/` that appear verbatim in the catalogue yet carry
     /// no `.localized`. Lines that hand their literals to `nlocalized` are
     /// skipped — that call localizes them itself.
-    static func unlocalizedCatalogueLiterals() throws -> [String] {
-        let catalogue = try catalogueMessageIDs(at: russianCatalogueURL)
+    static func unlocalizedCatalogueLiterals(
+        ignoring ignored: Set<String> = [],
+    ) throws -> [String] {
+        let catalogue = try catalogueMessageIDs(at: russianCatalogueURL).subtracting(ignored)
         var offenders: [String] = []
         let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
         guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {

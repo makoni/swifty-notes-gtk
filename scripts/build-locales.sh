@@ -20,7 +20,15 @@ if [[ ! -d "$PO_DIR" ]]; then
     exit 1
 fi
 
-LANGUAGES=("cs" "de" "es" "fr" "hi" "it" "ja" "ko" "ru" "tr" "uk" "zh_CN")
+# po/LINGUAS is the single list of shipped languages — msgfmt reads the same
+# file when it merges translations into the desktop entry and the AppStream
+# metainfo, so a language added there is picked up everywhere at once.
+LINGUAS_FILE="$PROJECT_ROOT/po/LINGUAS"
+if [[ ! -f "$LINGUAS_FILE" ]]; then
+    echo "ERROR: $LINGUAS_FILE not found."
+    exit 1
+fi
+mapfile -t LANGUAGES < <(grep -vE '^\s*(#|$)' "$LINGUAS_FILE")
 
 DOMAIN="me.spaceinbox.swiftynotes"
 
@@ -45,3 +53,18 @@ done
 
 echo ""
 echo "All .po files compiled successfully."
+
+# The desktop entry and the AppStream metainfo carry translations too; they
+# are rendered from their English templates plus the same catalogues.
+#
+# Not fatal here: this script also runs on macOS, where neither file is
+# installed and an older gettext without msgfmt's XML/Desktop modes would
+# otherwise fail the build. Linux packaging renders them itself and does
+# treat a failure as fatal.
+if bash "$SCRIPT_DIR/render-metadata.sh"; then
+    :
+else
+    echo ""
+    echo "WARNING: could not render the translated desktop entry and metainfo."
+    echo "         Needs gettext with msgfmt --xml / --desktop support."
+fi

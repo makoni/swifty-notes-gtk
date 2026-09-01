@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-08-31 22:01+0700\n"
+"POT-Creation-Date: 2026-09-01 11:50+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -1249,3 +1249,126 @@ msgid_plural "assets"
 msgstr[0] "ресурсом"
 msgstr[1] "ресурсами"
 msgstr[2] "ресурсами"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:6
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:8
+msgid "Sergey Armodin"
+msgstr "Сергей Армодин"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:10
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "Нативные Markdown-заметки на GTK с предпросмотром и автоматизацией"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:22
+msgid "notes"
+msgstr "заметки"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:23
+msgid "markdown"
+msgstr "markdown"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:24
+msgid "editor"
+msgstr "редактор"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:25
+msgid "preview"
+msgstr "предпросмотр"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:26
+msgid "cli"
+msgstr "cli"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:27
+msgid "automation"
+msgstr "автоматизация"
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:30
+msgid ""
+"Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux "
+"written in Swift."
+msgstr "Swifty Notes — нативное приложение для Markdown-заметок на GTK/libadwaita, написанное на Swift для Linux."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:31
+msgid ""
+"The desktop app is the primary experience: write, organize, and preview "
+"Markdown notes with native GTK widgets, autosave, remembered workspace "
+"state, and adjustable editor settings such as font size, wrapping, "
+"indentation, and appearance."
+msgstr "Основной сценарий — настольное приложение: пишите, упорядочивайте и просматривайте Markdown-заметки в нативных виджетах GTK, с автосохранением, запоминанием состояния рабочей области и настройками редактора — размером шрифта, переносом строк, отступами и оформлением."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:32
+msgid ""
+"The included CLI works on the same file-backed notes so shell scripts, "
+"automation, and AI agents can safely inspect or update notes without a "
+"separate database or background service."
+msgstr "Встроенный CLI работает с теми же файловыми заметками, поэтому скрипты, автоматизация и ИИ-агенты могут безопасно читать и изменять заметки без отдельной базы данных и фоновой службы."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:34
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "Создание, переименование, дублирование, экспорт и удаление Markdown-заметок."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:35
+msgid ""
+"Autosave edits, remember workspace state, and keep note-local image assets "
+"together with each note."
+msgstr "Автосохранение правок, запоминание состояния рабочей области и хранение изображений рядом с заметкой."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:36
+msgid ""
+"Adjust editor font size and other writing preferences to fit different "
+"screens and workflows."
+msgstr "Настройка размера шрифта и других параметров редактора под разные экраны и рабочие процессы."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:37
+msgid ""
+"Choose where notes are stored, including a cloud-synced folder, so the same "
+"plain files can stay in sync across devices."
+msgstr "Выбор папки хранения заметок, в том числе синхронизируемой облаком, чтобы одни и те же файлы были доступны на всех устройствах."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:38
+msgid ""
+"Import images with drag and drop and render Markdown with a native GTK "
+"preview instead of a web view."
+msgstr "Добавление изображений перетаскиванием и отображение Markdown нативным предпросмотром GTK вместо веб-движка."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:39
+msgid ""
+"Use the CLI for JSON-friendly note automation from scripts, shell pipelines, "
+"and AI agents."
+msgstr "Автоматизация заметок через CLI с выводом в JSON — из скриптов, конвейеров оболочки и ИИ-агентов."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:40
+msgid ""
+"Switch the interface language between the system default, English, and "
+"Russian without restarting the app."
+msgstr "Переключение языка интерфейса между системным, английским и русским без перезапуска приложения."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:49
+msgid ""
+"Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "Разделённый вид с боковой панелью, панелью форматирования, живым предпросмотром и структурой."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:53
+msgid ""
+"Native Markdown preview with the document outline for navigating long notes."
+msgstr "Нативный предпросмотр Markdown со структурой документа для навигации по длинным заметкам."
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:57
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "Полноценный редактор с панелью форматирования и панелью структуры документа."
+
+#: data/me.spaceinbox.swiftynotes.desktop.in:3
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "Нативные Markdown-заметки на GTK с предпросмотром и автоматизацией через CLI"
+
+#: data/me.spaceinbox.swiftynotes.desktop.in:9
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "заметки;markdown;редактор;текст;cli;автоматизация;"
+
+#: data/me.spaceinbox.swiftynotes.desktop.in:15
+msgid "New Window"
+msgstr "Новое окно"

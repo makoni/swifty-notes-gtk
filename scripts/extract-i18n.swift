@@ -324,7 +324,16 @@ do {
     let packageRoot = URL(fileURLWithPath: #file, isDirectory: true)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-    let potURL = packageRoot.appendingPathComponent("po/me.spaceinbox.swiftynotes.pot")
+    // Default output is the shipped template; `--output PATH` lets
+    // scripts/extract-i18n.sh collect the Swift half separately before
+    // merging it with the strings extracted from the packaging metadata.
+    let outputArgument = CommandLine.arguments.firstIndex(of: "--output")
+        .flatMap { index -> String? in
+            let next = CommandLine.arguments.index(after: index)
+            return next < CommandLine.arguments.endIndex ? CommandLine.arguments[next] : nil
+        }
+    let potURL = outputArgument.map { URL(fileURLWithPath: $0) }
+        ?? packageRoot.appendingPathComponent("po/me.spaceinbox.swiftynotes.pot")
     let content = lines.joined(separator: "\n") + "\n"
     try content.write(to: potURL, atomically: true, encoding: .utf8)
 

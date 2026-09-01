@@ -13,3 +13,7 @@ default.profraw
 /packaging/out
 /flatpak/me.spaceinbox.swiftynotes.yml
 swifty-notes_*.snap
+
+# Desktop entry and AppStream metainfo with translations merged in;
+# rendered from data/*.in plus po/ by scripts/render-metadata.sh.
+data/generated/

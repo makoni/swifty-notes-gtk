@@ -8,9 +8,6 @@
     <name>Sergey Armodin</name>
   </developer>
   <summary>Native GTK markdown notes with preview and automation</summary>
-  <summary xml:lang="ru">Нативные Markdown-заметки на GTK с предпросмотром и автоматизацией</summary>
-  <!-- Names the gettext domain the interface is translated through, so
-       AppStream tooling can report translation status. -->
   <translation type="gettext">me.spaceinbox.swiftynotes</translation>
   <launchable type="desktop-id">me.spaceinbox.swiftynotes.desktop</launchable>
   <branding>
@@ -23,38 +20,24 @@
   </categories>
   <keywords>
     <keyword>notes</keyword>
-    <keyword xml:lang="ru">заметки</keyword>
     <keyword>markdown</keyword>
     <keyword>editor</keyword>
-    <keyword xml:lang="ru">редактор</keyword>
     <keyword>preview</keyword>
-    <keyword xml:lang="ru">предпросмотр</keyword>
     <keyword>cli</keyword>
     <keyword>automation</keyword>
-    <keyword xml:lang="ru">автоматизация</keyword>
   </keywords>
   <description>
     <p>Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift.</p>
-    <p xml:lang="ru">Swifty Notes — нативное приложение для Markdown-заметок на GTK/libadwaita, написанное на Swift для Linux.</p>
     <p>The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance.</p>
-    <p xml:lang="ru">Основной сценарий — настольное приложение: пишите, упорядочивайте и просматривайте Markdown-заметки в нативных виджетах GTK, с автосохранением, запоминанием состояния рабочей области и настройками редактора — размером шрифта, переносом строк, отступами и оформлением.</p>
     <p>The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service.</p>
-    <p xml:lang="ru">Встроенный CLI работает с теми же файловыми заметками, поэтому скрипты, автоматизация и ИИ-агенты могут безопасно читать и изменять заметки без отдельной базы данных и фоновой службы.</p>
     <ul>
       <li>Create, rename, duplicate, export, and delete Markdown notes.</li>
-      <li xml:lang="ru">Создание, переименование, дублирование, экспорт и удаление Markdown-заметок.</li>
       <li>Autosave edits, remember workspace state, and keep note-local image assets together with each note.</li>
-      <li xml:lang="ru">Автосохранение правок, запоминание состояния рабочей области и хранение изображений рядом с заметкой.</li>
       <li>Adjust editor font size and other writing preferences to fit different screens and workflows.</li>
-      <li xml:lang="ru">Настройка размера шрифта и других параметров редактора под разные экраны и рабочие процессы.</li>
       <li>Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices.</li>
-      <li xml:lang="ru">Выбор папки хранения заметок, в том числе синхронизируемой облаком, чтобы одни и те же файлы были доступны на всех устройствах.</li>
       <li>Import images with drag and drop and render Markdown with a native GTK preview instead of a web view.</li>
-      <li xml:lang="ru">Добавление изображений перетаскиванием и отображение Markdown нативным предпросмотром GTK вместо веб-движка.</li>
       <li>Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents.</li>
-      <li xml:lang="ru">Автоматизация заметок через CLI с выводом в JSON — из скриптов, конвейеров оболочки и ИИ-агентов.</li>
-      <li>Switch the interface language — follow the system, English, or Russian — without restarting the app.</li>
-      <li xml:lang="ru">Переключение языка интерфейса — системный, английский или русский — без перезапуска приложения.</li>
+      <li>Switch the interface language between the system default, English, and Russian without restarting the app.</li>
     </ul>
   </description>
   <provides>
@@ -81,7 +64,7 @@
   <url type="vcs-browser">https://github.com/makoni/swifty-notes-gtk</url>
   <releases>
     <release version="@VERSION@" date="@DATE@">
-      <description>
+      <description translate="no">
         <p>This update brings the full navigation and search toolkit to Markdown files you open directly — no notes library required.</p>
         <ul>
           <li>The document Outline (F9) now works when you open a Markdown file straight from your file manager: every heading at a glance, click to jump, and the panel follows along as you scroll. Ctrl+G opens the quick-jump palette there too.</li>
@@ -92,7 +75,7 @@
       </description>
     </release>
     <release version="1.3.0" date="2026-06-10">
-      <description>
+      <description translate="no">
         <p>This update brings your Markdown emoji to life and tidies up the update checker.</p>
         <ul>
           <li>Emoji shortcodes like <code>:white_check_mark:</code> and <code>:rocket:</code> now render as real emoji in the preview — in headings, lists, quotes, tables, and link labels. Your Markdown source stays untouched, and anything inside code stays literal. Around 1,900 GitHub-style shortcodes are supported, and a new switch in Settings → Preview turns the substitution off if you prefer the raw text.</li>
@@ -102,7 +85,7 @@
       </description>
     </release>
     <release version="1.2.0" date="2026-06-04">
-      <description>
+      <description translate="no">
         <p>This update adds a document outline for quick navigation, full Find &amp; Replace, and live search highlighting in the preview.</p>
         <ul>
           <li>A new Outline panel (toggle with F9) lists every heading in the current note so you can jump around long documents at a glance. It tracks your position as you scroll, shows a breadcrumb of where you are, and lets you filter headings, collapse sections, fold them in the editor, and even drag to reorder whole sections. Press Ctrl+G for a command-palette-style quick jump to any heading.</li>
@@ -113,7 +96,7 @@
       </description>
     </release>
     <release version="1.1.7" date="2026-05-20">
-      <description>
+      <description translate="no">
         <p>This update helps you stay on the latest version and smooths out a few rough edges in everyday editing.</p>
         <ul>
           <li>Swifty Notes now lets you know when a newer release is available: a friendly banner appears at the top of the editor with a one-click link to the release page, and a new "Check for Updates…" entry was added to the main menu so you can check on demand.</li>
@@ -123,7 +106,7 @@
       </description>
     </release>
     <release version="1.1.6" date="2026-05-14">
-      <description>
+      <description translate="no">
         <p>This update makes Swifty Notes feel faster, calmer, and more polished while you write.</p>
         <ul>
           <li>Typing now feels smoother in long notes, with fewer distracting preview refreshes while you write.</li>
@@ -134,7 +117,7 @@
       </description>
     </release>
     <release version="1.1.5" date="2026-04-30">
-      <description>
+      <description translate="no">
         <p>This update brings note recovery, smarter paste, list-rendering polish, and richer out-of-the-box spell-check.</p>
         <ul>
           <li>New Trash: deleting a note moves it into a sidebar Trash section instead of erasing it for good. Restore from the right-click menu, the toast's Undo button, or empty the bin manually. A new "Empty Trash automatically" preference in Settings → Storage prunes trashed notes after Never / 7 / 30 / 90 / 365 days (default 30). Deleting a folder also routes nested notes through Trash, so they can still be restored individually.</li>
@@ -148,7 +131,7 @@
       </description>
     </release>
     <release version="1.1.4" date="2026-04-28">
-      <description>
+      <description translate="no">
         <p>This update brings folders and inline spell-checking to Swifty Notes — two of the most-requested features for organising notes and writing comfortably.</p>
         <ul>
           <li>Notes can now live in folders. Create them from the new "+ folder" button in the toolbar or by right-clicking any folder in the sidebar (New subfolder, Rename, Delete with confirmation). Folders can be nested as deep as your file system allows.</li>
@@ -161,7 +144,7 @@
       </description>
     </release>
     <release version="1.1.3" date="2026-04-26">
-      <description>
+      <description translate="no">
         <p>This update fixes a few cross-platform packaging issues and the way Swifty Notes handles your notes folder.</p>
         <ul>
           <li>The Snap build now starts cleanly under strict confinement on Ubuntu 26.04 and other recent setups. Previous versions could abort on launch with a D-Bus AppArmor policy error.</li>
@@ -173,7 +156,7 @@
       </description>
     </release>
     <release version="1.1.2" date="2026-04-24">
-      <description>
+      <description translate="no">
         <p>This update focuses on making the Markdown editor and preview more productive day to day.</p>
         <ul>
           <li>Fenced code blocks in the preview now show a quick Copy button, so you can grab a snippet in one click instead of selecting it by hand.</li>
@@ -185,7 +168,7 @@
       </description>
     </release>
     <release version="1.1.1" date="2026-04-22">
-      <description>
+      <description translate="no">
         <p>This update brings back a few things that quietly stopped working on some setups in 1.1.0, and polishes exporting and window handling.</p>
         <ul>
           <li>Import, Open Markdown File, Export, Save As, and Choose Notes Folder dialogs now open reliably. On some systems they were silently doing nothing after upgrading to 1.1.0.</li>
@@ -197,7 +180,7 @@
       </description>
     </release>
     <release version="1.1.0" date="2026-04-21">
-      <description>
+      <description translate="no">
         <p>This update makes the Markdown preview feel richer for notes that mix in online images, badges, and animations.</p>
         <ul>
           <li>Images loaded from the web — including animated GIFs and WebP animations — now render directly in the preview instead of showing a placeholder.</li>
@@ -207,7 +190,7 @@
       </description>
     </release>
     <release version="1.0.2" date="2026-04-15">
-      <description>
+      <description translate="no">
         <p>This update makes split view more comfortable on tighter window sizes and adds a more direct way to open and edit Markdown files outside your library.</p>
         <ul>
           <li>You can now open and edit standalone Markdown files without importing them first, including from your file manager’s Open With flow.</li>
@@ -218,7 +201,7 @@
       </description>
     </release>
     <release version="1.0.1" date="2026-04-13">
-      <description>
+      <description translate="no">
         <p>This update makes command-line workflows friendlier for packaged installs and keeps release builds more consistent across Linux formats.</p>
         <ul>
           <li>The CLI now better fits Flathub installs, with clearer guidance for terminal use and improved note discovery when your notes live in Flatpak storage.</li>
@@ -228,7 +211,7 @@
       </description>
     </release>
     <release version="1.0.0" date="2026-04-10">
-      <description>
+      <description translate="no">
         <p>Native GTK release with Markdown preview, editor customization, configurable note storage for cloud-synced folders, note-local image assets, and CLI automation for scripts and AI agents.</p>
       </description>
     </release>
