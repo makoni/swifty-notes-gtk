@@ -248,6 +248,12 @@ struct LocalizationTests {
         environment["LANG"] = "en_US.UTF-8"
         environment["LANGUAGE"] = language ?? ""
         environment.removeValue(forKey: "SWIFTY_NOTES_LOCALE_DIR")
+        // The binary honours the interface language stored in settings, so
+        // without an isolated config home the developer's own preference — set
+        // by using the app — decides what language this subprocess answers in.
+        environment["XDG_CONFIG_HOME"] = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swiftynotes-l10n-\(UUID().uuidString)", isDirectory: true)
+            .path(percentEncoded: false)
         process.environment = environment
 
         let stdout = Pipe()

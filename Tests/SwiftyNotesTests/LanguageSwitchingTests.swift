@@ -163,6 +163,11 @@ struct LanguageSwitchingTests {
     /// Changing the preference through the settings path — not by calling
     /// `retranslate()` directly — is how a user triggers this, so the wiring
     /// from `applyRuntimeSettings` has to be the thing under test.
+    ///
+    /// The deferral is asserted, not incidental. A language change arrives from
+    /// inside the language ComboRow's own `notify::selected` emission, and
+    /// retranslating rebuilds that row's model; doing it synchronously left GTK
+    /// unwinding through a freed model and crashed the app on every switch.
     @Test("Changing the preference retranslates the window on its own") @MainActor
     func changingThePreferenceRetranslatesTheWindowOnItsOwn() throws {
         let temp = FileManager.default.temporaryDirectory
@@ -171,6 +176,7 @@ struct LanguageSwitchingTests {
 
         let app = Application(id: "me.spaceinbox.swiftynotes.tests.language-preference")
         try app.register()
+        let deferredScheduler = TestMainActorScheduler()
 
         let window = MainWindow(
             application: app,
@@ -184,6 +190,7 @@ struct LanguageSwitchingTests {
             appSettingsStore: AppSettingsStore(
                 settingsFileURL: temp.appendingPathComponent("settings.json", isDirectory: false),
             ),
+            deferredUIActionScheduler: deferredScheduler.schedule,
         )
         window.debugLoadInitialNotes()
 
@@ -206,7 +213,17 @@ struct LanguageSwitchingTests {
                 customNotesDirectoryPath: temp.path(),
                 appLanguage: .russian,
             ))
-            #expect(window.appSettings.appLanguage == .russian)
+            #expect(window.appSettings.appLanguage == .russian, "the preference lands immediately")
+            #expect(
+                window.debugLocalizedChrome["tooltip.new"] == "New Note",
+                """
+                the chrome must not be touched yet — retranslating inside the \
+                settings row's signal emission is what crashed the app
+                """,
+            )
+            #expect(externalWindowsNotified == 0, "the fan-out waits too")
+
+            deferredScheduler.runPendingActions()
             #expect(window.debugLocalizedChrome["tooltip.new"] == "Новая заметка")
             #expect(
                 externalWindowsNotified == 1,
@@ -220,6 +237,7 @@ struct LanguageSwitchingTests {
                 customNotesDirectoryPath: temp.path(),
                 appLanguage: .english,
             ))
+            deferredScheduler.runPendingActions()
             #expect(window.editor.buffer.text == "черновик")
             #expect(window.debugLocalizedChrome["tooltip.new"] == "New Note")
         }

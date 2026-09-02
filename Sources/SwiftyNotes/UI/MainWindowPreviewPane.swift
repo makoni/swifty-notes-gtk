@@ -218,6 +218,37 @@ extension MainWindow {
         }
     }
 
+    /// Flips the Settings window's language row after launch, through the row's
+    /// real `notify::selected` signal.
+    ///
+    /// Reaching this path by hand needs a mouse; reaching it headlessly does
+    /// not reproduce, because the crash it exposed needs a running main loop.
+    /// `SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH=ru` alongside
+    /// `SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_ON_LAUNCH=1` drives it deterministically.
+    func scheduleDebugLanguageSwitchIfRequested() {
+        guard !hasScheduledDebugLanguageSwitch,
+              let raw = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH"]?
+                  .trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              let language = AppLanguage(rawValue: raw)
+        else {
+            return
+        }
+
+        hasScheduledDebugLanguageSwitch = true
+        let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS"]
+            .flatMap(Int.init) ?? 1500
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
+            guard let settingsWindow = self?.activeSettingsWindow else {
+                FileHandle.standardError.write(Data("[debug-language] no settings window open\n".utf8))
+                return
+            }
+            FileHandle.standardError.write(Data("[debug-language] selecting \(language.rawValue)\n".utf8))
+            settingsWindow.debugSetLanguage(language)
+            FileHandle.standardError.write(Data("[debug-language] survived the switch\n".utf8))
+        }
+    }
+
     func scheduleDebugCreateNoteIfRequested() {
         guard !hasScheduledDebugCreateNote else { return }
         let shouldCreate = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_CREATE_NOTE_ON_LAUNCH"]

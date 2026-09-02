@@ -275,6 +275,7 @@ final class MainWindow {
     var hasScheduledDebugTypingBurst = false
     var hasScheduledDebugSettingsOpen = false
     var hasScheduledDebugCreateNote = false
+    var hasScheduledDebugLanguageSwitch = false
     var hasScheduledDebugScrollSweep = false
     var hasScheduledDebugPreviewSearch = false
 #if DEBUG
@@ -345,6 +346,7 @@ final class MainWindow {
         scheduleDebugHeaderSubtitleLogIfRequested()
         scheduleDebugSettingsOpenIfRequested()
         scheduleDebugCreateNoteIfRequested()
+        scheduleDebugLanguageSwitchIfRequested()
         scheduleDebugSelectionSwitchIfRequested()
         scheduleDebugTypingBurstIfRequested()
         scheduleDebugScrollSweepIfRequested()
