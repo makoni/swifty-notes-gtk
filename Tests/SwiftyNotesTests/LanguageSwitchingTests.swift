@@ -149,6 +149,19 @@ struct LanguageSwitchingTests {
             window.retranslate()
             let russian = window.debugLocalizedChrome
 
+            // An empty value means the label was never applied in *either*
+            // language, which is the stronger form of the bug — so assert
+            // non-emptiness rather than skipping those keys, or deleting a
+            // `setAccessibleLabel` call entirely would pass.
+            let empty = english.filter { $0.value.isEmpty }.keys.sorted()
+            #expect(
+                empty.isEmpty,
+                """
+                \(empty.count) chrome label(s) are empty, so they were never \
+                applied at all: \(empty.joined(separator: ", "))
+                """,
+            )
+
             let unchanged = english
                 .filter { key, value in russian[key] == value && !value.isEmpty }
                 .keys
@@ -282,6 +295,9 @@ struct LanguageSwitchingTests {
             window.retranslate()
 
             let russian = window.debugLocalizedChrome
+            let empty = english.filter { $0.value.isEmpty }.keys.sorted()
+            #expect(empty.isEmpty, "never-applied label(s): \(empty.joined(separator: ", "))")
+
             let unchanged = english
                 .filter { key, value in russian[key] == value && !value.isEmpty }
                 .keys
@@ -364,6 +380,41 @@ struct LanguageSwitchingTests {
                 "the language row must still show the language that was picked",
             )
         }
+    }
+
+    // MARK: - Catalogue reachability
+
+    /// The warning branch cannot be reached in a SwiftPM build — the Russian
+    /// `.mo` is tracked and declared as a resource, so a catalogue is always
+    /// found — which is why the message is a pure function rather than an
+    /// inline `if`. Untested, its text, condition and stream would all be
+    /// unverified.
+    @Test("A missing catalogue produces a diagnostic that can diagnose it") @MainActor
+    func missingCatalogueProducesADiagnosticThatCanDiagnoseIt() {
+        #expect(
+            missingCatalogueDiagnostic(localeDirectory: "/app/share/locale") == nil,
+            "a resolved directory means a catalogue was found"
+        )
+
+        let diagnostic = try? #require(missingCatalogueDiagnostic(localeDirectory: nil))
+        let message = diagnostic ?? ""
+        // It exists to tell a packager where to look, so the domain and the
+        // layout gettext insists on both have to be in it.
+        #expect(message.contains(AppIdentity.identifier))
+        #expect(message.contains("LC_MESSAGES"))
+        #expect(message.contains(systemLocaleDirectory))
+        #expect(message.contains("untranslated"))
+    }
+
+    /// The shipped build must never hit that branch: if it does, the resource
+    /// rule that carries the catalogue has broken.
+    @Test("This build resolves a catalogue") @MainActor
+    func thisBuildResolvesACatalogue() {
+        #expect(
+            localeDirectoryPath() != nil,
+            "no catalogue reachable from the test build — the locale resource rule has broken"
+        )
+        #expect(installedCatalogueLanguages().contains("ru"))
     }
 
     // MARK: - Reading direction
@@ -538,27 +589,20 @@ struct LanguageSwitchingTests {
         // `setLanguage` installs a real locale to escape the C locale, which
         // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
         // leave that behind for every later test.
-        let previousMessagesLocale = currentMessagesLocale()
+        let previousMessagesLocale = Adwaita.currentMessagesLocale()
         defer {
             applySessionLanguage(previous)
             _ = applyLanguage(.system)
-            restoreMessagesLocale(previousMessagesLocale)
+            if let previousMessagesLocale {
+                #expect(
+                    setMessagesLocale(previousMessagesLocale),
+                    "failed to restore LC_MESSAGES — later suites will sample a locale they did not set"
+                )
+            }
         }
         initializeLocalization()
         applySessionLanguage(previous)
         try body()
-    }
-
-    /// The process's current `LC_MESSAGES`, so it can be put back.
-    @MainActor
-    private func currentMessagesLocale() -> String? {
-        setlocale(LC_MESSAGES, nil).map { String(cString: $0) }
-    }
-
-    @MainActor
-    private func restoreMessagesLocale(_ locale: String?) {
-        guard let locale else { return }
-        _ = locale.withCString { setlocale(LC_MESSAGES, $0) }
     }
 
     /// Installs `language` as the session's own LANGUAGE, which is the

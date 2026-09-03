@@ -230,6 +230,22 @@ import Foundation
                 "findPlaceholder": findReplaceBar.findEntry.placeholderText ?? "",
                 "replaceAllLabel": findReplaceBar.replaceAllButton.label ?? "",
                 "formatBoldTooltip": editorFormattingToolbar.buttons[.bold]?.tooltipText ?? "",
+                // Every accessible label a retranslate path re-applies, not
+                // just the two that were noticed first: nothing on screen
+                // shows one of these going stale, so the guard is the only
+                // thing standing between a screen-reader user and the previous
+                // language.
+                "a11y.editor": editor.view.accessibleLabel ?? "",
+                "a11y.preview": preview.rootScroll.accessibleLabel ?? "",
+                "a11y.notesList": sidebar.list.accessibleLabel ?? "",
+                "a11y.notesSidebar": sidebar.root.accessibleLabel ?? "",
+                "a11y.searchNotes": sidebar.searchEntry.accessibleLabel ?? "",
+                "a11y.sortButton": sidebar.sortButton.accessibleLabel ?? "",
+                "a11y.outlineList": outlineSidebar.list.accessibleLabel ?? "",
+                "a11y.outlineSidebar": outlineSidebar.root.accessibleLabel ?? "",
+                "a11y.outlineFilter": outlineSidebar.searchEntry.accessibleLabel ?? "",
+                "a11y.findCaseSensitive": findReplaceBar.caseSensitiveToggle.accessibleLabel ?? "",
+                "a11y.findPrevious": findReplaceBar.prevButton.accessibleLabel ?? "",
             ]
             for (key, value) in debugToolbarTooltips {
                 chrome["tooltip.\(key)"] = value ?? ""

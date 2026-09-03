@@ -215,7 +215,7 @@ public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
         ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded()
-        initializeLocalization(language: storedInterfaceLanguage())
+        let catalogueReachable = initializeLocalization(language: storedInterfaceLanguage())
         MainContext.silenceSpuriousScrollbarWarnings()
         if let cliResult = NotesCLI.runIfRequested(arguments: arguments) {
             if !cliResult.stdout.isEmpty, let data = cliResult.stdout.data(using: .utf8) {
@@ -225,6 +225,22 @@ public enum SwiftyNotesLauncher {
                 FileHandle.standardError.write(data)
             }
             exit(cliResult.exitCode)
+        }
+
+        // Only the GUI path reports this. `initializeLocalization` runs before
+        // command dispatch, so warning there would prepend a line to the stderr
+        // of every `swiftynotes cli` invocation — enough to break a script that
+        // merges the streams and parses the JSON.
+        //
+        // Written straight to fd 2 rather than through
+        // `FileHandle.standardError.write`, which traps on a write error in
+        // corelibs — a closed or broken fd 2 would then abort startup on the
+        // one path documented as non-fatal. (`stderr` the FILE* is a mutable
+        // global and not concurrency-safe to reference.)
+        if !catalogueReachable,
+           let diagnostic = missingCatalogueDiagnostic(localeDirectory: localeDirectoryPath()) {
+            let line = diagnostic + "\n"
+            line.withCString { _ = write(2, $0, strlen($0)) }
         }
 
         let launchOptions = AppLaunchOptions.parse(arguments: arguments)
