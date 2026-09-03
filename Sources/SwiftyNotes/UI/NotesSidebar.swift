@@ -313,7 +313,10 @@ struct NotesSidebar {
         guard let deletedAt = note.deletedAt else {
             return "Deleted".localized
         }
-        return "\("Deleted".localized) \(displayDate(deletedAt))"
+        // One msgid rather than concatenation: a translator needs to be able to
+        // put the date first, and the separator has to be inside the string —
+        // this app now supports right-to-left interfaces.
+        return String(format: "Deleted %@".localized, displayDate(deletedAt))
     }
 
     private static func makeNoteRow(_ noteItem: SidebarNote) -> ListBoxRow {

@@ -27,11 +27,15 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
     /// so the language's own locale comes first and a widely generated one
     /// backs it up.
     var messagesLocaleCandidates: [String] {
+        // The language's own locale first, then locales that are widely
+        // generated. `C.UTF-8` is deliberately absent: it *is* the C locale as
+        // far as gettext is concerned, so offering it as an escape from the C
+        // locale can only ever fail.
         switch self {
         case .system:
             []
         case .english:
-            ["en_US.UTF-8", "en_GB.UTF-8", "C.UTF-8"]
+            ["en_US.UTF-8", "en_GB.UTF-8"]
         case .russian:
             ["ru_RU.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         }

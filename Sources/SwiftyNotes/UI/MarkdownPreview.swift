@@ -373,7 +373,7 @@ final class MarkdownPreview {
         rootScroll.kineticScrolling = true
         #endif
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
-        rootScroll.setAccessibleLabel("Markdown Preview".localized)
+        retranslateAccessibility()
         rootScroll.overlayScrolling = false
 
         // GtkWidget does not expose `width` as a GObject property, so
@@ -512,6 +512,15 @@ final class MarkdownPreview {
 
     func attach(to window: ApplicationWindow) {
         self.window = window
+    }
+
+    /// Re-applies the preview's own accessible label.
+    ///
+    /// Set once during construction, so a language change reaches it only if
+    /// someone asks — the rendered content comes back through ``render``, the
+    /// label does not.
+    func retranslateAccessibility() {
+        rootScroll.setAccessibleLabel("Markdown Preview".localized)
     }
 
     func render(blocks: [RenderedBlock], baseDirectory: URL? = nil) {

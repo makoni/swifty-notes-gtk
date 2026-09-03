@@ -45,6 +45,17 @@ extension MainWindow {
         }
         updateBanner.retranslate()
 
+        // Set once inside the editor's and preview's own builders, so nothing
+        // else here reaches them — a screen-reader user would otherwise hear
+        // "Markdown Editor" in English beside a fully translated interface.
+        //
+        // Not covered by ``debugLocalizedChrome`` and cannot be: GTK4 exposes
+        // no getter for an accessible property, so these two are the one part
+        // of the chrome the "nothing kept its English text" guard is blind to.
+        // Keep them next to the calls that are covered.
+        editor.view.setAccessibleLabel("Markdown Editor".localized)
+        preview.retranslateAccessibility()
+
         sidebar.retranslate()
         outlineSidebar.retranslate()
         findReplace.retranslate()

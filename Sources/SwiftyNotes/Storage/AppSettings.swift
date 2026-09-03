@@ -272,13 +272,33 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: container.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled) ?? true,
             spellCheckLanguage: container.decodeIfPresent(String.self, forKey: .spellCheckLanguage),
             trashRetention: container.decodeIfPresent(TrashRetention.self, forKey: .trashRetention) ?? .days(30),
-            appLanguage: container.decodeIfPresent(AppLanguage.self, forKey: .appLanguage) ?? .system,
+            appLanguage: Self.decodedAppLanguage(from: container),
             outlineDensity: container.decodeIfPresent(OutlineDensity.self, forKey: .outlineDensity) ?? .comfortable,
             outlineTreeLines: container.decodeIfPresent(Bool.self, forKey: .outlineTreeLines) ?? true,
             outlineDragHandles: container.decodeIfPresent(Bool.self, forKey: .outlineDragHandles) ?? true,
             outlineBreadcrumbVisible: container.decodeIfPresent(Bool.self, forKey: .outlineBreadcrumbVisible) ?? true,
             renderEmojiShortcodes: container.decodeIfPresent(Bool.self, forKey: .renderEmojiShortcodes) ?? true,
         )
+    }
+
+    /// Reads `appLanguage`, treating an unrecognised value as "follow the
+    /// system" rather than letting it fail the whole decode.
+    ///
+    /// `decodeIfPresent` returns nil only for a *missing* key; a present but
+    /// unknown raw value throws, and `init(from:)` throws with it. Both call
+    /// sites swallow that (`(try? load()) ?? .default`), so one unfamiliar
+    /// language code would silently reset every other preference — including
+    /// the custom notes directory, which reads to the user as their notes
+    /// having vanished. That is the documented growth path for this type: ship
+    /// a new language, roll back one version, and the old build meets a code it
+    /// has never heard of.
+    private static func decodedAppLanguage(
+        from container: KeyedDecodingContainer<CodingKeys>,
+    ) -> AppLanguage {
+        guard let raw = try? container.decodeIfPresent(String.self, forKey: .appLanguage) else {
+            return .system
+        }
+        return AppLanguage(rawValue: raw) ?? .system
     }
 
     private static func clampedEditorFontSize(_ value: Int) -> Int {

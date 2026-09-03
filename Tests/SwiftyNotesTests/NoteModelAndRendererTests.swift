@@ -18,7 +18,14 @@ struct NoteModelAndRendererTests {
 
     @Test("Derived title falls back for empty note")
     func derivedTitleFallsBackForEmptyNote() {
-        #expect(Note.derivedTitle(from: " \n\n ") == "New Note".localized)
+        // The literal, deliberately. Comparing against `"New Note".localized`
+        // puts the same expression on both sides, so the assertion holds for
+        // any catalogue state — a missing or wrong msgid included — and stops
+        // testing the fallback at all. A test process does not run
+        // `initializeLocalization`, so nothing translates here; the suite that
+        // does pin a language restores it, and both CI and the documented
+        // `swift test --no-parallel` keep the two from overlapping.
+        #expect(Note.derivedTitle(from: " \n\n ") == "New Note")
     }
 
     @Test("Note retitle replaces first meaningful line")

@@ -104,12 +104,17 @@ private func unescapeWithSupport(_ raw: String, file: String) -> (value: String?
 private func localizedLiterals(in line: String, nextLine: String?, file: String) -> (found: Set<String>, diagnostics: [String]) {
     var found: Set<String> = []
     var diagnostics: [String] = []
-    for (literal, endIndex) in stringLiterals(in: line) {
+    let literals = stringLiterals(in: line)
+    for (offset, (literal, endIndex)) in literals.enumerated() {
         let rest = line[endIndex...]
         let afterWhitespace = rest.drop(while: { $0 == " " })
         var isLocalized = afterWhitespace.hasPrefix(".localized")
-        if !isLocalized {
-            // Check if `.localized` is on the next line
+        if !isLocalized, offset == literals.count - 1, rest.allSatisfy({ $0 == " " }) {
+            // `.localized` wrapped onto the next line. Only the last literal on
+            // this line can own it, and only if nothing follows it here —
+            // otherwise a call like `addResponse("ok", label: "OK"\n.localized)`
+            // would file the non-user-visible `"ok"` as a msgid too, and the
+            // orphan guard could not catch it because it shares this scanner.
             if let next = nextLine {
                 let nextTrimmed = next.trimmingCharacters(in: .whitespaces)
                 if !nextTrimmed.hasPrefix("//"), nextTrimmed.hasPrefix(".localized") {

@@ -487,6 +487,9 @@ private extension ExternalDocumentWindow {
 
         let menu = GMenuRef()
         menu.appendSection("Document".localized, section: documentSection)
+        // Displayed title is translated; the dictionary below stays keyed by
+        // the canonical English section name. Not the same list — see
+        // MainWindowPreviewPane for the same pairing.
         overflowMenuSectionTitles = ["Document".localized]
         overflowMenuItemsBySection = [
             "Document": [
@@ -552,10 +555,6 @@ private extension ExternalDocumentWindow {
 
 @MainActor
 extension ExternalDocumentWindow {
-    // Internal (not fileprivate like most window plumbing): mirrors
-    // MainWindow.applyRuntimeSettings so a future settings fan-out can
-    // push live changes into open standalone windows, and tests can
-    // exercise the outline-tweaks path.
     /// Re-applies every user-visible string after the interface language
     /// changed.
     ///
@@ -572,6 +571,8 @@ extension ExternalDocumentWindow {
         editorFormattingToolbar.retranslate()
         applyOutlineVisibility()
 
+        editor.view.setAccessibleLabel("Markdown Editor".localized)
+        preview.retranslateAccessibility()
         outlineSidebar.retranslate()
         findReplace.retranslate()
         // The picker caches its popover with the alignment wording baked in.
@@ -585,6 +586,10 @@ extension ExternalDocumentWindow {
         refreshPreview()
     }
 
+    // Internal (not fileprivate like most window plumbing): mirrors
+    // MainWindow.applyRuntimeSettings so a future settings fan-out can
+    // push live changes into open standalone windows, and tests can
+    // exercise the outline-tweaks path.
     func applyRuntimeSettings(_ settings: AppSettings, shouldRefreshPreview: Bool = true) {
         editor.applySettings(settings)
         renderEmojiShortcodes = settings.renderEmojiShortcodes

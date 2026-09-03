@@ -7,11 +7,17 @@ import Testing
 /// The interface-language picker: the preference, the gettext switch behind
 /// it, and the live retranslation of an already-built window.
 ///
-/// `LANGUAGE` and gettext's catalogue cache are process-global, so every test
-/// that moves them is `@MainActor` and returns the language it found before
-/// asserting anything else. Doing that synchronously — no `await` between the
-/// switch and the restore — is what keeps the other `@MainActor` UI suites,
-/// which assert English chrome, from observing a Russian process.
+/// `LANGUAGE`, `LC_MESSAGES` and gettext's catalogue cache are all
+/// process-global, so every test that moves them is `@MainActor`, does so
+/// synchronously — no `await` between the switch and the restore — and puts
+/// all three back afterwards.
+///
+/// That covers other `@MainActor` suites, which cannot interleave with a
+/// synchronous body. It does **not** cover a suite running off the main actor:
+/// `CLITests` drives `NotesCLI` in-process and asserts English error text, so
+/// under a fully parallel `swift test` it could sample a Russian process. Both
+/// CI and the `swift test --no-parallel` that `AGENTS.md` prescribes run
+/// serially, which is what makes that safe rather than lucky.
 @Suite(.serialized)
 struct LanguageSwitchingTests {
     // MARK: - The preference
@@ -529,13 +535,30 @@ struct LanguageSwitchingTests {
     @MainActor
     private func withRestoredLanguage(_ body: () throws -> Void) throws {
         let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
+        // `setLanguage` installs a real locale to escape the C locale, which
+        // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
+        // leave that behind for every later test.
+        let previousMessagesLocale = currentMessagesLocale()
         defer {
             applySessionLanguage(previous)
             _ = applyLanguage(.system)
+            restoreMessagesLocale(previousMessagesLocale)
         }
         initializeLocalization()
         applySessionLanguage(previous)
         try body()
+    }
+
+    /// The process's current `LC_MESSAGES`, so it can be put back.
+    @MainActor
+    private func currentMessagesLocale() -> String? {
+        setlocale(LC_MESSAGES, nil).map { String(cString: $0) }
+    }
+
+    @MainActor
+    private func restoreMessagesLocale(_ locale: String?) {
+        guard let locale else { return }
+        _ = locale.withCString { setlocale(LC_MESSAGES, $0) }
     }
 
     /// Installs `language` as the session's own LANGUAGE, which is the

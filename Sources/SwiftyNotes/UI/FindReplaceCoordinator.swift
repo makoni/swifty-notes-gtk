@@ -49,6 +49,12 @@ final class FindReplaceCoordinator {
         previewBar.isReadOnly = true
     }
 
+    /// Re-reads the strings on both bars after a language change.
+    func retranslate() {
+        editorBar.retranslate()
+        previewBar.retranslate()
+    }
+
     /// Open the find / replace bar in the requested mode. In split
     /// mode the target pane (editor vs preview) is whichever had focus
     /// most recently — the affordance GNOME Builder uses. In
@@ -57,12 +63,6 @@ final class FindReplaceCoordinator {
     /// focusable, so routing by view mode is what makes Ctrl+F hit the
     /// visible pane). `.replace` always lands in the editor pane
     /// because the preview bar is read-only.
-    /// Re-reads the strings on both bars after a language change.
-    func retranslate() {
-        editorBar.retranslate()
-        previewBar.retranslate()
-    }
-
     func openFindBar(mode: FindReplaceBar.Mode) {
         wirePaneFocusTracking()
         let target: FocusedPane

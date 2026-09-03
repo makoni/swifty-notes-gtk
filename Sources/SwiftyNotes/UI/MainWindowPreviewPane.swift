@@ -518,6 +518,10 @@ extension MainWindow {
         let helpLabels = helpItems.map(\.label)
         #endif
 
+        // Displayed titles are translated; the dictionary below stays keyed by
+        // the canonical English section name, which is how the tests address it
+        // and how it survives a language change. The two are deliberately not
+        // the same list — do not index one with the other.
         overflowMenuSectionTitles = ["Library".localized, "Help".localized]
         overflowMenuItemsBySection = [
             "Library": libraryItems.map(\.label),

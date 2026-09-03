@@ -208,7 +208,7 @@ enum NotesCLI {
               update    Replace a note's markdown content
               move      Move a note to another folder
               folders   List folders, or manage them via subcommands
-                         (folders create/rm/rename/move)
+                        (folders create/rm/rename/move)
               help      Show general or command-specific help
 
             Global options:

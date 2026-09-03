@@ -7,9 +7,23 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Locale directory inside SwiftyNotes target for SwiftPM resource discovery
 LOCALE_ROOT="$PROJECT_ROOT/Sources/SwiftyNotes/locale"
 
+# Homebrew's gettext is keg-only, so `brew install gettext` leaves msgfmt off
+# PATH entirely. Look there before giving up, or the macOS bundle silently
+# needs a manual PATH export.
+if ! command -v msgfmt &> /dev/null; then
+    for prefix in "$(brew --prefix gettext 2> /dev/null || true)" /opt/homebrew/opt/gettext /usr/local/opt/gettext; do
+        if [[ -n "$prefix" && -x "$prefix/bin/msgfmt" ]]; then
+            PATH="$prefix/bin:$PATH"
+            export PATH
+            break
+        fi
+    done
+fi
+
 if ! command -v msgfmt &> /dev/null; then
     echo "ERROR: msgfmt is not installed or not in PATH."
     echo "Install gettext to compile .po files (.mo)."
+    echo "On macOS: brew install gettext (keg-only — this script looks in brew --prefix gettext)."
     exit 1
 fi
 
@@ -28,7 +42,14 @@ if [[ ! -f "$LINGUAS_FILE" ]]; then
     echo "ERROR: $LINGUAS_FILE not found."
     exit 1
 fi
-mapfile -t LANGUAGES < <(grep -vE '^\s*(#|$)' "$LINGUAS_FILE")
+# Read with a plain loop rather than `mapfile`: that is a bash 4 builtin and
+# macOS still ships bash 3.2, where this script also runs (bundle-macos-app.sh
+# and the macOS CI job).
+LANGUAGES=()
+while IFS= read -r lang; do
+    [[ -z "$lang" || "$lang" == \#* ]] && continue
+    LANGUAGES+=("$lang")
+done < "$LINGUAS_FILE"
 
 DOMAIN="me.spaceinbox.swiftynotes"
 
