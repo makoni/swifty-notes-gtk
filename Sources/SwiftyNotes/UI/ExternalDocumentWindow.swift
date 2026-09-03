@@ -1201,6 +1201,17 @@ private extension ExternalDocumentWindow {
                 "replaceAllLabel": findReplaceBar.replaceAllButton.label ?? "",
                 "formatBoldTooltip": editorFormattingToolbar.buttons[.bold]?.tooltipText ?? "",
                 "saveTooltip": saveButton.tooltipText ?? "",
+                // This window retranslates the same accessible labels, so it
+                // guards them too — otherwise dropping those calls here stays
+                // invisible while the identical bug in MainWindow is caught.
+                "a11y.editor": editor.view.accessibleLabel ?? "",
+                "a11y.preview": preview.rootScroll.accessibleLabel ?? "",
+                "a11y.outlineList": outlineSidebar.list.accessibleLabel ?? "",
+                "a11y.outlineSidebar": outlineSidebar.root.accessibleLabel ?? "",
+                "a11y.outlineFilter": outlineSidebar.searchEntry.accessibleLabel ?? "",
+                "a11y.outlineToggle": outlineToggleButton.accessibleLabel ?? "",
+                "a11y.quickJump": quickJumpButton.accessibleLabel ?? "",
+                "a11y.save": saveButton.accessibleLabel ?? "",
             ]
             for (index, title) in overflowMenuSectionTitles.enumerated() {
                 chrome["menuSection.\(index)"] = title

@@ -72,13 +72,22 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            // Pinned past the 1.5.0 release for two things this app needs:
-            // Window.isActive (routing app-level accelerators to the focused
-            // external document window) and the localization API — gettext
-            // setup, runtime language switching and reading direction, which
-            // replaced a hand-written C shim here. Bump deliberately when
-            // validating a newer upstream rather than via SemVer
-            // auto-resolution.
+            // Pinned past the 1.5.0 release for what this app needs from it:
+            //   * Window.isActive — routes app-level accelerators to the
+            //     focused external document window.
+            //   * The localization API — gettext setup, runtime language
+            //     switching and reading direction, which replaced a
+            //     hand-written C shim here.
+            //   * Widget.accessibleLabel — reads back a label GTK only lets
+            //     you write, which is what lets MainWindowDebug's chrome
+            //     snapshot guard the accessible labels. Dropping below this
+            //     breaks that guard, not just localization plumbing.
+            //   * catalogueLanguages(in:domain:) and
+            //     currentMessagesLocale()/setMessagesLocale(_:) — catalogue
+            //     discovery and the process locale, both of which used to be
+            //     local copies.
+            // Bump deliberately when validating a newer upstream rather than
+            // via SemVer auto-resolution.
             revision: "bfbec41bb698b530c03ee98701e28f5115b8b136"
         ),
         sourceDependency(

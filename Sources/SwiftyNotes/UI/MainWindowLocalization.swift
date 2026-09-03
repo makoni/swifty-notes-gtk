@@ -48,7 +48,6 @@ extension MainWindow {
         // Set once inside the editor's and preview's own builders, so nothing
         // else here reaches them — a screen-reader user would otherwise hear
         // "Markdown Editor" in English beside a fully translated interface.
-
         editor.view.setAccessibleLabel("Markdown Editor".localized)
         preview.retranslateAccessibility()
 

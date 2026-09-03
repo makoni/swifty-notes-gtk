@@ -15,26 +15,48 @@ import Glibc
 /// (LC_ALL / LANG), sets the text domain, and binds the locale directory
 /// so that `swift-adwaita`'s `localized(_:)` and `String.localized`
 /// can find `.mo` translation files.
-public func initializeLocalization(language: AppLanguage = .system) {
+@discardableResult
+public func initializeLocalization(language: AppLanguage = .system) -> Bool {
     // swift-adwaita owns the gettext plumbing: activating the locale from the
     // environment, binding the domain to the catalogue directory, pinning the
     // codeset, and capturing the session's own LANGUAGE so "follow the
     // system" stays recoverable.
-    let catalogueReachable = configureLocalization(
+    //
+    // Resolve the directory once. `localeDirectoryPath()` only returns a
+    // directory that already holds a catalogue, so its answer *is* the
+    // reachability answer — asking `configureLocalization` for it again would
+    // sweep the same tree (or all of /usr/share/locale) a second time on the
+    // main thread before the window appears.
+    let localeDirectory = localeDirectoryPath()
+    configureLocalization(
         domain: AppIdentity.identifier,
-        localeDirectory: localeDirectoryPath(),
+        localeDirectory: localeDirectory,
     )
-    if !catalogueReachable {
-        // Not fatal — the app runs untranslated — but silent otherwise, and the
-        // usual cause is a packaging mistake rather than a missing translation:
-        // gettext only ever finds <dir>/<lang>/LC_MESSAGES/<domain>.mo, so a
-        // resource rule that flattened that away looks identical to "no
-        // languages installed" from the inside.
-        FileHandle.standardError.write(
-            Data("swiftynotes: no translation catalogue found; running untranslated\n".utf8),
-        )
-    }
     applyLanguage(language)
+    return localeDirectory != nil
+}
+
+/// The line to print when no catalogue could be found, or `nil` when one was.
+///
+/// Split out as a pure function because the condition is unreachable in a
+/// SwiftPM build — the Russian `.mo` is tracked and declared as a resource, so
+/// a catalogue is always present — which would otherwise leave the message,
+/// the stream and the condition all unverified.
+///
+/// It names the domain and the directory searched on purpose. Without those
+/// the warning cannot do the job it exists for: a packager whose resource rule
+/// flattened `<lang>/LC_MESSAGES/` away needs to know *which* of the five
+/// candidate paths was used to find the flattened copy.
+func missingCatalogueDiagnostic(
+    localeDirectory: String?,
+    domain: String = AppIdentity.identifier,
+) -> String? {
+    guard localeDirectory == nil else { return nil }
+    return """
+    swiftynotes: no \(domain) catalogue found under \(systemLocaleDirectory) \
+    or any bundled location; running untranslated. gettext resolves only \
+    <dir>/<lang>/LC_MESSAGES/\(domain).mo — check that packaging kept that layout.
+    """
 }
 
 /// Whether this build can change the interface language without a restart.
@@ -162,9 +184,8 @@ public func localeDirectoryPath() -> String? {
     }
 
     // 5. System
-    let systemLocale = "/usr/share/locale"
-    if localeDirectoryContainsCatalog(systemLocale) {
-        return systemLocale
+    if localeDirectoryContainsCatalog(systemLocaleDirectory) {
+        return systemLocaleDirectory
     }
 
     return nil
@@ -174,22 +195,8 @@ public func localeDirectoryPath() -> String? {
 /// i.e. `<path>/<lang>/LC_MESSAGES/<app id>.mo` exists
 /// for at least one `<lang>` subdirectory.
 public func localeDirectoryContainsCatalog(_ path: String) -> Bool {
-    guard FileManager.default.fileExists(atPath: path),
-          let subdirs = try? FileManager.default.contentsOfDirectory(
-              at: URL(fileURLWithPath: path),
-              includingPropertiesForKeys: nil
-          ) else {
-        return false
-    }
-
-    for subdir in subdirs {
-        let lang = subdir.path
-        let expected = URL(fileURLWithPath: lang)
-            .appendingPathComponent("LC_MESSAGES", isDirectory: true)
-            .appendingPathComponent("\(AppIdentity.identifier).mo", isDirectory: false)
-        if FileManager.default.fileExists(atPath: expected.path) {
-            return true
-        }
-    }
-    return false
+    // The same rule as `installedCatalogueLanguages()`, so it comes from the
+    // same place: gettext resolves <path>/<lang>/LC_MESSAGES/<domain>.mo and
+    // nothing else, and that rule must not have two implementations here.
+    !catalogueLanguages(in: path, domain: AppIdentity.identifier).isEmpty
 }
