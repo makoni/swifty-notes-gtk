@@ -230,6 +230,8 @@ import Foundation
                 "findPlaceholder": findReplaceBar.findEntry.placeholderText ?? "",
                 "replaceAllLabel": findReplaceBar.replaceAllButton.label ?? "",
                 "formatBoldTooltip": editorFormattingToolbar.buttons[.bold]?.tooltipText ?? "",
+                "editorAccessibleLabel": editor.view.accessibleLabel ?? "",
+                "previewAccessibleLabel": preview.rootScroll.accessibleLabel ?? "",
             ]
             for (key, value) in debugToolbarTooltips {
                 chrome["tooltip.\(key)"] = value ?? ""

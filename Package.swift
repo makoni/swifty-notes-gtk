@@ -79,7 +79,7 @@ let package = Package(
             // replaced a hand-written C shim here. Bump deliberately when
             // validating a newer upstream rather than via SemVer
             // auto-resolution.
-            revision: "8fc545ad4f4125ac5d3a0a602b329d64b4501cb0"
+            revision: "bfbec41bb698b530c03ee98701e28f5115b8b136"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",

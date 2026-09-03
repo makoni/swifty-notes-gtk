@@ -20,10 +20,20 @@ public func initializeLocalization(language: AppLanguage = .system) {
     // environment, binding the domain to the catalogue directory, pinning the
     // codeset, and capturing the session's own LANGUAGE so "follow the
     // system" stays recoverable.
-    configureLocalization(
+    let catalogueReachable = configureLocalization(
         domain: AppIdentity.identifier,
         localeDirectory: localeDirectoryPath(),
     )
+    if !catalogueReachable {
+        // Not fatal — the app runs untranslated — but silent otherwise, and the
+        // usual cause is a packaging mistake rather than a missing translation:
+        // gettext only ever finds <dir>/<lang>/LC_MESSAGES/<domain>.mo, so a
+        // resource rule that flattened that away looks identical to "no
+        // languages installed" from the inside.
+        FileHandle.standardError.write(
+            Data("swiftynotes: no translation catalogue found; running untranslated\n".utf8),
+        )
+    }
     applyLanguage(language)
 }
 
@@ -104,25 +114,8 @@ public func interfaceLocale() -> Locale {
 ///
 /// English is absent by design: it is the msgid language and ships no `.mo`.
 public func installedCatalogueLanguages() -> Set<String> {
-    guard let localeDir = localeDirectoryPath(),
-          let entries = try? FileManager.default.contentsOfDirectory(
-              at: URL(fileURLWithPath: localeDir, isDirectory: true),
-              includingPropertiesForKeys: nil,
-          )
-    else {
-        return []
-    }
-
-    return Set(
-        entries.filter { entry in
-            FileManager.default.fileExists(
-                atPath: entry
-                    .appendingPathComponent("LC_MESSAGES", isDirectory: true)
-                    .appendingPathComponent("\(AppIdentity.identifier).mo", isDirectory: false)
-                    .path,
-            )
-        }.map(\.lastPathComponent),
-    )
+    guard let localeDir = localeDirectoryPath() else { return [] }
+    return catalogueLanguages(in: localeDir, domain: AppIdentity.identifier)
 }
 
 /// Resolves the directory containing `.mo` translation files.

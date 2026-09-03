@@ -538,27 +538,15 @@ struct LanguageSwitchingTests {
         // `setLanguage` installs a real locale to escape the C locale, which
         // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
         // leave that behind for every later test.
-        let previousMessagesLocale = currentMessagesLocale()
+        let previousMessagesLocale = Adwaita.currentMessagesLocale()
         defer {
             applySessionLanguage(previous)
             _ = applyLanguage(.system)
-            restoreMessagesLocale(previousMessagesLocale)
+            if let previousMessagesLocale { setMessagesLocale(previousMessagesLocale) }
         }
         initializeLocalization()
         applySessionLanguage(previous)
         try body()
-    }
-
-    /// The process's current `LC_MESSAGES`, so it can be put back.
-    @MainActor
-    private func currentMessagesLocale() -> String? {
-        setlocale(LC_MESSAGES, nil).map { String(cString: $0) }
-    }
-
-    @MainActor
-    private func restoreMessagesLocale(_ locale: String?) {
-        guard let locale else { return }
-        _ = locale.withCString { setlocale(LC_MESSAGES, $0) }
     }
 
     /// Installs `language` as the session's own LANGUAGE, which is the
