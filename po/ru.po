@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-03 18:20+0700\n"
+"POT-Creation-Date: 2026-09-04 02:15+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -797,9 +797,6 @@ msgstr "Оформить выделенные строки как цитату"
 msgid "Prefix the selected lines as a task list"
 msgstr "Оформить выделенные строки как список задач"
 
-msgid "Preview"
-msgstr "Предварительный просмотр"
-
 msgid "Preview only"
 msgstr "Только предварительный просмотр"
 
@@ -1253,6 +1250,18 @@ msgstr[0] "ресурсом"
 msgstr[1] "ресурсами"
 msgstr[2] "ресурсами"
 
+msgctxt "settings group"
+msgid "Preview"
+msgstr "Предварительный просмотр"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "По названию"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "Просмотр"
+
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:6
 msgid "Swifty Notes"
 msgstr "Swifty Notes"
@@ -1403,3 +1412,6 @@ msgstr "заметки;markdown;редактор;текст;cli;автомати
 #: data/me.spaceinbox.swiftynotes.desktop.in:15
 msgid "New Window"
 msgstr "Новое окно"
+
+#~ msgid "Preview"
+#~ msgstr "Предварительный просмотр"

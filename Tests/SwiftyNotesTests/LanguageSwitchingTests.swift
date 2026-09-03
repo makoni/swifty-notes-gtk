@@ -104,6 +104,64 @@ struct LanguageSwitchingTests {
         }
     }
 
+    // MARK: - Contexts
+
+    /// The test the original i18n plan asked for and that could not be written
+    /// until the extractor read contexts: one English string, two meanings,
+    /// each translated on its own.
+    ///
+    /// `Preview` is the real case. It labels the view-mode toggle, where it
+    /// sits beside «Редактор» in a segmented control and «Предварительный
+    /// просмотр» does not fit, and it heads a Settings group, where the long
+    /// form is the right one.
+    @Test("One msgid can be translated two ways through contexts") @MainActor
+    func oneMsgidCanBeTranslatedTwoWaysThroughContexts() throws {
+        try withRestoredLanguage {
+            try #require(
+                applyLanguage(.russian),
+                "no usable locale on this host — gettext ignores LANGUAGE under C",
+            )
+
+            let viewMode = localizedWithContext("view mode", "Preview")
+            let settingsGroup = localizedWithContext("settings group", "Preview")
+
+            #expect(viewMode == "Просмотр")
+            #expect(settingsGroup == "Предварительный просмотр")
+            #expect(viewMode != settingsGroup, "the split has to actually produce two strings")
+
+            // A context nobody translated falls back to the bare msgid rather
+            // than leaking the `\u{4}`-joined key at the user.
+            let unknown = localizedWithContext("nonexistent context", "Preview")
+            #expect(unknown == "Preview")
+            #expect(!unknown.contains("\u{4}"))
+        }
+    }
+
+    /// The second msgid that was serving two masters. As a sort criterion
+    /// `Title` sits beside "Newest first" / "Oldest first" and Russian needs
+    /// the prepositional form to match them; as the placeholder of the rename
+    /// field it is the bare noun. One English word, two grammatical roles.
+    @Test("A sort criterion and a field label read differently in Russian") @MainActor
+    func aSortCriterionAndAFieldLabelReadDifferentlyInRussian() throws {
+        try withRestoredLanguage {
+            try #require(
+                applyLanguage(.russian),
+                "no usable locale on this host — gettext ignores LANGUAGE under C",
+            )
+
+            let criterion = NotesSortMode.title.displayName
+            let fieldLabel = "Title".localized
+
+            #expect(criterion == "По названию")
+            #expect(fieldLabel == "Название")
+
+            // The sort menu is read as a set, so the criterion has to be
+            // grammatically consistent with the options next to it.
+            let siblings = [NotesSortMode.newestFirst, .oldestFirst].map(\.displayName)
+            #expect(siblings == ["Сначала новые", "Сначала старые"])
+        }
+    }
+
     // MARK: - Live retranslation
 
     /// The point of the feature: an open window follows the picker instead of

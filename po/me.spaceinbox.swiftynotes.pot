@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-09-03 18:20+0700\n"
+"POT-Creation-Date: 2026-09-04 02:19+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -772,9 +772,6 @@ msgstr ""
 msgid "Prefix the selected lines as a task list"
 msgstr ""
 
-msgid "Preview"
-msgstr ""
-
 msgid "Preview only"
 msgstr ""
 
@@ -1199,6 +1196,18 @@ msgid "asset"
 msgid_plural "assets"
 msgstr[0] ""
 msgstr[1] ""
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr ""
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr ""
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:6
 msgid "Swifty Notes"

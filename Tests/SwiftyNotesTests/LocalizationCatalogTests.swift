@@ -519,6 +519,10 @@ private enum LocalizationCatalogFixture {
     private struct EmitResult: Codable {
         let singletons: [String]
         let plurals: [[String]]
+        /// `[context, msgid]` per entry.
+        let contextSingletons: [[String]]
+        /// `[context, singular, plural]` per entry.
+        let contextPlurals: [[String]]
     }
 
     private actor SourceScanner {
@@ -613,6 +617,15 @@ private enum LocalizationCatalogFixture {
                 ids.insert(pair[0])
                 ids.insert(pair[1])
             }
+        }
+        // Context-qualified lookups key on `context\u{4}msgid`, the same way
+        // gettext and `catalogueMessageIDs` do, so the two sets compare.
+        for entry in result.contextSingletons where entry.count >= 2 {
+            ids.insert("\(entry[0])\u{4}\(entry[1])")
+        }
+        for entry in result.contextPlurals where entry.count >= 3 {
+            ids.insert("\(entry[0])\u{4}\(entry[1])")
+            ids.insert("\(entry[0])\u{4}\(entry[2])")
         }
         return ids
     }
@@ -770,9 +783,50 @@ private enum LocalizationCatalogFixture {
         ],
     ]
 
+    /// Calls that localize the literals handed to them, so a literal inside
+    /// one needs no `.localized` suffix.
+    static let localizingCalls: Set<String> = [
+        "nlocalized",
+        "localizedWithContext",
+        "nlocalizedWithContext",
+    ]
+
+    /// Whether the literal starting at `start` sits in the argument list of a
+    /// call that localizes it.
+    ///
+    /// Scans back to the innermost enclosing `(` and reads the identifier in
+    /// front of it, so a literal nested inside another call — the common
+    /// `String(format: localizedWithContext(…), value)` shape — is judged by
+    /// the call that actually receives it.
+    static func isArgumentOfLocalizingCall(in line: String, startingAt start: String.Index) -> Bool {
+        var depth = 0
+        var index = start
+        while index > line.startIndex {
+            index = line.index(before: index)
+            switch line[index] {
+            case ")":
+                depth += 1
+            case "(":
+                if depth > 0 {
+                    depth -= 1
+                    continue
+                }
+                let identifier = String(line[line.startIndex..<index]
+                    .reversed()
+                    .prefix { $0.isLetter || $0.isNumber || $0 == "_" }
+                    .reversed())
+                return localizingCalls.contains(identifier)
+            default:
+                continue
+            }
+        }
+        return false
+    }
+
     /// Literals in `Sources/` that appear verbatim in the catalogue yet carry
-    /// no `.localized`. Lines that hand their literals to `nlocalized` are
-    /// skipped — that call localizes them itself.
+    /// no `.localized`. Literals handed to a call that localizes them —
+    /// `nlocalized`, `localizedWithContext`, `nlocalizedWithContext` — are
+    /// skipped, since the suffix would be wrong there.
     static func unlocalizedCatalogueLiterals(
         ignoring ignored: Set<String> = [],
     ) throws -> [String] {
@@ -789,7 +843,7 @@ private enum LocalizationCatalogFixture {
             for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
                 let lineText = String(line)
                 let trimmed = lineText.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("//"), !lineText.contains("nlocalized(") else { continue }
+                guard !trimmed.hasPrefix("//") else { continue }
                 for hit in stringLiterals(in: lineText) {
                     guard let literal = unescape(hit.literal),
                           !literal.isEmpty,
@@ -798,6 +852,7 @@ private enum LocalizationCatalogFixture {
                     else { continue }
                     let rest = lineText[hit.end...].drop(while: { $0 == " " })
                     guard !rest.hasPrefix(".localized") else { continue }
+                    guard !isArgumentOfLocalizingCall(in: lineText, startingAt: hit.start) else { continue }
                     offenders.append("\(relative):\(offset + 1): \(literal.debugDescription)")
                 }
             }
@@ -807,12 +862,22 @@ private enum LocalizationCatalogFixture {
 
     // MARK: PO parsing (keeps its own stringLiterals + unescape)
 
+    /// Every key the catalogue can be looked up by.
+    ///
+    /// A context-qualified entry is keyed `context\u{4}msgid`, exactly as
+    /// gettext keys it — so the same English string carrying a context is a
+    /// different key from the bare one, which is the whole point of having
+    /// contexts.
     static func catalogueMessageIDs(at url: URL) throws -> Set<String> {
         var ids: Set<String> = []
         for entry in try parse(url) {
-            ids.insert(entry.singular)
+            ids.insert(entry.lookupKey)
             if let plural = entry.plural {
-                ids.insert(plural)
+                if let context = entry.context {
+                    ids.insert("\(context)\u{4}\(plural)")
+                } else {
+                    ids.insert(plural)
+                }
             }
         }
         ids.remove("")
@@ -843,9 +908,17 @@ private enum LocalizationCatalogFixture {
     }
 
     private struct RawEntry {
+        var context: String?
         var singular = ""
         var plural: String?
         var translations: [String] = []
+
+        /// The key gettext looks entries up by: a context-qualified entry is a
+        /// different entry from the bare msgid, separated by `\u{4}`.
+        var lookupKey: String {
+            guard let context else { return singular }
+            return "\(context)\u{4}\(singular)"
+        }
     }
 
     /// Minimal gettext PO reader: enough for msgid / msgid_plural / msgstr and
@@ -856,8 +929,10 @@ private enum LocalizationCatalogFixture {
         var current = RawEntry()
         var field: Field?
         var started = false
+        var contextOpen = false
 
         enum Field {
+            case context
             case singular
             case plural
             case translation(Int)
@@ -869,6 +944,7 @@ private enum LocalizationCatalogFixture {
             }
             current = RawEntry()
             started = false
+            contextOpen = false
         }
 
         for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
@@ -876,12 +952,27 @@ private enum LocalizationCatalogFixture {
             if line.isEmpty || line.hasPrefix("#") {
                 continue
             }
-            if line.hasPrefix("msgid_plural") {
+            if line.hasPrefix("msgctxt") {
+                flush()
+                started = true
+                contextOpen = true
+                current.context = ""
+                field = .context
+            } else if line.hasPrefix("msgid_plural") {
                 field = .plural
                 current.plural = ""
             } else if line.hasPrefix("msgid") {
-                flush()
-                started = true
+                // An entry starts at `msgid` unless a `msgctxt` line just
+                // opened one. Keying off `current.context != nil` instead
+                // would stop flushing for every entry that follows a
+                // context-qualified one, silently concatenating the rest of
+                // the catalogue into a single entry.
+                if contextOpen {
+                    contextOpen = false
+                } else {
+                    flush()
+                    started = true
+                }
                 field = .singular
             } else if line.hasPrefix("msgstr[") {
                 let digits = line.drop(while: { $0 != "[" }).dropFirst().prefix(while: { $0.isNumber })
@@ -900,6 +991,7 @@ private enum LocalizationCatalogFixture {
             guard let field, let literal = stringLiterals(in: line).first?.literal,
                   let value = unescape(literal) else { continue }
             switch field {
+            case .context: current.context = (current.context ?? "") + value
             case .singular: current.singular += value
             case .plural: current.plural = (current.plural ?? "") + value
             case let .translation(index):
@@ -916,8 +1008,10 @@ private enum LocalizationCatalogFixture {
     /// Scans one line for double-quoted literals, honouring backslash escapes.
     /// Returns the raw (still-escaped) body and the index just past the closing
     /// quote. Used by the PO parser.
-    private static func stringLiterals(in line: String) -> [(literal: String, end: String.Index)] {
-        var results: [(String, String.Index)] = []
+    private static func stringLiterals(
+        in line: String,
+    ) -> [(literal: String, start: String.Index, end: String.Index)] {
+        var results: [(String, String.Index, String.Index)] = []
         var index = line.startIndex
         while index < line.endIndex {
             guard line[index] == "\"" else {
@@ -946,7 +1040,7 @@ private enum LocalizationCatalogFixture {
                 cursor = line.index(after: cursor)
             }
             guard closed else { break }
-            results.append((body, cursor))
+            results.append((body, index, cursor))
             index = cursor
         }
         return results

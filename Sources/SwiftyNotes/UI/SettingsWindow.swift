@@ -312,7 +312,7 @@ final class SettingsWindow {
         indentStyleRow.subtitle = "Choose whether Tab inserts spaces or hard tabs.".localized
         indentStyleRow.setModel(StringList(EditorIndentStyle.allCases.map(\.displayName)))
 
-        previewGroup.title = "Preview".localized
+        previewGroup.title = localizedWithContext("settings group", "Preview")
         previewGroup.description = "Control how rendered Markdown appears in the preview.".localized
         renderEmojiRow.title = "Render emoji shortcodes".localized
         renderEmojiRow.subtitle = "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged.".localized

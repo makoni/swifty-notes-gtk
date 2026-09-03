@@ -135,6 +135,103 @@ private func localizedLiterals(in line: String, nextLine: String?, file: String)
     return (found, diagnostics)
 }
 
+/// A context-qualified lookup. gettext keys these as
+/// `context\u{4}msgid`, and the PO file writes the context as `msgctxt`.
+private struct ContextEntry: Hashable, Comparable {
+    let context: String
+    let msgid: String
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        (lhs.context, lhs.msgid) < (rhs.context, rhs.msgid)
+    }
+}
+
+private struct ContextPluralEntry: Hashable, Comparable {
+    let context: String
+    let singular: String
+    let plural: String
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        (lhs.context, lhs.singular) < (rhs.context, rhs.singular)
+    }
+}
+
+/// Finds `call(` occurrences that are not the tail of a longer identifier.
+///
+/// `nlocalizedWithContext(` contains `localizedWithContext(`, so a plain
+/// substring search would file every plural context call as a singular one
+/// too — with the plural form landing in the catalogue as a separate msgid.
+private func callRanges(of call: String, in line: String) -> [Range<String.Index>] {
+    var ranges: [Range<String.Index>] = []
+    var search = line.startIndex
+    while let found = line.range(of: call, range: search ..< line.endIndex) {
+        let precededByIdentifier: Bool
+        if found.lowerBound > line.startIndex {
+            let previous = line[line.index(before: found.lowerBound)]
+            precededByIdentifier = previous.isLetter || previous.isNumber || previous == "_"
+        } else {
+            precededByIdentifier = false
+        }
+        if !precededByIdentifier {
+            ranges.append(found)
+        }
+        search = found.upperBound
+    }
+    return ranges
+}
+
+/// Context-qualified call sites on one line.
+///
+/// A call whose literals cannot be read — wrapped across lines, or built from
+/// a variable — is reported rather than skipped. Skipping is what makes a
+/// missing translation invisible: the string keeps working, in English, and
+/// nothing in the pipeline says why.
+private func contextEntries(
+    in line: String,
+    file: String
+) -> (singles: Set<ContextEntry>, plurals: Set<ContextPluralEntry>, diagnostics: [String]) {
+    var singles: Set<ContextEntry> = []
+    var plurals: Set<ContextPluralEntry> = []
+    var diagnostics: [String] = []
+
+    func literals(after range: Range<String.Index>, count: Int) -> [String]? {
+        let found = stringLiterals(in: String(line[range.upperBound...]))
+        guard found.count >= count else { return nil }
+        var values: [String] = []
+        for index in 0 ..< count {
+            let (value, diag) = unescapeWithSupport(found[index].literal, file: file)
+            diagnostics.append(contentsOf: diag)
+            guard let value else { return nil }
+            values.append(value)
+        }
+        return values
+    }
+
+    for range in callRanges(of: "nlocalizedWithContext(", in: line) {
+        if let values = literals(after: range, count: 3) {
+            plurals.insert(
+                ContextPluralEntry(context: values[0], singular: values[1], plural: values[2])
+            )
+        } else {
+            diagnostics.append(
+                "\(file): nlocalizedWithContext needs its context, singular and plural "
+                    + "as literals on one line: `\(line.trimmingCharacters(in: .whitespaces))`"
+            )
+        }
+    }
+    for range in callRanges(of: "localizedWithContext(", in: line) {
+        if let values = literals(after: range, count: 2) {
+            singles.insert(ContextEntry(context: values[0], msgid: values[1]))
+        } else {
+            diagnostics.append(
+                "\(file): localizedWithContext needs its context and msgid as literals "
+                    + "on one line: `\(line.trimmingCharacters(in: .whitespaces))`"
+            )
+        }
+    }
+    return (singles, plurals, diagnostics)
+}
+
 private struct PluralPair: Hashable {
     let singular: String
     let plural: String
@@ -162,8 +259,16 @@ private func pluralPairs(in line: String, file: String) -> (pairs: Set<PluralPai
 
 // MARK: - Source scanning
 
-private func scanSources() throws -> (singletons: Set<String>, pairs: Set<PluralPair>, diagnostics: [String]) {
+private func scanSources() throws -> (
+    singletons: Set<String>,
+    pairs: Set<PluralPair>,
+    contextSingles: Set<ContextEntry>,
+    contextPlurals: Set<ContextPluralEntry>,
+    diagnostics: [String]
+) {
     var singletons: Set<String> = []
+    var contextSingles: Set<ContextEntry> = []
+    var contextPlurals: Set<ContextPluralEntry> = []
     var pairs: Set<PluralPair> = []
     var diagnostics: [String] = []
 
@@ -173,7 +278,7 @@ private func scanSources() throws -> (singletons: Set<String>, pairs: Set<Plural
     let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
 
     guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-        return (singletons, pairs, diagnostics)
+        return (singletons, pairs, contextSingles, contextPlurals, diagnostics)
     }
 
     for case let url as URL in walker where url.pathExtension == "swift" {
@@ -210,6 +315,10 @@ private func scanSources() throws -> (singletons: Set<String>, pairs: Set<Plural
             let nextLine: String? = i + 1 < lines.count ? String(lines[i + 1]) : nil
             let (found, localDiag) = localizedLiterals(in: lineStr, nextLine: nextLine, file: relative)
             singletons.formUnion(found)
+            let (ctxSingles, ctxPlurals, ctxDiag) = contextEntries(in: lineStr, file: relative)
+            contextSingles.formUnion(ctxSingles)
+            contextPlurals.formUnion(ctxPlurals)
+            diagnostics.append(contentsOf: ctxDiag)
             diagnostics.append(contentsOf: localDiag)
             let (pairResult, pairDiag) = pluralPairs(in: lineStr, file: relative)
             pairs.formUnion(pairResult)
@@ -217,7 +326,7 @@ private func scanSources() throws -> (singletons: Set<String>, pairs: Set<Plural
         }
     }
 
-    return (singletons, pairs, diagnostics)
+    return (singletons, pairs, contextSingles, contextPlurals, diagnostics)
 }
 
 // MARK: - PO escaping
@@ -249,16 +358,22 @@ private func pluralFormsExpression() -> String {
 private struct EmitMsgidsResult: Codable {
     let singletons: [String]
     let plurals: [[String]]
+    /// `[context, msgid]` per entry.
+    let contextSingletons: [[String]]
+    /// `[context, singular, plural]` per entry.
+    let contextPlurals: [[String]]
 }
 
 // MARK: - Main
 
 do {
     if CommandLine.arguments.contains("--emit-msgids") {
-        let (singletons, pairs, diagnostics) = try scanSources()
+        let (singletons, pairs, contextSingles, contextPlurals, diagnostics) = try scanSources()
         let result = EmitMsgidsResult(
             singletons: singletons.sorted(),
-            plurals: pairs.sorted(by: { $0.singular < $1.singular }).map { [$0.singular, $0.plural] }
+            plurals: pairs.sorted(by: { $0.singular < $1.singular }).map { [$0.singular, $0.plural] },
+            contextSingletons: contextSingles.sorted().map { [$0.context, $0.msgid] },
+            contextPlurals: contextPlurals.sorted().map { [$0.context, $0.singular, $0.plural] }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
@@ -275,7 +390,7 @@ do {
         exit(0)
     }
 
-    let (singletons, pairs, diagnostics) = try scanSources()
+    let (singletons, pairs, contextSingles, contextPlurals, diagnostics) = try scanSources()
     if !diagnostics.isEmpty {
         for diag in diagnostics {
             fputs(diag + "\n", stderr)
@@ -322,6 +437,24 @@ do {
         } else {
             lines.append("msgstr \"\"")
         }
+        lines.append("")
+    }
+
+    // Context-qualified entries. `msgctxt` is what lets one English string be
+    // translated two ways — the same msgid may appear both with and without a
+    // context, and gettext treats those as different entries.
+    for entry in contextPlurals.sorted() {
+        lines.append("msgctxt \"\(escapePO(entry.context))\"")
+        lines.append("msgid \"\(escapePO(entry.singular))\"")
+        lines.append("msgid_plural \"\(escapePO(entry.plural))\"")
+        lines.append("msgstr[0] \"\"")
+        lines.append("msgstr[1] \"\"")
+        lines.append("")
+    }
+    for entry in contextSingles.sorted() {
+        lines.append("msgctxt \"\(escapePO(entry.context))\"")
+        lines.append("msgid \"\(escapePO(entry.msgid))\"")
+        lines.append("msgstr \"\"")
         lines.append("")
     }
 
