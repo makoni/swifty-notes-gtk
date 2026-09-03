@@ -138,9 +138,10 @@ struct LanguageSwitchingTests {
     }
 
     /// The second msgid that was serving two masters. As a sort criterion
-    /// `Title` sits beside "Newest first" / "Oldest first" and Russian needs
-    /// the prepositional form to match them; as the placeholder of the rename
-    /// field it is the bare noun. One English word, two grammatical roles.
+    /// `Title` names what the list is ordered by, and Russian puts that in the
+    /// prepositional case («По названию»); as the placeholder of the rename
+    /// field it is the bare noun («Название»). One English word, two
+    /// grammatical roles — which is what the context split buys.
     @Test("A sort criterion and a field label read differently in Russian") @MainActor
     func aSortCriterionAndAFieldLabelReadDifferentlyInRussian() throws {
         try withRestoredLanguage {
@@ -154,11 +155,10 @@ struct LanguageSwitchingTests {
 
             #expect(criterion == "По названию")
             #expect(fieldLabel == "Название")
-
-            // The sort menu is read as a set, so the criterion has to be
-            // grammatically consistent with the options next to it.
-            let siblings = [NotesSortMode.newestFirst, .oldestFirst].map(\.displayName)
-            #expect(siblings == ["Сначала новые", "Сначала старые"])
+            // The point of the split: pinning both to the same string is what
+            // this replaced, and a merge that dropped the context would put
+            // the field label back in the sort menu.
+            #expect(criterion != fieldLabel)
         }
     }
 

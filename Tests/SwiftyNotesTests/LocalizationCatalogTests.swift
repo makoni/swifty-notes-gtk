@@ -118,13 +118,13 @@ struct LocalizationCatalogTests {
             let expected = LocalizationCatalogFixture.formatSpecifiers(in: entry.singular)
             #expect(
                 entry.translations.count == 3,
-                "\(entry.singular.debugDescription) has \(entry.translations.count) form(s); Russian needs 3",
+                "\(entry.lookupKey.debugDescription) has \(entry.translations.count) form(s); Russian needs 3",
             )
             for (index, translation) in entry.translations.enumerated() where !translation.isEmpty {
                 #expect(
                     LocalizationCatalogFixture.formatSpecifiers(in: translation) == expected,
                     """
-                    \(entry.singular.debugDescription) msgstr[\(index)] = \
+                    \(entry.lookupKey.debugDescription) msgstr[\(index)] = \
                     \(translation.debugDescription) does not carry the msgid's \
                     specifiers \(expected.sorted())
                     """,
@@ -148,7 +148,7 @@ struct LocalizationCatalogTests {
                     != LocalizationCatalogFixture.formatSpecifiers(in: translation)
             }
             .map { entry in
-                "  - \(entry.singular.debugDescription)\n    -> \(entry.translations[0].debugDescription)"
+                "  - \(entry.lookupKey.debugDescription)\n    -> \(entry.translations[0].debugDescription)"
             }
         #expect(
             mismatches.isEmpty,
@@ -200,11 +200,18 @@ struct LocalizationCatalogTests {
         let entries = try LocalizationCatalogFixture.pluralEntries(
             at: LocalizationCatalogFixture.russianCatalogueURL,
         )
-        let declared = Set(entries.map { $0.singular })
+        // Keyed with the context, so a plural asked for under a `msgctxt`
+        // needs a plural entry *under that context* — the bare entry of the
+        // same msgid would never be reached.
+        let declared = Set(entries.map(\.lookupKey))
         for pair in pairs {
             #expect(
-                declared.contains(pair.singular),
-                "nlocalized(\(pair.singular.debugDescription), \(pair.plural.debugDescription)) has no msgid_plural entry",
+                declared.contains(pair.lookupKey),
+                """
+                \(pair.lookupKey.debugDescription) / \(pair.plural.debugDescription) is asked for \
+                as a plural but has no msgid_plural entry, so ngettext returns \
+                form 0 for every count
+                """,
             )
         }
     }
@@ -299,8 +306,8 @@ struct LocalizationCatalogTests {
     /// template. A call site that forgets `String(format:)` prints a literal
     /// `%d` to the user.
     @Test("Plural-aware call sites substitute their count")
-    func pluralAwareCallSitesSubstituteTheirCount() throws {
-        let offenders = try LocalizationCatalogFixture.unformattedPluralCallSites()
+    func pluralAwareCallSitesSubstituteTheirCount() async throws {
+        let offenders = try await LocalizationCatalogFixture.unformattedPluralCallSites()
         #expect(
             offenders.isEmpty,
             """
@@ -326,10 +333,13 @@ struct LocalizationCatalogTests {
         // stay bare. A msgid the Swift scanner also sees stays guarded, so a
         // real UI string is still caught when one of its call sites drops
         // `.localized`.
-        let source = try await LocalizationCatalogFixture.sourceMessageIDs()
+        // Bare msgids on both sides: the guard compares plain English
+        // literals, so subtracting lookup keys would leave a context-qualified
+        // string looking metadata-only and drop it from the guard.
+        let source = try await LocalizationCatalogFixture.sourceBareMessageIDs()
         let metadataOnly = try LocalizationCatalogFixture.metadataMessageIDs()
             .subtracting(source)
-        let offenders = try LocalizationCatalogFixture.unlocalizedCatalogueLiterals(
+        let offenders = try await LocalizationCatalogFixture.unlocalizedCatalogueLiterals(
             ignoring: metadataOnly,
         )
         #expect(
@@ -363,7 +373,7 @@ struct LocalizationCatalogTests {
             #expect(
                 pluralForms.count <= 1,
                 """
-                \(entry.singular.debugDescription) substitutes no count, so \
+                \(entry.lookupKey.debugDescription) substitutes no count, so \
                 nothing on screen distinguishes 2 from 5 — yet its plural forms \
                 differ: \(entry.translations.dropFirst().map(\.debugDescription).joined(separator: " vs "))
                 """,
@@ -504,25 +514,65 @@ private enum LocalizationCatalogFixture {
         .appendingPathComponent("Sources/SwiftyNotes/locale/ru/LC_MESSAGES/me.spaceinbox.swiftynotes.mo")
 
     struct PluralPair: Hashable {
+        /// `nil` for a plural without a `msgctxt`.
+        let context: String?
         let singular: String
         let plural: String
+
+        /// gettext's own key for the singular form.
+        var lookupKey: String {
+            guard let context else { return singular }
+            return "\(context)\u{4}\(singular)"
+        }
     }
 
     struct PluralEntry {
+        let context: String?
         let singular: String
         let plural: String
         let translations: [String]
+
+        /// How to name this entry in a failure message. Two entries can share
+        /// a singular and differ only in context, so the msgid alone is
+        /// ambiguous the moment any string is context-qualified.
+        var lookupKey: String {
+            guard let context else { return singular }
+            return "\(context)\u{4}\(singular)"
+        }
     }
 
     // MARK: Source scanning — delegates to extract-i18n.swift
 
-    private struct EmitResult: Codable {
-        let singletons: [String]
-        let plurals: [[String]]
-        /// `[context, msgid]` per entry.
-        let contextSingletons: [[String]]
-        /// `[context, singular, plural]` per entry.
-        let contextPlurals: [[String]]
+    /// What `extract-i18n.swift --emit-msgids` reports: one entry per
+    /// catalogue key, whatever call form asked for it, with every place that
+    /// asks. The sites are what let these guards name a bad call site without
+    /// scanning `Sources/` a second time — a second scanner is how the list of
+    /// localizing keywords drifted out of step with the extractor before.
+    struct EmitResult: Codable {
+        struct Entry: Codable {
+            /// Absent for a bare lookup.
+            let context: String?
+            let singular: String
+            /// Absent for a non-plural lookup.
+            let plural: String?
+            /// `file:line`, ordered by file and then line.
+            let sites: [String]
+
+            /// gettext's own key for the singular form.
+            var lookupKey: String {
+                guard let context else { return singular }
+                return "\(context)\u{4}\(singular)"
+            }
+
+            /// gettext's own key for the plural form, when there is one.
+            var pluralLookupKey: String? {
+                guard let plural else { return nil }
+                guard let context else { return plural }
+                return "\(context)\u{4}\(plural)"
+            }
+        }
+
+        let entries: [Entry]
     }
 
     private actor SourceScanner {
@@ -599,123 +649,111 @@ private enum LocalizationCatalogFixture {
     }
 
     private static let scanner = SourceScanner()
-    private enum FixtureError: Error {
+    private enum FixtureError: Error, CustomStringConvertible {
         case noJSONOutput
-    }
+        /// The extractor refused to run and said why. Carrying the text
+        /// matters: the message names the call site to fix, and reporting
+        /// `noJSONOutput` instead points at a broken subprocess.
+        case diagnostics([String])
 
-    /// Every msgid the source actually looks up: single-line literals followed
-    /// by `.localized`, plus both halves of every `nlocalized` pair.
-    static func sourceMessageIDs() async throws -> Set<String> {
-        let result = try await scanner.run()
-        let diags = await scanner.getDiagnostics()
-        if !diags.isEmpty {
-            throw FixtureError.noJSONOutput
-        }
-        var ids = Set(result.singletons)
-        for pair in result.plurals {
-            if pair.count >= 2 {
-                ids.insert(pair[0])
-                ids.insert(pair[1])
+        var description: String {
+            switch self {
+            case .noJSONOutput:
+                "extract-i18n.swift produced no JSON"
+            case let .diagnostics(lines):
+                """
+                extract-i18n.swift rejected the source tree:
+                \(lines.map { "  - \($0)" }.joined(separator: "\n"))
+                """
             }
         }
-        // Context-qualified lookups key on `context\u{4}msgid`, the same way
-        // gettext and `catalogueMessageIDs` do, so the two sets compare.
-        for entry in result.contextSingletons where entry.count >= 2 {
-            ids.insert("\(entry[0])\u{4}\(entry[1])")
+    }
+
+    /// Every entry the source asks for, with its call sites.
+    static func sourceEntries() async throws -> [EmitResult.Entry] {
+        let result = try await scanner.run()
+        let diagnostics = await scanner.getDiagnostics()
+        if !diagnostics.isEmpty {
+            throw FixtureError.diagnostics(diagnostics)
         }
-        for entry in result.contextPlurals where entry.count >= 3 {
-            ids.insert("\(entry[0])\u{4}\(entry[1])")
-            ids.insert("\(entry[0])\u{4}\(entry[2])")
+        return result.entries
+    }
+
+    /// Every key the source can look a string up by — bare msgids, both
+    /// halves of a plural pair, and the `context\u{4}msgid` form for anything
+    /// qualified by a context, exactly as gettext keys them.
+    static func sourceMessageIDs() async throws -> Set<String> {
+        var ids: Set<String> = []
+        for entry in try await sourceEntries() {
+            ids.insert(entry.lookupKey)
+            if let pluralKey = entry.pluralLookupKey {
+                ids.insert(pluralKey)
+            }
+        }
+        return ids
+    }
+
+    /// The bare msgids the source asks for, contexts stripped.
+    ///
+    /// The bare-literal guard needs these rather than lookup keys: moving a
+    /// string under a `msgctxt` changes its key, and a guard that only knew
+    /// keys would quietly stop noticing an unlocalized copy of that same
+    /// English literal.
+    static func sourceBareMessageIDs() async throws -> Set<String> {
+        var ids: Set<String> = []
+        for entry in try await sourceEntries() {
+            ids.insert(entry.singular)
+            if let plural = entry.plural {
+                ids.insert(plural)
+            }
         }
         return ids
     }
 
     static func sourcePluralPairs() async throws -> Set<PluralPair> {
-        let result = try await scanner.run()
-        let diags = await scanner.getDiagnostics()
-        if !diags.isEmpty {
-            throw FixtureError.noJSONOutput
-        }
         var pairs: Set<PluralPair> = []
-        for arr in result.plurals {
-            if arr.count >= 2 {
-                pairs.insert(PluralPair(singular: arr[0], plural: arr[1]))
-            }
+        for entry in try await sourceEntries() {
+            guard let plural = entry.plural else { continue }
+            pairs.insert(PluralPair(context: entry.context, singular: entry.singular, plural: plural))
         }
         return pairs
     }
 
-    /// `nlocalized` call sites whose selected msgid declares a specifier but
+    /// Plural call sites whose selected msgid declares a format specifier but
     /// which are not handed to `String(format:)` on the same line.
-    static func unformattedPluralCallSites() throws -> [String] {
+    ///
+    /// The sites come from the extractor rather than from a scanner of its
+    /// own. The scanner this replaced matched the literal `"nlocalized("`,
+    /// which is not a substring of `"nlocalizedWithContext("` — so it was
+    /// blind to a keyword the extractor already understood, and would have
+    /// stayed blind to the next one.
+    static func unformattedPluralCallSites() async throws -> [String] {
         var offenders: [String] = []
-        let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
-        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-            return offenders
-        }
-        for case let url as URL in walker where url.pathExtension == "swift" {
-            let text = try String(contentsOf: url, encoding: .utf8)
-            let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
-            for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-                let lineText = String(line)
-                let trimmed = lineText.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("//"), lineText.contains("nlocalized(") else { continue }
-                guard let pairs = try? scanPluralPairs(in: lineText) else { continue }
-                guard pairs.contains(where: { !formatSpecifiers(in: $0.singular).isEmpty }) else { continue }
-                guard !lineText.contains("String(format:") else { continue }
-                offenders.append("\(relative):\(offset + 1): \(trimmed)")
+        var lineCache: [String: [String]] = [:]
+        for entry in try await sourceEntries() {
+            guard entry.plural != nil, !formatSpecifiers(in: entry.singular).isEmpty else { continue }
+            for site in entry.sites {
+                guard let colon = site.lastIndex(of: ":"),
+                      let number = Int(site[site.index(after: colon)...])
+                else { continue }
+                let relative = String(site[site.startIndex ..< colon])
+                let lines: [String]
+                if let cached = lineCache[relative] {
+                    lines = cached
+                } else {
+                    let url = packageRoot.appendingPathComponent(relative)
+                    lines = try String(contentsOf: url, encoding: .utf8)
+                        .split(separator: "\n", omittingEmptySubsequences: false)
+                        .map(String.init)
+                    lineCache[relative] = lines
+                }
+                guard number >= 1, number <= lines.count else { continue }
+                let text = lines[number - 1]
+                guard !text.contains("String(format:") else { continue }
+                offenders.append("\(site): \(text.trimmingCharacters(in: .whitespaces))")
             }
         }
         return offenders.sorted()
-    }
-
-    private static func scanPluralPairs(in line: String) throws -> Set<PluralPair>? {
-        var pairs: Set<PluralPair> = []
-        var search = line.startIndex
-        while let call = line.range(of: "nlocalized(", range: search ..< line.endIndex) {
-            let afterOpen = line.index(after: call.upperBound)
-            let rest = line[afterOpen...]
-            var literals: [String] = []
-            var scan = rest.startIndex
-            while literals.count < 2, scan < rest.endIndex {
-                if rest[scan] == "\"" {
-                    var body = ""
-                    var closed = false
-                    var c = line.index(after: scan)
-                    while c < rest.endIndex {
-                        let ch = line[c]
-                        if ch == "\\" {
-                            let nx = line.index(after: c)
-                            guard nx < rest.endIndex else { break }
-                            body.append(ch)
-                            body.append(line[nx])
-                            c = line.index(after: nx)
-                            continue
-                        }
-                        if ch == "\"" {
-                            closed = true
-                            c = line.index(after: c)
-                            break
-                        }
-                        body.append(ch)
-                        c = line.index(after: c)
-                    }
-                    if closed, let unescaped = unescape(body) {
-                        literals.append(unescaped)
-                    }
-                    scan = c
-                } else if rest[scan] == "," || rest[scan] == " " || rest[scan] == "\t" {
-                    scan = line.index(after: scan)
-                } else {
-                    break
-                }
-            }
-            if literals.count >= 2 {
-                pairs.insert(PluralPair(singular: literals[0], plural: literals[1]))
-            }
-            search = call.upperBound
-        }
-        return pairs.isEmpty ? nil : pairs
     }
 
     static let metainfoTemplateURL = packageRoot
@@ -783,54 +821,43 @@ private enum LocalizationCatalogFixture {
         ],
     ]
 
-    /// Calls that localize the literals handed to them, so a literal inside
-    /// one needs no `.localized` suffix.
-    static let localizingCalls: Set<String> = [
-        "nlocalized",
-        "localizedWithContext",
-        "nlocalizedWithContext",
-    ]
-
-    /// Whether the literal starting at `start` sits in the argument list of a
-    /// call that localizes it.
-    ///
-    /// Scans back to the innermost enclosing `(` and reads the identifier in
-    /// front of it, so a literal nested inside another call — the common
-    /// `String(format: localizedWithContext(…), value)` shape — is judged by
-    /// the call that actually receives it.
-    static func isArgumentOfLocalizingCall(in line: String, startingAt start: String.Index) -> Bool {
-        var depth = 0
-        var index = start
-        while index > line.startIndex {
-            index = line.index(before: index)
-            switch line[index] {
-            case ")":
-                depth += 1
-            case "(":
-                if depth > 0 {
-                    depth -= 1
-                    continue
-                }
-                let identifier = String(line[line.startIndex..<index]
-                    .reversed()
-                    .prefix { $0.isLetter || $0.isNumber || $0 == "_" }
-                    .reversed())
-                return localizingCalls.contains(identifier)
-            default:
-                continue
-            }
-        }
-        return false
-    }
-
     /// Literals in `Sources/` that appear verbatim in the catalogue yet carry
-    /// no `.localized`. Literals handed to a call that localizes them —
-    /// `nlocalized`, `localizedWithContext`, `nlocalizedWithContext` — are
-    /// skipped, since the suffix would be wrong there.
+    /// no `.localized`.
+    ///
+    /// Literals handed to a call that localizes them — `nlocalized`,
+    /// `localizedWithContext`, `nlocalizedWithContext` — are skipped, since
+    /// the suffix would be wrong there. Which literals those are comes from
+    /// the extractor's own reported call sites rather than from a scanner
+    /// here: the version this replaced walked back over the line counting
+    /// parentheses, which it also counted inside string literals, so a msgid
+    /// holding an unbalanced `(` (`"Note (draft"`) turned a correct call site
+    /// into a reported offender.
+    ///
+    /// The trade-off is per line rather than per literal: a bare literal that
+    /// happens to equal an argument of a localizing call on the same line is
+    /// skipped too. That is narrower than the line-level skip it replaced,
+    /// which ignored every literal on any line mentioning `nlocalized(`.
     static func unlocalizedCatalogueLiterals(
         ignoring ignored: Set<String> = [],
-    ) throws -> [String] {
-        let catalogue = try catalogueMessageIDs(at: russianCatalogueURL).subtracting(ignored)
+    ) async throws -> [String] {
+        // Bare msgids, not lookup keys: a string moved under a `msgctxt` is
+        // still the same English literal, and a guard keyed on
+        // `context\u{4}msgid` would quietly stop noticing an unlocalized copy
+        // of it.
+        let catalogue = try catalogueBareMessageIDs(at: russianCatalogueURL).subtracting(ignored)
+        var consumed: [String: Set<String>] = [:]
+        for entry in try await sourceEntries() where entry.context != nil || entry.plural != nil {
+            for site in entry.sites {
+                consumed[site, default: []].insert(entry.singular)
+                if let context = entry.context {
+                    consumed[site, default: []].insert(context)
+                }
+                if let plural = entry.plural {
+                    consumed[site, default: []].insert(plural)
+                }
+            }
+        }
+
         var offenders: [String] = []
         let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
         guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
@@ -844,15 +871,16 @@ private enum LocalizationCatalogFixture {
                 let lineText = String(line)
                 let trimmed = lineText.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.hasPrefix("//") else { continue }
+                let localized = consumed["\(relative):\(offset + 1)"] ?? []
                 for hit in stringLiterals(in: lineText) {
                     guard let literal = unescape(hit.literal),
                           !literal.isEmpty,
                           catalogue.contains(literal),
-                          !permitted.contains(literal)
+                          !permitted.contains(literal),
+                          !localized.contains(literal)
                     else { continue }
                     let rest = lineText[hit.end...].drop(while: { $0 == " " })
                     guard !rest.hasPrefix(".localized") else { continue }
-                    guard !isArgumentOfLocalizingCall(in: lineText, startingAt: hit.start) else { continue }
                     offenders.append("\(relative):\(offset + 1): \(literal.debugDescription)")
                 }
             }
@@ -884,10 +912,28 @@ private enum LocalizationCatalogFixture {
         return ids
     }
 
+    /// The same msgids with their contexts stripped.
+    ///
+    /// For the guards that ask "is this English literal a translatable string"
+    /// rather than "is this a catalogue key" — moving a string under a
+    /// `msgctxt` must not take it out of their reach.
+    static func catalogueBareMessageIDs(at url: URL) throws -> Set<String> {
+        var ids: Set<String> = []
+        for entry in try parse(url) {
+            ids.insert(entry.singular)
+            if let plural = entry.plural {
+                ids.insert(plural)
+            }
+        }
+        ids.remove("")
+        return ids
+    }
+
     static func pluralEntries(at url: URL) throws -> [PluralEntry] {
         try parse(url).compactMap { entry in
             guard let plural = entry.plural else { return nil }
             return PluralEntry(
+                context: entry.context,
                 singular: entry.singular,
                 plural: plural,
                 translations: entry.translations,
@@ -896,15 +942,31 @@ private enum LocalizationCatalogFixture {
     }
 
     struct Entry {
+        let context: String?
         let singular: String
         let plural: String?
         let translations: [String]
+
+        /// How to name this entry in a failure message: two entries can share
+        /// a singular and differ only in context, so the msgid alone stopped
+        /// being unambiguous the moment any string gained one.
+        var lookupKey: String {
+            guard let context else { return singular }
+            return "\(context)\u{4}\(singular)"
+        }
     }
 
     static func entries(at url: URL) throws -> [Entry] {
         try parse(url)
             .filter { !$0.singular.isEmpty }
-            .map { Entry(singular: $0.singular, plural: $0.plural, translations: $0.translations) }
+            .map {
+                Entry(
+                    context: $0.context,
+                    singular: $0.singular,
+                    plural: $0.plural,
+                    translations: $0.translations,
+                )
+            }
     }
 
     private struct RawEntry {
