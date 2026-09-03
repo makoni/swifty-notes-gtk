@@ -62,6 +62,37 @@ struct ExtractorTests {
         )
     }
 
+    @Test("Awkward but legal Swift around a call still parses")
+    func awkwardButLegalSwiftAroundACallStillParses() throws {
+        // Splitting the argument list means handling what can appear inside
+        // it: commas and quotes that belong to a literal, the call nested
+        // inside another, two calls in one collection, and a literal argument
+        // that follows the call and must not be mistaken for part of it.
+        let entries = try extract(
+            #"""
+            let a = nlocalized("a, b", "c, d", count: n)
+            let b = nlocalized("say \"hi\"", "say \"his\"", count: n)
+            let c = String(format: nlocalized("%d x", "%d xs", count: n), n)
+            let d = [localizedWithContext("one", "One"), localizedWithContext("two", "Two")]
+            let e = view.set(label: localizedWithContext("three", "Three"), icon: "icon-name")
+            let f = build { localizedWithContext("four", "Four (unbalanced") }
+            """#,
+        )
+
+        #expect(entries.contains(Entry(context: nil, singular: "a, b", plural: "c, d")))
+        #expect(entries.contains(Entry(context: nil, singular: #"say "hi""#, plural: #"say "his""#)))
+        #expect(entries.contains(Entry(context: nil, singular: "%d x", plural: "%d xs")))
+        #expect(entries.contains(Entry(context: "one", singular: "One", plural: nil)))
+        #expect(entries.contains(Entry(context: "two", singular: "Two", plural: nil)))
+        #expect(entries.contains(Entry(context: "three", singular: "Three", plural: nil)))
+        #expect(entries.contains(Entry(context: "four", singular: "Four (unbalanced", plural: nil)))
+        #expect(
+            !entries.contains(where: { $0.singular == "icon-name" }),
+            "a literal after the call is not part of it: \(entries)",
+        )
+        #expect(entries.count == 7)
+    }
+
     // MARK: - The template has to compile
 
     @Test("One key reached through two call forms is a single entry")
