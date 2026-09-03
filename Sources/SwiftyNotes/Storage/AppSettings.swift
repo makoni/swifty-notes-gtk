@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 public enum EditorIndentStyle: String, Codable, CaseIterable, Equatable, Sendable {
@@ -7,9 +8,9 @@ public enum EditorIndentStyle: String, Codable, CaseIterable, Equatable, Sendabl
     public var displayName: String {
         switch self {
         case .spaces:
-            "Spaces"
+            "Spaces".localized
         case .tabs:
-            "Tabs"
+            "Tabs".localized
         }
     }
 }
@@ -25,9 +26,9 @@ public enum OutlineDensity: String, Codable, CaseIterable, Equatable, Sendable {
     public var displayName: String {
         switch self {
         case .comfortable:
-            "Comfortable"
+            "Comfortable".localized
         case .compact:
-            "Compact"
+            "Compact".localized
         }
     }
 }
@@ -40,11 +41,11 @@ public enum AppearanceMode: String, Codable, CaseIterable, Equatable, Sendable {
     public var displayName: String {
         switch self {
         case .system:
-            "Follow system"
+            "Follow system".localized
         case .light:
-            "Light"
+            "Light".localized
         case .dark:
-            "Dark"
+            "Dark".localized
         }
     }
 }
@@ -68,6 +69,9 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// dictionary that matches it.
     public var spellCheckLanguage: String?
     public var trashRetention: TrashRetention
+    /// Interface language. ``AppLanguage.system`` follows the session
+    /// locale, which is the behaviour that predates the picker.
+    public var appLanguage: AppLanguage
     /// Outline panel row density. Defaults to ``OutlineDensity.comfortable``,
     /// matching the design.
     public var outlineDensity: OutlineDensity
@@ -99,6 +103,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         spellCheckEnabled: Bool = true,
         spellCheckLanguage: String? = nil,
         trashRetention: TrashRetention = .days(30),
+        appLanguage: AppLanguage = .system,
         outlineDensity: OutlineDensity = .comfortable,
         outlineTreeLines: Bool = true,
         outlineDragHandles: Bool = true,
@@ -118,6 +123,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nilIfEmpty
         self.trashRetention = trashRetention
+        self.appLanguage = appLanguage
         self.outlineDensity = outlineDensity
         self.outlineTreeLines = outlineTreeLines
         self.outlineDragHandles = outlineDragHandles
@@ -156,6 +162,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 spellCheckEnabled: spellCheckEnabled,
                 spellCheckLanguage: spellCheckLanguage,
                 trashRetention: trashRetention,
+                appLanguage: appLanguage,
                 outlineDensity: outlineDensity,
                 outlineTreeLines: outlineTreeLines,
                 outlineDragHandles: outlineDragHandles,
@@ -174,6 +181,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
             trashRetention: trashRetention,
+            appLanguage: appLanguage,
             outlineDensity: outlineDensity,
             outlineTreeLines: outlineTreeLines,
             outlineDragHandles: outlineDragHandles,
@@ -223,6 +231,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: spellCheckEnabled,
             spellCheckLanguage: spellCheckLanguage,
             trashRetention: trashRetention,
+            appLanguage: appLanguage,
             outlineDensity: outlineDensity,
             outlineTreeLines: outlineTreeLines,
             outlineDragHandles: outlineDragHandles,
@@ -242,6 +251,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case spellCheckEnabled
         case spellCheckLanguage
         case trashRetention
+        case appLanguage
         case outlineDensity
         case outlineTreeLines
         case outlineDragHandles
@@ -262,12 +272,33 @@ public struct AppSettings: Codable, Equatable, Sendable {
             spellCheckEnabled: container.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled) ?? true,
             spellCheckLanguage: container.decodeIfPresent(String.self, forKey: .spellCheckLanguage),
             trashRetention: container.decodeIfPresent(TrashRetention.self, forKey: .trashRetention) ?? .days(30),
+            appLanguage: Self.decodedAppLanguage(from: container),
             outlineDensity: container.decodeIfPresent(OutlineDensity.self, forKey: .outlineDensity) ?? .comfortable,
             outlineTreeLines: container.decodeIfPresent(Bool.self, forKey: .outlineTreeLines) ?? true,
             outlineDragHandles: container.decodeIfPresent(Bool.self, forKey: .outlineDragHandles) ?? true,
             outlineBreadcrumbVisible: container.decodeIfPresent(Bool.self, forKey: .outlineBreadcrumbVisible) ?? true,
             renderEmojiShortcodes: container.decodeIfPresent(Bool.self, forKey: .renderEmojiShortcodes) ?? true,
         )
+    }
+
+    /// Reads `appLanguage`, treating an unrecognised value as "follow the
+    /// system" rather than letting it fail the whole decode.
+    ///
+    /// `decodeIfPresent` returns nil only for a *missing* key; a present but
+    /// unknown raw value throws, and `init(from:)` throws with it. Both call
+    /// sites swallow that (`(try? load()) ?? .default`), so one unfamiliar
+    /// language code would silently reset every other preference — including
+    /// the custom notes directory, which reads to the user as their notes
+    /// having vanished. That is the documented growth path for this type: ship
+    /// a new language, roll back one version, and the old build meets a code it
+    /// has never heard of.
+    private static func decodedAppLanguage(
+        from container: KeyedDecodingContainer<CodingKeys>,
+    ) -> AppLanguage {
+        guard let raw = try? container.decodeIfPresent(String.self, forKey: .appLanguage) else {
+            return .system
+        }
+        return AppLanguage(rawValue: raw) ?? .system
     }
 
     private static func clampedEditorFontSize(_ value: Int) -> Int {

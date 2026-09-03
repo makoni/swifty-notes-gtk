@@ -591,7 +591,17 @@ private func runCLIExecutable(
     let process = Process()
     process.executableURL = swiftyNotesExecutableURL()
     process.arguments = arguments
-    process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }
+    // The binary reads the interface language out of settings before it
+    // dispatches a command, so an un-isolated config home lets whatever the
+    // developer picked in the app decide what language these assertions see —
+    // English expectations start failing on a machine where the app is set to
+    // Russian. Point it at a path that holds no settings; callers that are
+    // deliberately exercising settings discovery override it.
+    let isolatedConfigHome = FileManager.default.temporaryDirectory
+        .appendingPathComponent("swiftynotes-cli-\(UUID().uuidString)", isDirectory: true)
+    process.environment = ProcessInfo.processInfo.environment
+        .merging(["XDG_CONFIG_HOME": isolatedConfigHome.path(percentEncoded: false)]) { _, new in new }
+        .merging(environment) { _, new in new }
 
     let stdoutPipe = Pipe()
     let stderrPipe = Pipe()

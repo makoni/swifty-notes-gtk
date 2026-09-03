@@ -11,9 +11,12 @@ final class UpdateBanner {
     let revealer = Revealer()
     private let container = Box(orientation: .horizontal, spacing: 8)
     private let label = Label("")
-    private let updateButton = Button(label: "Update")
+    private let updateButton = Button(label: "Update".localized)
     private let closeButton = Button(icon: .windowClose)
 
+    /// Version the banner is currently announcing, kept so
+    /// ``retranslate()`` can rebuild the sentence around it.
+    private var shownVersion: String?
     private var onUpdateHandler: (() -> Void)?
     private var onDismissHandler: (() -> Void)?
 
@@ -44,8 +47,8 @@ final class UpdateBanner {
 
         closeButton.addCSSClass(.flat)
         closeButton.addCSSClass(.circular)
-        closeButton.tooltipText = "Dismiss"
-        closeButton.setAccessibleLabel("Dismiss update notification")
+        closeButton.tooltipText = "Dismiss".localized
+        closeButton.setAccessibleLabel("Dismiss update notification".localized)
         closeButton.marginTop = 6
         closeButton.marginBottom = 6
         closeButton.marginEnd = 6
@@ -66,8 +69,19 @@ final class UpdateBanner {
     }
 
     func show(version: String) {
-        label.text = "Version \(version) is available."
+        shownVersion = version
+        label.text = String(format: "Version %@ is available.".localized, version)
         revealer.revealChild = true
+    }
+
+    /// Re-reads the banner's strings after a language change.
+    func retranslate() {
+        updateButton.label = "Update".localized
+        closeButton.tooltipText = "Dismiss".localized
+        closeButton.setAccessibleLabel("Dismiss update notification".localized)
+        if let shownVersion {
+            label.text = String(format: "Version %@ is available.".localized, shownVersion)
+        }
     }
 
     func dismiss() {

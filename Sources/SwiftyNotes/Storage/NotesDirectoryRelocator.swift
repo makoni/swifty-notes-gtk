@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 public enum NotesDirectoryRelocator {
@@ -43,7 +44,7 @@ public enum NotesDirectoryRelocator {
 
         if destinationDirectory.path(percentEncoded: false).hasPrefix(sourceDirectory.path(percentEncoded: false) + "/") {
             throw RelocationError(
-                message: "The new notes folder cannot be inside the current notes folder.",
+                message: "The new notes folder cannot be inside the current notes folder.".localized
             )
         }
 
@@ -51,14 +52,14 @@ public enum NotesDirectoryRelocator {
         guard fileManager.fileExists(atPath: sourceDirectory.path(percentEncoded: false), isDirectory: &sourceIsDirectory),
               sourceIsDirectory.boolValue
         else {
-            throw RelocationError(message: "The current notes folder could not be found.")
+            throw RelocationError(message: "The current notes folder could not be found.".localized)
         }
 
         let destinationExistedBeforeRelocate: Bool
         var destinationIsDirectory: ObjCBool = false
         if fileManager.fileExists(atPath: destinationDirectory.path(percentEncoded: false), isDirectory: &destinationIsDirectory) {
             guard destinationIsDirectory.boolValue else {
-                throw RelocationError(message: "The selected destination is not a folder.")
+                throw RelocationError(message: "The selected destination is not a folder.".localized)
             }
             let destinationContents = try fileManager.contentsOfDirectory(
                 at: destinationDirectory,
@@ -66,7 +67,7 @@ public enum NotesDirectoryRelocator {
                 options: [],
             )
             guard destinationContents.isEmpty else {
-                throw RelocationError(message: "Choose an empty destination folder for your notes.")
+                throw RelocationError(message: "Choose an empty destination folder for your notes.".localized)
             }
             destinationExistedBeforeRelocate = true
         } else {

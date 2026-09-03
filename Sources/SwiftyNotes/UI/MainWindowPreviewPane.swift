@@ -218,6 +218,37 @@ extension MainWindow {
         }
     }
 
+    /// Flips the Settings window's language row after launch, through the row's
+    /// real `notify::selected` signal.
+    ///
+    /// Reaching this path by hand needs a mouse; reaching it headlessly does
+    /// not reproduce, because the crash it exposed needs a running main loop.
+    /// `SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH=ru` alongside
+    /// `SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_ON_LAUNCH=1` drives it deterministically.
+    func scheduleDebugLanguageSwitchIfRequested() {
+        guard !hasScheduledDebugLanguageSwitch,
+              let raw = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH"]?
+                  .trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              let language = AppLanguage(rawValue: raw)
+        else {
+            return
+        }
+
+        hasScheduledDebugLanguageSwitch = true
+        let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS"]
+            .flatMap(Int.init) ?? 1500
+        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
+            guard let settingsWindow = self?.activeSettingsWindow else {
+                FileHandle.standardError.write(Data("[debug-language] no settings window open\n".utf8))
+                return
+            }
+            FileHandle.standardError.write(Data("[debug-language] selecting \(language.rawValue)\n".utf8))
+            settingsWindow.debugSetLanguage(language)
+            FileHandle.standardError.write(Data("[debug-language] survived the switch\n".utf8))
+        }
+    }
+
     func scheduleDebugCreateNoteIfRequested() {
         guard !hasScheduledDebugCreateNote else { return }
         let shouldCreate = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_CREATE_NOTE_ON_LAUNCH"]
@@ -411,10 +442,6 @@ extension MainWindow {
         rebuildOverflowMenu()
     }
 
-    /// Single source for the menu label so the Linux GMenu entry, the
-    /// macOS popover button, and the hide filter can never drift apart.
-    static let checkForUpdatesMenuLabel = "Check for Updates…"
-
     /// (Re)composes the hamburger menu. Called once from
     /// ``configureActionsAndMenu()`` and again whenever the menu's
     /// composition changes at runtime — currently only when the
@@ -422,11 +449,11 @@ extension MainWindow {
     /// "Check for Updates…" gets dropped (see ``handleUpdateCheckResult``).
     func rebuildOverflowMenu() {
         let libraryItems: [(label: String, action: String)] = [
-            ("Settings", "win.settings"),
-            ("Open Markdown File…", "win.open-markdown-file"),
-            ("Import into Library…", "win.import-note"),
-            ("Reload from disk", "win.reload-notes"),
-            ("Open notes folder", "win.open-notes-folder"),
+            ("Settings".localized, "win.settings"),
+            ("Open Markdown File…".localized, "win.open-markdown-file"),
+            ("Import into Library…".localized, "win.import-note"),
+            ("Reload from disk".localized, "win.reload-notes"),
+            ("Open notes folder".localized, "win.open-notes-folder"),
         ]
         #if os(macOS)
         // Hand-built popover (not GMenu/setMenuModel) so the items
@@ -438,17 +465,17 @@ extension MainWindow {
         // and release silently eats the click. Linux doesn't have this
         // bug and keeps the native GMenu look-and-feel below.
         let library: [(label: String, handler: @MainActor () -> Void)] = [
-            ("Settings", { [weak self] in self?.presentSettingsWindow() }),
-            ("Open Markdown File…", { [weak self] in self?.openMarkdownFile() }),
-            ("Import into Library…", { [weak self] in self?.importNote() }),
-            ("Reload from disk", { [weak self] in self?.reloadFromDisk(announce: true) }),
-            ("Open notes folder", { [weak self] in self?.openNotesFolder() }),
+            ("Settings".localized, { [weak self] in self?.presentSettingsWindow() }),
+            ("Open Markdown File…".localized, { [weak self] in self?.openMarkdownFile() }),
+            ("Import into Library…".localized, { [weak self] in self?.importNote() }),
+            ("Reload from disk".localized, { [weak self] in self?.reloadFromDisk(announce: true) }),
+            ("Open notes folder".localized, { [weak self] in self?.openNotesFolder() }),
         ]
         var help: [(label: String, handler: @MainActor () -> Void)] = []
         if !updateCheckMenuItemHidden {
-            help.append((Self.checkForUpdatesMenuLabel, { [weak self] in self?.checkForUpdates(manual: true) }))
+            help.append(("Check for Updates…".localized, { [weak self] in self?.checkForUpdates(manual: true) }))
         }
-        help.append(("About Swifty Notes", { [weak self] in self?.presentAboutDialog() }))
+        help.append(("About Swifty Notes".localized, { [weak self] in self?.presentAboutDialog() }))
 
         let popover = Popover()
         popover.hasArrow = true
@@ -472,9 +499,9 @@ extension MainWindow {
         #else
         var helpItems: [(label: String, action: String)] = []
         if !updateCheckMenuItemHidden {
-            helpItems.append((Self.checkForUpdatesMenuLabel, "win.check-for-updates"))
+            helpItems.append(("Check for Updates…".localized, "win.check-for-updates"))
         }
-        helpItems.append(("About Swifty Notes", "win.about"))
+        helpItems.append(("About Swifty Notes".localized, "win.about"))
 
         let librarySection = GMenuRef()
         for item in libraryItems {
@@ -485,13 +512,17 @@ extension MainWindow {
             helpSection.append(item.label, action: item.action)
         }
         let menu = GMenuRef()
-        menu.appendSection("Library", section: librarySection)
-        menu.appendSection("Help", section: helpSection)
+        menu.appendSection("Library".localized, section: librarySection)
+        menu.appendSection("Help".localized, section: helpSection)
         menuButton.setMenuModel(menu)
         let helpLabels = helpItems.map(\.label)
         #endif
 
-        overflowMenuSectionTitles = ["Library", "Help"]
+        // Displayed titles are translated; the dictionary below stays keyed by
+        // the canonical English section name, which is how the tests address it
+        // and how it survives a language change. The two are deliberately not
+        // the same list — do not index one with the other.
+        overflowMenuSectionTitles = ["Library".localized, "Help".localized]
         overflowMenuItemsBySection = [
             "Library": libraryItems.map(\.label),
             "Help": helpLabels,
@@ -526,37 +557,37 @@ extension MainWindow {
     #endif
 
     func configureToolbarAccessibility() {
-        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
-        newNoteButton.setAccessibleLabel("New Note")
-        newFolderButton.setAccessibleLabel("New Folder")
-        saveNoteButton.setAccessibleLabel("Save Note")
-        deleteNoteButton.setAccessibleLabel("Delete Note")
-        menuButton.setAccessibleLabel("Main Menu")
-        editorModeToggle.setAccessibleLabel("Editor")
-        splitModeToggle.setAccessibleLabel("Split")
-        previewModeToggle.setAccessibleLabel("Preview")
+        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized)
+        newNoteButton.setAccessibleLabel("New Note".localized)
+        newFolderButton.setAccessibleLabel("New Folder".localized)
+        saveNoteButton.setAccessibleLabel("Save Note".localized)
+        deleteNoteButton.setAccessibleLabel("Delete Note".localized)
+        menuButton.setAccessibleLabel("Main Menu".localized)
+        editorModeToggle.setAccessibleLabel("Editor".localized)
+        splitModeToggle.setAccessibleLabel("Split".localized)
+        previewModeToggle.setAccessibleLabel("Preview".localized)
         updateViewModeToggleState()
     }
 
     func configureToolbarTooltips() {
-        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar"
-        newNoteButton.tooltipText = "New Note"
-        newFolderButton.tooltipText = "New Folder"
-        saveNoteButton.tooltipText = "Save Note"
-        deleteNoteButton.tooltipText = "Delete Note"
-        menuButton.tooltipText = "Main Menu"
-        editorModeToggle.tooltipText = "Editor only"
-        splitModeToggle.tooltipText = "Split view"
-        previewModeToggle.tooltipText = "Preview only"
+        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized
+        newNoteButton.tooltipText = "New Note".localized
+        newFolderButton.tooltipText = "New Folder".localized
+        saveNoteButton.tooltipText = "Save Note".localized
+        deleteNoteButton.tooltipText = "Delete Note".localized
+        menuButton.tooltipText = "Main Menu".localized
+        editorModeToggle.tooltipText = "Editor only".localized
+        splitModeToggle.tooltipText = "Split view".localized
+        previewModeToggle.tooltipText = "Preview only".localized
         updateViewModeToggleState()
     }
 
     func updateSidebarToggleAccessibility() {
-        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar")
+        sidebarToggle.setAccessibleLabel(state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized)
     }
 
     func updateSidebarToggleTooltip() {
-        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar" : "Show Notes Sidebar"
+        sidebarToggle.tooltipText = state.isSidebarVisible ? "Hide Notes Sidebar".localized : "Show Notes Sidebar".localized
     }
 
     func updateActionAvailability() {

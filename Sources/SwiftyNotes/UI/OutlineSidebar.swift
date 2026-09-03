@@ -12,6 +12,7 @@ struct OutlineSidebar {
     let emptyLabel: Label
     let footerLabel: Label
 
+    private let titleLabel: Label
     private let scroll: ScrolledWindow
     private let renderState: RenderState
 
@@ -24,7 +25,7 @@ struct OutlineSidebar {
         list.selectionMode = .single
         list.activateOnSingleClick = true
         list.addCSSClass("navigation-sidebar")
-        list.setAccessibleLabel("Note Outline")
+        list.setAccessibleLabel("Note Outline".localized)
 
         scroll = ScrolledWindow(child: list)
         scroll.setPolicy(horizontal: .never, vertical: .automatic)
@@ -39,10 +40,10 @@ struct OutlineSidebar {
         countBadge.addCSSClass("outline-count")
 
         searchEntry = SearchEntry()
-        searchEntry.placeholderText = "Filter headings…"
+        searchEntry.placeholderText = "Filter headings…".localized
         searchEntry.searchDelay = 120
         searchEntry.hexpand = true
-        searchEntry.setAccessibleLabel("Filter Outline")
+        searchEntry.setAccessibleLabel("Filter Outline".localized)
 
         emptyLabel = Label("")
         emptyLabel.wrap = true
@@ -76,7 +77,7 @@ struct OutlineSidebar {
         footerLabel.marginStart = 4
         footerLabel.marginEnd = 4
 
-        let titleLabel = Label("Outline")
+        titleLabel = Label("Outline".localized)
         titleLabel.addCSSClass("heading")
         titleLabel.xalign = 0
         titleLabel.hexpand = true
@@ -95,7 +96,7 @@ struct OutlineSidebar {
 
         root = ToolbarView()
         root.content = content
-        root.setAccessibleLabel("Outline Sidebar")
+        root.setAccessibleLabel("Outline Sidebar".localized)
 
         rerender()
     }
@@ -210,6 +211,19 @@ struct OutlineSidebar {
     func render(headings: [Heading]) { setHeadings(headings) }
 
     // MARK: — Rendering
+    /// Re-applies the strings the panel sets once at construction.
+    ///
+    /// Everything derived from the current headings — the footer counts and
+    /// the empty state — is left to ``rerender()``, which the caller runs
+    /// straight after.
+    func retranslate() {
+        list.setAccessibleLabel("Note Outline".localized)
+        root.setAccessibleLabel("Outline Sidebar".localized)
+        titleLabel.text = "Outline".localized
+        searchEntry.placeholderText = "Filter headings…".localized
+        searchEntry.setAccessibleLabel("Filter Outline".localized)
+    }
+
 
     private func rerender() {
         let visible = OutlineFilter.visible(
@@ -223,7 +237,9 @@ struct OutlineSidebar {
         countBadge.text = "\(total)"
         let h2 = renderState.allHeadings.lazy.filter { $0.level == 2 }.count
         let h3 = renderState.allHeadings.lazy.filter { $0.level == 3 }.count
-        footerLabel.text = "\(h2) section\(h2 == 1 ? "" : "s") · \(h3) subsection\(h3 == 1 ? "" : "s")"
+        let sectionNum = String(format: nlocalized("%d section", "%d sections", count: UInt(h2)), h2)
+        let subsectionNum = String(format: nlocalized("%d subsection", "%d subsections", count: UInt(h3)), h3)
+        footerLabel.text = "\(sectionNum) · \(subsectionNum)"
 
         if renderState.treeLines {
             list.addCSSClass("has-lines")
@@ -273,12 +289,12 @@ struct OutlineSidebar {
             // routes to `insert-heading` via `onActivateLink` above.
             // Setting `markup` (not `text`) is what actually parses the
             // anchor — `text` strips markup back to plain.
-            emptyLabel.markup = "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+            emptyLabel.markup = "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start.".localized
             emptyLabel.visible = true
             scroll.visible = false
         } else if isQuery, visible.isEmpty {
             emptyLabel.useMarkup = false
-            emptyLabel.text = "No headings match the filter."
+            emptyLabel.text = "No headings match the filter.".localized
             emptyLabel.visible = true
             scroll.visible = false
         } else {
@@ -338,7 +354,7 @@ struct OutlineSidebar {
             leadingContainer.marginEnd = 4
             let chevron = Button(icon: .custom(renderState.collapsed.contains(heading.id) ? "pan-end-symbolic" : "pan-down-symbolic"))
             chevron.addCSSClass(.flat)
-            chevron.tooltipText = renderState.collapsed.contains(heading.id) ? "Expand section" : "Collapse section"
+            chevron.tooltipText = renderState.collapsed.contains(heading.id) ? "Expand section".localized : "Collapse section".localized
             MacOSClickWorkaround.onClick(chevron, label: "OutlineChevron") { [weak rs = renderState, id = heading.id] in
                 guard let rs else { return }
                 rs.toggleHandler?(id)

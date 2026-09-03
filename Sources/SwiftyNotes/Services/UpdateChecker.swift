@@ -65,10 +65,10 @@ struct UpdateChecker: Sendable {
                 : .error(message: message)
         }
         guard let remote = SemanticVersion(release.tagName) else {
-            return .error(message: "Could not parse remote version \"\(release.tagName)\"")
+            return .error(message: String(format: "Could not parse remote version \"%@\"".localized, release.tagName))
         }
         guard let current = SemanticVersion(currentVersion) else {
-            return .error(message: "Could not parse current version \"\(currentVersion)\"")
+            return .error(message: String(format: "Could not parse current version \"%@\"".localized, currentVersion))
         }
         let normalized = Self.normalizedVersionString(release.tagName)
         if forceUpdateAvailable || remote > current {

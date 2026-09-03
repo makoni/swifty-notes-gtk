@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 /// Converts Foundation file-system errors raised while changing the notes
@@ -12,11 +13,11 @@ public enum NotesDirectoryErrorMessage {
         if nsError.domain == NSCocoaErrorDomain {
             switch nsError.code {
             case 257, 512, 513:
-                return "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+                return "Swifty Notes does not have permission to access that folder. Try choosing a different location.".localized
             case 640:
-                return "There is not enough disk space to move your notes to that folder."
+                return "There is not enough disk space to move your notes to that folder.".localized
             case 642:
-                return "The selected folder is on a read-only filesystem and cannot store notes."
+                return "The selected folder is on a read-only filesystem and cannot store notes.".localized
             default:
                 break
             }

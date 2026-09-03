@@ -41,6 +41,17 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 - Run a single Swift Testing case: `swift test --filter 'mainWindowPresentRendersPreviewForInitiallySelectedNote' --no-parallel`
 - Run a single Wayland UI smoke test: `swift test --filter 'appLaunchesUnderHeadlessWaylandWithAccessibleWindowAndSeededControls' --no-parallel`
 
+## Translations
+
+- Strings live in `po/<lang>.po`; `po/LINGUAS` is the list of shipped languages and drives both catalogue compilation and metadata rendering.
+- `scripts/extract-i18n.sh` regenerates `po/me.spaceinbox.swiftynotes.pot` from all three sources: Swift (`scripts/extract-i18n.swift`, because `"literal".localized` is a property access xgettext cannot see), the AppStream metainfo, and the desktop entry.
+- `scripts/build-locales.sh` compiles `.mo` files and renders `data/generated/` — the translated desktop entry and metainfo. Both generated files are gitignored; packaging renders them itself.
+- `data/*.metainfo.xml.in` and `data/*.desktop.in` are **English templates**. Never hand-write `xml:lang="…"` or `Name[xx]=` in them: `msgfmt --xml` / `--desktop` merge those from `po/`, and a guard test fails if a template carries its own translations.
+- Historical `<release>` descriptions are marked `translate="no"`; they were 70 of the 92 translatable strings and are archival. Drop the attribute on a release whose notes should be translated.
+- Format specifiers are `%@`, never `%s`. On Linux Foundation, `%s` handed a Swift `String` substitutes nothing at all — the argument silently vanishes from the text. A guard test (`No localized format string uses %s`) enforces it.
+- Anything Foundation formats rather than gettext — dates, times, numbers — goes through `interfaceLocale()`. `Locale.current` follows `LC_ALL`/`LANG` while the interface language follows `LANGUAGE`, so without it a Russian interface prints English dates.
+- After changing user-visible strings: `bash scripts/extract-i18n.sh`, `msgmerge --update --backup=none --no-fuzzy-matching po/ru.po po/me.spaceinbox.swiftynotes.pot`, translate, then `bash scripts/build-locales.sh`.
+
 ## TDD workflow
 
 - Work test-first for behavior changes and bug fixes: add or update a regression test before changing production code when the behavior is reproducible in tests.

@@ -21,12 +21,14 @@ extension ExternalDocumentWindow {
         } else {
             outlineToggleButton.removeCSSClass(.activeCSSClass)
         }
-        outlineToggleButton.tooltipText = isOutlineVisible ? "Hide outline (F9)" : "Show outline (F9)"
+        outlineToggleButton.tooltipText = isOutlineVisible
+            ? "Hide outline (F9)".localized
+            : "Show outline (F9)".localized
     }
 
     func openCommandPalette() {
         guard !currentHeadings.isEmpty else {
-            toastOverlay.addToast(Toast(title: "No headings to jump to."))
+            toastOverlay.addToast(Toast(title: "No headings to jump to.".localized))
             return
         }
         // Rapid double Ctrl+G: drop the old wrapper — GTK closes its

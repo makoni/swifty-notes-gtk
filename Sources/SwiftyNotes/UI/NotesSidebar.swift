@@ -33,7 +33,7 @@ struct NotesSidebar {
         list.selectionMode = .single
         list.activateOnSingleClick = true
         list.addCSSClass("navigation-sidebar")
-        list.setAccessibleLabel("Notes List")
+        list.setAccessibleLabel("Notes List".localized)
 
         let scroll = ScrolledWindow(child: list)
         scroll.setPolicy(horizontal: .never, vertical: .automatic)
@@ -47,18 +47,18 @@ struct NotesSidebar {
         scroll.kineticScrolling = false
         #endif
 
-        titleLabel = Label("Notes")
+        titleLabel = Label("Notes".localized)
         titleLabel.addCSSClass("heading")
 
         searchEntry = SearchEntry()
-        searchEntry.placeholderText = "Search notes"
+        searchEntry.placeholderText = "Search notes".localized
         searchEntry.searchDelay = 120
         searchEntry.hexpand = true
-        searchEntry.setAccessibleLabel("Search Notes")
+        searchEntry.setAccessibleLabel("Search Notes".localized)
 
         sortButton = SplitButton()
         sortButton.canShrink = true
-        sortButton.dropdownTooltip = "Sort Notes"
+        sortButton.dropdownTooltip = "Sort Notes".localized
         sortButton.direction = .down
 
         sortPopover = Popover()
@@ -76,7 +76,7 @@ struct NotesSidebar {
         sortPopover.child = sortMenuBox
         sortButton.setPopover(sortPopover)
 
-        emptyLabel = Label("No notes yet.")
+        emptyLabel = Label("No notes yet.".localized)
         emptyLabel.wrap = true
         emptyLabel.xalign = 0
         emptyLabel.addCSSClass(.dimLabel)
@@ -140,7 +140,7 @@ struct NotesSidebar {
         root.addTopBar(header)
         #endif
         root.content = content
-        root.setAccessibleLabel("Notes Sidebar")
+        root.setAccessibleLabel("Notes Sidebar".localized)
 
         sortOptionButtons = sortButtons
         setSortMode(.newestFirst)
@@ -169,6 +169,23 @@ struct NotesSidebar {
     var debugRenderCount: Int { renderState.renderCount }
 #endif
 
+    /// Re-applies every string the sidebar sets once at construction.
+    ///
+    /// The count-bearing labels (`titleLabel`, `emptyLabel`) are deliberately
+    /// left out: they are a function of the current items, so the caller
+    /// re-renders instead of guessing counts here.
+    func retranslate() {
+        list.setAccessibleLabel("Notes List".localized)
+        root.setAccessibleLabel("Notes Sidebar".localized)
+        searchEntry.placeholderText = "Search notes".localized
+        searchEntry.setAccessibleLabel("Search Notes".localized)
+        sortButton.dropdownTooltip = "Sort Notes".localized
+        for (mode, button) in sortOptionButtons {
+            Self.applySortOptionContent(to: button, mode: mode)
+        }
+        setSortMode(sortState.currentMode)
+    }
+
     func render(
         items: [SidebarItem],
         selectedNoteID: UUID?,
@@ -196,15 +213,15 @@ struct NotesSidebar {
         }
 
         if totalCount == 0 {
-            titleLabel.text = "Notes"
-            emptyLabel.text = "No notes yet. Create one with +."
+            titleLabel.text = "Notes".localized
+            emptyLabel.text = "No notes yet. Create one with +.".localized
         } else if visibleNoteCount == 0 && items.isEmpty {
-            titleLabel.text = "Notes"
-            emptyLabel.text = "No notes match “\(searchQuery)”."
+            titleLabel.text = "Notes".localized
+            emptyLabel.text = String(format: "No notes match \"%@\".".localized, searchQuery)
         } else {
             titleLabel.text = searchQuery.isEmpty
-                ? "Notes (\(totalCount))"
-                : "Notes (\(visibleNoteCount)/\(totalCount))"
+                ? String(format: "Notes (%d)".localized, totalCount)
+                : String(format: "Notes (%d/%d)".localized, visibleNoteCount, totalCount)
         }
         emptyLabel.visible = items.isEmpty
     }
@@ -239,7 +256,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = false
-        row.setAccessibleLabel("Trash")
+        row.setAccessibleLabel("Trash".localized)
         row.addCSSClass("dim-label")
 
         let rowBox = Box(orientation: .horizontal, spacing: 6)
@@ -256,7 +273,7 @@ struct NotesSidebar {
         icon.pixelSize = 14
         rowBox.append(icon)
 
-        let title = Label("Trash")
+        let title = Label("Trash".localized)
         title.xalign = 0
         title.hexpand = true
         rowBox.append(title)
@@ -294,9 +311,12 @@ struct NotesSidebar {
 
     private static func trashedNoteSubtitle(for note: Note) -> String {
         guard let deletedAt = note.deletedAt else {
-            return "Deleted"
+            return "Deleted".localized
         }
-        return "Deleted \(displayDate(deletedAt))"
+        // One msgid rather than concatenation: a translator needs to be able to
+        // put the date first, and the separator has to be inside the string —
+        // this app now supports right-to-left interfaces.
+        return String(format: "Deleted %@".localized, displayDate(deletedAt))
     }
 
     private static func makeNoteRow(_ noteItem: SidebarNote) -> ListBoxRow {
@@ -364,7 +384,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = false
-        row.setAccessibleLabel("Folder \(folder.path)")
+        row.setAccessibleLabel(String(format: "Folder %@".localized, folder.path))
         row.addCSSClass("dim-label")
 
         let rowBox = Box(orientation: .horizontal, spacing: 6)
@@ -463,6 +483,11 @@ struct NotesSidebar {
 
     static func displayDate(_ date: Date) -> String {
         let formatter = DateFormatter()
+        // Foundation reads Locale.current from LC_ALL / LANG, while the
+        // interface language comes from LANGUAGE — so without this a Russian
+        // interface printed "31 Aug 2026 at 9:57 PM" next to its Russian
+        // labels.
+        formatter.locale = interfaceLocale()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
@@ -482,22 +507,22 @@ struct NotesSidebar {
     private static func tooltip(for mode: NotesSortMode) -> String {
         switch mode {
         case .newestFirst:
-            "Newest First"
+            "Newest First".localized
         case .oldestFirst:
-            "Oldest First"
+            "Oldest First".localized
         case .title:
-            "Sort by Title"
+            "Sort by Title".localized
         }
     }
 
     private static func accessibilityLabel(for mode: NotesSortMode) -> String {
         switch mode {
         case .newestFirst:
-            "Sort Notes by Newest First"
+            "Sort Notes by Newest First".localized
         case .oldestFirst:
-            "Sort Notes by Oldest First"
+            "Sort Notes by Oldest First".localized
         case .title:
-            "Sort Notes by Title"
+            "Sort Notes by Title".localized
         }
     }
 
@@ -509,6 +534,20 @@ struct NotesSidebar {
 
     private static func makeSortOptionButton(for mode: NotesSortMode) -> Button {
         let button = Button()
+        button.addCSSClass("flat")
+        button.halign = .fill
+        button.hexpand = true
+        applySortOptionContent(to: button, mode: mode)
+        return button
+    }
+
+    /// Builds (or rebuilds) the icon-plus-label row inside a sort option.
+    ///
+    /// Separate from ``makeSortOptionButton(for:)`` so ``retranslate()`` can
+    /// replace the label without recreating the button — the click handler
+    /// ``onSortModeChanged(_:)`` installed on it has to survive a language
+    /// change.
+    private static func applySortOptionContent(to button: Button, mode: NotesSortMode) {
         let row = Box(orientation: .horizontal, spacing: 8)
         row.hexpand = true
         row.halign = .fill
@@ -523,9 +562,5 @@ struct NotesSidebar {
         row.append(label)
 
         button.child = row
-        button.addCSSClass("flat")
-        button.halign = .fill
-        button.hexpand = true
-        return button
     }
 }

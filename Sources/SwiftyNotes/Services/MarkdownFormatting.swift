@@ -1,3 +1,4 @@
+import Adwaita
 import Foundation
 
 enum MarkdownFormattingAction: CaseIterable, Hashable {
@@ -15,50 +16,50 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
     var accessibilityLabel: String {
         switch self {
         case .heading:
-            "Heading"
+            "Heading".localized
         case .bold:
-            "Bold"
+            "Bold".localized
         case .italic:
-            "Italic"
+            "Italic".localized
         case .code:
-            "Code"
+            "Code".localized
         case .link:
-            "Link"
+            "Link".localized
         case .quote:
-            "Quote"
+            "Quote".localized
         case .bulletList:
-            "Bulleted List"
+            "Bulleted List".localized
         case .numberedList:
-            "Numbered List"
+            "Numbered List".localized
         case .taskList:
-            "Task List"
+            "Task List".localized
         case .table:
-            "Insert Table"
+            "Insert Table".localized
         }
     }
 
     var tooltip: String {
         switch self {
         case .heading:
-            "Turn the current line into a heading"
+            "Turn the current line into a heading".localized
         case .bold:
-            "Wrap the selection in bold markdown"
+            "Wrap the selection in bold markdown".localized
         case .italic:
-            "Wrap the selection in italic markdown"
+            "Wrap the selection in italic markdown".localized
         case .code:
-            "Insert inline code or a fenced code block"
+            "Insert inline code or a fenced code block".localized
         case .link:
-            "Insert a markdown link"
+            "Insert a markdown link".localized
         case .quote:
-            "Prefix the selected lines as a quote"
+            "Prefix the selected lines as a quote".localized
         case .bulletList:
-            "Prefix the selected lines as a bulleted list"
+            "Prefix the selected lines as a bulleted list".localized
         case .numberedList:
-            "Prefix the selected lines as a numbered list"
+            "Prefix the selected lines as a numbered list".localized
         case .taskList:
-            "Prefix the selected lines as a task list"
+            "Prefix the selected lines as a task list".localized
         case .table:
-            "Insert a markdown table"
+            "Insert a markdown table".localized
         }
     }
 
@@ -88,17 +89,17 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
         case .heading:
             "H1"
         case .quote:
-            "Quote"
+            "Quote".localized
         case .code:
             "</>"
         case .bulletList:
-            "Bullets"
+            "Bullets".localized
         case .numberedList:
             "1."
         case .taskList:
             "[ ]"
         case .table:
-            "Table"
+            "Table".localized
         default:
             nil
         }

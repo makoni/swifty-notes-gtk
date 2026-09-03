@@ -66,7 +66,7 @@ jobs:
         run: |
           swift build
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter 'CLICommandTests|CLITests|LocalizationCatalogTests|LocalizationTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
 
   prepare-install-roots:
     name: Prepare install root (${{ matrix.arch }})
@@ -93,6 +93,7 @@ jobs:
           sudo apt-get install -y \
             appstream \
             desktop-file-utils \
+            gettext \
             libadwaita-1-dev \
             libcurl4-openssl-dev \
             libgtk-4-dev \

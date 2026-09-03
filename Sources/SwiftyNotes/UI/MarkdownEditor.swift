@@ -48,7 +48,7 @@ struct MarkdownEditor {
         view.rightMargin = 8
         view.topMargin = 8
         view.bottomMargin = 8
-        view.setAccessibleLabel("Markdown Editor")
+        view.setAccessibleLabel("Markdown Editor".localized)
         view.addCSSClass(fontCSSClass)
         fontCSSProvider.addToDefaultDisplay()
         let checker = SpellChecking(view: view, buffer: buffer)

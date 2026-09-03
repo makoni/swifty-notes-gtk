@@ -49,6 +49,12 @@ final class FindReplaceCoordinator {
         previewBar.isReadOnly = true
     }
 
+    /// Re-reads the strings on both bars after a language change.
+    func retranslate() {
+        editorBar.retranslate()
+        previewBar.retranslate()
+    }
+
     /// Open the find / replace bar in the requested mode. In split
     /// mode the target pane (editor vs preview) is whichever had focus
     /// most recently — the affordance GNOME Builder uses. In
@@ -104,9 +110,8 @@ final class FindReplaceCoordinator {
         )
         controller.onReplaceAllCompleted = { [weak self] count in
             let message = switch count {
-            case 0: "No matches to replace."
-            case 1: "Replaced 1 occurrence."
-            default: "Replaced \(count) occurrences."
+            case 0: "No matches to replace.".localized
+            default: String(format: nlocalized("Replaced %d occurrence.", "Replaced %d occurrences.", count: UInt(count)), count)
             }
             self?.presentToast(message)
         }

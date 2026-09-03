@@ -281,4 +281,14 @@ swifty_notes_search_apply_tag(gpointer source_buffer, gpointer tag,
     }
 }
 
+// ---------------------------------------------------------------------------
+// The gettext helpers that used to live here (textdomain, bindtextdomain,
+// bind_textdomain_codeset, the _nl_msg_cat_cntr bump and the LC_MESSAGES
+// wrappers) moved into swift-adwaita, which now exposes them as
+// configureLocalization / setLanguage / applyTextDirection. <libintl.h> is not
+// in the Glibc module, so every app was writing this shim; it belongs in the
+// library.
+
+#include <libgen.h>
+
 #endif /* SWIFTYNOTES_CSPELLING_SHIM_H */

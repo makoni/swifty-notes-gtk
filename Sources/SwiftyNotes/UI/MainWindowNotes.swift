@@ -53,7 +53,7 @@ extension MainWindow {
             persistWorkspaceState()
         } catch {
             presentError(
-                heading: "Could not load notes",
+                heading: "Could not load notes".localized,
                 body: error.localizedDescription,
             )
         }
@@ -149,7 +149,7 @@ extension MainWindow {
         schedulePreviewRefresh(blocks: blocks, baseDirectory: repository.notesDirectoryURL)
         saveNoteButton.visible = false
         deleteNoteButton.visible = false
-        trashedNoteBanner.title = "“\(note.title)” is in the Trash"
+        trashedNoteBanner.title = String(format: "“%@” is in the Trash".localized, note.title)
         trashedNoteBanner.revealed = true
     }
 
@@ -182,7 +182,7 @@ extension MainWindow {
             }
         } catch {
             presentError(
-                heading: "Could not create note",
+                heading: "Could not create note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -197,10 +197,10 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note duplicated")
+            toastOverlay.showToast("Note duplicated".localized)
         } catch {
             presentError(
-                heading: "Could not duplicate note",
+                heading: "Could not duplicate note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -225,9 +225,9 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            let toast = Toast(title: "Moved \"\(note.title)\" to Trash")
+            let toast = Toast(title: String(format: "Moved \"%@\" to Trash".localized, note.title))
             toast.timeout = 5
-            toast.buttonLabel = "Undo"
+            toast.buttonLabel = "Undo".localized
             toast.onButtonClicked { [weak self] in
                 self?.restoreFromTrash(noteID: note.id)
             }
@@ -235,7 +235,7 @@ extension MainWindow {
             toastOverlay.addToast(toast)
         } catch {
             presentError(
-                heading: "Could not delete note",
+                heading: "Could not delete note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -258,10 +258,10 @@ extension MainWindow {
             clearTrashedNotePreviewMode()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note restored")
+            toastOverlay.showToast("Note restored".localized)
         } catch {
             presentError(
-                heading: "Could not restore note",
+                heading: "Could not restore note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -270,11 +270,11 @@ extension MainWindow {
     func presentPermanentDeleteConfirmation(forNoteID noteID: UUID) {
         guard let trashed = state.trashedNotes.first(where: { $0.id == noteID }) else { return }
         let dialog = AlertDialog(
-            heading: "Delete “\(trashed.title)” forever?",
-            body: "This permanently removes the note from disk. This action can't be undone.",
+            heading: String(format: "Delete “%@” forever?".localized, trashed.title),
+            body: "This permanently removes the note from disk. This action can't be undone.".localized,
         )
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("delete", label: "Delete forever")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("delete", label: "Delete forever".localized)
         dialog.defaultResponse = "cancel"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("delete", appearance: .destructive)
@@ -298,10 +298,10 @@ extension MainWindow {
             }
             refreshSidebar()
             persistWorkspaceState()
-            toastOverlay.showToast("Note permanently deleted")
+            toastOverlay.showToast("Note permanently deleted".localized)
         } catch {
             presentError(
-                heading: "Could not permanently delete note",
+                heading: "Could not permanently delete note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -311,13 +311,11 @@ extension MainWindow {
         let count = state.trashedNotes.count
         guard count > 0 else { return }
         let dialog = AlertDialog(
-            heading: "Empty Trash?",
-            body: count == 1
-                ? "1 note will be permanently deleted. This action can't be undone."
-                : "\(count) notes will be permanently deleted. This action can't be undone.",
+            heading: "Empty Trash?".localized,
+            body: String(format: nlocalized("%d note will be permanently deleted. This action can't be undone.", "%d notes will be permanently deleted. This action can't be undone.", count: UInt(count)), count),
         )
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("empty", label: "Empty Trash")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("empty", label: "Empty Trash".localized)
         dialog.defaultResponse = "cancel"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("empty", appearance: .destructive)
@@ -348,11 +346,11 @@ extension MainWindow {
 
         let content = Box(orientation: .vertical, spacing: 2)
         content.setMargins(4)
-        let restoreButton = makeNoteContextButton(label: "Restore") { [weak self] in
+        let restoreButton = makeNoteContextButton(label: "Restore".localized) { [weak self] in
             self?.dismissTrashContextMenu()
             self?.restoreFromTrash(noteID: noteID)
         }
-        let deleteButton = makeNoteContextButton(label: "Delete forever…", destructive: true) { [weak self] in
+        let deleteButton = makeNoteContextButton(label: "Delete forever…".localized, destructive: true) { [weak self] in
             self?.dismissTrashContextMenu()
             self?.presentPermanentDeleteConfirmation(forNoteID: noteID)
         }
@@ -395,7 +393,7 @@ extension MainWindow {
 
         let content = Box(orientation: .vertical, spacing: 2)
         content.setMargins(4)
-        let label = count == 1 ? "Empty Trash (1 note)…" : "Empty Trash (\(count) notes)…"
+        let label = String(format: nlocalized("Empty Trash (%d note)…", "Empty Trash (%d notes)…", count: UInt(count)), count)
         let emptyButton = makeNoteContextButton(label: label, destructive: true) { [weak self] in
             self?.dismissTrashContextMenu()
             self?.presentEmptyTrashConfirmation()
@@ -428,10 +426,10 @@ extension MainWindow {
             }
             refreshSidebar()
             persistWorkspaceState()
-            toastOverlay.showToast("Trash emptied")
+            toastOverlay.showToast("Trash emptied".localized)
         } catch {
             presentError(
-                heading: "Could not empty Trash",
+                heading: "Could not empty Trash".localized,
                 body: error.localizedDescription,
             )
         }

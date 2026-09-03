@@ -373,7 +373,7 @@ final class MarkdownPreview {
         rootScroll.kineticScrolling = true
         #endif
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
-        rootScroll.setAccessibleLabel("Markdown Preview")
+        retranslateAccessibility()
         rootScroll.overlayScrolling = false
 
         // GtkWidget does not expose `width` as a GObject property, so
@@ -396,7 +396,7 @@ final class MarkdownPreview {
 
     var plainText: String {
         if lastRenderedBlocks.isEmpty {
-            return "Nothing to preview yet."
+            return "Nothing to preview yet.".localized
         }
         return lastRenderedBlocks.map(\.plainText)
             .filter { !$0.isEmpty }
@@ -514,6 +514,15 @@ final class MarkdownPreview {
         self.window = window
     }
 
+    /// Re-applies the preview's own accessible label.
+    ///
+    /// Set once during construction, so a language change reaches it only if
+    /// someone asks — the rendered content comes back through ``render``, the
+    /// label does not.
+    func retranslateAccessibility() {
+        rootScroll.setAccessibleLabel("Markdown Preview".localized)
+    }
+
     func render(blocks: [RenderedBlock], baseDirectory: URL? = nil) {
         let standardizedBaseDirectory = baseDirectory?.standardizedFileURL
         self.baseDirectory = standardizedBaseDirectory
@@ -526,7 +535,7 @@ final class MarkdownPreview {
             renderedBaseDirectory = standardizedBaseDirectory
             renderedRows = []
             renderMode = .stacked
-            container.append(makeParagraph(text: .plain("Nothing to preview yet.")))
+            container.append(makeParagraph(text: .plain("Nothing to preview yet.".localized)))
             return
         }
 
@@ -1604,6 +1613,10 @@ final class MarkdownPreview {
 
         let buffer = Self.makeSourceBuffer(for: code, language: language)
         let view = SourceView(buffer: buffer)
+        // Code reads left-to-right whatever language the interface is in:
+        // mirroring a fenced block would right-align it and reorder its
+        // punctuation runs.
+        view.forceLeftToRight()
         view.editable = false
         view.cursorVisible = false
         view.isFocusable = false
@@ -1706,8 +1719,8 @@ final class MarkdownPreview {
         button.valign = .start
         button.marginTop = 8
         button.marginEnd = 8
-        button.tooltipText = "Copy code to clipboard"
-        button.setAccessibleLabel("Copy code to clipboard")
+        button.tooltipText = "Copy code to clipboard".localized
+        button.setAccessibleLabel("Copy code to clipboard".localized)
         // Outer capture is strong on purpose: GTK owns the underlying
         // widget but nothing else holds the Swift Button wrapper, so a
         // weak capture here would dangle by the time the signal fires.
@@ -2076,6 +2089,10 @@ final class MarkdownPreview {
         wrapper.overflow = .hidden
 
         let label = makeMarkupLabel(tableMarkup(headers: headers, rows: rows, alignments: alignments))
+        // The columns are held apart by character-count padding in a
+        // monospace font, which only lines up if the run is laid out
+        // left-to-right — a mirrored table would shift every column.
+        label.forceLeftToRight()
         label.addCSSClass("preview-table-body")
         label.marginStart = 14
         label.marginEnd = 14

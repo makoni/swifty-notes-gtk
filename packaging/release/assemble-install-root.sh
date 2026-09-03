@@ -114,6 +114,19 @@ if [ ! -d "$resources_dir" ]; then
     exit 1
 fi
 
+# The desktop entry and AppStream metainfo ship with translations merged in
+# from po/, so render them before installing rather than copying the English
+# templates.
+bash scripts/render-metadata.sh >/dev/null
+generated_desktop="data/generated/me.spaceinbox.swiftynotes.desktop"
+generated_metainfo="data/generated/me.spaceinbox.swiftynotes.metainfo.xml.in"
+for generated in "$generated_desktop" "$generated_metainfo"; do
+    if [ ! -f "$generated" ]; then
+        echo "Missing ${generated} — scripts/render-metadata.sh did not produce it" >&2
+        exit 1
+    fi
+done
+
 libexec_dir="${prefix}/libexec/swifty-notes"
 bin_dir="${prefix}/bin"
 applications_dir="${prefix}/share/applications"
@@ -132,7 +145,7 @@ mkdir -p \
 
 install -Dm755 "$binary_path" "${dest}${libexec_dir}/swiftynotes"
 cp -R "$resources_dir" "${dest}${libexec_dir}/"
-install -Dm644 data/me.spaceinbox.swiftynotes.desktop "${dest}${applications_dir}/me.spaceinbox.swiftynotes.desktop"
+install -Dm644 "$generated_desktop" "${dest}${applications_dir}/me.spaceinbox.swiftynotes.desktop"
 install -Dm644 data/me.spaceinbox.swiftynotes.svg "${dest}${icon_dir}/me.spaceinbox.swiftynotes.svg"
 install -Dm644 LICENSE "${dest}${license_dir}/LICENSE"
 
@@ -152,7 +165,7 @@ sed \
     -e "s|@SCREENSHOT_MAIN_URL@|${screenshot_main_url}|g" \
     -e "s|@SCREENSHOT_EDITOR_URL@|${screenshot_editor_url}|g" \
     -e "s|@SCREENSHOT_CLI_URL@|${screenshot_cli_url}|g" \
-    data/me.spaceinbox.swiftynotes.metainfo.xml.in \
+    "$generated_metainfo" \
     > "${dest}${metainfo_dir}/me.spaceinbox.swiftynotes.metainfo.xml"
 
 if command -v desktop-file-validate >/dev/null 2>&1; then

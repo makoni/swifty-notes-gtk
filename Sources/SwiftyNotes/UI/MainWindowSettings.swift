@@ -20,6 +20,7 @@ extension MainWindow {
     }
 
     func applyRuntimeSettings(_ settings: AppSettings, shouldRefreshPreview: Bool = true) {
+        let languageChanged = settings.appLanguage != appSettings.appLanguage
         appSettings = settings
         editor.applySettings(settings)
         autosaveDelay = autosaveDelayOverride ?? .seconds(settings.autosaveDelaySeconds)
@@ -34,6 +35,33 @@ extension MainWindow {
         )
 
         applyOutlineTweaks(settings)
+
+        if languageChanged {
+            // Deferred to the next main-loop turn, and that is load-bearing.
+            //
+            // A language change arrives from inside a settings widget's own
+            // signal emission: the language ComboRow sets `selected`, which
+            // emits `notify::selected` synchronously, which lands here.
+            // Retranslating rebuilds that row's model — the option names are
+            // translated — and GTK goes on using the old model as it unwinds
+            // out of `adw_combo_row_set_selected`. That is a use-after-free,
+            // and it crashed the app on every switch: `Bad pointer
+            // dereference` in libgobject with the setter still on the stack.
+            //
+            // Letting the emission finish first costs nothing visible: the
+            // whole fan-out happens before the next frame.
+            //
+            // Retranslating repeats the preview refresh, so the one below is
+            // skipped rather than rendering the same note twice.
+            deferredUIActionScheduler { [weak self] in
+                guard let self else { return }
+                applyLanguage(appSettings.appLanguage)
+                retranslate()
+                activeSettingsWindow?.retranslate()
+                onLanguageChanged()
+            }
+            return
+        }
 
         guard shouldRefreshPreview else { return }
         refreshPreview()

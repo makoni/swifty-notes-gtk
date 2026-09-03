@@ -13,7 +13,7 @@ private enum ExternalDocumentOpenError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedLocation:
-            "Swifty Notes can only open local markdown files."
+            "Swifty Notes can only open local markdown files.".localized
         }
     }
 }
@@ -58,6 +58,12 @@ final class AppController {
     }
 
     func activate(app: Application) {
+        // gtk_init discards a direction set before it ran, so the pinned
+        // language's reading direction has to be re-applied here — before the
+        // first window is built, so an RTL interface comes up mirrored rather
+        // than flipping after the fact.
+        applyInterfaceDirection(for: currentAppSettings().appLanguage)
+
         if let mainWindow {
             if allowsWindowPresentation {
                 mainWindow.present()
@@ -83,6 +89,9 @@ final class AppController {
                 guard let self, let app else { return }
                 try openExternalDocument(at: fileURL, application: app)
             },
+            onLanguageChanged: { [weak self] in
+                self?.retranslateExternalDocumentWindows()
+            },
         )
         window.window.onDestroy { [weak self] in
             self?.releaseMainWindow()
@@ -95,6 +104,14 @@ final class AppController {
 
     func releaseMainWindow() {
         mainWindow = nil
+    }
+
+    /// Standalone document windows belong to the launcher, not to the main
+    /// window, so the interface-language change reaches them from here.
+    func retranslateExternalDocumentWindows() {
+        for window in externalDocumentWindows.values {
+            window.retranslate()
+        }
     }
 
     private func currentAppSettings() -> AppSettings {
@@ -178,12 +195,12 @@ final class AppController {
 
         if let mainWindow {
             mainWindow.present()
-            mainWindow.presentError(heading: "Could not open markdown file", body: body)
+            mainWindow.presentError(heading: "Could not open markdown file".localized, body: body)
             return
         }
 
         activate(app: application)
-        mainWindow?.presentError(heading: "Could not open markdown file", body: body)
+        mainWindow?.presentError(heading: "Could not open markdown file".localized, body: body)
     }
 
     private func displayLocation(for fileURL: URL) -> String {
@@ -198,6 +215,7 @@ public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
         ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded()
+        initializeLocalization(language: storedInterfaceLanguage())
         MainContext.silenceSpuriousScrollbarWarnings()
         if let cliResult = NotesCLI.runIfRequested(arguments: arguments) {
             if !cliResult.stdout.isEmpty, let data = cliResult.stdout.data(using: .utf8) {
@@ -362,6 +380,18 @@ public enum SwiftyNotesLauncher {
         setenv("XDG_DATA_DIRS", combined, 1)
         #endif
     }
+
+    /// The interface language recorded in settings.
+    ///
+    /// Read before anything is drawn and before command dispatch: the CLI
+    /// reports its errors through the same catalogue, so `swiftynotes cli`
+    /// has to honour the picker too. Best-effort — an unreadable settings
+    /// file just means the session locale wins, which is the old behaviour.
+    @MainActor
+    private static func storedInterfaceLanguage() -> AppLanguage {
+        ((try? AppSettingsStore().load()) ?? .default).appLanguage
+    }
+
 }
 
 #if DEBUG

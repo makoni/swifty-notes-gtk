@@ -109,6 +109,19 @@ bin_dir="${prefix}/bin"
 applications_dir="${prefix}/share/applications"
 icon_dir="${prefix}/share/icons/hicolor/scalable/apps"
 icons_root="${prefix}/share/icons/hicolor"
+# The desktop entry and AppStream metainfo ship with translations merged in
+# from po/, so render them before installing rather than copying the English
+# templates.
+bash scripts/render-metadata.sh >/dev/null
+generated_desktop="data/generated/me.spaceinbox.swiftynotes.desktop"
+generated_metainfo="data/generated/me.spaceinbox.swiftynotes.metainfo.xml.in"
+for generated in "$generated_desktop" "$generated_metainfo"; do
+    if [ ! -f "$generated" ]; then
+        echo "Missing ${generated} — scripts/render-metadata.sh did not produce it" >&2
+        exit 1
+    fi
+done
+
 metainfo_dir="${prefix}/share/metainfo"
 license_dir="${prefix}/share/licenses/${license_subdir}"
 desktop_file="${applications_dir}/me.spaceinbox.swiftynotes.desktop"
@@ -129,7 +142,7 @@ rm -f \
 install -Dm755 "$binary_path" "${libexec_dir}/swiftynotes"
 rm -rf "${libexec_dir}/swifty-notes-gtk_SwiftyNotes.resources"
 cp -R "$resources_dir" "$libexec_dir/"
-install -Dm644 data/me.spaceinbox.swiftynotes.desktop "$desktop_file"
+install -Dm644 "$generated_desktop" "$desktop_file"
 install -Dm644 data/me.spaceinbox.swiftynotes.svg "$icon_file"
 install -Dm644 LICENSE "${license_dir}/LICENSE"
 
@@ -148,7 +161,7 @@ sed \
     -e "s|@SCREENSHOT_MAIN_URL@|${screenshot_main_url}|g" \
     -e "s|@SCREENSHOT_EDITOR_URL@|${screenshot_editor_url}|g" \
     -e "s|@SCREENSHOT_CLI_URL@|${screenshot_cli_url}|g" \
-    data/me.spaceinbox.swiftynotes.metainfo.xml.in \
+    "$generated_metainfo" \
     > "${metainfo_dir}/me.spaceinbox.swiftynotes.metainfo.xml"
 
 if command -v desktop-file-validate >/dev/null 2>&1; then

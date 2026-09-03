@@ -72,11 +72,14 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            // Pinned past the 1.5.0 release to pick up Window.isActive
-            // (routing app-level accelerators to the focused external
-            // document window). Bump deliberately when validating a newer
-            // upstream rather than via SemVer auto-resolution.
-            revision: "e725f39c4308138da251a8181beb0a40d86efea9"
+            // Pinned past the 1.5.0 release for two things this app needs:
+            // Window.isActive (routing app-level accelerators to the focused
+            // external document window) and the localization API — gettext
+            // setup, runtime language switching and reading direction, which
+            // replaced a hand-written C shim here. Bump deliberately when
+            // validating a newer upstream rather than via SemVer
+            // auto-resolution.
+            revision: "8fc545ad4f4125ac5d3a0a602b329d64b4501cb0"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",
@@ -102,9 +105,17 @@ let package = Package(
             dependencies: [
                 .product(name: "Adwaita", package: "swift-adwaita"),
                 .product(name: "Markdown", package: "swift-markdown"),
-                "CSpelling"
+                "CSpelling",
             ],
             resources: [
+                // The `locale/` directory is inside the target so SwiftPM
+                // preserves the `ru/LC_MESSAGES/domain.mo` layout gettext
+                // expects.  `.process` would flatten it to just
+                // `domain.mo` and `ngettext()` would never find the right
+                // language subdir.
+                .copy("locale"),
+                // Other Resources files (emoji table, license, demo image)
+                // These don't need subdirectory structure so .process is fine.
                 .process("Resources"),
                 .copy("Icons"),
                 // AppIcons/hicolor/scalable/apps/me.spaceinbox.swiftynotes.svg

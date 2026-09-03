@@ -49,16 +49,16 @@ extension MainWindow {
         let content = Box(orientation: .vertical, spacing: 2)
         content.setMargins(4)
 
-        let createNoteButton = makeFolderContextButton(label: "New note here") { [weak self] in
+        let createNoteButton = makeFolderContextButton(label: "New note here".localized) { [weak self] in
             self?.createNote(in: folderPath)
         }
-        let createSubfolderButton = makeFolderContextButton(label: "New subfolder…") { [weak self] in
+        let createSubfolderButton = makeFolderContextButton(label: "New subfolder…".localized) { [weak self] in
             self?.presentNewFolderDialog(parentPath: folderPath)
         }
-        let renameButton = makeFolderContextButton(label: "Rename folder…") { [weak self] in
+        let renameButton = makeFolderContextButton(label: "Rename folder…".localized) { [weak self] in
             self?.presentRenameFolderDialog(at: folderPath)
         }
-        let deleteButton = makeFolderContextButton(label: "Delete folder…", destructive: true) { [weak self] in
+        let deleteButton = makeFolderContextButton(label: "Delete folder…".localized, destructive: true) { [weak self] in
             self?.presentDeleteFolderConfirmation(at: folderPath)
         }
 
@@ -120,7 +120,7 @@ extension MainWindow {
             }
         } catch {
             presentError(
-                heading: "Could not create note",
+                heading: "Could not create note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -128,15 +128,15 @@ extension MainWindow {
 
     func presentNewFolderDialog(parentPath: String) {
         let dialog = AlertDialog(
-            heading: parentPath.isEmpty ? "New folder" : "New subfolder in \"\(parentPath)\"",
-            body: "Use / to create nested folders in one step, e.g. Work/Drafts.",
+            heading: parentPath.isEmpty ? "New folder".localized : String(format: "New subfolder in \"%@\"".localized, parentPath),
+            body: "Use / to create nested folders in one step, e.g. Work/Drafts.".localized,
         )
         let entry = Entry()
-        entry.placeholderText = parentPath.isEmpty ? "Folder name or Work/Drafts" : "Folder name"
+        entry.placeholderText = parentPath.isEmpty ? "Folder name or Work/Drafts".localized : "Folder name".localized
         entry.activatesDefault = true
         dialog.extraChild = entry
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("create", label: "Create")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("create", label: "Create".localized)
         dialog.defaultResponse = "create"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("create", appearance: .suggested)
@@ -170,7 +170,7 @@ extension MainWindow {
             persistWorkspaceState()
         } catch {
             presentError(
-                heading: "Could not create folder",
+                heading: "Could not create folder".localized,
                 body: error.localizedDescription,
             )
         }
@@ -179,16 +179,16 @@ extension MainWindow {
     func presentRenameFolderDialog(at folderPath: String) {
         let currentName = (folderPath as NSString).lastPathComponent
         let dialog = AlertDialog(
-            heading: "Rename folder",
-            body: "Renaming \"\(folderPath)\". Folder names cannot contain slashes (/).",
+            heading: "Rename folder".localized,
+            body: String(format: "Renaming \"%@\". Folder names cannot contain slashes (/)." .localized, folderPath),
         )
         let entry = Entry()
         entry.text = currentName
         entry.activatesDefault = true
         entry.selectAll()
         dialog.extraChild = entry
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("rename", label: "Rename")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("rename", label: "Rename".localized)
         dialog.defaultResponse = "rename"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("rename", appearance: .suggested)
@@ -234,10 +234,10 @@ extension MainWindow {
             refreshSidebar()
             refreshDirectorySnapshot()
             persistWorkspaceState()
-            toastOverlay.showToast("Folder renamed")
+            toastOverlay.showToast("Folder renamed".localized)
         } catch {
             presentError(
-                heading: "Could not rename folder",
+                heading: "Could not rename folder".localized,
                 body: error.localizedDescription,
             )
         }
@@ -253,27 +253,27 @@ extension MainWindow {
 
         let summary: String = {
             if nestedNotes == 0, nestedFolders == 0 {
-                return "\"\(folderPath)\" is empty."
+                return String(format: "\"%@\" is empty.".localized, folderPath)
             }
             var parts: [String] = []
             if nestedNotes > 0 {
-                parts.append(nestedNotes == 1 ? "1 note" : "\(nestedNotes) notes")
+                parts.append(String(format: nlocalized("%d note", "%d notes", count: UInt(nestedNotes)), nestedNotes))
             }
             if nestedFolders > 0 {
-                parts.append(nestedFolders == 1 ? "1 subfolder" : "\(nestedFolders) subfolders")
+                parts.append(String(format: nlocalized("%d subfolder", "%d subfolders", count: UInt(nestedFolders)), nestedFolders))
             }
             let suffix = nestedNotes > 0
-                ? " The notes will move to Trash so you can restore them."
+                ? " The notes will move to Trash so you can restore them.".localized
                 : ""
-            return "\"\(folderPath)\" contains \(parts.joined(separator: " and "))." + suffix
+            return String(format: "\"%@\" contains %@.".localized, folderPath, parts.joined(separator: " and ".localized)) + suffix
         }()
 
         let dialog = AlertDialog(
-            heading: "Delete folder?",
+            heading: "Delete folder?".localized,
             body: summary,
         )
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("delete", label: "Delete")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("delete", label: "Delete".localized)
         dialog.defaultResponse = "cancel"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("delete", appearance: .destructive)
@@ -293,13 +293,13 @@ extension MainWindow {
         let availableTargets = ["" /* root */] + state.folders.sorted()
         let targetsExceptCurrent = availableTargets.filter { $0 != note.folderPath }
         guard !targetsExceptCurrent.isEmpty else {
-            toastOverlay.showToast("No other folders to move into")
+            toastOverlay.showToast("No other folders to move into".localized)
             return
         }
 
         let dialog = AlertDialog(
-            heading: "Move note",
-            body: "Choose a destination folder for \"\(note.title)\".",
+            heading: "Move note".localized,
+            body: String(format: "Choose a destination folder for \"%@\"." .localized, note.title),
         )
 
         let listBox = ListBox()
@@ -308,7 +308,7 @@ extension MainWindow {
         for target in targetsExceptCurrent {
             let row = ListBoxRow()
             row.activatable = true
-            let label = Label(target.isEmpty ? "(Root)" : target)
+            let label = Label(target.isEmpty ? "(Root)".localized : target)
             label.xalign = 0
             label.setMargins(8)
             row.child = label
@@ -323,8 +323,8 @@ extension MainWindow {
         scroll.vexpand = false
 
         dialog.extraChild = scroll
-        dialog.addResponse("cancel", label: "Cancel")
-        dialog.addResponse("move", label: "Move")
+        dialog.addResponse("cancel", label: "Cancel".localized)
+        dialog.addResponse("move", label: "Move".localized)
         dialog.defaultResponse = "move"
         dialog.closeResponse = "cancel"
         dialog.setResponseAppearance("move", appearance: .suggested)
@@ -353,10 +353,10 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note moved")
+            toastOverlay.showToast("Note moved".localized)
         } catch {
             presentError(
-                heading: "Could not move note",
+                heading: "Could not move note".localized,
                 body: error.localizedDescription,
             )
         }
@@ -377,10 +377,10 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Folder deleted")
+            toastOverlay.showToast("Folder deleted".localized)
         } catch {
             presentError(
-                heading: "Could not delete folder",
+                heading: "Could not delete folder".localized,
                 body: error.localizedDescription,
             )
         }

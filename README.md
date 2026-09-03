@@ -19,6 +19,7 @@ On macOS the release workflow produces a Developer-ID-signed, notarized, stapled
 - settings window for choosing and moving the notes storage folder
 - editor preferences for line wrapping, font size, tab width, and spaces-vs-tabs indentation
 - configurable autosave delay and appearance override (follow system, light, dark)
+- interface language picker (follow the system, English, Russian) that applies without a restart
 - configurable note storage location that can live in a cloud-synced folder for cross-device sync
 - CLI for listing, reading, creating, and replacing notes by stable ID
 - workspace persistence for selection, search, sort mode, sidebar/preview visibility, and window layout
@@ -231,8 +232,21 @@ The Settings window currently lets you configure:
 - spaces vs tabs indentation
 - autosave delay
 - appearance override
+- interface language
 
 This combination lets you tailor the editor to your screen and writing style while also relocating note storage to a directory that your preferred sync tool already mirrors.
+
+## Translations
+
+The interface, the desktop entry and the AppStream metainfo are all translated
+through one gettext catalogue per language in `po/`. `data/*.desktop.in` and
+`data/*.metainfo.xml.in` stay English; `scripts/build-locales.sh` compiles the
+`.mo` files and merges the translations back into `data/generated/`, which is
+what packaging installs.
+
+To add a language: add its code to `po/LINGUAS`, create `po/<lang>.po` from
+`po/me.spaceinbox.swiftynotes.pot`, add an `AppLanguage` case so the picker can
+offer it, and run `bash scripts/build-locales.sh`.
 
 ## Preview architecture
 
