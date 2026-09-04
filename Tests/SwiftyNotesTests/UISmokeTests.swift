@@ -306,9 +306,37 @@ struct UISmokeTests {
             print(f"EXTENT {label} x={x} w={w}")
         """
 
-        let leftToRight = try runWaylandUIScript(extents, environment: ["LANGUAGE": "en"])
+        // Both panes are seeded visible rather than inherited from the
+        // defaults, so the test states what it needs instead of failing the
+        // day a default changes.
+        let showBothPanes: (URL, URL, URL) throws -> Void = { _, stateHome, _ in
+            let stateFile = stateHome
+                .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                .appendingPathComponent("workspace.json", isDirectory: false)
+            try FileManager.default.createDirectory(
+                at: stateFile.deletingLastPathComponent(),
+                withIntermediateDirectories: true,
+            )
+            let store = WorkspaceStateStore(stateFileURL: stateFile)
+            try store.save(WorkspaceState(
+                isSidebarVisible: true,
+                windowWidth: 1400,
+                windowHeight: 900,
+                isOutlineVisible: true,
+            ))
+        }
+
+        let leftToRight = try runWaylandUIScript(
+            extents,
+            prepare: showBothPanes,
+            environment: ["LANGUAGE": "en"],
+        )
         expectUIScriptSucceeded(leftToRight)
-        let rightToLeft = try runWaylandUIScript(extents, environment: ["LANGUAGE": "ar"])
+        let rightToLeft = try runWaylandUIScript(
+            extents,
+            prepare: showBothPanes,
+            environment: ["LANGUAGE": "ar"],
+        )
         expectUIScriptSucceeded(rightToLeft)
 
         guard let ltr = try parsedExtents(leftToRight), let rtl = try parsedExtents(rightToLeft) else {
