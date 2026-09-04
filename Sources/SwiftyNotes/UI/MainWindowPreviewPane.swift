@@ -565,7 +565,7 @@ extension MainWindow {
         menuButton.setAccessibleLabel("Main Menu".localized)
         editorModeToggle.setAccessibleLabel("Editor".localized)
         splitModeToggle.setAccessibleLabel("Split".localized)
-        previewModeToggle.setAccessibleLabel("Preview".localized)
+        previewModeToggle.setAccessibleLabel(localizedWithContext("view mode", "Preview"))
         updateViewModeToggleState()
     }
 

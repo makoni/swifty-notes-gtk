@@ -16,7 +16,7 @@ extension MainWindow {
         )
         setToggleContent(
             previewModeToggle,
-            label: "Preview".localized,
+            label: localizedWithContext("view mode", "Preview"),
             iconName: "text-x-generic-symbolic",
         )
     }

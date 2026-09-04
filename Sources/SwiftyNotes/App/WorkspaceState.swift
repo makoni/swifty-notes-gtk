@@ -13,7 +13,10 @@ public enum NotesSortMode: String, Codable, CaseIterable, Sendable {
         case .oldestFirst:
             "Oldest first".localized
         case .title:
-            "Title".localized
+            // A sort criterion, not a field label: it sits beside "Newest
+            // first" and "Oldest first", and languages that inflect need the
+            // matching form («По названию», not «Название»).
+            localizedWithContext("sort mode", "Title")
         }
     }
 

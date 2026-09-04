@@ -84,7 +84,7 @@ final class ExternalDocumentWindow {
     let headerTitle = WindowTitle(title: "", subtitle: "")
     let editorModeToggle = ToggleButton(label: "Editor".localized)
     let splitModeToggle = ToggleButton(label: "Split".localized)
-    let previewModeToggle = ToggleButton(label: "Preview".localized)
+    let previewModeToggle = ToggleButton(label: localizedWithContext("view mode", "Preview"))
     let viewModeSwitcher = Box(orientation: .horizontal, spacing: 0)
     let contentHost = Box(orientation: .vertical, spacing: 0)
     let editorContent = Box(orientation: .vertical, spacing: 0)
@@ -506,7 +506,7 @@ private extension ExternalDocumentWindow {
         menuButton.setAccessibleLabel("Document Menu".localized)
         editorModeToggle.setAccessibleLabel("Editor".localized)
         splitModeToggle.setAccessibleLabel("Split".localized)
-        previewModeToggle.setAccessibleLabel("Preview".localized)
+        previewModeToggle.setAccessibleLabel(localizedWithContext("view mode", "Preview"))
         updateViewModeToggleState()
     }
 
@@ -894,7 +894,7 @@ private extension ExternalDocumentWindow {
         )
         setToggleContent(
             previewModeToggle,
-            label: "Preview".localized,
+            label: localizedWithContext("view mode", "Preview"),
             iconName: "text-x-generic-symbolic",
         )
     }

@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-03 18:20+0700\n"
+"POT-Creation-Date: 2026-09-04 02:40+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -36,8 +36,51 @@ msgstr "«%@» пуста."
 msgid "\"%@\" is not a valid folder name."
 msgstr "«%@» — недопустимое имя папки."
 
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d совпадение"
+msgstr[1] "%d совпадения"
+msgstr[2] "%d совпадений"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d заметку"
+msgstr[1] "%d заметки"
+msgstr[2] "%d заметок"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural ""
+"%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "%d заметка будет удалена навсегда. Это действие нельзя отменить."
+msgstr[1] "%d заметки будут удалены навсегда. Это действие нельзя отменить."
+msgstr[2] "%d заметок будет удалено навсегда. Это действие нельзя отменить."
+
 msgid "%d of %d"
 msgstr "%d из %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d раздел"
+msgstr[1] "%d раздела"
+msgstr[2] "%d разделов"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d подпапку"
+msgstr[1] "%d подпапки"
+msgstr[2] "%d подпапок"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d подраздел"
+msgstr[1] "%d подраздела"
+msgstr[2] "%d подразделов"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d слово"
+msgstr[1] "%d слова"
+msgstr[2] "%d слов"
 
 msgid "%d × %d table"
 msgstr "Таблица %d × %d"
@@ -392,6 +435,12 @@ msgstr "Только редактор"
 msgid "Empty Trash"
 msgstr "Очистить корзину"
 
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "Очистить корзину (%d заметка)…"
+msgstr[1] "Очистить корзину (%d заметки)…"
+msgstr[2] "Очистить корзину (%d заметок)…"
+
 msgid "Empty Trash automatically"
 msgstr "Очищать корзину автоматически"
 
@@ -493,6 +542,12 @@ msgstr ""
 
 msgid "Hover to pick size"
 msgstr "Наведите, чтобы выбрать размер"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "Изображение добавлено в заметку"
+msgstr[1] "Изображения добавлены в заметку"
+msgstr[2] "Изображения добавлены в заметку"
 
 msgid "Image pasted into note"
 msgstr "Изображение вставлено в заметку"
@@ -797,9 +852,6 @@ msgstr "Оформить выделенные строки как цитату"
 msgid "Prefix the selected lines as a task list"
 msgstr "Оформить выделенные строки как список задач"
 
-msgid "Preview"
-msgstr "Предварительный просмотр"
-
 msgid "Preview only"
 msgstr "Только предварительный просмотр"
 
@@ -859,6 +911,12 @@ msgstr "Заменить существующие ресурсы?"
 
 msgid "Replace the current match"
 msgstr "Заменить текущее совпадение"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "Заменено %d вхождение."
+msgstr[1] "Заменено %d вхождения."
+msgstr[2] "Заменено %d вхождений."
 
 msgid "Replacement content is required."
 msgstr "Требуется новое содержимое."
@@ -1174,6 +1232,12 @@ msgstr "Для `move` необходимо указать ID заметки."
 msgid "`update` requires a note ID."
 msgstr "Для `update` необходимо указать ID заметки."
 
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "ресурсом"
+msgstr[1] "ресурсами"
+msgstr[2] "ресурсами"
+
 msgid "current"
 msgstr "текущий"
 
@@ -1186,72 +1250,17 @@ msgstr "Полоска «Вы здесь» над панелью инструм�
 msgid "↑↓ navigate · ↵ jump · Esc close"
 msgstr "↑↓ навигация · ↵ переход · Esc закрытие"
 
-msgid "%d match"
-msgid_plural "%d matches"
-msgstr[0] "%d совпадение"
-msgstr[1] "%d совпадения"
-msgstr[2] "%d совпадений"
+msgctxt "settings group"
+msgid "Preview"
+msgstr "Предварительный просмотр"
 
-msgid "%d note"
-msgid_plural "%d notes"
-msgstr[0] "%d заметку"
-msgstr[1] "%d заметки"
-msgstr[2] "%d заметок"
+msgctxt "sort mode"
+msgid "Title"
+msgstr "По названию"
 
-msgid "%d note will be permanently deleted. This action can't be undone."
-msgid_plural ""
-"%d notes will be permanently deleted. This action can't be undone."
-msgstr[0] "%d заметка будет удалена навсегда. Это действие нельзя отменить."
-msgstr[1] "%d заметки будут удалены навсегда. Это действие нельзя отменить."
-msgstr[2] "%d заметок будет удалено навсегда. Это действие нельзя отменить."
-
-msgid "%d section"
-msgid_plural "%d sections"
-msgstr[0] "%d раздел"
-msgstr[1] "%d раздела"
-msgstr[2] "%d разделов"
-
-msgid "%d subfolder"
-msgid_plural "%d subfolders"
-msgstr[0] "%d подпапку"
-msgstr[1] "%d подпапки"
-msgstr[2] "%d подпапок"
-
-msgid "%d subsection"
-msgid_plural "%d subsections"
-msgstr[0] "%d подраздел"
-msgstr[1] "%d подраздела"
-msgstr[2] "%d подразделов"
-
-msgid "%d word"
-msgid_plural "%d words"
-msgstr[0] "%d слово"
-msgstr[1] "%d слова"
-msgstr[2] "%d слов"
-
-msgid "Empty Trash (%d note)…"
-msgid_plural "Empty Trash (%d notes)…"
-msgstr[0] "Очистить корзину (%d заметка)…"
-msgstr[1] "Очистить корзину (%d заметки)…"
-msgstr[2] "Очистить корзину (%d заметок)…"
-
-msgid "Image added to note"
-msgid_plural "Images added to note"
-msgstr[0] "Изображение добавлено в заметку"
-msgstr[1] "Изображения добавлены в заметку"
-msgstr[2] "Изображения добавлены в заметку"
-
-msgid "Replaced %d occurrence."
-msgid_plural "Replaced %d occurrences."
-msgstr[0] "Заменено %d вхождение."
-msgstr[1] "Заменено %d вхождения."
-msgstr[2] "Заменено %d вхождений."
-
-msgid "asset"
-msgid_plural "assets"
-msgstr[0] "ресурсом"
-msgstr[1] "ресурсами"
-msgstr[2] "ресурсами"
+msgctxt "view mode"
+msgid "Preview"
+msgstr "Просмотр"
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:6
 msgid "Swifty Notes"
@@ -1403,3 +1412,6 @@ msgstr "заметки;markdown;редактор;текст;cli;автомати
 #: data/me.spaceinbox.swiftynotes.desktop.in:15
 msgid "New Window"
 msgstr "Новое окно"
+
+#~ msgid "Preview"
+#~ msgstr "Предварительный просмотр"
