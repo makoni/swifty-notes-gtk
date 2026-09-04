@@ -141,18 +141,23 @@ public func interfaceIsRightToLeft(for language: AppLanguage) -> Bool {
 /// Foundation locale matching the interface language, for anything Foundation
 /// formats rather than gettext: dates, times, numbers.
 ///
-/// Four sources, because none of them alone is right:
+/// Four sources, in this order, because each of the first three answers a
+/// question the next one cannot:
 ///
 /// 1. **The pinned language.** Foundation ignores `LANGUAGE`, so without this
 ///    a Russian interface printed English dates.
-/// 2. **The session's `LANGUAGE`.** Skipping it leaves the same bug on the
-///    app's main distribution channel: the Flatpak sandbox runs with
-///    `LANG=C.UTF-8`, so a host session that asks for Russian through
-///    `LANGUAGE=ru` gets Russian labels — gettext honours it once the C-locale
-///    block lifts — beside dates from step 4.
-/// 3. **The session's locale**, per POSIX (`LC_ALL`, then `LC_TIME`, then
-///    `LANG`). `.time` rather than `.messages` because dates are what this
-///    formats, and `LANG=de_DE` with `LC_TIME=en_GB` is a real configuration.
+/// 2. **The session's locale**, per POSIX: `LC_ALL`, then `LC_TIME`, then
+///    `LANG`. `.time` because dates are what this formats, and a session may
+///    ask for one language and another region's formats —
+///    `LANG=en_GB.UTF-8` with `LC_TIME=de_DE.UTF-8` is what GNOME writes for
+///    "language English (UK), formats Germany".
+/// 3. **The session's `LANGUAGE`**, normalised. After the categories, not
+///    before: reading it first would override that explicit `LC_TIME`, and
+///    would drop the region as well — `LANGUAGE=de` beside
+///    `LANG=de_AT.UTF-8` prints *Januar* where the session asked for
+///    *Jänner*. It matters at all because the Flatpak sandbox runs with
+///    `LANG=C.UTF-8`, where the categories say nothing and `LANGUAGE` is the
+///    only thing the host session sets.
 /// 4. **`Locale.current`** last on Linux, where it answers `en_001` whatever
 ///    the environment says — measured on Swift 6.3.2 — and so cannot stand in
 ///    for the session's locale.
@@ -167,11 +172,16 @@ public func interfaceLocale() -> Locale {
     #if canImport(Darwin)
     return .current
     #else
-    if let language = sessionLanguage?.split(separator: ":").first, !language.isEmpty {
-        return Locale(identifier: String(language))
-    }
     if let session = sessionLocaleIdentifier(for: .time) {
         return Locale(identifier: session)
+    }
+    // Normalised rather than passed through: `LANGUAGE=C` is the standard
+    // idiom for forcing English tool output, and `Locale(identifier: "C")` is
+    // not an error — it formats from CLDR's root data, which is worse than
+    // the honest `Locale.current` fallback below.
+    if let language = sessionLanguage?.split(separator: ":").first,
+       let normalized = normalizedLocaleName(String(language)) {
+        return Locale(identifier: normalized)
     }
     return .current
     #endif

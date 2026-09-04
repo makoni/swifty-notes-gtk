@@ -195,13 +195,37 @@ struct LanguageSwitchingTests {
     @Test("A session that asks through LANGUAGE gets its dates too") @MainActor
     func aSessionThatAsksThroughLanguageGetsItsDatesToo() throws {
         try withRestoredLanguage {
-            try withSessionLocale(lang: "C.UTF-8", time: nil) {
-                applySessionLanguage("ru")
+            try withSessionLocale(lang: "C.UTF-8", time: nil, language: "ru") {
                 #expect(interfaceLocale().identifier == "ru")
-
-                // A colon-separated priority list is what LANGUAGE holds.
-                applySessionLanguage("de:en")
+            }
+            // A colon-separated priority list is what LANGUAGE holds.
+            try withSessionLocale(lang: "C.UTF-8", time: nil, language: "de:en") {
                 #expect(interfaceLocale().identifier == "de")
+            }
+            // `LANGUAGE=C` is the idiom for forcing English tool output, and
+            // `Locale(identifier: "C")` formats from CLDR's root data — so it
+            // has to be rejected in favour of the honest fallback.
+            try withSessionLocale(lang: "C.UTF-8", time: nil, language: "C") {
+                #expect(interfaceLocale().identifier == Locale.current.identifier)
+            }
+        }
+    }
+
+    /// `LANGUAGE` is a translation preference; the locale categories are the
+    /// formatting authority, and a session can set both to different things.
+    @Test("An explicit LC_TIME outranks the session's LANGUAGE") @MainActor
+    func anExplicitLCTimeOutranksTheSessionsLanguage() throws {
+        try withRestoredLanguage {
+            // What GNOME writes for "language English (UK), formats Germany".
+            try withSessionLocale(lang: "en_GB.UTF-8", time: "de_DE.UTF-8", language: "en_GB:en") {
+                #expect(
+                    interfaceLocale().identifier == "de_DE",
+                    "the session asked for German formats and got its language instead",
+                )
+            }
+            // And reading LANGUAGE first would drop the region as well.
+            try withSessionLocale(lang: "de_AT.UTF-8", time: nil, language: "de") {
+                #expect(interfaceLocale().identifier == "de_AT")
             }
         }
     }
@@ -234,9 +258,12 @@ struct LanguageSwitchingTests {
         try withRestoredLanguage {
             try withSessionLocale(lang: "C.UTF-8", time: nil) {
                 #expect(sessionLocaleIdentifier(for: .time) == nil, "C.UTF-8 names no language")
+                // The value a regression would actually produce: passing the
+                // raw `LANG` through gives `Locale(identifier: "C.UTF-8")`,
+                // which is not an error — it formats from CLDR's root data.
                 let locale = interfaceLocale()
+                #expect(locale.identifier != "C.UTF-8")
                 #expect(locale.identifier != "C")
-                #expect(locale.identifier != "C_UTF_8")
                 #expect(locale.identifier == Locale.current.identifier)
             }
         }
@@ -262,9 +289,22 @@ struct LanguageSwitchingTests {
 
     /// Sets the session's locale variables for the duration of `body`, and
     /// re-captures so the library reads them as the session's own.
+    /// Sets the session's locale variables for the duration of `body`, and
+    /// re-captures so the library reads them as the session's own.
+    ///
+    /// `LANGUAGE` is cleared unless the caller asks for one. It participates
+    /// in the chain now, and `/etc/default/locale` on Ubuntu routinely holds
+    /// `LANGUAGE=en_GB:en` — which the restore puts back, so leaving it alone
+    /// would make every assertion here depend on the developer's own desktop
+    /// while CI, whose runners export only `LANG`, stayed green.
     @MainActor
-    private func withSessionLocale(lang: String?, time: String?, _ body: () throws -> Void) throws {
-        let names = ["LC_ALL", "LC_TIME", "LANG"]
+    private func withSessionLocale(
+        lang: String?,
+        time: String?,
+        language: String? = nil,
+        _ body: () throws -> Void,
+    ) throws {
+        let names = ["LC_ALL", "LC_TIME", "LANG", "LANGUAGE"]
         let previous = names.map { ($0, ProcessInfo.processInfo.environment[$0]) }
         defer {
             for (name, value) in previous {
@@ -275,6 +315,7 @@ struct LanguageSwitchingTests {
         unsetenv("LC_ALL")
         if let lang { setenv("LANG", lang, 1) } else { unsetenv("LANG") }
         if let time { setenv("LC_TIME", time, 1) } else { unsetenv("LC_TIME") }
+        if let language { setenv("LANGUAGE", language, 1) } else { unsetenv("LANGUAGE") }
         recaptureSessionLanguage()
         try body()
     }
