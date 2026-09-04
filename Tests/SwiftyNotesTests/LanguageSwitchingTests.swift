@@ -384,24 +384,16 @@ struct LanguageSwitchingTests {
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
 
-        let app = Application(id: "me.spaceinbox.swiftynotes.tests.language-settings")
-        try app.register()
-        let parent = ApplicationWindow(application: app)
-
-        var applied: AppSettings?
-        let window = SettingsWindow(
-            application: app,
-            parentWindow: parent,
-            currentSettings: AppSettings(customNotesDirectoryPath: temp.path()),
-            currentNotesDirectory: temp,
-            defaultNotesDirectory: temp,
-            applyNotesDirectoryChange: { $0 },
+        let recorder = LocalizationTestSupport.SettingsRecorder()
+        let rig = try LocalizationTestSupport.makeSettingsWindow(
+            suffix: "language-settings",
+            directory: temp,
             applySettingsChange: { settings in
-                applied = settings
+                recorder.settings = settings
                 return settings
             },
-            openDirectory: { _ in },
         )
+        let window = rig.window
 
         try withRestoredLanguage {
             let english = window.debugLocalizedChrome
@@ -409,7 +401,7 @@ struct LanguageSwitchingTests {
             // Selecting Russian is what a user does; the row reports it back
             // through applySettingsChange, which in the app is MainWindow.
             window.debugSetLanguage(.russian)
-            #expect(applied?.appLanguage == .russian)
+            #expect(recorder.settings?.appLanguage == .russian)
 
             try #require(
                 applyLanguage(.russian),

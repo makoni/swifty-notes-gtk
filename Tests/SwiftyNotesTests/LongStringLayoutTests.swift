@@ -31,21 +31,45 @@ struct LongStringLayoutTests {
     /// would let the window open wrong.
     private static let widthBudget = 640
 
-    /// A language code no real catalogue uses, so selecting it can only pick
-    /// up the generated one.
+    /// A language code no real catalogue uses, so selecting it picks up the
+    /// generated one — or, with nothing bound, falls back to the msgids.
     private static let pseudoLanguage = "qqx"
+
+    /// The same escape hatches the app itself uses, so the requirement cannot
+    /// drift from `AppLanguage`'s.
+    private static let localeCandidates = AppLanguage.english.messagesLocaleCandidates
+
+    private static var noLocaleMessage: Comment {
+        """
+        no usable locale on this host — gettext ignores LANGUAGE while LC_MESSAGES \
+        names the C locale, and none of \(localeCandidates.joined(separator: ", ")) \
+        is generated
+        """
+    }
 
     @Test("Settings survives a translation twice as long as the English") @MainActor
     func settingsSurvivesATranslationTwiceAsLongAsTheEnglish() throws {
-        // Measured before anything is bound: the English baseline needs no
-        // catalogue, and asserting "the pseudo-translation reads as its
-        // msgid" for an unpadded pass could not tell a bound catalogue from
-        // an unbound one — both hand back the msgid.
-        let english = try measureSettingsContent(suffix: "english")
-        #expect(
-            english <= Self.widthBudget,
-            "the settings content already needs \(english)px in English",
-        )
+        // The baseline is pinned, not inherited. Measuring it with whatever
+        // the process happens to hold means measuring the host's language on
+        // a session that asks for one — the same defect as a smoke test that
+        // forgets to pin LANGUAGE. `qqx` has no catalogue anywhere, so every
+        // lookup falls back to its msgid, which is the English.
+        var english = 0
+        try LocalizationTestSupport.withRestoredLanguage {
+            try #require(
+                setLanguage(Self.pseudoLanguage, localeCandidates: Self.localeCandidates),
+                Self.noLocaleMessage,
+            )
+            #expect(
+                "Wrap long lines".localized == "Wrap long lines",
+                "a language with no catalogue should read as its msgids",
+            )
+            english = try measureSettingsContent(suffix: "english")
+            #expect(
+                english <= Self.widthBudget,
+                "the settings content already needs \(english)px in English",
+            )
+        }
 
         var padded: [Int: Int] = [:]
         for expansion in [100, 200] {
@@ -111,11 +135,16 @@ struct LongStringLayoutTests {
     private func withPseudoLocale(expansion: Int, _ body: (String) throws -> Void) throws {
         let previousLanguage = ProcessInfo.processInfo.environment["LANGUAGE"]
         let previousMessagesLocale = currentMessagesLocale()
+        // Captured before the binding moves, and put back by hand: the
+        // shared restore deliberately does not re-run the app's startup, and
+        // this is the only suite that points the domain somewhere else.
+        let previousCatalogue = localeDirectoryPath()
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("swiftynotes-pseudo-\(UUID().uuidString)", isDirectory: true)
         let messages = root.appendingPathComponent("\(Self.pseudoLanguage)/LC_MESSAGES", isDirectory: true)
         try FileManager.default.createDirectory(at: messages, withIntermediateDirectories: true)
         defer {
+            LocalizationTestSupport.bindCatalogue(at: previousCatalogue)
             try? FileManager.default.removeItem(at: root)
             LocalizationTestSupport.restore(
                 language: previousLanguage,
@@ -127,15 +156,10 @@ struct LongStringLayoutTests {
 
         // The domain has to be set before the binding moves, or `.localized`
         // queries no domain at all and hands back the msgid.
-        initializeLocalization()
-        bindTextDomain(AppIdentity.identifier, to: root.path)
+        LocalizationTestSupport.bindCatalogue(at: root.path)
         try #require(
-            setLanguage(Self.pseudoLanguage, localeCandidates: AppLanguage.english.messagesLocaleCandidates),
-            """
-            no usable locale on this host — gettext ignores LANGUAGE while LC_MESSAGES \
-            names the C locale, and none of \
-            \(AppLanguage.english.messagesLocaleCandidates.joined(separator: ", ")) is generated
-            """,
+            setLanguage(Self.pseudoLanguage, localeCandidates: Self.localeCandidates),
+            Self.noLocaleMessage,
         )
         try body("Wrap long lines".localized)
     }
@@ -162,6 +186,12 @@ struct LongStringLayoutTests {
         // run — which is what one unbroken run produces here — measures a
         // token no language has instead of a longer sentence.
         //
+        // The token is as long as a German compound rather than four
+        // characters. At four it is shorter than nearly every English word,
+        // so the widest word never changes and the expansion is invisible for
+        // every wrapping label — which is most of the page, and the thing
+        // German actually does to a layout.
+        //
         // awk must `printf` without a newline; `print` appends one to every
         // msgstr, which msgfmt then rejects for the whole catalogue.
         //
@@ -177,7 +207,7 @@ struct LongStringLayoutTests {
         msgen "$1" -o - \
           | msgfilter --keep-header -o "$2" \
               awk -v EXPANSION=\(Double(expansion) / 100) \
-                  '{ t = int(length($0) * EXPANSION); p = ""; while (length(p) < t) p = p "xxxx "; \
+                  '{ t = int(length($0) * EXPANSION); p = ""; while (length(p) < t) p = p "Verlaengerungx "; \
                      if (t > 0) printf "%s %s", $0, p; else printf "%s", $0 }'
         sed -i -e 's/nplurals=INTEGER; plural=EXPRESSION;/nplurals=2; plural=(n != 1);/' \
                -e 's/^"Language: \\\\n"/"Language: \(Self.pseudoLanguage)\\\\n"/' "$2"
@@ -185,9 +215,14 @@ struct LongStringLayoutTests {
         """
         // bash, not sh: `pipefail` is bash-only, and dash before 0.5.12 exits
         // 2 on the `set` line without running anything — which this would
-        // then report as gettext being missing.
+        // then report as gettext being missing. Resolved rather than assumed
+        // at /bin/bash, which a non-FHS layout does not have.
+        let bash = try #require(
+            ToolRunner.systemTool("bash") ?? ToolRunner.onPath("bash"),
+            "bash is required to build the pseudo-catalogue",
+        )
         let result = try ToolRunner.run(
-            URL(fileURLWithPath: "/bin/bash", isDirectory: false),
+            bash,
             ["-c", pipeline, "pseudo-catalogue", Self.templateURL.path, po.path, mo.path],
         )
         try #require(

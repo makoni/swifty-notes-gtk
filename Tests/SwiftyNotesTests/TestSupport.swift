@@ -172,8 +172,8 @@ enum ToolRunner {
 /// this replaced had already drifted apart in the order they restored things.
 @MainActor
 enum LocalizationTestSupport {
-    /// Runs `body` with the session's language, messages locale and domain
-    /// binding restored on every exit path.
+    /// Runs `body` with the session's language and messages locale restored on
+    /// every exit path.
     static func withRestoredLanguage(_ body: () throws -> Void) throws {
         let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
         // `setLanguage` installs a real locale to escape the C locale, which
@@ -183,42 +183,34 @@ enum LocalizationTestSupport {
         defer {
             restore(language: previous, messagesLocale: previousMessagesLocale)
         }
-        // Rebinds the domain to the shipped catalogue, which is also what a
-        // suite that bound it elsewhere needs on the way in.
+        // The app's own startup, which a test process never ran: without it
+        // the domain is unbound and every lookup returns its msgid.
         initializeLocalization()
         applySessionLanguage(previous)
         try body()
     }
 
-    /// Puts the three pieces of global state back.
+    /// Puts the language and the messages locale back.
     ///
-    /// Deliberately `setLanguage(nil)` rather than `applyLanguage(.system)`:
-    /// the latter also assigns GTK's default text direction, which makes GTK
-    /// walk its list of live toplevels — and in a shared test process that
-    /// list holds windows earlier suites left behind, so the walk reads freed
-    /// memory and takes the whole run down. Only the translations need
-    /// putting back here; the direction is the app's business, and the tests
-    /// that care about it assert the decision rather than assigning it.
+    /// Nothing here re-runs `initializeLocalization()`, and that is the point:
+    /// it ends in `applyLanguage(.system)`, which assigns GTK's default text
+    /// direction — making GTK walk its list of live toplevels, which in a
+    /// shared test process holds windows earlier suites left behind, so the
+    /// walk reads freed memory and takes the whole run down. Restoring
+    /// translations needs none of that.
+    ///
+    /// The order matters: the catalogue cache is invalidated last, so no later
+    /// lookup can be served a translation resolved under the locale this
+    /// suite was using.
     static func restore(language: String?, messagesLocale: String?) {
         applySessionLanguage(language)
-        _ = setLanguage(nil)
-        // The binding, not just the language: a suite that pointed the domain
-        // at a temporary directory has usually deleted it by now, and
-        // `configureLocalization` only rebinds when it finds a catalogue.
-        #expect(
-            initializeLocalization(),
-            """
-            no catalogue found while restoring localization — the text domain may still \
-            point at a directory this suite removed, and every later suite would then \
-            read msgids instead of translations
-            """,
-        )
         if let messagesLocale {
             #expect(
                 setMessagesLocale(messagesLocale),
                 "failed to restore LC_MESSAGES — later suites would sample a locale they did not set",
             )
         }
+        _ = setLanguage(nil)
     }
 
     /// Installs `language` as the session's own LANGUAGE, which is the
@@ -230,6 +222,29 @@ enum LocalizationTestSupport {
             unsetenv("LANGUAGE")
         }
         recaptureSessionLanguage()
+    }
+
+    /// Points the text domain at `directory`, or leaves it alone when there is
+    /// nothing to point it at.
+    ///
+    /// The pieces rather than `configureLocalization`, which also activates
+    /// the process locale from the environment — `setlocale(LC_ALL, "")` —
+    /// and would leave LC_NUMERIC and friends changed for every later suite.
+    static func bindCatalogue(at directory: String?) {
+        guard let directory else { return }
+        bindTextDomain(AppIdentity.identifier, to: directory)
+        bindTextDomainCodeset(AppIdentity.identifier, to: "UTF-8")
+        setDefaultTextDomain(AppIdentity.identifier)
+    }
+
+    /// Catches the settings a window hands back.
+    ///
+    /// A class rather than a captured `var`: the closure outlives the
+    /// statement that made it, so a local would have to be captured
+    /// mutably from an escaping closure.
+    @MainActor
+    final class SettingsRecorder {
+        var settings: AppSettings?
     }
 
     /// A settings window and the objects that have to outlive the assertion.

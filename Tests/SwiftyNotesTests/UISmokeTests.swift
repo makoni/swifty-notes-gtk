@@ -362,8 +362,17 @@ struct UISmokeTests {
         // positions and leaves widths alone.
         #expect(rtlNotes.x > ltrNotes.x)
         #expect(rtlOutline.x < ltrOutline.x)
-        #expect(rtlNotes.width == ltrNotes.width, "the notes sidebar changed width instead of moving")
-        #expect(rtlOutline.width == ltrOutline.width, "the outline sidebar changed width instead of moving")
+        // Within a pixel or two: the two runs are separate compositor
+        // sessions, and an exact comparison would fail on a rounding
+        // difference that says nothing about mirroring.
+        #expect(
+            abs(rtlNotes.width - ltrNotes.width) <= 2,
+            "the notes sidebar changed width (\(ltrNotes.width) → \(rtlNotes.width)) instead of moving",
+        )
+        #expect(
+            abs(rtlOutline.width - ltrOutline.width) <= 2,
+            "the outline sidebar changed width (\(ltrOutline.width) → \(rtlOutline.width)) instead of moving",
+        )
     }
 
     /// The whole localization stack through the real binary: catalogue
@@ -403,7 +412,11 @@ struct UISmokeTests {
             // whose own LANGUAGE is Russian would see this pass with the
             // preference doing nothing. The harness can override but not
             // unset, so the session is pinned to something else.
-            environment: ["LANGUAGE": "en", "LC_ALL": "en_US.UTF-8"],
+            // LANGUAGE alone. Pinning LC_ALL as well would make the test
+            // depend on that locale being generated: glibc leaves the process
+            // in C when it is not, and the app would then run untranslated
+            // for a reason unrelated to the preference under test.
+            environment: ["LANGUAGE": "en"],
         )
         expectUIScriptSucceeded(result)
     }
@@ -699,12 +712,21 @@ private func parsedExtents(_ result: UIScriptResult) throws -> [String: (x: Int,
     var extents: [String: (x: Int, width: Int)] = [:]
     for line in result.stdout.split(separator: "\n") where line.hasPrefix("EXTENT ") {
         let fields = line.dropFirst("EXTENT ".count).split(separator: " ")
-        guard fields.count >= 3,
-              let x = Int(fields[fields.count - 2].dropFirst("x=".count)),
-              let width = Int(fields[fields.count - 1].dropFirst("w=".count))
-        else { continue }
-        let name = fields.dropLast(2).joined(separator: " ")
-        extents[name] = (x, width)
+        // Read by key, not by position: dropping two characters off the last
+        // two fields would read `w=250 x=0` as x=250, width=0 and compare
+        // widths as positions without noticing.
+        var values: [String: Int] = [:]
+        var name: [String] = []
+        for field in fields {
+            let parts = field.split(separator: "=", maxSplits: 1)
+            if parts.count == 2, let value = Int(parts[1]) {
+                values[String(parts[0])] = value
+            } else {
+                name.append(String(field))
+            }
+        }
+        guard let x = values["x"], let width = values["w"], !name.isEmpty else { continue }
+        extents[name.joined(separator: " ")] = (x, width)
     }
     try #require(
         !extents.isEmpty,
