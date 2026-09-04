@@ -58,11 +58,21 @@ final class AppController {
     }
 
     func activate(app: Application) {
-        // gtk_init discards a direction set before it ran, so the pinned
-        // language's reading direction has to be re-applied here — before the
-        // first window is built, so an RTL interface comes up mirrored rather
-        // than flipping after the fact.
-        applyInterfaceDirection(for: currentAppSettings().appLanguage)
+        // Both halves of the pinned language have to be re-applied here,
+        // because GTK undoes both while starting up:
+        //
+        //   * `gtk_init` discards a reading direction set before it ran, and
+        //   * it calls `setlocale(LC_ALL, "")`, which puts LC_MESSAGES back to
+        //     whatever the environment says. Where that is `C` or `C.UTF-8` —
+        //     the default in a container, and in the Flatpak sandbox — gettext
+        //     then ignores LANGUAGE entirely, so a Russian interface came up
+        //     in English while its dates, which Foundation formats, came up
+        //     Russian. `applyLanguage` escapes the C locale again.
+        //
+        // Before the first window is built, so an RTL interface comes up
+        // mirrored and every label is translated from the start rather than
+        // flipping after the fact.
+        applyLanguage(currentAppSettings().appLanguage)
 
         if let mainWindow {
             if allowsWindowPresentation {

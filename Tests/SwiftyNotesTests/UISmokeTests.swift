@@ -412,11 +412,20 @@ struct UISmokeTests {
             // whose own LANGUAGE is Russian would see this pass with the
             // preference doing nothing. The harness can override but not
             // unset, so the session is pinned to something else.
-            // LANGUAGE alone. Pinning LC_ALL as well would make the test
-            // depend on that locale being generated: glibc leaves the process
-            // in C when it is not, and the app would then run untranslated
-            // for a reason unrelated to the preference under test.
-            environment: ["LANGUAGE": "en"],
+            // `LANG=C.UTF-8` on purpose: it is the CI runner's default, the
+            // Flatpak sandbox's, and any container's — and it is the case the
+            // whole stack got wrong. `gtk_init` calls `setlocale(LC_ALL, "")`
+            // and reads that back, so a locale the app only *installed* while
+            // escaping the C locale is reverted; GLib then latches the process
+            // as untranslated on its own first lookup, because `C.UTF-8`
+            // neither equals `C` nor begins with `en_`, which is the only gap
+            // its heuristic has. The interface came up English with Russian
+            // dates — Foundation formats those without going through GLib.
+            //
+            // `LANGUAGE=en` because the app inherits the session's
+            // environment: on a developer whose own session asks for Russian,
+            // this would otherwise pass with the preference doing nothing.
+            environment: ["LANGUAGE": "en", "LANG": "C.UTF-8"],
         )
         expectUIScriptSucceeded(result)
     }

@@ -110,7 +110,7 @@ modules:
         path: @SOURCE_PATH@
       - type: git
         url: https://github.com/makoni/swift-adwaita.git
-        commit: bfbec41bb698b530c03ee98701e28f5115b8b136
+        commit: c59d0d36ced003e0fb8c59477e2ebc14ef8891eb
         dest: flatpak-deps/swift-adwaita
       - type: git
         url: https://github.com/swiftlang/swift-markdown.git
