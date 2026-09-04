@@ -163,3 +163,108 @@ enum ToolRunner {
         )
     }
 }
+
+/// Process-global localization state, put back afterwards.
+///
+/// `LANGUAGE`, `LC_MESSAGES`, gettext's catalogue cache and the text-domain
+/// binding are all per-process, so a suite that moves any of them owes every
+/// later suite a restore. Shared rather than copied per suite: the two copies
+/// this replaced had already drifted apart in the order they restored things.
+@MainActor
+enum LocalizationTestSupport {
+    /// Runs `body` with the session's language, messages locale and domain
+    /// binding restored on every exit path.
+    static func withRestoredLanguage(_ body: () throws -> Void) throws {
+        let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
+        // `setLanguage` installs a real locale to escape the C locale, which
+        // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
+        // leave that behind for every later test.
+        let previousMessagesLocale = currentMessagesLocale()
+        defer {
+            restore(language: previous, messagesLocale: previousMessagesLocale)
+        }
+        // Rebinds the domain to the shipped catalogue, which is also what a
+        // suite that bound it elsewhere needs on the way in.
+        initializeLocalization()
+        applySessionLanguage(previous)
+        try body()
+    }
+
+    /// Puts the three pieces of global state back.
+    ///
+    /// Deliberately `setLanguage(nil)` rather than `applyLanguage(.system)`:
+    /// the latter also assigns GTK's default text direction, which makes GTK
+    /// walk its list of live toplevels — and in a shared test process that
+    /// list holds windows earlier suites left behind, so the walk reads freed
+    /// memory and takes the whole run down. Only the translations need
+    /// putting back here; the direction is the app's business, and the tests
+    /// that care about it assert the decision rather than assigning it.
+    static func restore(language: String?, messagesLocale: String?) {
+        applySessionLanguage(language)
+        _ = setLanguage(nil)
+        // The binding, not just the language: a suite that pointed the domain
+        // at a temporary directory has usually deleted it by now, and
+        // `configureLocalization` only rebinds when it finds a catalogue.
+        #expect(
+            initializeLocalization(),
+            """
+            no catalogue found while restoring localization — the text domain may still \
+            point at a directory this suite removed, and every later suite would then \
+            read msgids instead of translations
+            """,
+        )
+        if let messagesLocale {
+            #expect(
+                setMessagesLocale(messagesLocale),
+                "failed to restore LC_MESSAGES — later suites would sample a locale they did not set",
+            )
+        }
+    }
+
+    /// Installs `language` as the session's own LANGUAGE, which is the
+    /// baseline ``AppLanguage.system`` returns to.
+    static func applySessionLanguage(_ language: String?) {
+        if let language {
+            setenv("LANGUAGE", language, 1)
+        } else {
+            unsetenv("LANGUAGE")
+        }
+        recaptureSessionLanguage()
+    }
+
+    /// A settings window and the objects that have to outlive the assertion.
+    ///
+    /// The application and the parent window are handed back rather than kept
+    /// inside the builder: released, they take the settings window's content
+    /// with them, and a measurement then reads `nil` off a finalized object.
+    struct SettingsWindowRig {
+        let application: Application
+        let parentWindow: ApplicationWindow
+        let window: SettingsWindow
+    }
+
+    /// A settings window over a throwaway notes directory.
+    ///
+    /// The caller owns `directory`. Shared because two suites were building
+    /// the same eight arguments with the same temporary-directory dance.
+    static func makeSettingsWindow(
+        suffix: String,
+        directory: URL,
+        applySettingsChange: @escaping (AppSettings) -> AppSettings = { $0 },
+    ) throws -> SettingsWindowRig {
+        let application = Application(id: "me.spaceinbox.swiftynotes.tests.\(suffix)")
+        try application.register()
+        let parent = ApplicationWindow(application: application)
+        let window = SettingsWindow(
+            application: application,
+            parentWindow: parent,
+            currentSettings: AppSettings(customNotesDirectoryPath: directory.path()),
+            currentNotesDirectory: directory,
+            defaultNotesDirectory: directory,
+            applyNotesDirectoryChange: { $0 },
+            applySettingsChange: applySettingsChange,
+            openDirectory: { _ in },
+        )
+        return SettingsWindowRig(application: application, parentWindow: parent, window: window)
+    }
+}

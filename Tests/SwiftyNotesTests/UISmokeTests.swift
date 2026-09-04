@@ -350,17 +350,20 @@ struct UISmokeTests {
         let rtlNotes = try #require(rtl[notes], "no extents for the notes sidebar in Arabic")
         let rtlOutline = try #require(rtl[outline], "no extents for the outline sidebar in Arabic")
 
-        #expect(ltrNotes < ltrOutline, "English: the notes sidebar belongs left of the outline")
+        #expect(ltrNotes.x < ltrOutline.x, "English: the notes sidebar belongs left of the outline")
         #expect(
-            rtlNotes > rtlOutline,
+            rtlNotes.x > rtlOutline.x,
             """
             Arabic: the notes sidebar is still left of the outline \
-            (notes x=\(rtlNotes), outline x=\(rtlOutline)) — the window did not mirror
+            (notes x=\(rtlNotes.x), outline x=\(rtlOutline.x)) — the window did not mirror
             """,
         )
-        // Both panes moved, rather than one of them happening to be wider.
-        #expect(rtlNotes > ltrNotes)
-        #expect(rtlOutline < ltrOutline)
+        // Both panes moved, and neither merely changed size: mirroring swaps
+        // positions and leaves widths alone.
+        #expect(rtlNotes.x > ltrNotes.x)
+        #expect(rtlOutline.x < ltrOutline.x)
+        #expect(rtlNotes.width == ltrNotes.width, "the notes sidebar changed width instead of moving")
+        #expect(rtlOutline.width == ltrOutline.width, "the outline sidebar changed width instead of moving")
     }
 
     /// The whole localization stack through the real binary: catalogue
@@ -396,6 +399,11 @@ struct UISmokeTests {
                 )
                 try Data(#"{"appLanguage":"ru"}"#.utf8).write(to: settingsFile)
             },
+            // The app inherits the session's environment, so a developer
+            // whose own LANGUAGE is Russian would see this pass with the
+            // preference doing nothing. The harness can override but not
+            // unset, so the session is pinned to something else.
+            environment: ["LANGUAGE": "en", "LC_ALL": "en_US.UTF-8"],
         )
         expectUIScriptSucceeded(result)
     }
@@ -682,19 +690,30 @@ private func runWaylandUIScript(
 /// The `EXTENT <name> x=<int> w=<int>` lines a layout script prints.
 ///
 /// `nil` means the harness declined to run — no Weston, or no session bus —
-/// which it reports as a clean exit with no output.
-private func parsedExtents(_ result: UIScriptResult) throws -> [String: Int]? {
+/// which it reports as a clean exit with no output. Output that parses to
+/// nothing is a failure instead: it used to be reported the same way, so
+/// renaming the marker or changing the format would have left the test
+/// asserting nothing while still passing.
+private func parsedExtents(_ result: UIScriptResult) throws -> [String: (x: Int, width: Int)]? {
     guard !result.stdout.isEmpty else { return nil }
-    var extents: [String: Int] = [:]
+    var extents: [String: (x: Int, width: Int)] = [:]
     for line in result.stdout.split(separator: "\n") where line.hasPrefix("EXTENT ") {
         let fields = line.dropFirst("EXTENT ".count).split(separator: " ")
-        guard fields.count >= 2,
-              let x = Int(fields[fields.count - 2].dropFirst("x=".count))
+        guard fields.count >= 3,
+              let x = Int(fields[fields.count - 2].dropFirst("x=".count)),
+              let width = Int(fields[fields.count - 1].dropFirst("w=".count))
         else { continue }
         let name = fields.dropLast(2).joined(separator: " ")
-        extents[name] = x
+        extents[name] = (x, width)
     }
-    return extents.isEmpty ? nil : extents
+    try #require(
+        !extents.isEmpty,
+        """
+        the layout script produced output but no EXTENT line parsed — the marker or its         format changed, and the assertions below would pass having measured nothing:
+        \(result.stdout)
+        """,
+    )
+    return extents
 }
 
 private func expectUIScriptSucceeded(_ result: UIScriptResult) {

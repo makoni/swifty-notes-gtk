@@ -61,7 +61,15 @@ jobs:
             libgtk-4-dev \
             libgtksourceview-5-dev \
             libspelling-1-dev \
+            locales \
             xvfb
+
+      - name: Generate a locale
+        # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
+        # locale — and the runner default `LANG=C.UTF-8` counts as C — so the
+        # interface-language tests need some real locale to exist. Any one
+        # will do; it need not be the language selected.
+        run: sudo locale-gen en_US.UTF-8
 
       - name: Verify project
         run: |

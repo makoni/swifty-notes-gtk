@@ -643,36 +643,12 @@ struct LanguageSwitchingTests {
     /// English, and fail confusingly when they expect Russian.
     @MainActor
     private func withRestoredLanguage(_ body: () throws -> Void) throws {
-        let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
-        // `setLanguage` installs a real locale to escape the C locale, which
-        // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
-        // leave that behind for every later test.
-        let previousMessagesLocale = Adwaita.currentMessagesLocale()
-        defer {
-            applySessionLanguage(previous)
-            _ = applyLanguage(.system)
-            if let previousMessagesLocale {
-                #expect(
-                    setMessagesLocale(previousMessagesLocale),
-                    "failed to restore LC_MESSAGES — later suites will sample a locale they did not set"
-                )
-            }
-        }
-        initializeLocalization()
-        applySessionLanguage(previous)
-        try body()
+        try LocalizationTestSupport.withRestoredLanguage(body)
     }
 
-    /// Installs `language` as the session's own LANGUAGE, which is the
-    /// baseline ``AppLanguage.system`` returns to.
     @MainActor
     private func applySessionLanguage(_ language: String?) {
-        if let language {
-            setenv("LANGUAGE", language, 1)
-        } else {
-            unsetenv("LANGUAGE")
-        }
-        recaptureSessionLanguage()
+        LocalizationTestSupport.applySessionLanguage(language)
     }
 }
 #endif
