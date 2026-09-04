@@ -362,17 +362,14 @@ struct UISmokeTests {
         // positions and leaves widths alone.
         #expect(rtlNotes.x > ltrNotes.x)
         #expect(rtlOutline.x < ltrOutline.x)
-        // Within a pixel or two: the two runs are separate compositor
-        // sessions, and an exact comparison would fail on a rounding
-        // difference that says nothing about mirroring.
-        #expect(
-            abs(rtlNotes.width - ltrNotes.width) <= 2,
-            "the notes sidebar changed width (\(ltrNotes.width) → \(rtlNotes.width)) instead of moving",
-        )
-        #expect(
-            abs(rtlOutline.width - ltrOutline.width) <= 2,
-            "the outline sidebar changed width (\(ltrOutline.width) → \(rtlOutline.width)) instead of moving",
-        )
+        // Widths are deliberately not compared. A pane's natural width follows
+        // its content, and the content is localized: the notes list shows a
+        // date, and `24‏/08‏/2025، 8:46 ص` is narrower than
+        // `24 Aug 2025 at 8:46 AM`, which moved the sidebar from 230px to
+        // 223px the moment dates started following the session language. That
+        // is the feature working, not the layout failing. "One pane merely got
+        // wider" is already ruled out by both of them moving, in opposite
+        // directions, above.
     }
 
     /// The whole localization stack through the real binary: catalogue

@@ -481,15 +481,35 @@ struct NotesSidebar {
         Self.sortModes.firstIndex(of: sortState.currentMode) ?? 0
     }
 
+    /// One formatter per locale, rather than one per call.
+    ///
+    /// This runs once per visible row on every list rebuild — and a language
+    /// switch rebuilds the whole list, which is exactly when the locale
+    /// changes. Building a `DateFormatter` costs an ICU pattern resolution,
+    /// so a few hundred notes turned every rebuild into tens of milliseconds
+    /// of main-thread work.
+    ///
+    /// Keyed on the locale identifier, which is what a language switch
+    /// changes, so the cache invalidates itself exactly when it must.
+    @MainActor
+    private static var cachedFormatter: (identifier: String, formatter: DateFormatter)?
+
     static func displayDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        // Foundation reads Locale.current from LC_ALL / LANG, while the
-        // interface language comes from LANGUAGE — so without this a Russian
+        // Foundation ignores LANGUAGE, and on Linux `Locale.current` ignores
+        // the environment as well — it answers `en_001` whatever LANG says.
+        // `interfaceLocale()` is what bridges both: without it a Russian
         // interface printed "31 Aug 2026 at 9:57 PM" next to its Russian
-        // labels.
-        formatter.locale = interfaceLocale()
+        // labels, and a German session got English dates whatever it asked
+        // for.
+        let locale = interfaceLocale()
+        if let cached = cachedFormatter, cached.identifier == locale.identifier {
+            return cached.formatter.string(from: date)
+        }
+        let formatter = DateFormatter()
+        formatter.locale = locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
+        cachedFormatter = (locale.identifier, formatter)
         return formatter.string(from: date)
     }
 

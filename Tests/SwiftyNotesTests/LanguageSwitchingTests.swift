@@ -162,6 +162,164 @@ struct LanguageSwitchingTests {
         }
     }
 
+    // MARK: - Dates and the session locale
+
+    /// The `.system` case, which was the one that was wrong.
+    ///
+    /// `Locale.current` does not follow the environment on Linux — measured
+    /// on Swift 6.3.2 it is `en_001` whatever `LANG`, `LC_ALL` or `LC_TIME`
+    /// say — so a German or Japanese desktop got English dates unless its
+    /// user pinned a language by hand. Nothing asserted anything about this
+    /// path, which is why it went unnoticed while every other string was
+    /// being translated.
+    @Test("A system-language interface formats dates in the session's locale") @MainActor
+    func aSystemLanguageInterfaceFormatsDatesInTheSessionsLocale() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "de_DE.UTF-8", time: nil) {
+                #expect(interfaceLocale().identifier == "de_DE")
+            }
+            // The category's own variable wins: one language, another
+            // region's date format, which is a real configuration.
+            try withSessionLocale(lang: "de_DE.UTF-8", time: "en_GB.UTF-8") {
+                #expect(interfaceLocale().identifier == "en_GB")
+            }
+        }
+    }
+
+    /// The Flatpak case, and the one the first attempt missed.
+    ///
+    /// The sandbox runs with `LANG=C.UTF-8`, so a host session that asks for
+    /// Russian does it through `LANGUAGE=ru` — which gettext honours once the
+    /// C-locale block lifts, giving Russian labels, while the locale
+    /// categories say nothing at all.
+    @Test("A session that asks through LANGUAGE gets its dates too") @MainActor
+    func aSessionThatAsksThroughLanguageGetsItsDatesToo() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "C.UTF-8", time: nil, language: "ru") {
+                #expect(interfaceLocale().identifier == "ru")
+            }
+            // A colon-separated priority list is what LANGUAGE holds.
+            try withSessionLocale(lang: "C.UTF-8", time: nil, language: "de:en") {
+                #expect(interfaceLocale().identifier == "de")
+            }
+            // `LANGUAGE=C` is the idiom for forcing English tool output, and
+            // `Locale(identifier: "C")` formats from CLDR's root data — so it
+            // has to be rejected in favour of the honest fallback.
+            try withSessionLocale(lang: "C.UTF-8", time: nil, language: "C") {
+                #expect(interfaceLocale().identifier == Locale.current.identifier)
+            }
+        }
+    }
+
+    /// `LANGUAGE` is a translation preference; the locale categories are the
+    /// formatting authority, and a session can set both to different things.
+    @Test("An explicit LC_TIME outranks the session's LANGUAGE") @MainActor
+    func anExplicitLCTimeOutranksTheSessionsLanguage() throws {
+        try withRestoredLanguage {
+            // What GNOME writes for "language English (UK), formats Germany".
+            try withSessionLocale(lang: "en_GB.UTF-8", time: "de_DE.UTF-8", language: "en_GB:en") {
+                #expect(
+                    interfaceLocale().identifier == "de_DE",
+                    "the session asked for German formats and got its language instead",
+                )
+            }
+            // And reading LANGUAGE first would drop the region as well.
+            try withSessionLocale(lang: "de_AT.UTF-8", time: nil, language: "de") {
+                #expect(interfaceLocale().identifier == "de_AT")
+            }
+        }
+    }
+
+    /// A pinned language still decides, because the interface it labels is
+    /// the thing the date sits beside.
+    @Test("A pinned language outranks the session locale for dates") @MainActor
+    func aPinnedLanguageOutranksTheSessionLocaleForDates() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "de_DE.UTF-8", time: nil) {
+                try #require(
+                    applyLanguage(.russian),
+                    "no usable locale on this host — gettext ignores LANGUAGE under C",
+                )
+                #expect(interfaceLocale().identifier == "ru")
+            }
+        }
+    }
+
+    /// A session that asked for nothing usable leaves `Locale.current`, which
+    /// is the honest fallback rather than a guess.
+    ///
+    /// Asserting only that it *equals* `Locale.current` would be true by
+    /// construction — the last branch makes it so — and would pass with the
+    /// session lookup removed entirely. What this checks is that the C name
+    /// was rejected rather than handed to `Locale(identifier:)`, which accepts
+    /// it and then formats like a language.
+    @Test("A C-locale session is rejected rather than formatted as a language") @MainActor
+    func aCLocaleSessionIsRejectedRatherThanFormattedAsALanguage() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "C.UTF-8", time: nil) {
+                #expect(sessionLocaleIdentifier(for: .time) == nil, "C.UTF-8 names no language")
+                // The value a regression would actually produce: passing the
+                // raw `LANG` through gives `Locale(identifier: "C.UTF-8")`,
+                // which is not an error — it formats from CLDR's root data.
+                let locale = interfaceLocale()
+                #expect(locale.identifier != "C.UTF-8")
+                #expect(locale.identifier != "C")
+                #expect(locale.identifier == Locale.current.identifier)
+            }
+        }
+    }
+
+    /// What the user sees: the sidebar's own formatter, called rather than
+    /// re-implemented — a local `DateFormatter` set from `interfaceLocale()`
+    /// asserts nothing about the sidebar, and passes with the sidebar's own
+    /// line deleted.
+    @Test("The notes sidebar writes its dates in the session's language") @MainActor
+    func theNotesSidebarWritesItsDatesInTheSessionsLanguage() throws {
+        let moment = Date(timeIntervalSince1970: 1_756_000_000)
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "ru_RU.UTF-8", time: nil) {
+                let rendered = NotesSidebar.displayDate(moment)
+                #expect(
+                    rendered.contains("авг"),
+                    "a Russian session should see a Russian month name, got \(rendered.debugDescription)",
+                )
+            }
+        }
+    }
+
+    /// Sets the session's locale variables for the duration of `body`, and
+    /// re-captures so the library reads them as the session's own.
+    /// Sets the session's locale variables for the duration of `body`, and
+    /// re-captures so the library reads them as the session's own.
+    ///
+    /// `LANGUAGE` is cleared unless the caller asks for one. It participates
+    /// in the chain now, and `/etc/default/locale` on Ubuntu routinely holds
+    /// `LANGUAGE=en_GB:en` — which the restore puts back, so leaving it alone
+    /// would make every assertion here depend on the developer's own desktop
+    /// while CI, whose runners export only `LANG`, stayed green.
+    @MainActor
+    private func withSessionLocale(
+        lang: String?,
+        time: String?,
+        language: String? = nil,
+        _ body: () throws -> Void,
+    ) throws {
+        let names = ["LC_ALL", "LC_TIME", "LANG", "LANGUAGE"]
+        let previous = names.map { ($0, ProcessInfo.processInfo.environment[$0]) }
+        defer {
+            for (name, value) in previous {
+                if let value { setenv(name, value, 1) } else { unsetenv(name) }
+            }
+            recaptureSessionLanguage()
+        }
+        unsetenv("LC_ALL")
+        if let lang { setenv("LANG", lang, 1) } else { unsetenv("LANG") }
+        if let time { setenv("LC_TIME", time, 1) } else { unsetenv("LC_TIME") }
+        if let language { setenv("LANGUAGE", language, 1) } else { unsetenv("LANGUAGE") }
+        recaptureSessionLanguage()
+        try body()
+    }
+
     // MARK: - Live retranslation
 
     /// The point of the feature: an open window follows the picker instead of
@@ -505,11 +663,14 @@ struct LanguageSwitchingTests {
 
     // MARK: - Dates
 
-    /// `Locale.current` follows `LC_ALL` / `LANG`, the interface language
-    /// follows `LANGUAGE`. Without ``interfaceLocale()`` bridging them, a
-    /// Russian sidebar printed English dates.
-    @Test("Dates follow the interface language, not the session locale") @MainActor
-    func datesFollowTheInterfaceLanguageNotTheSessionLocale() throws {
+    /// A pinned language decides, whatever the session's locale says.
+    ///
+    /// Foundation ignores `LANGUAGE`, so without ``interfaceLocale()`` a
+    /// Russian sidebar printed English dates. The session's own locale is the
+    /// *fallback* for `.system`, covered above — the two do not compete, and
+    /// the older wording ("not the session locale") read as though they did.
+    @Test("A pinned language decides the date format") @MainActor
+    func aPinnedLanguageDecidesTheDateFormat() throws {
         try withRestoredLanguage {
             let date = Date(timeIntervalSince1970: 1_756_600_000)
 

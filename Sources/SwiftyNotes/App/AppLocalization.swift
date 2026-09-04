@@ -141,13 +141,50 @@ public func interfaceIsRightToLeft(for language: AppLanguage) -> Bool {
 /// Foundation locale matching the interface language, for anything Foundation
 /// formats rather than gettext: dates, times, numbers.
 ///
-/// `Locale.current` follows `LC_ALL` / `LANG`, not `LANGUAGE`, so a pinned
-/// interface language would otherwise print Russian labels beside an English
-/// date — which is exactly what the Russian build did before the picker had
-/// this.
+/// Four sources, in this order, because each of the first three answers a
+/// question the next one cannot:
+///
+/// 1. **The pinned language.** Foundation ignores `LANGUAGE`, so without this
+///    a Russian interface printed English dates.
+/// 2. **The session's locale**, per POSIX: `LC_ALL`, then `LC_TIME`, then
+///    `LANG`. `.time` because dates are what this formats, and a session may
+///    ask for one language and another region's formats —
+///    `LANG=en_GB.UTF-8` with `LC_TIME=de_DE.UTF-8` is what GNOME writes for
+///    "language English (UK), formats Germany".
+/// 3. **The session's `LANGUAGE`**, normalised. After the categories, not
+///    before: reading it first would override that explicit `LC_TIME`, and
+///    would drop the region as well — `LANGUAGE=de` beside
+///    `LANG=de_AT.UTF-8` prints *Januar* where the session asked for
+///    *Jänner*. It matters at all because the Flatpak sandbox runs with
+///    `LANG=C.UTF-8`, where the categories say nothing and `LANGUAGE` is the
+///    only thing the host session sets.
+/// 4. **`Locale.current`** last on Linux, where it answers `en_001` whatever
+///    the environment says — measured on Swift 6.3.2 — and so cannot stand in
+///    for the session's locale.
+///
+/// On Darwin the order is different on purpose: `Locale.current` is the user's
+/// region from System Settings and outranks a `LANG` that a terminal happened
+/// to export, so it comes straight after the pinned language.
 public func interfaceLocale() -> Locale {
-    guard let code = currentLanguage else { return .current }
-    return Locale(identifier: code)
+    if let code = currentLanguage {
+        return Locale(identifier: code)
+    }
+    #if canImport(Darwin)
+    return .current
+    #else
+    if let session = sessionLocaleIdentifier(for: .time) {
+        return Locale(identifier: session)
+    }
+    // Normalised rather than passed through: `LANGUAGE=C` is the standard
+    // idiom for forcing English tool output, and `Locale(identifier: "C")` is
+    // not an error — it formats from CLDR's root data, which is worse than
+    // the honest `Locale.current` fallback below.
+    if let language = sessionLanguage?.split(separator: ":").first,
+       let normalized = normalizedLocaleName(String(language)) {
+        return Locale(identifier: normalized)
+    }
+    return .current
+    #endif
 }
 
 /// Language codes with a catalogue installed next to the running build.
