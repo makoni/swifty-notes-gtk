@@ -162,6 +162,93 @@ struct LanguageSwitchingTests {
         }
     }
 
+    // MARK: - Dates and the session locale
+
+    /// The `.system` case, which was the one that was wrong.
+    ///
+    /// `Locale.current` does not follow the environment on Linux — measured
+    /// on Swift 6.3.2 it is `en_001` whatever `LANG`, `LC_ALL` or `LC_TIME`
+    /// say — so a German or Japanese desktop got English dates unless its
+    /// user pinned a language by hand. Nothing asserted anything about this
+    /// path, which is why it went unnoticed while every other string was
+    /// being translated.
+    @Test("A system-language interface formats dates in the session's locale") @MainActor
+    func aSystemLanguageInterfaceFormatsDatesInTheSessionsLocale() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "de_DE.UTF-8", time: nil) {
+                #expect(interfaceLocale().identifier == "de_DE")
+            }
+            // The category's own variable wins: one language, another
+            // region's date format, which is a real configuration.
+            try withSessionLocale(lang: "de_DE.UTF-8", time: "en_GB.UTF-8") {
+                #expect(interfaceLocale().identifier == "en_GB")
+            }
+        }
+    }
+
+    /// A pinned language still decides, because the interface it labels is
+    /// the thing the date sits beside.
+    @Test("A pinned language outranks the session locale for dates") @MainActor
+    func aPinnedLanguageOutranksTheSessionLocaleForDates() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "de_DE.UTF-8", time: nil) {
+                try #require(
+                    applyLanguage(.russian),
+                    "no usable locale on this host — gettext ignores LANGUAGE under C",
+                )
+                #expect(interfaceLocale().identifier == "ru")
+            }
+        }
+    }
+
+    /// A session that asked for nothing usable leaves `Locale.current`, which
+    /// is the honest fallback rather than a guess.
+    @Test("A C-locale session falls back to Locale.current for dates") @MainActor
+    func aCLocaleSessionFallsBackToLocaleCurrentForDates() throws {
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "C.UTF-8", time: nil) {
+                #expect(interfaceLocale().identifier == Locale.current.identifier)
+            }
+        }
+    }
+
+    /// What the user sees: the sidebar's own formatter, not just the locale.
+    @Test("The notes sidebar writes its dates in the session's language") @MainActor
+    func theNotesSidebarWritesItsDatesInTheSessionsLanguage() throws {
+        let moment = Date(timeIntervalSince1970: 1_756_000_000)
+        try withRestoredLanguage {
+            try withSessionLocale(lang: "ru_RU.UTF-8", time: nil) {
+                let formatter = DateFormatter()
+                formatter.locale = interfaceLocale()
+                formatter.dateStyle = .medium
+                let rendered = formatter.string(from: moment)
+                #expect(
+                    rendered.contains("авг"),
+                    "a Russian session should see a Russian month name, got \(rendered.debugDescription)",
+                )
+            }
+        }
+    }
+
+    /// Sets the session's locale variables for the duration of `body`, and
+    /// re-captures so the library reads them as the session's own.
+    @MainActor
+    private func withSessionLocale(lang: String?, time: String?, _ body: () throws -> Void) throws {
+        let names = ["LC_ALL", "LC_TIME", "LANG"]
+        let previous = names.map { ($0, ProcessInfo.processInfo.environment[$0]) }
+        defer {
+            for (name, value) in previous {
+                if let value { setenv(name, value, 1) } else { unsetenv(name) }
+            }
+            recaptureSessionLanguage()
+        }
+        unsetenv("LC_ALL")
+        if let lang { setenv("LANG", lang, 1) } else { unsetenv("LANG") }
+        if let time { setenv("LC_TIME", time, 1) } else { unsetenv("LC_TIME") }
+        recaptureSessionLanguage()
+        try body()
+    }
+
     // MARK: - Live retranslation
 
     /// The point of the feature: an open window follows the picker instead of

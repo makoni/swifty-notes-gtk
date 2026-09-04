@@ -141,13 +141,30 @@ public func interfaceIsRightToLeft(for language: AppLanguage) -> Bool {
 /// Foundation locale matching the interface language, for anything Foundation
 /// formats rather than gettext: dates, times, numbers.
 ///
-/// `Locale.current` follows `LC_ALL` / `LANG`, not `LANGUAGE`, so a pinned
-/// interface language would otherwise print Russian labels beside an English
-/// date — which is exactly what the Russian build did before the picker had
-/// this.
+/// Three sources, in order, because none of them alone is right:
+///
+/// 1. The pinned language. Foundation ignores `LANGUAGE` entirely, so without
+///    this a Russian interface printed English dates — which is what the
+///    Russian build did before the picker had this.
+/// 2. What the session asked for, when the language is `.system`.
+///    `Locale.current` cannot answer that on Linux: measured on Swift 6.3.2
+///    it is `en_001` whatever `LANG`, `LC_ALL` or `LC_TIME` say, while an
+///    explicit `Locale(identifier:)` formats correctly. So a German desktop
+///    got English dates unless its user pinned a language by hand — the
+///    default configuration being the one that was wrong.
+/// 3. `Locale.current` last, for a session that asked for nothing usable —
+///    the C locale, or nothing at all.
+///
+/// `.time` rather than `.messages`: dates are what this formats, and a
+/// session may well ask for one language and another region's date format.
 public func interfaceLocale() -> Locale {
-    guard let code = currentLanguage else { return .current }
-    return Locale(identifier: code)
+    if let code = currentLanguage {
+        return Locale(identifier: code)
+    }
+    if let session = sessionLocaleIdentifier(for: .time) {
+        return Locale(identifier: session)
+    }
+    return .current
 }
 
 /// Language codes with a catalogue installed next to the running build.
