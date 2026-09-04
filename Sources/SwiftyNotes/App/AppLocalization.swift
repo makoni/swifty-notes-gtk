@@ -141,30 +141,40 @@ public func interfaceIsRightToLeft(for language: AppLanguage) -> Bool {
 /// Foundation locale matching the interface language, for anything Foundation
 /// formats rather than gettext: dates, times, numbers.
 ///
-/// Three sources, in order, because none of them alone is right:
+/// Four sources, because none of them alone is right:
 ///
-/// 1. The pinned language. Foundation ignores `LANGUAGE` entirely, so without
-///    this a Russian interface printed English dates — which is what the
-///    Russian build did before the picker had this.
-/// 2. What the session asked for, when the language is `.system`.
-///    `Locale.current` cannot answer that on Linux: measured on Swift 6.3.2
-///    it is `en_001` whatever `LANG`, `LC_ALL` or `LC_TIME` say, while an
-///    explicit `Locale(identifier:)` formats correctly. So a German desktop
-///    got English dates unless its user pinned a language by hand — the
-///    default configuration being the one that was wrong.
-/// 3. `Locale.current` last, for a session that asked for nothing usable —
-///    the C locale, or nothing at all.
+/// 1. **The pinned language.** Foundation ignores `LANGUAGE`, so without this
+///    a Russian interface printed English dates.
+/// 2. **The session's `LANGUAGE`.** Skipping it leaves the same bug on the
+///    app's main distribution channel: the Flatpak sandbox runs with
+///    `LANG=C.UTF-8`, so a host session that asks for Russian through
+///    `LANGUAGE=ru` gets Russian labels — gettext honours it once the C-locale
+///    block lifts — beside dates from step 4.
+/// 3. **The session's locale**, per POSIX (`LC_ALL`, then `LC_TIME`, then
+///    `LANG`). `.time` rather than `.messages` because dates are what this
+///    formats, and `LANG=de_DE` with `LC_TIME=en_GB` is a real configuration.
+/// 4. **`Locale.current`** last on Linux, where it answers `en_001` whatever
+///    the environment says — measured on Swift 6.3.2 — and so cannot stand in
+///    for the session's locale.
 ///
-/// `.time` rather than `.messages`: dates are what this formats, and a
-/// session may well ask for one language and another region's date format.
+/// On Darwin the order is different on purpose: `Locale.current` is the user's
+/// region from System Settings and outranks a `LANG` that a terminal happened
+/// to export, so it comes straight after the pinned language.
 public func interfaceLocale() -> Locale {
     if let code = currentLanguage {
         return Locale(identifier: code)
+    }
+    #if canImport(Darwin)
+    return .current
+    #else
+    if let language = sessionLanguage?.split(separator: ":").first, !language.isEmpty {
+        return Locale(identifier: String(language))
     }
     if let session = sessionLocaleIdentifier(for: .time) {
         return Locale(identifier: session)
     }
     return .current
+    #endif
 }
 
 /// Language codes with a catalogue installed next to the running build.

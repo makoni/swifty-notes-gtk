@@ -483,10 +483,12 @@ struct NotesSidebar {
 
     static func displayDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        // Foundation reads Locale.current from LC_ALL / LANG, while the
-        // interface language comes from LANGUAGE — so without this a Russian
+        // Foundation ignores LANGUAGE, and on Linux `Locale.current` ignores
+        // the environment as well — it answers `en_001` whatever LANG says.
+        // `interfaceLocale()` is what bridges both: without it a Russian
         // interface printed "31 Aug 2026 at 9:57 PM" next to its Russian
-        // labels.
+        // labels, and a German session got English dates whatever it asked
+        // for.
         formatter.locale = interfaceLocale()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
