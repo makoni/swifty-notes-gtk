@@ -495,7 +495,10 @@ struct LocalizationCatalogTests {
 
 /// Shared parsing helpers. Kept separate from the test bodies so the intent of
 /// each assertion stays readable.
-private enum LocalizationCatalogFixture {
+/// Shared vocabulary for the localization guards: the catalogue and
+/// template on disk, the extractor's view of `Sources/`, and the process
+/// plumbing both suites need.
+enum LocalizationCatalogFixture {
     /// Catalogue entries that legitimately have no matching `.localized` call:
     /// the gettext header, plus anything a future maintainer deliberately keeps.
     static let permittedOrphans: Set<String> = [""]
@@ -573,6 +576,10 @@ private enum LocalizationCatalogFixture {
         }
 
         let entries: [Entry]
+
+        /// Character offsets, per `file:line`, of the opening quotes a
+        /// localizing call consumes.
+        let consumedLiterals: [String: [Int]]
     }
 
     private actor SourceScanner {
@@ -671,12 +678,22 @@ private enum LocalizationCatalogFixture {
 
     /// Every entry the source asks for, with its call sites.
     static func sourceEntries() async throws -> [EmitResult.Entry] {
+        try await scanned().entries
+    }
+
+    /// Where a localizing call already localizes the literal in it, keyed by
+    /// `file:line` and by the character offset of the literal's opening quote.
+    static func consumedLiteralOffsets() async throws -> [String: Set<Int>] {
+        try await scanned().consumedLiterals.mapValues(Set.init)
+    }
+
+    private static func scanned() async throws -> EmitResult {
         let result = try await scanner.run()
         let diagnostics = await scanner.getDiagnostics()
         if !diagnostics.isEmpty {
             throw FixtureError.diagnostics(diagnostics)
         }
-        return result.entries
+        return result
     }
 
     /// Every key the source can look a string up by — bare msgids, both
@@ -824,19 +841,19 @@ private enum LocalizationCatalogFixture {
     /// Literals in `Sources/` that appear verbatim in the catalogue yet carry
     /// no `.localized`.
     ///
-    /// Literals handed to a call that localizes them — `nlocalized`,
-    /// `localizedWithContext`, `nlocalizedWithContext` — are skipped, since
-    /// the suffix would be wrong there. Which literals those are comes from
-    /// the extractor's own reported call sites rather than from a scanner
-    /// here: the version this replaced walked back over the line counting
-    /// parentheses, which it also counted inside string literals, so a msgid
-    /// holding an unbalanced `(` (`"Note (draft"`) turned a correct call site
-    /// into a reported offender.
+    /// A literal handed to a call that localizes it — `nlocalized`,
+    /// `localizedWithContext`, `nlocalizedWithContext` — is skipped, since the
+    /// suffix would be wrong there. Which ones those are comes from the
+    /// extractor, by position: it reports the offset of every opening quote
+    /// its calls consume.
     ///
-    /// The trade-off is per line rather than per literal: a bare literal that
-    /// happens to equal an argument of a localizing call on the same line is
-    /// skipped too. That is narrower than the line-level skip it replaced,
-    /// which ignored every literal on any line mentioning `nlocalized(`.
+    /// Position rather than text, because both earlier attempts lost real
+    /// offenders. Skipping any line that mentioned a localizing call hid every
+    /// literal on it; skipping any literal whose *text* the call consumed hid
+    /// a bare second copy of the same string on the same line. And walking
+    /// back over the line counting parentheses — the attempt before that —
+    /// counted the ones inside string literals too, so a msgid holding an
+    /// unbalanced `(` turned a correct call site into a reported offender.
     static func unlocalizedCatalogueLiterals(
         ignoring ignored: Set<String> = [],
     ) async throws -> [String] {
@@ -845,18 +862,7 @@ private enum LocalizationCatalogFixture {
         // `context\u{4}msgid` would quietly stop noticing an unlocalized copy
         // of it.
         let catalogue = try catalogueBareMessageIDs(at: russianCatalogueURL).subtracting(ignored)
-        var consumed: [String: Set<String>] = [:]
-        for entry in try await sourceEntries() where entry.context != nil || entry.plural != nil {
-            for site in entry.sites {
-                consumed[site, default: []].insert(entry.singular)
-                if let context = entry.context {
-                    consumed[site, default: []].insert(context)
-                }
-                if let plural = entry.plural {
-                    consumed[site, default: []].insert(plural)
-                }
-            }
-        }
+        let consumed = try await consumedLiteralOffsets()
 
         var offenders: [String] = []
         let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
@@ -876,9 +882,10 @@ private enum LocalizationCatalogFixture {
                     guard let literal = unescape(hit.literal),
                           !literal.isEmpty,
                           catalogue.contains(literal),
-                          !permitted.contains(literal),
-                          !localized.contains(literal)
+                          !permitted.contains(literal)
                     else { continue }
+                    let column = lineText.distance(from: lineText.startIndex, to: hit.start)
+                    guard !localized.contains(column) else { continue }
                     let rest = lineText[hit.end...].drop(while: { $0 == " " })
                     guard !rest.hasPrefix(".localized") else { continue }
                     offenders.append("\(relative):\(offset + 1): \(literal.debugDescription)")

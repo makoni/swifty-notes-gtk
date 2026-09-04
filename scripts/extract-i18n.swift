@@ -226,9 +226,13 @@ private func callRanges(of call: String, in line: String) -> [Range<String.Index
 ///
 /// Stops at the call's own closing parenthesis, keeps nested calls and
 /// collections whole, and treats commas inside string literals as text.
-private func argumentList(startingAfter open: String.Index, in line: String) -> [String] {
-    var arguments: [String] = []
+private func argumentList(
+    startingAfter open: String.Index,
+    in line: String
+) -> [(text: String, start: String.Index)] {
+    var arguments: [(text: String, start: String.Index)] = []
     var current = ""
+    var currentStart = open
     var depth = 0
     var index = open
     var insideLiteral = false
@@ -259,14 +263,15 @@ private func argumentList(startingAfter open: String.Index, in line: String) -> 
             current.append(character)
         case ")", "]", "}":
             if depth == 0, character == ")" {
-                arguments.append(current)
+                arguments.append((current, currentStart))
                 return arguments
             }
             depth -= 1
             current.append(character)
         case "," where depth == 0:
-            arguments.append(current)
+            arguments.append((current, currentStart))
             current = ""
+            currentStart = line.index(after: index)
         default:
             current.append(character)
         }
@@ -274,28 +279,43 @@ private func argumentList(startingAfter open: String.Index, in line: String) -> 
     }
     // The call continues on the next line; hand back what there is so the
     // caller reports "not enough arguments" rather than guessing.
-    arguments.append(current)
+    arguments.append((current, currentStart))
     return arguments
 }
 
-/// The raw literal an argument consists of, or `nil` when the argument is
-/// anything else — a variable, an expression, two literals concatenated.
-private func soleLiteral(in argument: String) -> String? {
+/// The raw literal an argument consists of and how far into the argument its
+/// opening quote sits, or `nil` when the argument is anything else — a
+/// variable, an expression, two literals concatenated.
+private func soleLiteral(in argument: String) -> (literal: String, offset: Int)? {
+    let leadingSpaces = argument.prefix { $0 == " " || $0 == "\t" }.count
     let trimmed = argument.trimmingCharacters(in: .whitespaces)
+
     // A labelled argument (`label: "text"`) still counts, so long as what
-    // follows the label is nothing but the literal.
-    let value: String
-    if let colon = trimmed.firstIndex(of: ":"), !trimmed.hasPrefix("\"") {
-        value = String(trimmed[trimmed.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
-    } else {
-        value = trimmed
+    // follows the label is nothing but the literal. The label has to be a
+    // plain identifier: taking everything before the first colon instead
+    // swallows the condition of a ternary, so
+    // `localizedWithContext(flag ? "a" : "b", "X")` would file only "b" and
+    // report nothing — the same silent-truncation defect this parser exists
+    // to remove.
+    var value = trimmed
+    var offset = leadingSpaces
+    if !trimmed.hasPrefix("\""), let colon = trimmed.firstIndex(of: ":") {
+        let label = trimmed[trimmed.startIndex ..< colon]
+        let isIdentifier = !label.isEmpty
+            && label.allSatisfy { $0.isLetter || $0.isNumber || $0 == "_" }
+        guard isIdentifier else { return nil }
+        let afterLabel = trimmed[trimmed.index(after: colon)...]
+        let padding = afterLabel.prefix { $0 == " " || $0 == "\t" }.count
+        offset += trimmed.distance(from: trimmed.startIndex, to: colon) + 1 + padding
+        value = String(afterLabel).trimmingCharacters(in: .whitespaces)
     }
+
     guard value.hasPrefix("\""), value.hasSuffix("\""), value.count >= 2 else { return nil }
     // One literal has to account for the whole argument, which rejects
     // `"a" + "b"` and `"a" "b"` — neither is a msgid.
     let literals = stringLiterals(in: value)
     guard literals.count == 1, literals[0].end == value.endIndex else { return nil }
-    return literals[0].literal
+    return (literals[0].literal, offset)
 }
 
 /// The entries a line's context and plural calls ask for.
@@ -303,12 +323,20 @@ private func soleLiteral(in argument: String) -> String? {
 /// A call this cannot read is reported rather than skipped. Skipping is what
 /// makes a missing translation invisible: the string keeps working, in
 /// English, and nothing in the pipeline says why.
-private func callEntries(in line: String, file: String) -> (entries: Set<ScannedEntry>, diagnostics: [String]) {
+private func callEntries(
+    in line: String,
+    file: String
+) -> (entries: Set<ScannedEntry>, consumed: Set<Int>, diagnostics: [String]) {
     var entries: Set<ScannedEntry> = []
+    // Character offsets of the opening quotes this line's localizing calls
+    // consume. A guard elsewhere needs to tell a literal that is already
+    // localized by the call around it from one that was left bare, and only
+    // the position distinguishes them: the same text can be both on one line.
+    var consumed: Set<Int> = []
     var diagnostics: [String] = []
     // Almost no line calls any of these; skip the Unicode-aware searches.
     guard line.contains("localized(") || line.contains("WithContext(") else {
-        return (entries, diagnostics)
+        return (entries, consumed, diagnostics)
     }
     let context = line.trimmingCharacters(in: .whitespaces)
 
@@ -324,16 +352,21 @@ private func callEntries(in line: String, file: String) -> (entries: Set<Scanned
                 continue
             }
             var values: [String] = []
+            var offsets: [Int] = []
             var failed = false
             for position in 0 ..< needed {
-                guard let raw = soleLiteral(in: arguments[position]) else {
+                let argument = arguments[position]
+                guard let (raw, offsetInArgument) = soleLiteral(in: argument.text) else {
                     diagnostics.append(
                         "\(file): \(call.name) argument \(position + 1) must be a string literal, "
-                            + "not `\(arguments[position].trimmingCharacters(in: .whitespaces))`: `\(context)`"
+                            + "not `\(argument.text.trimmingCharacters(in: .whitespaces))`: `\(context)`"
                     )
                     failed = true
                     break
                 }
+                offsets.append(
+                    line.distance(from: line.startIndex, to: argument.start) + offsetInArgument
+                )
                 guard !raw.contains("\\(") else {
                     diagnostics.append(
                         "\(file): \(call.name) argument \(position + 1) is interpolated, so it can "
@@ -351,6 +384,7 @@ private func callEntries(in line: String, file: String) -> (entries: Set<Scanned
                 values.append(value)
             }
             guard !failed else { continue }
+            consumed.formUnion(offsets)
             var cursor = 0
             let entryContext = call.hasContext ? values[cursor] : nil
             if call.hasContext { cursor += 1 }
@@ -360,7 +394,7 @@ private func callEntries(in line: String, file: String) -> (entries: Set<Scanned
             entries.insert(ScannedEntry(context: entryContext, singular: singular, plural: plural))
         }
     }
-    return (entries, diagnostics)
+    return (entries, consumed, diagnostics)
 }
 
 // MARK: - Source scanning
@@ -387,13 +421,18 @@ private let packageRoot = URL(fileURLWithPath: #file, isDirectory: true)
 /// Keyed rather than a plain set because the sites are what let a test report
 /// *where* a bad call site is without scanning the tree a second time — a
 /// second scanner is how the keyword list drifted out of step before.
-private func scanSources() throws -> (entries: [ScannedEntry: Set<String>], diagnostics: [String]) {
+private func scanSources() throws -> (
+    entries: [ScannedEntry: Set<String>],
+    consumed: [String: Set<Int>],
+    diagnostics: [String]
+) {
     var entries: [ScannedEntry: Set<String>] = [:]
+    var consumed: [String: Set<Int>] = [:]
     var diagnostics: [String] = []
 
     let root = sourceRoot(packageRoot: packageRoot)
     guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-        return (entries, diagnostics)
+        return (entries, consumed, diagnostics)
     }
 
     for case let url as URL in walker where url.pathExtension == "swift" {
@@ -435,22 +474,20 @@ private func scanSources() throws -> (entries: [ScannedEntry: Set<String>], diag
             }
             diagnostics.append(contentsOf: localDiagnostics)
 
-            let (called, callDiagnostics) = callEntries(in: lineStr, file: relative)
+            let (called, callConsumed, callDiagnostics) = callEntries(in: lineStr, file: relative)
             for entry in called {
                 entries[entry, default: []].insert(site)
+            }
+            if !callConsumed.isEmpty {
+                consumed[site, default: []].formUnion(callConsumed)
             }
             diagnostics.append(contentsOf: callDiagnostics)
         }
     }
 
-    return (entries, diagnostics)
+    return (entries, consumed, diagnostics)
 }
 
-/// Drops the singular-only entries that a plural entry already covers.
-///
-/// A string reached through both `"X".localized` and `nlocalized("X", "Xs")`
-/// is one catalogue entry, not two, and gettext refuses a file that defines
-/// the same key twice — so this is what keeps the template compilable.
 /// Orders `file:line` sites by file, then numerically by line.
 private func siteIsBefore(_ lhs: String, _ rhs: String) -> Bool {
     func split(_ site: String) -> (String, Int) {
@@ -462,18 +499,28 @@ private func siteIsBefore(_ lhs: String, _ rhs: String) -> Bool {
     return split(lhs) < split(rhs)
 }
 
+/// Drops the singular-only entries that a plural entry already covers.
+///
+/// A string reached through both `"X".localized` and `nlocalized("X", "Xs")`
+/// is one catalogue entry, not two, and gettext refuses a file that defines
+/// the same key twice — so this is what keeps the template compilable.
+///
+/// Only the *singular* absorbs its bare twin. A bare lookup of the plural
+/// form is a different key that a plural entry does not answer: measured
+/// against glibc, `dgettext(domain, "%d notes")` beside an entry declaring
+/// `msgid "%d note" / msgid_plural "%d notes"` hands back the msgid
+/// untranslated. Dropping it — which is what the version before this did —
+/// deletes a real key from the template, and the string then ships English
+/// with nothing anywhere to say why.
 private func deduplicated(_ entries: [ScannedEntry: Set<String>]) -> [(entry: ScannedEntry, sites: [String])] {
-    var pluralKeys: Set<EntryKey> = []
+    var pluralSingulars: Set<EntryKey> = []
     for entry in entries.keys where entry.plural != nil {
-        pluralKeys.insert(EntryKey(context: entry.context, msgid: entry.singular))
-        if let plural = entry.plural {
-            pluralKeys.insert(EntryKey(context: entry.context, msgid: plural))
-        }
+        pluralSingulars.insert(EntryKey(context: entry.context, msgid: entry.singular))
     }
     return entries
         .filter { entry, _ in
             entry.plural != nil
-                || !pluralKeys.contains(EntryKey(context: entry.context, msgid: entry.singular))
+                || !pluralSingulars.contains(EntryKey(context: entry.context, msgid: entry.singular))
         }
         // Sorted by line number, not lexically, so `:87` does not follow
         // `:509` in a failure message.
@@ -481,22 +528,66 @@ private func deduplicated(_ entries: [ScannedEntry: Set<String>]) -> [(entry: Sc
         .sorted { $0.entry < $1.entry }
 }
 
+/// Reports a msgid asked for with two different plural forms.
+///
+/// gettext keys a plural entry on its singular alone, so two such calls
+/// define the same key twice and `msgfmt` refuses the file — the po/ pipeline
+/// stops dead. Picking a winner would bury a real source bug: two call sites
+/// disagree about what the message says, and only their author can say which
+/// is right.
+private func conflictingPluralForms(_ entries: [ScannedEntry: Set<String>]) -> [String] {
+    var formsByKey: [EntryKey: [String: [String]]] = [:]
+    for (entry, sites) in entries {
+        guard let plural = entry.plural else { continue }
+        let key = EntryKey(context: entry.context, msgid: entry.singular)
+        formsByKey[key, default: [:]][plural, default: []].append(contentsOf: sites)
+    }
+
+    var diagnostics: [String] = []
+    for (key, forms) in formsByKey where forms.count > 1 {
+        let described = forms
+            .sorted { $0.key < $1.key }
+            .map { form, sites in
+                "  \(form.debugDescription) at \(sites.sorted(by: siteIsBefore).joined(separator: ", "))"
+            }
+            .joined(separator: "\n")
+        let name = key.context.map { "\($0)\u{4}\(key.msgid)" } ?? key.msgid
+        diagnostics.append(
+            "\(name.debugDescription) is asked for with \(forms.count) different plural forms; "
+                + "gettext keys a plural entry on its singular alone, so this cannot be "
+                + "compiled:\n\(described)"
+        )
+    }
+    return diagnostics.sorted()
+}
+
 // MARK: - PO escaping
 
+/// Escapes a msgid for a PO file.
+///
+/// Iterates unicode scalars rather than characters on purpose: Swift treats
+/// CR+LF as a single `Character`, so a switch over characters matches
+/// neither half of it and writes a raw line break inside the quoted string
+/// — which msgfmt refuses outright ("end-of-line within string"). A lone
+/// CR is the quieter version of the same bug: it compiles, and then an
+/// editor or msgmerge normalises the line ending and rewrites the msgid out
+/// from under the lookup.
 private func escapePO(_ string: String) -> String {
     var output = ""
-    for character in string {
-        switch character {
+    for scalar in string.unicodeScalars {
+        switch scalar {
         case "\\":
             output += "\\\\"
         case "\"":
             output += "\\\""
         case "\n":
             output += "\\n"
+        case "\r":
+            output += "\\r"
         case "\t":
             output += "\\t"
         default:
-            output.append(character)
+            output.unicodeScalars.append(scalar)
         }
     }
     return output
@@ -522,12 +613,24 @@ private struct EmitMsgidsResult: Codable {
     }
 
     let entries: [Entry]
+
+    /// Character offsets, per `file:line`, of the opening quotes that a
+    /// localizing call consumes as one of its arguments.
+    ///
+    /// A literal is legitimately bare when the call around it localizes it,
+    /// and on a line that both localizes one copy of a string and leaves
+    /// another bare, position is the only thing that tells them apart.
+    let consumedLiterals: [String: [Int]]
 }
 
 // MARK: - Main
 
 do {
-    let (entries, diagnostics) = try scanSources()
+    let (entries, consumed, scanDiagnostics) = try scanSources()
+    // Reported alongside the scan's own: two call sites disagreeing about a
+    // plural form is a source bug, not a scanning failure, but it stops the
+    // catalogue from compiling all the same.
+    let diagnostics = scanDiagnostics + conflictingPluralForms(entries)
 
     if CommandLine.arguments.contains("--emit-msgids") {
         let result = EmitMsgidsResult(
@@ -538,7 +641,8 @@ do {
                     plural: $0.entry.plural,
                     sites: $0.sites
                 )
-            }
+            },
+            consumedLiterals: consumed.mapValues { $0.sorted() }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]

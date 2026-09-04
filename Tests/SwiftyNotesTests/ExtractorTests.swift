@@ -38,14 +38,11 @@ struct ExtractorTests {
 
     @Test("A context plural emits msgctxt with both forms, in gettext's order")
     func aContextPluralEmitsMsgctxtWithBothFormsInGettextsOrder() throws {
-        let pot = try String(
-            contentsOf: try template(
-                """
-                let d = nlocalizedWithContext("search", "%d match", "%d matches", count: n)
-                """,
-            ),
-            encoding: .utf8,
-        )
+        let pot = try template(
+            """
+            let d = nlocalizedWithContext("search", "%d match", "%d matches", count: n)
+            """,
+        ) { try String(contentsOf: $0, encoding: .utf8) }
         let block = try #require(
             pot.components(separatedBy: "\n\n").first { $0.contains("msgctxt \"search\"") },
             "no msgctxt block in the template",
@@ -113,19 +110,50 @@ struct ExtractorTests {
         // Plain `msgfmt`, not `--check`: a duplicate definition is fatal
         // either way, while `--check` also checks the header and a template
         // legitimately carries xgettext's `nplurals=INTEGER` placeholder.
-        let potURL = try template(source)
-        let compile = try run(tool: "msgfmt", arguments: ["-o", "/dev/null", potURL.path])
-        #expect(compile.status == 0, "msgfmt rejected the template:\n\(compile.stderr)")
+        try template(source) { url in
+            let compile = try run(tool: "msgfmt", arguments: ["-o", "/dev/null", url.path])
+            #expect(compile.status == 0, "msgfmt rejected the template:\n\(compile.stderr)")
+        }
     }
 
-    @Test("A plural form is not also emitted as an entry of its own")
-    func aPluralFormIsNotAlsoEmittedAsAnEntryOfItsOwn() throws {
-        // "%d notes" reached bare *and* as the plural half: one entry, or the
-        // template defines the same msgid twice.
+    @Test("A plural form asked for bare keeps an entry of its own")
+    func aPluralFormAskedForBareKeepsAnEntryOfItsOwn() throws {
+        // Measured against glibc rather than assumed: with a catalogue
+        // declaring `msgid "%d note" / msgid_plural "%d notes"`,
+        // `dgettext(domain, "%d notes")` returns the msgid untranslated —
+        // only ngettext reaches msgstr[1]. So a bare lookup of the plural
+        // form is a separate key, and folding it into the plural entry (which
+        // is what this did at first) deletes it from the template and ships
+        // the string in English.
         let entries = try extract(
             """
             let a = nlocalized("%d note", "%d notes", count: n)
             let b = "%d notes".localized
+            """,
+        )
+        #expect(entries.contains(Entry(context: nil, singular: "%d note", plural: "%d notes")))
+        #expect(entries.contains(Entry(context: nil, singular: "%d notes", plural: nil)))
+
+        // Both keys, and gettext accepts them side by side.
+        try template(
+            """
+            let a = nlocalized("%d note", "%d notes", count: n)
+            let b = "%d notes".localized
+            """,
+        ) { url in
+            let compile = try run(tool: "msgfmt", arguments: ["-o", "/dev/null", url.path])
+            #expect(compile.status == 0, "msgfmt rejected the template:\n\(compile.stderr)")
+        }
+    }
+
+    @Test("A singular reached bare and as a plural stays one entry")
+    func aSingularReachedBareAndAsAPluralStaysOneEntry() throws {
+        // The singular *is* the plural entry's key, so these are one entry —
+        // emitting both defines the same msgid twice and msgfmt refuses it.
+        let entries = try extract(
+            """
+            let a = nlocalized("%d note", "%d notes", count: n)
+            let b = "%d note".localized
             """,
         )
         #expect(entries == [Entry(context: nil, singular: "%d note", plural: "%d notes")])
@@ -199,22 +227,135 @@ struct ExtractorTests {
         #expect(result.stderr.contains("pluralForm"))
     }
 
+    @Test("A ternary argument is refused, not half-read")
+    func aTernaryArgumentIsRefusedNotHalfRead() throws {
+        // A label is stripped by looking for a colon, and a ternary has one
+        // too: taking everything before the first colon leaves only the
+        // else-branch, so `flag ? "view mode" : "settings group"` filed
+        // `settings group` and said nothing — one of the two keys then ships
+        // English with every tool reporting success.
+        let result = try extractRaw(
+            """
+            let a = localizedWithContext(flag ? "view mode" : "settings group", "Preview")
+            """,
+        )
+        #expect(result.status != 0, "a ternary argument has to fail the extraction")
+        #expect(result.stderr.contains("argument 1 must be a string literal"))
+        #expect(
+            !result.stdout.contains("settings group"),
+            "half the ternary must not become a context: \(result.stdout)",
+        )
+    }
+
+    @Test("A labelled argument is still read as a literal")
+    func aLabelledArgumentIsStillReadAsALiteral() throws {
+        // The label check has to stay permissive enough for the real thing.
+        let entries = try extract(
+            """
+            let a = nlocalized("%d note", "%d notes", count: n)
+            let b = view.set(text: localizedWithContext("ctx", "Labelled"))
+            """,
+        )
+        #expect(entries.contains(Entry(context: "ctx", singular: "Labelled", plural: nil)))
+    }
+
+    @Test("Carriage returns are escaped rather than written raw")
+    func carriageReturnsAreEscapedRatherThanWrittenRaw() throws {
+        // Swift reads CR+LF as one Character, so a switch over characters
+        // matches neither half and writes a raw line break inside the quoted
+        // msgid — msgfmt then reports "end-of-line within string". A lone CR
+        // is the quiet version: it compiles, and the next tool to normalise
+        // line endings rewrites the msgid out from under the lookup.
+        let source = #"let a = "one\rtwo".localized"# + "\n"
+            + #"let b = "three\r\nfour".localized"#
+        try template(source) { url in
+            let pot = try String(contentsOf: url, encoding: .utf8)
+            #expect(pot.contains(#"msgid "one\rtwo""#), "got:\n\(pot)")
+            #expect(pot.contains(#"msgid "three\r\nfour""#), "got:\n\(pot)")
+            #expect(
+                !pot.unicodeScalars.contains("\r"),
+                "a raw carriage return reached the template: \(pot.debugDescription)",
+            )
+            let compile = try run(tool: "msgfmt", arguments: ["-o", "/dev/null", url.path])
+            #expect(compile.status == 0, "msgfmt rejected the template:\n\(compile.stderr)")
+        }
+    }
+
     // MARK: - Determinism
 
-    @Test("Two plurals sharing a context and singular keep a stable order")
-    func twoPluralsSharingAContextAndSingularKeepAStableOrder() throws {
-        // Sorting on a subset of the fields leaves these two incomparable, and
-        // Set iteration order is seeded per process — so the template churns
-        // between runs and every diff carries noise.
-        let source = """
-        let a = nlocalizedWithContext("search", "%d match", "%d matches", count: n)
-        let b = nlocalizedWithContext("search", "%d match", "%d hits", count: n)
-        """
-        let first = try template(source)
-        let firstBody = try body(of: first)
-        for _ in 0 ..< 4 {
-            #expect(try body(of: try template(source)) == firstBody)
+    @Test("Entries differing only in their plural form still have an order")
+    func entriesDifferingOnlyInTheirPluralFormStillHaveAnOrder() throws {
+        // Sorting on a subset of the fields leaves two such entries
+        // incomparable, and `Set` iteration order is seeded per process — so
+        // the template comes out in a different order on different runs and
+        // every diff carries noise. Asserting one exact expected order catches
+        // that; re-running and comparing would agree by chance one run in
+        // sixteen.
+        //
+        // The two entries share a context but differ in singular, because two
+        // plural forms for the *same* key are a source bug the extractor
+        // refuses outright.
+        try template(
+            """
+            let a = nlocalizedWithContext("search", "%d match", "%d matches", count: n)
+            let b = nlocalizedWithContext("search", "%d hit", "%d hits", count: n)
+            let c = localizedWithContext("search", "Search")
+            let d = "Bare".localized
+            """,
+        ) { url in
+            let entries = try entryBody(of: url)
+                .split(separator: "\n\n", omittingEmptySubsequences: true)
+                .dropFirst() // the header
+                .map(String.init)
+            #expect(
+                entries == [
+                    """
+                    msgid "Bare"
+                    msgstr ""
+                    """,
+                    """
+                    msgctxt "search"
+                    msgid "%d hit"
+                    msgid_plural "%d hits"
+                    msgstr[0] ""
+                    msgstr[1] ""
+                    """,
+                    """
+                    msgctxt "search"
+                    msgid "%d match"
+                    msgid_plural "%d matches"
+                    msgstr[0] ""
+                    msgstr[1] ""
+                    """,
+                    """
+                    msgctxt "search"
+                    msgid "Search"
+                    msgstr ""
+                    """,
+                ],
+                "got:\n\(entries.joined(separator: "\n--\n"))",
+            )
         }
+    }
+
+    @Test("One msgid asked for with two plural forms is refused")
+    func oneMsgidAskedForWithTwoPluralFormsIsRefused() throws {
+        // gettext keys a plural entry on its singular alone, so these two
+        // calls define the same key twice and msgfmt refuses the file —
+        // taking the whole po/ pipeline with it. Picking a winner would bury
+        // the real bug: the call sites disagree about what the message says.
+        let result = try extractRaw(
+            """
+            let a = nlocalized("%d file", "%d files", count: n)
+            let b = nlocalized("%d file", "%d docs", count: n)
+            """,
+        )
+        #expect(result.status != 0, "a key with two plural forms has to fail the extraction")
+        #expect(result.stderr.contains("two different plural forms")
+            || result.stderr.contains("2 different plural forms"))
+        // Both sites, so the disagreement can be settled.
+        #expect(result.stderr.contains("Fixture.swift:1"))
+        #expect(result.stderr.contains("Fixture.swift:2"))
     }
 
     @Test("The reported entry count includes every form")
@@ -239,10 +380,13 @@ struct ExtractorTests {
     func callSitesAreReportedByFileAndLineOrderedNumerically() throws {
         // The guards report *where* a bad call site is from these, and read
         // the line back off disk to check it — so both halves have to be right.
+        // Lines 2 and 11, not 1 and 11: `"…:11" < "…:2"` lexically, so the
+        // test fails if the numeric split is replaced by a plain string
+        // comparison. With line 1 the two orders agree and it proves nothing.
         let json = try extractJSON(
             """
-            let a = "Repeat".localized
-            let b = 0
+            let a = 0
+            let b = "Repeat".localized
             let c = 0
             let d = 0
             let e = 0
@@ -255,7 +399,7 @@ struct ExtractorTests {
             """,
         )
         let entry = try #require(json.first { $0.singular == "Repeat" })
-        #expect(entry.sites == ["Sources/Fixture.swift:1", "Sources/Fixture.swift:11"])
+        #expect(entry.sites == ["Sources/Fixture.swift:2", "Sources/Fixture.swift:11"])
     }
 
     // MARK: - Harness
@@ -281,18 +425,12 @@ struct ExtractorTests {
         let entries: [DecodedEntry]
     }
 
-    private struct RunResult {
-        let status: Int32
-        let stdout: String
-        let stderr: String
-    }
-
     /// Writes `source` as the only file of a throwaway source tree and runs
     /// the extractor over it.
     private func extractRaw(
         _ source: String,
         emitMsgids: Bool = true,
-    ) throws -> RunResult {
+    ) throws -> LocalizationCatalogFixture.ToolResult {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("swiftynotes-extractor-\(UUID().uuidString)", isDirectory: true)
         let sources = root.appendingPathComponent("Sources", isDirectory: true)
@@ -322,12 +460,17 @@ struct ExtractorTests {
         })
     }
 
-    /// The template the extractor writes for `source`, as a file on disk.
-    private func template(_ source: String) throws -> URL {
+    /// Runs `body` with the template the extractor writes for `source`.
+    ///
+    /// Scoped to a closure rather than returning the URL so the temporary
+    /// tree can be removed afterwards — returning it left one directory per
+    /// call behind under /tmp, and some tests call this five times.
+    private func template<T>(_ source: String, _ body: (URL) throws -> T) throws -> T {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("swiftynotes-template-\(UUID().uuidString)", isDirectory: true)
         let sources = root.appendingPathComponent("Sources", isDirectory: true)
         try FileManager.default.createDirectory(at: sources, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
         try source.write(
             to: sources.appendingPathComponent("Fixture.swift", isDirectory: false),
             atomically: true,
@@ -339,11 +482,11 @@ struct ExtractorTests {
             arguments: [scriptURL.path, "--sources", sources.path, "--output", output.path],
         )
         try #require(result.status == 0, "extraction failed:\n\(result.stderr)")
-        return output
+        return try body(output)
     }
 
     /// A template's entries, with the generated timestamp dropped.
-    private func body(of url: URL) throws -> String {
+    private func entryBody(of url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)
             .split(separator: "\n", omittingEmptySubsequences: false)
             .filter { !$0.hasPrefix("\"POT-Creation-Date:") }
@@ -358,29 +501,23 @@ struct ExtractorTests {
             .appendingPathComponent("scripts/extract-i18n.swift")
     }
 
-    private func run(tool: String, arguments: [String]) throws -> RunResult {
+    /// Runs `tool` from PATH.
+    ///
+    /// Delegates the process plumbing to ``LocalizationCatalogFixture/run(_:_:)``,
+    /// which drains stdout and stderr concurrently — reading one to EOF first
+    /// deadlocks as soon as the child fills the other's ~64KB pipe buffer, and
+    /// the extractor is the one tool here designed to write a diagnostic per
+    /// offending call site.
+    ///
+    /// PATH rather than the fixture's fixed directory list: `swift` lives
+    /// wherever the toolchain was installed.
+    private func run(tool: String, arguments: [String]) throws -> LocalizationCatalogFixture.ToolResult {
         let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
         let executable = path.split(separator: ":")
             .map { URL(fileURLWithPath: String($0)).appendingPathComponent(tool) }
             .first { FileManager.default.isExecutableFile(atPath: $0.path) }
         let resolved = try #require(executable, "\(tool) is not on PATH")
-
-        let process = Process()
-        process.executableURL = resolved
-        process.arguments = arguments
-        let out = Pipe()
-        let err = Pipe()
-        process.standardOutput = out
-        process.standardError = err
-        try process.run()
-        let outData = out.fileHandleForReading.readDataToEndOfFile()
-        let errData = err.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        return RunResult(
-            status: process.terminationStatus,
-            stdout: String(decoding: outData, as: UTF8.self),
-            stderr: String(decoding: errData, as: UTF8.self),
-        )
+        return try LocalizationCatalogFixture.run(resolved, arguments)
     }
 }
 #endif
