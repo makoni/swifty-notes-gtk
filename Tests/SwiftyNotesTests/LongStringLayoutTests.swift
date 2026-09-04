@@ -135,6 +135,7 @@ struct LongStringLayoutTests {
     private func withPseudoLocale(expansion: Int, _ body: (String) throws -> Void) throws {
         let previousLanguage = ProcessInfo.processInfo.environment["LANGUAGE"]
         let previousMessagesLocale = currentMessagesLocale()
+        let previousExportedLocale = ProcessInfo.processInfo.environment["LC_MESSAGES"]
         // Captured before the binding moves, and put back by hand: the
         // shared restore deliberately does not re-run the app's startup, and
         // this is the only suite that points the domain somewhere else.
@@ -149,6 +150,7 @@ struct LongStringLayoutTests {
             LocalizationTestSupport.restore(
                 language: previousLanguage,
                 messagesLocale: previousMessagesLocale,
+                exportedLocale: previousExportedLocale,
             )
         }
 

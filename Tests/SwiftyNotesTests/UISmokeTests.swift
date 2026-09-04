@@ -412,11 +412,71 @@ struct UISmokeTests {
             // whose own LANGUAGE is Russian would see this pass with the
             // preference doing nothing. The harness can override but not
             // unset, so the session is pinned to something else.
-            // LANGUAGE alone. Pinning LC_ALL as well would make the test
-            // depend on that locale being generated: glibc leaves the process
-            // in C when it is not, and the app would then run untranslated
-            // for a reason unrelated to the preference under test.
-            environment: ["LANGUAGE": "en"],
+            // `LANG=C.UTF-8` on purpose: it is the CI runner's default, the
+            // Flatpak sandbox's, and any container's — and it is the case the
+            // whole stack got wrong. `gtk_init` calls `setlocale(LC_ALL, "")`
+            // and reads that back, so a locale the app only *installed* while
+            // escaping the C locale is reverted; GLib then latches the process
+            // as untranslated on its own first lookup, because `C.UTF-8`
+            // neither equals `C` nor begins with `en_`, which is the only gap
+            // its heuristic has. The interface came up English with Russian
+            // dates — Foundation formats those without going through GLib.
+            //
+            // `LANGUAGE=en` because the app inherits the session's
+            // environment: on a developer whose own session asks for Russian,
+            // this would otherwise pass with the preference doing nothing.
+            // LC_ALL and LC_MESSAGES emptied rather than left inherited: the
+            // harness merges over the developer's environment, and either of
+            // them naming a real locale would defeat the scenario — the app
+            // would never be on a C locale and GLib would never be at risk of
+            // latching. glibc ignores an empty value in
+            // `setlocale(LC_ALL, "")`, so emptying is enough.
+            environment: [
+                "LANGUAGE": "en",
+                "LANG": "C.UTF-8",
+                "LC_ALL": "",
+                "LC_MESSAGES": "",
+            ],
+        )
+        expectUIScriptSucceeded(result)
+    }
+
+    /// The picker, on a session that never asked for a language.
+    ///
+    /// The harder half of the same bug, and the one with no coverage before:
+    /// with nothing stored, the app follows the session, and under `C.UTF-8`
+    /// GLib latched the process as untranslated on GTK's own first lookup —
+    /// so a language picked *afterwards* could never take effect, for the
+    /// rest of that session, while the picker reported success. swift-adwaita
+    /// escapes the C locale from `configureLocalization` now, whether or not
+    /// a language is pinned, which is what makes this reachable at all.
+    @Test("Picking a language works on a session that asked for none")
+    func pickingALanguageWorksOnASessionThatAskedForNone() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            # The switch is driven through the settings row's own signal, so
+            # this waits for the retranslation rather than the click.
+            def translated():
+                names = visible_names(frame)
+                return "Редактор Markdown" in names
+            wait_until(translated, "the interface retranslates after the language is picked", timeout=30)
+            names = visible_names(frame)
+            assert "Markdown Editor" not in names, f"English label survived: {names}"
+            """,
+            environment: [
+                // No stored preference, so the app follows the session — and
+                // the session is the C locale, emptied of anything the
+                // developer's own environment would have contributed.
+                "LANGUAGE": "",
+                "LANG": "C.UTF-8",
+                "LC_ALL": "",
+                "LC_MESSAGES": "",
+                "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_ON_LAUNCH": "1",
+                "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS": "400",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH": "ru",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "1200",
+            ],
         )
         expectUIScriptSucceeded(result)
     }
