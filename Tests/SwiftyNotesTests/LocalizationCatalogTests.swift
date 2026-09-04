@@ -968,11 +968,7 @@ private enum LocalizationCatalogFixture {
         let scanned = try await scannedLiteralOffsets()
 
         var offenders: [String] = []
-        let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
-        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-            return offenders
-        }
-        for case let url as URL in walker where url.pathExtension == "swift" {
+        for url in swiftSourceURLs() {
             let text = try String(contentsOf: url, encoding: .utf8)
             let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
             offenders += unlocalizedLiterals(
@@ -985,6 +981,24 @@ private enum LocalizationCatalogFixture {
             )
         }
         return offenders.sorted()
+    }
+
+    /// Every Swift file under `Sources/`.
+    ///
+    /// Collected here rather than walked in place because the only caller is
+    /// `async`, and `NSEnumerator.makeIterator()` is unavailable from an
+    /// asynchronous context on Darwin — which compiles on Linux and fails the
+    /// macOS build, where no test in this suite runs.
+    static func swiftSourceURLs() -> [URL] {
+        let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
+        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            return []
+        }
+        var urls: [URL] = []
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            urls.append(url)
+        }
+        return urls.sorted { $0.path < $1.path }
     }
 
     /// The decision, for one file, separated from walking the tree.
