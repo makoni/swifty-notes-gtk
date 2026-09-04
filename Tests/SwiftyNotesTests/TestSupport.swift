@@ -163,3 +163,123 @@ enum ToolRunner {
         )
     }
 }
+
+/// Process-global localization state, put back afterwards.
+///
+/// `LANGUAGE`, `LC_MESSAGES`, gettext's catalogue cache and the text-domain
+/// binding are all per-process, so a suite that moves any of them owes every
+/// later suite a restore. Shared rather than copied per suite: the two copies
+/// this replaced had already drifted apart in the order they restored things.
+@MainActor
+enum LocalizationTestSupport {
+    /// Runs `body` with the session's language and messages locale restored on
+    /// every exit path.
+    static func withRestoredLanguage(_ body: () throws -> Void) throws {
+        let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
+        // `setLanguage` installs a real locale to escape the C locale, which
+        // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
+        // leave that behind for every later test.
+        let previousMessagesLocale = currentMessagesLocale()
+        defer {
+            restore(language: previous, messagesLocale: previousMessagesLocale)
+        }
+        // The app's own startup, which a test process never ran: without it
+        // the domain is unbound and every lookup returns its msgid.
+        initializeLocalization()
+        applySessionLanguage(previous)
+        try body()
+    }
+
+    /// Puts the language and the messages locale back.
+    ///
+    /// Nothing here re-runs `initializeLocalization()`, and that is the point:
+    /// it ends in `applyLanguage(.system)`, which assigns GTK's default text
+    /// direction — making GTK walk its list of live toplevels, which in a
+    /// shared test process holds windows earlier suites left behind, so the
+    /// walk reads freed memory and takes the whole run down. Restoring
+    /// translations needs none of that.
+    ///
+    /// The order matters: the catalogue cache is invalidated last, so no later
+    /// lookup can be served a translation resolved under the locale this
+    /// suite was using.
+    static func restore(language: String?, messagesLocale: String?) {
+        applySessionLanguage(language)
+        if let messagesLocale {
+            #expect(
+                setMessagesLocale(messagesLocale),
+                "failed to restore LC_MESSAGES — later suites would sample a locale they did not set",
+            )
+        }
+        _ = setLanguage(nil)
+    }
+
+    /// Installs `language` as the session's own LANGUAGE, which is the
+    /// baseline ``AppLanguage.system`` returns to.
+    static func applySessionLanguage(_ language: String?) {
+        if let language {
+            setenv("LANGUAGE", language, 1)
+        } else {
+            unsetenv("LANGUAGE")
+        }
+        recaptureSessionLanguage()
+    }
+
+    /// Points the text domain at `directory`, or leaves it alone when there is
+    /// nothing to point it at.
+    ///
+    /// The pieces rather than `configureLocalization`, which also activates
+    /// the process locale from the environment — `setlocale(LC_ALL, "")` —
+    /// and would leave LC_NUMERIC and friends changed for every later suite.
+    static func bindCatalogue(at directory: String?) {
+        guard let directory else { return }
+        bindTextDomain(AppIdentity.identifier, to: directory)
+        bindTextDomainCodeset(AppIdentity.identifier, to: "UTF-8")
+        setDefaultTextDomain(AppIdentity.identifier)
+    }
+
+    /// Catches the settings a window hands back.
+    ///
+    /// A class rather than a captured `var`: the closure outlives the
+    /// statement that made it, so a local would have to be captured
+    /// mutably from an escaping closure.
+    @MainActor
+    final class SettingsRecorder {
+        var settings: AppSettings?
+    }
+
+    /// A settings window and the objects that have to outlive the assertion.
+    ///
+    /// The application and the parent window are handed back rather than kept
+    /// inside the builder: released, they take the settings window's content
+    /// with them, and a measurement then reads `nil` off a finalized object.
+    struct SettingsWindowRig {
+        let application: Application
+        let parentWindow: ApplicationWindow
+        let window: SettingsWindow
+    }
+
+    /// A settings window over a throwaway notes directory.
+    ///
+    /// The caller owns `directory`. Shared because two suites were building
+    /// the same eight arguments with the same temporary-directory dance.
+    static func makeSettingsWindow(
+        suffix: String,
+        directory: URL,
+        applySettingsChange: @escaping (AppSettings) -> AppSettings = { $0 },
+    ) throws -> SettingsWindowRig {
+        let application = Application(id: "me.spaceinbox.swiftynotes.tests.\(suffix)")
+        try application.register()
+        let parent = ApplicationWindow(application: application)
+        let window = SettingsWindow(
+            application: application,
+            parentWindow: parent,
+            currentSettings: AppSettings(customNotesDirectoryPath: directory.path()),
+            currentNotesDirectory: directory,
+            defaultNotesDirectory: directory,
+            applyNotesDirectoryChange: { $0 },
+            applySettingsChange: applySettingsChange,
+            openDirectory: { _ in },
+        )
+        return SettingsWindowRig(application: application, parentWindow: parent, window: window)
+    }
+}

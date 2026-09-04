@@ -384,24 +384,16 @@ struct LanguageSwitchingTests {
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
 
-        let app = Application(id: "me.spaceinbox.swiftynotes.tests.language-settings")
-        try app.register()
-        let parent = ApplicationWindow(application: app)
-
-        var applied: AppSettings?
-        let window = SettingsWindow(
-            application: app,
-            parentWindow: parent,
-            currentSettings: AppSettings(customNotesDirectoryPath: temp.path()),
-            currentNotesDirectory: temp,
-            defaultNotesDirectory: temp,
-            applyNotesDirectoryChange: { $0 },
+        let recorder = LocalizationTestSupport.SettingsRecorder()
+        let rig = try LocalizationTestSupport.makeSettingsWindow(
+            suffix: "language-settings",
+            directory: temp,
             applySettingsChange: { settings in
-                applied = settings
+                recorder.settings = settings
                 return settings
             },
-            openDirectory: { _ in },
         )
+        let window = rig.window
 
         try withRestoredLanguage {
             let english = window.debugLocalizedChrome
@@ -409,7 +401,7 @@ struct LanguageSwitchingTests {
             // Selecting Russian is what a user does; the row reports it back
             // through applySettingsChange, which in the app is MainWindow.
             window.debugSetLanguage(.russian)
-            #expect(applied?.appLanguage == .russian)
+            #expect(recorder.settings?.appLanguage == .russian)
 
             try #require(
                 applyLanguage(.russian),
@@ -643,36 +635,12 @@ struct LanguageSwitchingTests {
     /// English, and fail confusingly when they expect Russian.
     @MainActor
     private func withRestoredLanguage(_ body: () throws -> Void) throws {
-        let previous = ProcessInfo.processInfo.environment["LANGUAGE"]
-        // `setLanguage` installs a real locale to escape the C locale, which
-        // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
-        // leave that behind for every later test.
-        let previousMessagesLocale = Adwaita.currentMessagesLocale()
-        defer {
-            applySessionLanguage(previous)
-            _ = applyLanguage(.system)
-            if let previousMessagesLocale {
-                #expect(
-                    setMessagesLocale(previousMessagesLocale),
-                    "failed to restore LC_MESSAGES — later suites will sample a locale they did not set"
-                )
-            }
-        }
-        initializeLocalization()
-        applySessionLanguage(previous)
-        try body()
+        try LocalizationTestSupport.withRestoredLanguage(body)
     }
 
-    /// Installs `language` as the session's own LANGUAGE, which is the
-    /// baseline ``AppLanguage.system`` returns to.
     @MainActor
     private func applySessionLanguage(_ language: String?) {
-        if let language {
-            setenv("LANGUAGE", language, 1)
-        } else {
-            unsetenv("LANGUAGE")
-        }
-        recaptureSessionLanguage()
+        LocalizationTestSupport.applySessionLanguage(language)
     }
 }
 #endif
