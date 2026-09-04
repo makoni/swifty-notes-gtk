@@ -15,6 +15,23 @@ on:
       - "packaging/release/verify-flatpak-hunspell.sh"
       - "packaging/release/render-flatpak-manifest.sh"
       - ".github/workflows/flatpak-validate.yml"
+  # And on pull requests touching the same paths, so a manifest change — a
+  # bumped dependency pin, say — is validated before it is merged rather than
+  # after.
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "flatpak/**"
+      - "Sources/CSpelling/**"
+      - "packaging/release/verify-flatpak-hunspell.sh"
+      - "packaging/release/render-flatpak-manifest.sh"
+      - ".github/workflows/flatpak-validate.yml"
+
+# A new push supersedes the run in flight for the same branch.
+concurrency:
+  group: flatpak-validate-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
