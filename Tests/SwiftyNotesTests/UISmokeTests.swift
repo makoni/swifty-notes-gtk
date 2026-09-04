@@ -71,7 +71,7 @@ struct UISmokeTests {
             )
             assert len(note_dirs) == 2, note_dirs
             """,
-            prepare: { xdgDataHome, xdgStateHome in
+            prepare: { xdgDataHome, xdgStateHome, _ in
                 let notesDirectory = xdgDataHome
                     .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
                     .appendingPathComponent("notes", isDirectory: true)
@@ -209,7 +209,7 @@ struct UISmokeTests {
             stderr = open(app_stderr_log, "r", encoding="utf-8").read()
             assert "Trying to snapshot" not in stderr, stderr
             """,
-            prepare: { xdgDataHome, _ in
+            prepare: { xdgDataHome, _, _ in
                 let notesDirectory = xdgDataHome
                     .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
                     .appendingPathComponent("notes", isDirectory: true)
@@ -277,6 +277,97 @@ struct UISmokeTests {
                 "SWIFTY_NOTES_DEBUG_QUIT_AFTER_SCROLL": "1",
             ],
             requiresAccessibility: false,
+        )
+        expectUIScriptSucceeded(result)
+    }
+
+    /// The layout half of localization, in the only place it can be asserted.
+    ///
+    /// The direction *decision* is unit-tested, and the mirroring was checked
+    /// by hand through the accessibility tree — but assigning GTK's default
+    /// direction makes it walk its list of live toplevels, and in a shared
+    /// test process that list holds windows left by earlier suites, so the
+    /// walk reads freed memory and takes the whole run down. A process of its
+    /// own is the fix, and this harness already gives every test one.
+    ///
+    /// No Arabic catalogue is needed, and that is the point: the direction
+    /// comes from the language, not from a translation, so right-to-left
+    /// layout works for a language before anyone has translated a word of it.
+    @Test("An Arabic interface mirrors the window under headless wayland")
+    func anArabicInterfaceMirrorsTheWindowUnderHeadlessWayland() throws {
+        let extents = """
+        frame = wait_for_frame()
+        for label in ("Notes Sidebar", "Outline Sidebar"):
+            node = require_named(frame, label)
+            # Window coordinates, not desktop: headless, every desktop
+            # coordinate comes back as zero and the assertion would compare
+            # nothing with nothing.
+            x, y, w, h = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+            print(f"EXTENT {label} x={x} w={w}")
+        """
+
+        let leftToRight = try runWaylandUIScript(extents, environment: ["LANGUAGE": "en"])
+        expectUIScriptSucceeded(leftToRight)
+        let rightToLeft = try runWaylandUIScript(extents, environment: ["LANGUAGE": "ar"])
+        expectUIScriptSucceeded(rightToLeft)
+
+        guard let ltr = try parsedExtents(leftToRight), let rtl = try parsedExtents(rightToLeft) else {
+            return
+        }
+
+        let notes = "Notes Sidebar"
+        let outline = "Outline Sidebar"
+        let ltrNotes = try #require(ltr[notes], "no extents for the notes sidebar in English")
+        let ltrOutline = try #require(ltr[outline], "no extents for the outline sidebar in English")
+        let rtlNotes = try #require(rtl[notes], "no extents for the notes sidebar in Arabic")
+        let rtlOutline = try #require(rtl[outline], "no extents for the outline sidebar in Arabic")
+
+        #expect(ltrNotes < ltrOutline, "English: the notes sidebar belongs left of the outline")
+        #expect(
+            rtlNotes > rtlOutline,
+            """
+            Arabic: the notes sidebar is still left of the outline \
+            (notes x=\(rtlNotes), outline x=\(rtlOutline)) — the window did not mirror
+            """,
+        )
+        // Both panes moved, rather than one of them happening to be wider.
+        #expect(rtlNotes > ltrNotes)
+        #expect(rtlOutline < ltrOutline)
+    }
+
+    /// The whole localization stack through the real binary: catalogue
+    /// installed where gettext looks, resource layout intact, accessible
+    /// labels retranslated.
+    ///
+    /// The language comes from the app's own preference rather than from the
+    /// session locale, because that is the path a user takes and the only one
+    /// that works on a host where `ru_RU.UTF-8` was never generated — the
+    /// picker escapes the C locale through whichever locale *is* generated.
+    @Test("A Russian interface reaches the accessibility tree")
+    func aRussianInterfaceReachesTheAccessibilityTree() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            # Names without a count in them, so the assertion does not depend
+            # on how many notes the seed happens to create.
+            require_named(frame, "Редактор Markdown")
+            require_named(frame, "Список заметок")
+            require_named(frame, "Структура заметки")
+            require_named(frame, "Сохранить заметку")
+            names = visible_names(frame)
+            for english in ("Markdown Editor", "Notes List", "Note Outline", "Save Note"):
+                assert english not in names, f"English label survived: {english}"
+            """,
+            prepare: { _, _, configHome in
+                let settingsFile = configHome
+                    .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                    .appendingPathComponent("settings.json", isDirectory: false)
+                try FileManager.default.createDirectory(
+                    at: settingsFile.deletingLastPathComponent(),
+                    withIntermediateDirectories: true,
+                )
+                try Data(#"{"appLanguage":"ru"}"#.utf8).write(to: settingsFile)
+            },
         )
         expectUIScriptSucceeded(result)
     }
@@ -369,7 +460,7 @@ private func runUIScript(
 
 private func runWaylandUIScript(
     _ pythonScript: String,
-    prepare: ((URL, URL) throws -> Void)? = nil,
+    prepare: ((_ dataHome: URL, _ stateHome: URL, _ configHome: URL) throws -> Void)? = nil,
     environment: [String: String] = [:],
     requiresAccessibility: Bool = true,
 ) throws -> UIScriptResult {
@@ -393,7 +484,7 @@ private func runWaylandUIScript(
     try FileManager.default.createDirectory(at: xdgDataHome, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: xdgStateHome, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: xdgConfigHome, withIntermediateDirectories: true)
-    try prepare?(xdgDataHome, xdgStateHome)
+    try prepare?(xdgDataHome, xdgStateHome, xdgConfigHome)
 
     let accessibilityEnvironment: String
     let pythonImport: String
@@ -558,6 +649,24 @@ private func runWaylandUIScript(
             "XDG_CONFIG_HOME": xdgConfigHome.path(),
         ].merging(environment) { _, new in new },
     )
+}
+
+/// The `EXTENT <name> x=<int> w=<int>` lines a layout script prints.
+///
+/// `nil` means the harness declined to run — no Weston, or no session bus —
+/// which it reports as a clean exit with no output.
+private func parsedExtents(_ result: UIScriptResult) throws -> [String: Int]? {
+    guard !result.stdout.isEmpty else { return nil }
+    var extents: [String: Int] = [:]
+    for line in result.stdout.split(separator: "\n") where line.hasPrefix("EXTENT ") {
+        let fields = line.dropFirst("EXTENT ".count).split(separator: " ")
+        guard fields.count >= 2,
+              let x = Int(fields[fields.count - 2].dropFirst("x=".count))
+        else { continue }
+        let name = fields.dropLast(2).joined(separator: " ")
+        extents[name] = x
+    }
+    return extents.isEmpty ? nil : extents
 }
 
 private func expectUIScriptSucceeded(_ result: UIScriptResult) {

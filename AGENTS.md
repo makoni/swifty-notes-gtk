@@ -58,6 +58,13 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 - Anything Foundation formats rather than gettext — dates, times, numbers — goes through `interfaceLocale()`. `Locale.current` follows `LC_ALL`/`LANG` while the interface language follows `LANGUAGE`, so without it a Russian interface prints English dates.
 - After changing user-visible strings: `bash scripts/extract-i18n.sh`, `msgmerge --update --backup=none --no-fuzzy-matching po/ru.po po/me.spaceinbox.swiftynotes.pot`, translate, then `bash scripts/build-locales.sh`.
 
+### How layout is tested against other languages
+
+- **Long strings** (`LongStringLayoutTests`): a pseudo-locale built by gettext itself — `msgen` fills each msgstr from its msgid, `msgfilter` pads it — so every string the app has is 100% and 200% longer at once, including strings added after the test. It measures the settings window's *content*: an unrealized `GtkWindow` answers with its own size request and never consults its child, so measuring the window gives the same number in every language. libadwaita rows ellipsize and never blow up; what does is a `Button` label or a `Label` with `wrap = false`.
+- **Right-to-left** (`UISmokeTests`): launched under `LANGUAGE=ar` in the Weston harness, which gives it a process of its own — assigning GTK's default direction walks the list of live toplevels, and in a shared test process that list holds windows earlier suites left behind, so the walk reads freed memory and takes the run down. It compares accessible-component x extents in `WINDOW_COORDS`; desktop coordinates are all zero headless. No Arabic catalogue is needed: direction follows the language, not the translation.
+- **A translated interface end to end** (`UISmokeTests`): seeds `settings.json` with `appLanguage: "ru"` and asserts Russian accessible names, so a packaging rule that flattened `<lang>/LC_MESSAGES/` fails a test rather than shipping. It goes through the app's own preference rather than the session locale because that path escapes the C locale through whichever locale the host does have.
+- Still manual: CJK font fallback and line breaking under `ja_JP.UTF-8` / `zh_CN.UTF-8`, for whoever adds those catalogues. Arabic plural agreement (six categories) needs `ar.po` before it can be asserted.
+
 ## TDD workflow
 
 - Work test-first for behavior changes and bug fixes: add or update a regression test before changing production code when the behavior is reproducible in tests.
