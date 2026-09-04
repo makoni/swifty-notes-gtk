@@ -88,7 +88,7 @@ let package = Package(
             //     local copies.
             // Bump deliberately when validating a newer upstream rather than
             // via SemVer auto-resolution.
-            revision: "c59d0d36ced003e0fb8c59477e2ebc14ef8891eb"
+            revision: "007a30230ccebb1ad46bd430fbe95b9c0d4d5ad4"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",

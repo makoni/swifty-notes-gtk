@@ -57,22 +57,24 @@ final class AppController {
         self.launchOptions = launchOptions
     }
 
+    /// Re-applies the reading direction that `gtk_init` discarded.
+    ///
+    /// Only the direction: `gtk_init` reads its own translation of
+    /// `default:LTR` to pick a default and overwrites anything set before it
+    /// ran. The *language* needs nothing here — swift-adwaita exports the
+    /// locale it escapes to, so `gtk_init`'s `setlocale(LC_ALL, "")` keeps it
+    /// — and re-applying it could not have helped anyway: GLib latches
+    /// "not translated" on the first `g_dgettext`, which GTK itself makes
+    /// during initialization, and nothing after that reaches the decision.
+    ///
+    /// Called before the first window is built, so an RTL interface comes up
+    /// mirrored rather than flipping after the fact.
+    func applyInterfaceLanguageAfterGtkInit() {
+        applyInterfaceDirection(for: currentAppSettings().appLanguage)
+    }
+
     func activate(app: Application) {
-        // Both halves of the pinned language have to be re-applied here,
-        // because GTK undoes both while starting up:
-        //
-        //   * `gtk_init` discards a reading direction set before it ran, and
-        //   * it calls `setlocale(LC_ALL, "")`, which puts LC_MESSAGES back to
-        //     whatever the environment says. Where that is `C` or `C.UTF-8` —
-        //     the default in a container, and in the Flatpak sandbox — gettext
-        //     then ignores LANGUAGE entirely, so a Russian interface came up
-        //     in English while its dates, which Foundation formats, came up
-        //     Russian. `applyLanguage` escapes the C locale again.
-        //
-        // Before the first window is built, so an RTL interface comes up
-        // mirrored and every label is translated from the start rather than
-        // flipping after the fact.
-        applyLanguage(currentAppSettings().appLanguage)
+        applyInterfaceLanguageAfterGtkInit()
 
         if let mainWindow {
             if allowsWindowPresentation {
@@ -142,6 +144,11 @@ final class AppController {
             activate(app: application)
             return
         }
+
+        // This path never reaches `activate`, so the direction gtk_init
+        // discarded has to be re-applied here too — an external document
+        // opened straight from a file manager came up unmirrored.
+        applyInterfaceLanguageAfterGtkInit()
 
         for fileURL in fileURLs {
             do {
@@ -247,8 +254,13 @@ public enum SwiftyNotesLauncher {
         // corelibs — a closed or broken fd 2 would then abort startup on the
         // one path documented as non-fatal. (`stderr` the FILE* is a mutable
         // global and not concurrency-safe to reference.)
-        if !catalogueReachable,
-           let diagnostic = missingCatalogueDiagnostic(localeDirectory: localeDirectoryPath()) {
+        for diagnostic in [
+            catalogueReachable ? nil : missingCatalogueDiagnostic(localeDirectory: localeDirectoryPath()),
+            // The other half of a silently English interface: the catalogue is
+            // installed and reachable, but the machine has no locale for
+            // gettext to honour a language under.
+            untranslatableLocaleDiagnostic(),
+        ].compactMap({ $0 }) {
             let line = diagnostic + "\n"
             line.withCString { _ = write(2, $0, strlen($0)) }
         }

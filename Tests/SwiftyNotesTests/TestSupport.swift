@@ -180,8 +180,16 @@ enum LocalizationTestSupport {
         // mutates the process's LC_MESSAGES. Restoring LANGUAGE alone would
         // leave that behind for every later test.
         let previousMessagesLocale = currentMessagesLocale()
+        // It also *exports* that locale, so `gtk_init` keeps it — which means
+        // the environment variable needs putting back too, or a later suite's
+        // `setlocale(LC_ALL, "")` picks up a locale this one chose.
+        let previousExportedLocale = ProcessInfo.processInfo.environment["LC_MESSAGES"]
         defer {
-            restore(language: previous, messagesLocale: previousMessagesLocale)
+            restore(
+                language: previous,
+                messagesLocale: previousMessagesLocale,
+                exportedLocale: previousExportedLocale,
+            )
         }
         // The app's own startup, which a test process never ran: without it
         // the domain is unbound and every lookup returns its msgid.
@@ -202,8 +210,13 @@ enum LocalizationTestSupport {
     /// The order matters: the catalogue cache is invalidated last, so no later
     /// lookup can be served a translation resolved under the locale this
     /// suite was using.
-    static func restore(language: String?, messagesLocale: String?) {
+    static func restore(language: String?, messagesLocale: String?, exportedLocale: String?) {
         applySessionLanguage(language)
+        if let exportedLocale {
+            setenv("LC_MESSAGES", exportedLocale, 1)
+        } else {
+            unsetenv("LC_MESSAGES")
+        }
         if let messagesLocale {
             #expect(
                 setMessagesLocale(messagesLocale),

@@ -59,6 +59,24 @@ func missingCatalogueDiagnostic(
     """
 }
 
+/// The line to print when the machine has no locale to translate under, or
+/// `nil` when it has one.
+///
+/// gettext ignores `LANGUAGE` entirely while `LC_MESSAGES` names the `C`
+/// locale — `C.UTF-8` counts — so on a machine where nothing else is
+/// generated, nothing is translated with or without a language picked. A
+/// minimal container image is exactly that, and the symptom gives no hint:
+/// the interface comes up in English while its dates, which Foundation
+/// formats from the same preference, come up translated.
+func untranslatableLocaleDiagnostic() -> String? {
+    guard !messagesLocaleSupportsTranslation else { return nil }
+    return """
+    swiftynotes: no locale beyond C is generated on this machine, so gettext \
+    ignores the interface language and nothing will be translated. Generate one \
+    (for example `locale-gen en_US.UTF-8`) to use a language other than English.
+    """
+}
+
 /// Whether this build can change the interface language without a restart.
 ///
 /// False only where libintl does not export the catalogue-cache counter; the

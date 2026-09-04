@@ -425,7 +425,58 @@ struct UISmokeTests {
             // `LANGUAGE=en` because the app inherits the session's
             // environment: on a developer whose own session asks for Russian,
             // this would otherwise pass with the preference doing nothing.
-            environment: ["LANGUAGE": "en", "LANG": "C.UTF-8"],
+            // LC_ALL and LC_MESSAGES emptied rather than left inherited: the
+            // harness merges over the developer's environment, and either of
+            // them naming a real locale would defeat the scenario — the app
+            // would never be on a C locale and GLib would never be at risk of
+            // latching. glibc ignores an empty value in
+            // `setlocale(LC_ALL, "")`, so emptying is enough.
+            environment: [
+                "LANGUAGE": "en",
+                "LANG": "C.UTF-8",
+                "LC_ALL": "",
+                "LC_MESSAGES": "",
+            ],
+        )
+        expectUIScriptSucceeded(result)
+    }
+
+    /// The picker, on a session that never asked for a language.
+    ///
+    /// The harder half of the same bug, and the one with no coverage before:
+    /// with nothing stored, the app follows the session, and under `C.UTF-8`
+    /// GLib latched the process as untranslated on GTK's own first lookup —
+    /// so a language picked *afterwards* could never take effect, for the
+    /// rest of that session, while the picker reported success. swift-adwaita
+    /// escapes the C locale from `configureLocalization` now, whether or not
+    /// a language is pinned, which is what makes this reachable at all.
+    @Test("Picking a language works on a session that asked for none")
+    func pickingALanguageWorksOnASessionThatAskedForNone() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            # The switch is driven through the settings row's own signal, so
+            # this waits for the retranslation rather than the click.
+            def translated():
+                names = visible_names(frame)
+                return "Редактор Markdown" in names
+            wait_until(translated, "the interface retranslates after the language is picked", timeout=30)
+            names = visible_names(frame)
+            assert "Markdown Editor" not in names, f"English label survived: {names}"
+            """,
+            environment: [
+                // No stored preference, so the app follows the session — and
+                // the session is the C locale, emptied of anything the
+                // developer's own environment would have contributed.
+                "LANGUAGE": "",
+                "LANG": "C.UTF-8",
+                "LC_ALL": "",
+                "LC_MESSAGES": "",
+                "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_ON_LAUNCH": "1",
+                "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS": "400",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH": "ru",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "1200",
+            ],
         )
         expectUIScriptSucceeded(result)
     }

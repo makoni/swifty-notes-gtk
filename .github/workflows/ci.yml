@@ -4,9 +4,22 @@ on:
   push:
     branches:
       - master
+  # Also on pull requests, because a branch was otherwise only ever built
+  # *after* it was merged: two breakages reached master that way — the macOS
+  # test bundle failing to compile (#45) and the language picker doing nothing
+  # under `LANG=C.UTF-8`, which no Linux developer session reproduces.
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: read
+
+# A new push supersedes the run in flight for the same branch, so the extra
+# pull-request builds do not queue up behind each other.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-core-test:
