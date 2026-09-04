@@ -5,87 +5,153 @@ import Foundation
 
 // MARK: - Scanner helpers (ported from LocalizationCatalogTests.swift)
 
-private func stringLiterals(
-    in line: String
-) -> [(literal: String, start: String.Index, end: String.Index)] {
-    var results: [(String, String.Index, String.Index)] = []
+/// One pass over a line of Swift, splitting code from comments and reporting
+/// the string literals in the code.
+///
+/// Written once and used for both jobs because they cannot be separated: to
+/// know whether a `//` starts a comment you must know whether you are inside
+/// a literal, and to know where a literal ends you must know whether it is a
+/// raw one. Doing them separately is how a `//` inside
+/// `"https://example.com"` came to truncate a line.
+///
+/// Handles what this codebase actually writes:
+///
+/// * `//` to end of line, and `/* … */` — including the `/* label */`
+///   pseudo-labels used inside argument lists elsewhere in the tree, which
+///   would otherwise make a localizing call unreadable and stop the build.
+/// * Raw literals (`#"…"#`, `##"…"##`), where a backslash is not an escape.
+///   Treating one as an escape leaves the scanner inside a literal to the end
+///   of the line, and a comment after it is then read as code.
+///
+/// It does not track state across lines, so a `"""` block or a `/* … */` that
+/// spans lines is only handled where it opens. ``scanSources`` skips a line
+/// holding `"""` outright and reports nothing for it, and the guards read
+/// which literals were scanned rather than re-deciding.
+private struct LineScan {
+    /// Everything before a comment.
+    let code: String
+    /// The literals found in `code`, with the position of the opening quote.
+    let literals: [(literal: String, start: String.Index, end: String.Index)]
+}
+
+private func scanLine(_ line: String) -> LineScan {
+    var literals: [(String, String.Index, String.Index)] = []
+    var codeEnd = line.endIndex
+    // Inline block comments are blanked rather than cut out, so every
+    // position in `code` still means what it means in `line` — the offsets
+    // reported for consumed literals are read back against the original.
+    var blanked: [Range<String.Index>] = []
     var index = line.startIndex
+
+    func hashRun(before quote: String.Index) -> Int {
+        var count = 0
+        var cursor = quote
+        while cursor > line.startIndex {
+            let previous = line.index(before: cursor)
+            guard line[previous] == "#" else { break }
+            count += 1
+            cursor = previous
+        }
+        return count
+    }
+
     while index < line.endIndex {
-        guard line[index] == "\"" else {
+        let character = line[index]
+
+        if character == "/" {
+            let next = line.index(after: index)
+            guard next < line.endIndex else { break }
+            if line[next] == "/" {
+                codeEnd = index
+                break
+            }
+            if line[next] == "*" {
+                // Everything to the matching `*/`, or to the end of the line
+                // when the comment continues past it.
+                var cursor = line.index(after: next)
+                var closed = false
+                while cursor < line.endIndex {
+                    if line[cursor] == "*" {
+                        let after = line.index(after: cursor)
+                        if after < line.endIndex, line[after] == "/" {
+                            blanked.append(index ..< line.index(after: after))
+                            index = line.index(after: after)
+                            closed = true
+                            break
+                        }
+                    }
+                    cursor = line.index(after: cursor)
+                }
+                if closed { continue }
+                codeEnd = index
+                break
+            }
+            index = next
+            continue
+        }
+
+        guard character == "\"" else {
             index = line.index(after: index)
             continue
         }
-        var cursor = line.index(after: index)
+
+        // A raw literal ends at a quote followed by as many `#` as opened it,
+        // and a backslash inside it escapes nothing.
+        let hashes = hashRun(before: index)
+        let start = index
         var body = ""
+        var cursor = line.index(after: index)
         var closed = false
         while cursor < line.endIndex {
-            let character = line[cursor]
-            if character == "\\" {
-                let next = line.index(after: cursor)
-                guard next < line.endIndex else { break }
-                body.append(character)
-                body.append(line[next])
-                cursor = line.index(after: next)
+            let inner = line[cursor]
+            if hashes == 0, inner == "\\" {
+                let escaped = line.index(after: cursor)
+                guard escaped < line.endIndex else { break }
+                body.append(inner)
+                body.append(line[escaped])
+                cursor = line.index(after: escaped)
                 continue
             }
-            if character == "\"" {
-                closed = true
-                cursor = line.index(after: cursor)
-                break
+            if inner == "\"" {
+                var trailing = 0
+                var probe = line.index(after: cursor)
+                while trailing < hashes, probe < line.endIndex, line[probe] == "#" {
+                    trailing += 1
+                    probe = line.index(after: probe)
+                }
+                if trailing == hashes {
+                    cursor = probe
+                    closed = true
+                    break
+                }
             }
-            body.append(character)
+            body.append(inner)
             cursor = line.index(after: cursor)
         }
         guard closed else { break }
-        results.append((body, index, cursor))
+        literals.append((body, start, cursor))
         index = cursor
     }
-    return results
+
+    var code = ""
+    var cursor = line.startIndex
+    while cursor < codeEnd {
+        code.append(blanked.contains(where: { $0.contains(cursor) }) ? " " : line[cursor])
+        cursor = line.index(after: cursor)
+    }
+    return LineScan(code: code, literals: literals)
 }
 
-
-/// The part of `line` that is code: everything before a `//` that is not
-/// inside a string literal.
-///
-/// Whole-line comments were already skipped, but a comment *after* code was
-/// scanned as code — so a call quoted in a note to a future reader was filed
-/// as a real call site. That was merely a spurious template entry until
-/// conflicting plural forms became a hard error, at which point a comment
-/// could stop the whole po/ pipeline and point the developer at prose.
-///
-/// Literal-aware because the alternative breaks the obvious cases: a `//`
-/// inside `"https://example.com"` does not start a comment.
+/// The part of `line` that is code.
 private func codePortion(of line: String) -> String {
-    var index = line.startIndex
-    var insideLiteral = false
-    while index < line.endIndex {
-        let character = line[index]
-        if insideLiteral {
-            if character == "\\" {
-                let next = line.index(after: index)
-                index = next < line.endIndex ? line.index(after: next) : next
-                continue
-            }
-            if character == "\"" {
-                insideLiteral = false
-            }
-            index = line.index(after: index)
-            continue
-        }
-        if character == "\"" {
-            insideLiteral = true
-            index = line.index(after: index)
-            continue
-        }
-        if character == "/" {
-            let next = line.index(after: index)
-            if next < line.endIndex, line[next] == "/" {
-                return String(line[line.startIndex ..< index])
-            }
-        }
-        index = line.index(after: index)
-    }
-    return line
+    scanLine(line).code
+}
+
+/// The string literals in `line`, comments excluded.
+private func stringLiterals(
+    in line: String
+) -> [(literal: String, start: String.Index, end: String.Index)] {
+    scanLine(line).literals
 }
 
 /// Unescapes with `\u{...}` support. Returns `(value, diagnostics)` where diagnostics
@@ -147,6 +213,20 @@ private func unescapeWithSupport(_ raw: String, file: String) -> (value: String?
     return (output, diagnostics)
 }
 
+/// Whether `rest` begins with the `.localized` property and nothing that
+/// continues the identifier.
+///
+/// Foundation has `.localizedLowercase`, `.localizedCapitalized`,
+/// `.localizedStandardContains(_:)` and more; none of them is a gettext
+/// lookup. A prefix test files those literals as msgids translators are asked
+/// to translate for nothing — and, since a match also marks the literal as
+/// localized, hides a genuinely bare one from the guard.
+private func isExactlyLocalized(_ rest: Substring) -> Bool {
+    guard rest.hasPrefix(".localized") else { return false }
+    guard let next = rest.dropFirst(".localized".count).first else { return true }
+    return !(next.isLetter || next.isNumber || next == "_")
+}
+
 private func localizedLiterals(
     in line: String,
     nextLine: String?,
@@ -163,7 +243,11 @@ private func localizedLiterals(
     for (offset, (literal, startIndex, endIndex)) in literals.enumerated() {
         let rest = line[endIndex...]
         let afterWhitespace = rest.drop(while: { $0 == " " })
-        var isLocalized = afterWhitespace.hasPrefix(".localized")
+        // Exactly `.localized`, not any `.localizedXxx`: Foundation has
+        // several, none of them a gettext lookup. Filing one as a msgid asks
+        // translators for a string the app never looks up — and, since a
+        // match also marks the literal as localized, hides it from the guard.
+        var isLocalized = isExactlyLocalized(afterWhitespace)
         if !isLocalized, offset == literals.count - 1, rest.allSatisfy({ $0 == " " }) {
             // `.localized` wrapped onto the next line. Only the last literal on
             // this line can own it, and only if nothing follows it here —
@@ -468,27 +552,44 @@ private let packageRoot = URL(fileURLWithPath: #file, isDirectory: true)
 private func scanSources() throws -> (
     entries: [ScannedEntry: Set<String>],
     consumed: [String: Set<Int>],
+    scanned: [String: Set<Int>],
     diagnostics: [String]
 ) {
     var entries: [ScannedEntry: Set<String>] = [:]
     var consumed: [String: Set<Int>] = [:]
+    // Where the string literals this scanner *considered* are. A guard
+    // hunting for unlocalized literals has to judge the same set: deciding
+    // for itself which literals are code meant re-implementing comments, raw
+    // literals and the `"""` skip, and disagreeing about any of them turns a
+    // correct call site into a reported offender.
+    var scanned: [String: Set<Int>] = [:]
     var diagnostics: [String] = []
 
     let root = sourceRoot(packageRoot: packageRoot)
     guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-        return (entries, consumed, diagnostics)
+        return (entries, consumed, scanned, diagnostics)
     }
 
     for case let url as URL in walker where url.pathExtension == "swift" {
         let text = try String(contentsOf: url, encoding: .utf8)
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
         let relative = url.path.replacingOccurrences(of: root.deletingLastPathComponent().path + "/", with: "")
+        // The body of a multi-line literal is prose, not code. Without this
+        // its lines are scanned like any other, so a line of a seed note that
+        // happens to quote a UI string looked like a bare literal — which is
+        // what `permittedBareLiterals` in the tests was working around.
+        var insideMultilineLiteral = false
 
         for i in 0..<lines.count {
             let line = lines[i]
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.hasPrefix("//") else { continue }
-
+            let fenceCount = String(line).components(separatedBy: "\"\"\"").count - 1
+            if fenceCount > 0 {
+                if fenceCount % 2 == 1 {
+                    insideMultilineLiteral.toggle()
+                }
+            } else if insideMultilineLiteral {
+                continue
+            }
             // Check for `"""` on this line — skip multi-line literals
             let lineStr = codePortion(of: String(line))
             if lineStr.contains("\"\"\"") {
@@ -511,6 +612,12 @@ private func scanSources() throws -> (
             }
 
             let site = "\(relative):\(i + 1)"
+            let scannedOffsets = Set(stringLiterals(in: lineStr).map {
+                lineStr.distance(from: lineStr.startIndex, to: $0.start)
+            })
+            if !scannedOffsets.isEmpty {
+                scanned[site, default: []].formUnion(scannedOffsets)
+            }
             let nextLine: String? = (i + 1 < lines.count ? String(lines[i + 1]) : nil)
                 .map(codePortion(of:))
             let (found, bareConsumed, localDiagnostics) = localizedLiterals(
@@ -528,17 +635,19 @@ private func scanSources() throws -> (
                 entries[entry, default: []].insert(site)
             }
             // Both scanners report offsets on the same line, so the two sets
-            // merge — but each site is visited once, so this is an
-            // assignment rather than an accumulation.
+            // merge. Accumulating rather than assigning because nothing
+            // enforces that a site is visited once — a symlink under
+            // `Sources/` is enough — and losing offsets turns correct call
+            // sites into reported offenders.
             let lineConsumed = bareConsumed.union(callConsumed)
             if !lineConsumed.isEmpty {
-                consumed[site] = lineConsumed
+                consumed[site, default: []].formUnion(lineConsumed)
             }
             diagnostics.append(contentsOf: callDiagnostics)
         }
     }
 
-    return (entries, consumed, diagnostics)
+    return (entries, consumed, scanned, diagnostics)
 }
 
 /// Orders `file:line` sites by file, then numerically by line.
@@ -626,10 +735,13 @@ private func conflictingPluralForms(_ entries: [ScannedEntry: Set<String>]) -> [
 /// msgmerge normalises the line ending and rewrites the msgid out from under
 /// the lookup.
 ///
-/// The escapes are the ones gettext defines. Anything else in the C0 range
-/// has no PO spelling at all and is dropped here — ``unrepresentableScalars``
-/// reports those before a template is written, so the drop is unreachable in
-/// practice.
+/// The named escapes are the ones xgettext writes, measured rather than
+/// assumed: `gettext("bell\ax")` comes out of xgettext as `msgid "bell\ax"`.
+/// Any other control character is written `\xNN`, which gettext's reader
+/// accepts and — also measured — does not read greedily: `"esc\x1bx"` comes
+/// back as ESC followed by `x`, not as a malformed hex run. xgettext passes
+/// those through raw instead; both forms read back identically, and the
+/// escaped one survives an editor.
 private func escapePO(_ string: String) -> String {
     var output = ""
     for scalar in string.unicodeScalars {
@@ -653,47 +765,42 @@ private func escapePO(_ string: String) -> String {
         case "\u{0B}":
             output += "\\v"
         default:
-            guard !isUnrepresentableInPO(scalar) else { continue }
-            output.unicodeScalars.append(scalar)
+            if scalar.value < 0x20 || scalar.value == 0x7F {
+                output += String(format: "\\x%02x", scalar.value)
+            } else {
+                output.unicodeScalars.append(scalar)
+            }
         }
     }
     return output
 }
 
-/// Whether a scalar has no PO spelling: a control character that gettext
-/// defines no escape for.
+/// Reports every msgid holding a NUL.
 ///
-/// Writing one raw is worse than useless — a NUL terminates the string for
-/// every C consumer downstream of msgfmt, and this template is merged with
-/// one xgettext wrote, so the two have to agree on what is representable.
-private func isUnrepresentableInPO(_ scalar: Unicode.Scalar) -> Bool {
-    switch scalar {
-    case "\u{07}", "\u{08}", "\u{0B}", "\u{0C}", "\n", "\r", "\t":
-        false
-    default:
-        scalar.value < 0x20 || scalar.value == 0x7F
-    }
-}
-
-/// Reports every msgid holding a character a PO file cannot carry.
+/// The one character a catalogue cannot carry, and it fails silently at both
+/// ends. Written raw into a PO file it truncates the msgid there —
+/// `msgid "nul<NUL>x"` compiles without complaint and reads back as `nul` —
+/// and even escaped, the lookup could never reach it: `g_dgettext` takes a C
+/// string, so the key Swift hands it stops at the NUL too.
 ///
 /// `unescapeWithSupport` accepts `\0` and arbitrary `\u{…}`, so a source
-/// literal can hold anything; this is where that stops.
-private func unrepresentableScalars(_ entries: [ScannedEntry: Set<String>]) -> [String] {
-    var diagnostics: [String] = []
+/// literal can hold one; this is where that stops. Everything else in the
+/// control range is representable — measured against msgfmt, which accepts
+/// `\xNN`, octal, and even raw control bytes.
+private func nulBearingMessages(_ entries: [ScannedEntry: Set<String>]) -> [String] {
+    var reported: Set<String> = []
     for (entry, sites) in entries {
         let site = sites.sorted(by: siteIsBefore).first ?? "?"
-        for text in [entry.context, entry.singular, entry.plural].compactMap({ $0 }) {
-            for scalar in text.unicodeScalars where isUnrepresentableInPO(scalar) {
-                let code = String(format: "%04X", scalar.value)
-                diagnostics.append(
-                    "\(site): a msgid cannot carry U+\(code); gettext defines no escape for it: "
-                        + text.debugDescription
-                )
-            }
+        for text in [entry.context, entry.singular, entry.plural].compactMap({ $0 })
+        where text.unicodeScalars.contains(where: { $0.value == 0 }) {
+            // One line per offending msgid, not one per NUL in it.
+            reported.insert(
+                "\(site): a msgid cannot carry a NUL — it truncates the entry in the PO file "
+                    + "and the lookup key on the way in: \(text.debugDescription)"
+            )
         }
     }
-    return diagnostics.sorted()
+    return reported.sorted()
 }
 
 // MARK: - Catalogue plural forms (xgettext convention for .pot)
@@ -724,18 +831,23 @@ private struct EmitMsgidsResult: Codable {
     /// and on a line that both localizes one copy of a string and leaves
     /// another bare, position is the only thing that tells them apart.
     let consumedLiterals: [String: [Int]]
+
+    /// Character offsets, per `file:line`, of every string literal this
+    /// scanner considered — so a guard can judge the same set rather than
+    /// deciding for itself what counts as code.
+    let scannedLiterals: [String: [Int]]
 }
 
 // MARK: - Main
 
 do {
-    let (entries, consumed, scanDiagnostics) = try scanSources()
+    let (entries, consumed, scanned, scanDiagnostics) = try scanSources()
     // Reported alongside the scan's own: two call sites disagreeing about a
     // plural form is a source bug, not a scanning failure, but it stops the
     // catalogue from compiling all the same.
     let diagnostics = scanDiagnostics
         + conflictingPluralForms(entries)
-        + unrepresentableScalars(entries)
+        + nulBearingMessages(entries)
 
     // Before anything is printed, either way: a template that cannot compile
     // must not reach a consumer at all. Emitting the JSON first and exiting 1
@@ -758,7 +870,8 @@ do {
                     sites: $0.sites
                 )
             },
-            consumedLiterals: consumed.mapValues { $0.sorted() }
+            consumedLiterals: consumed.mapValues { $0.sorted() },
+            scannedLiterals: scanned.mapValues { $0.sorted() }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]

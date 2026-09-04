@@ -327,6 +327,61 @@ struct ExtractorTests {
         #expect(!result.entries.contains { $0.singular == "Phantom" })
     }
 
+    @Test("Block comments are not code either")
+    func blockCommentsAreNotCodeEither() throws {
+        // `//` was handled and `/* … */` was not, so the same phantom call
+        // site survived in block-comment form — and a `/* label */` inside an
+        // argument list, which this tree already writes elsewhere, made a
+        // real call unreadable and stopped the build.
+        let result = try emitted(
+            """
+            let a = nlocalized("%d file", "%d files", count: n)
+            let b = 1 /* was nlocalized("%d file", "%d docs", count: n) */
+            let c = nlocalized(/* singular */ "%d x", "%d xs", count: n)
+            let d = 2 /* unterminated, mentioning nlocalized("%d file", "%d oops", count: n)
+            """,
+        )
+        #expect(result.entries.count == 2, "got \(result.entries.map(\.singular))")
+        #expect(result.entries.contains { $0.singular == "%d file" && $0.plural == "%d files" })
+        #expect(result.entries.contains { $0.singular == "%d x" && $0.plural == "%d xs" })
+    }
+
+    @Test("A raw literal ends where its hashes say, not at a backslash")
+    func aRawLiteralEndsWhereItsHashesSayNotAtABackslash() throws {
+        // A backslash escapes nothing in a raw literal. Treating it as one
+        // leaves the scanner inside a literal to the end of the line, so a
+        // comment after it is read as code — the phantom call site again, by
+        // another route. Two hashes on the fixture so its own `"#` needs no
+        // escaping, and the backslash under test survives verbatim.
+        let source = ##"""
+        let a = #"C:\"# // nlocalized("%d file", "%d bad", count: n)
+        let b = #"raw "quoted" body"#.localized
+        """##
+        let result = try emitted(source)
+        #expect(
+            result.entries.map(\.singular) == ["raw \"quoted\" body"],
+            "fixture:\n\(source)",
+        )
+    }
+
+    @Test("The body of a multi-line literal is prose, not code")
+    func theBodyOfAMultiLineLiteralIsProseNotCode() throws {
+        // Seed-note bodies quote UI strings, and reading those lines as code
+        // filed them as bare literals — which the guard's
+        // `permittedBareLiterals` was working around for one file.
+        let result = try emitted(
+            #"""
+            let seed = """
+                Use the "Editor" and "Preview" buttons.
+                """
+            let real = "Editor".localized
+            """#,
+        )
+        #expect(result.entries.map(\.singular) == ["Editor"])
+        #expect(result.entries.first?.sites == ["Sources/Fixture.swift:4"])
+        #expect(result.scannedLiterals["Sources/Fixture.swift:2"] == nil)
+    }
+
     @Test("A double slash inside a literal does not start a comment")
     func aDoubleSlashInsideALiteralDoesNotStartAComment() throws {
         let entries = try extract(#"let a = "https://example.com".localized"#)
@@ -335,18 +390,41 @@ struct ExtractorTests {
 
     // MARK: - What a PO file can carry
 
-    @Test("A control character with no PO escape is refused")
-    func aControlCharacterWithNoPOEscapeIsRefused() throws {
-        // `unescapeWithSupport` accepts \0 and arbitrary \u{…}, so a source
-        // literal can hold anything. A NUL written raw into the template
-        // terminates the string for every C consumer downstream of msgfmt.
+    @Test("A NUL is refused; every other control character is escaped")
+    func aNULIsRefusedEveryOtherControlCharacterIsEscaped() throws {
+        // Measured against the installed gettext rather than assumed. A raw
+        // NUL in a PO file truncates the entry silently — `msgid "nul<NUL>x"`
+        // compiles and reads back as `nul` — and even escaped it could not be
+        // looked up, since `g_dgettext` takes a C string and the key Swift
+        // hands it stops at the NUL too. Everything else is representable:
+        // msgfmt accepts `\xNN`, octal, and even raw control bytes, and
+        // xgettext writes `\a` and `\v` by name while passing ESC through raw.
         let refused = try extractRaw(##"let a = "nul\0x".localized"##)
         #expect(refused.status != 0)
-        #expect(refused.stderr.contains("U+0000"))
+        #expect(refused.stderr.contains("cannot carry a NUL"))
+        #expect(refused.stdout.isEmpty)
 
-        // The ones gettext does define an escape for stay welcome.
-        let accepted = try extract(##"let a = "bell\u{7}x".localized"##)
-        #expect(accepted.count == 1)
+        try template(
+            ##"""
+            let a = "bell\u{7}x".localized
+            let b = "vt\u{B}x".localized
+            let c = "esc\u{1B}[0m".localized
+            let d = "del\u{7F}y".localized
+            """##,
+        ) { url in
+            let pot = try String(contentsOf: url, encoding: .utf8)
+            // Named where gettext names them, hex where it does not.
+            #expect(pot.contains(##"msgid "bell\ax""##), "got:\n\(pot)")
+            #expect(pot.contains(##"msgid "vt\vx""##), "got:\n\(pot)")
+            #expect(pot.contains(##"msgid "esc\x1b[0m""##), "got:\n\(pot)")
+            #expect(pot.contains(##"msgid "del\x7fy""##), "got:\n\(pot)")
+            #expect(
+                !pot.unicodeScalars.contains { $0.value < 0x20 && $0 != "\n" },
+                "a raw control character reached the template",
+            )
+            let compile = try run(tool: "msgfmt", arguments: ["-o", "/dev/null", url.path])
+            #expect(compile.status == 0, "msgfmt rejected the template:\n\(compile.stderr)")
+        }
     }
 
     @Test("Nothing is printed when the source tree is refused")
@@ -506,6 +584,7 @@ struct ExtractorTests {
     private struct Emitted: Codable {
         let entries: [DecodedEntry]
         let consumedLiterals: [String: [Int]]
+        let scannedLiterals: [String: [Int]]
     }
 
     /// Writes `source` as the only file of a throwaway source tree and runs
@@ -536,8 +615,14 @@ struct ExtractorTests {
 
     private func emitted(_ source: String) throws -> Emitted {
         let result = try extractRaw(source)
-        #expect(result.status == 0, "\(result.stderr)")
-        let data = try #require(result.stdout.data(using: .utf8))
+        // The diagnostics, not a decoding failure: a refused run prints
+        // nothing, and `"".data(using: .utf8)` is a non-nil empty Data, so
+        // requiring the Data alone reported `dataCorrupted` and named nothing
+        // about the call site that caused it.
+        let data = try #require(
+            result.stdout.data(using: .utf8).flatMap { $0.isEmpty ? nil : $0 },
+            "the extractor refused the tree (status \(result.status)):\n\(result.stderr)",
+        )
         return try JSONDecoder().decode(Emitted.self, from: data)
     }
 

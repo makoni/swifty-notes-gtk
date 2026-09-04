@@ -355,6 +355,92 @@ struct LocalizationCatalogTests {
         )
     }
 
+    /// The guard's own behaviour, on a source tree written for it.
+    ///
+    /// Driven only by the real `Sources/`, `everyCallSiteOfATranslatableStringIsLocalized`
+    /// asserts an empty list against an empty list: every candidate there is
+    /// metadata-only and filtered out, so the assertion held whether the
+    /// guard worked or returned nothing. Each rewrite of how it decides —
+    /// three of them — went in with that as its only coverage.
+    @Test("The bare-literal guard reports what is bare and spares what is not")
+    func theBareLiteralGuardReportsWhatIsBareAndSparesWhatIsNot() throws {
+        let source = #"""
+        let a = "Preview".localized
+        let b = "Preview"
+        let c = view.set(localizedWithContext("view mode", "Preview"), "Preview")
+        let d = "Preview".localized // "Preview" in a comment
+        let e = "Preview"
+            .localized
+        let f = "Preview".localizedLowercase
+        let g = """
+            "Preview" inside a multi-line literal
+            """
+        """#
+
+        let scan = try LocalizationCatalogFixture.scan(source: source)
+        let offenders = LocalizationCatalogFixture.unlocalizedLiterals(
+            in: source,
+            file: "Sources/Fixture.swift",
+            scanned: scan.scannedLiterals.mapValues(Set.init),
+            consumed: scan.consumedLiterals.mapValues(Set.init),
+            catalogue: ["Preview"],
+        )
+
+        #expect(
+            offenders == [
+                // Line 2: bare, nothing localizes it.
+                "Sources/Fixture.swift:2: \"Preview\"",
+                // Line 3: the call localizes the second literal; the third is
+                // a bare copy on the same line, which only its column
+                // distinguishes.
+                "Sources/Fixture.swift:3: \"Preview\"",
+                // Line 7: `.localizedLowercase` is not a gettext lookup.
+                "Sources/Fixture.swift:7: \"Preview\"",
+            ],
+            "got: \(offenders)",
+        )
+    }
+
+    @Test("A literal the extractor never scanned is not judged")
+    func aLiteralTheExtractorNeverScannedIsNotJudged() throws {
+        // The line opening a `"""` block is skipped by the extractor
+        // outright, so nothing on it can be filed as a msgid — and nothing on
+        // it can be reported as bare either. Judging it anyway reported a
+        // correctly localized literal and told the developer to add a suffix
+        // that was already there.
+        let source = #"""
+        let a = debugLog("Preview".localized, detail: """
+            body
+            """)
+        """#
+
+        let scan = try LocalizationCatalogFixture.scan(source: source)
+        #expect(scan.scannedLiterals["Sources/Fixture.swift:1"] == nil)
+        let offenders = LocalizationCatalogFixture.unlocalizedLiterals(
+            in: source,
+            file: "Sources/Fixture.swift",
+            scanned: scan.scannedLiterals.mapValues(Set.init),
+            consumed: scan.consumedLiterals.mapValues(Set.init),
+            catalogue: ["Preview"],
+        )
+        #expect(offenders.isEmpty, "got: \(offenders)")
+    }
+
+    @Test("A permitted literal stays permitted")
+    func aPermittedLiteralStaysPermitted() throws {
+        let source = "let a = \"Preview\"\n"
+        let scan = try LocalizationCatalogFixture.scan(source: source)
+        let offenders = LocalizationCatalogFixture.unlocalizedLiterals(
+            in: source,
+            file: "Sources/Fixture.swift",
+            scanned: scan.scannedLiterals.mapValues(Set.init),
+            consumed: scan.consumedLiterals.mapValues(Set.init),
+            catalogue: ["Preview"],
+            permitted: ["Preview"],
+        )
+        #expect(offenders.isEmpty)
+    }
+
     /// `ngettext` picks a form from the count even when the message never
     /// prints it. Russian form 1 (2–4) and form 2 (5+) differ only by the
     /// number that would precede them, so for a countless message the two must
@@ -577,6 +663,11 @@ private enum LocalizationCatalogFixture {
         /// Character offsets, per `file:line`, of the opening quotes a
         /// localizing call consumes.
         let consumedLiterals: [String: [Int]]
+
+        /// Character offsets, per `file:line`, of every literal the extractor
+        /// considered — comments, raw literals and `"""` lines already
+        /// decided.
+        let scannedLiterals: [String: [Int]]
     }
 
     private actor SourceScanner {
@@ -642,6 +733,11 @@ private enum LocalizationCatalogFixture {
     /// `file:line` and by the character offset of the literal's opening quote.
     static func consumedLiteralOffsets() async throws -> [String: Set<Int>] {
         try await scanned().consumedLiterals.mapValues(Set.init)
+    }
+
+    /// Every literal the extractor considered, same keying.
+    static func scannedLiteralOffsets() async throws -> [String: Set<Int>] {
+        try await scanned().scannedLiterals.mapValues(Set.init)
     }
 
     private static func scanned() async throws -> EmitResult {
@@ -722,7 +818,10 @@ private enum LocalizationCatalogFixture {
                     lineCache[relative] = lines
                 }
                 guard number >= 1, number <= lines.count else { continue }
-                let text = lines[number - 1]
+                // The code, not the whole line: a `// TODO: wrap in
+                // String(format:)` would otherwise answer for the call site
+                // and hide a real offender.
+                let text = codePortion(of: lines[number - 1])
                 guard !text.contains("String(format:") else { continue }
                 offenders.append("\(site): \(text.trimmingCharacters(in: .whitespaces))")
             }
@@ -773,8 +872,6 @@ private enum LocalizationCatalogFixture {
     /// not user-visible chrome: translating them breaks a lookup or rewrites a
     /// note's body.
     static let permittedBareLiterals: [String: Set<String>] = [
-        // Seed note body — sample prose, not UI chrome.
-        "Sources/SwiftyNotes/Storage/MarkdownShowcaseSeed.swift": ["Editor", "Split", "Preview"],
         // On-disk directory name.
         "Sources/SwiftyNotes/Storage/NotesRepository.swift": ["assets"],
         // Debug/introspection dictionary keys; the displayed values beside them
@@ -798,11 +895,13 @@ private enum LocalizationCatalogFixture {
     /// The part of a line that is code: everything before a `//` outside a
     /// string literal.
     ///
-    /// Mirrors `codePortion(of:)` in `scripts/extract-i18n.swift` — the two
-    /// have to agree on what counts as code, and they cannot share it: one is
-    /// a script the other runs as a subprocess. Literal-aware because the
-    /// obvious shortcut breaks the obvious case: the `//` in
-    /// `"https://example.com"` starts no comment.
+    /// Used only by ``unformattedPluralCallSites()``, which asks whether a
+    /// call site is wrapped in `String(format:)` and must not be answered by
+    /// a mention in a comment. Everything else reads the extractor's own
+    /// account of what it scanned rather than deciding again here — the
+    /// extractor understands block comments, raw literals and the `"""` skip,
+    /// and a second opinion that differs on any of them turns a correct call
+    /// site into a reported offender.
     static func codePortion(of line: String) -> String {
         var index = line.startIndex
         var insideLiteral = false
@@ -839,22 +938,24 @@ private enum LocalizationCatalogFixture {
     /// Literals in `Sources/` that appear verbatim in the catalogue yet are
     /// not localized.
     ///
-    /// Every literal the extractor localizes — the four call forms and the
-    /// `.localized` property, wrapped onto the next line or not — is reported
-    /// back by position, and this skips exactly those. Position rather than
-    /// text, and the extractor's answer rather than a second opinion, because
-    /// each earlier attempt lost real offenders:
+    /// Both halves come from the extractor: which literals it considered, and
+    /// which of those it localizes. This guard adds only the question the
+    /// extractor cannot answer — is the text a catalogue msgid — because
+    /// every earlier attempt to decide the rest here lost real offenders:
     ///
     /// * Skipping any line that mentioned a localizing call hid every literal
     ///   on it.
     /// * Skipping any literal whose *text* a call consumed hid a bare second
     ///   copy of the same string on the same line.
     /// * Recognising `.localized` here rather than asking the extractor got
-    ///   the wrapped form backwards: the suffix is on the next line, so the
-    ///   guard reported a literal the extractor had already filed as a msgid.
+    ///   the wrapped form backwards: the suffix is on the next line, so a
+    ///   literal the extractor had already filed as a msgid was reported.
+    /// * Cutting comments here meant a line the extractor skips outright —
+    ///   one opening a `"""` block — was still judged, and reported a
+    ///   correctly localized literal on it.
     /// * Walking back over the line counting parentheses counted the ones
-    ///   inside string literals, so a msgid holding an unbalanced `(` turned a
-    ///   correct call site into a reported offender.
+    ///   inside string literals, so a msgid holding an unbalanced `(` turned
+    ///   a correct call site into a reported offender.
     static func unlocalizedCatalogueLiterals(
         ignoring ignored: Set<String> = [],
     ) async throws -> [String] {
@@ -864,6 +965,7 @@ private enum LocalizationCatalogFixture {
         // of it.
         let catalogue = try catalogueBareMessageIDs(at: russianCatalogueURL).subtracting(ignored)
         let consumed = try await consumedLiteralOffsets()
+        let scanned = try await scannedLiteralOffsets()
 
         var offenders: [String] = []
         let root = packageRoot.appendingPathComponent("Sources", isDirectory: true)
@@ -873,24 +975,74 @@ private enum LocalizationCatalogFixture {
         for case let url as URL in walker where url.pathExtension == "swift" {
             let text = try String(contentsOf: url, encoding: .utf8)
             let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
-            let permitted = permittedBareLiterals[relative] ?? []
-            for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-                // A literal in a comment is prose, not a string the app shows.
-                let lineText = codePortion(of: String(line))
-                let localized = consumed["\(relative):\(offset + 1)"] ?? []
-                for hit in stringLiterals(in: lineText) {
-                    guard let literal = unescape(hit.literal),
-                          !literal.isEmpty,
-                          catalogue.contains(literal),
-                          !permitted.contains(literal)
-                    else { continue }
-                    let column = lineText.distance(from: lineText.startIndex, to: hit.start)
-                    guard !localized.contains(column) else { continue }
-                    offenders.append("\(relative):\(offset + 1): \(literal.debugDescription)")
-                }
+            offenders += unlocalizedLiterals(
+                in: text,
+                file: relative,
+                scanned: scanned,
+                consumed: consumed,
+                catalogue: catalogue,
+                permitted: permittedBareLiterals[relative] ?? [],
+            )
+        }
+        return offenders.sorted()
+    }
+
+    /// The decision, for one file, separated from walking the tree.
+    ///
+    /// Split out so it can be run against a source tree written for the
+    /// occasion. Driven only by the real `Sources/`, the guard reports
+    /// nothing — every candidate there is metadata-only and filtered — so
+    /// `#expect(offenders.isEmpty)` passed identically whether the guard
+    /// worked or returned an empty array, which is what it did after each of
+    /// the rewrites listed above.
+    static func unlocalizedLiterals(
+        in text: String,
+        file: String,
+        scanned: [String: Set<Int>],
+        consumed: [String: Set<Int>],
+        catalogue: Set<String>,
+        permitted: Set<String> = [],
+    ) -> [String] {
+        var offenders: [String] = []
+        for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+            let site = "\(file):\(offset + 1)"
+            // A line the extractor did not scan — a comment, or one opening a
+            // `"""` block — is not one this can judge either.
+            guard let considered = scanned[site] else { continue }
+            let localized = consumed[site] ?? []
+            let lineText = String(line)
+            for hit in stringLiterals(in: lineText) {
+                let column = lineText.distance(from: lineText.startIndex, to: hit.start)
+                guard considered.contains(column), !localized.contains(column) else { continue }
+                guard let literal = unescape(hit.literal),
+                      !literal.isEmpty,
+                      catalogue.contains(literal),
+                      !permitted.contains(literal)
+                else { continue }
+                offenders.append("\(site): \(literal.debugDescription)")
             }
         }
         return offenders.sorted()
+    }
+
+    /// Runs the extractor over a source tree of the caller's making.
+    static func scan(source: String) throws -> EmitResult {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swiftynotes-guard-\(UUID().uuidString)", isDirectory: true)
+        let sources = root.appendingPathComponent("Sources", isDirectory: true)
+        try FileManager.default.createDirectory(at: sources, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try source.write(
+            to: sources.appendingPathComponent("Fixture.swift", isDirectory: false),
+            atomically: true,
+            encoding: .utf8,
+        )
+        let script = packageRoot.appendingPathComponent("scripts/extract-i18n.swift")
+        let swift = try #require(ToolRunner.onPath("swift"), "swift is not on PATH")
+        let result = try ToolRunner.run(swift, [script.path, "--sources", sources.path, "--emit-msgids"])
+        try #require(result.status == 0, "extraction failed:\n\(result.stderr)")
+        let data = try #require(result.stdout.data(using: .utf8))
+        return try JSONDecoder().decode(EmitResult.self, from: data)
     }
 
     // MARK: PO parsing (keeps its own stringLiterals + unescape)
@@ -1160,8 +1312,13 @@ private enum LocalizationCatalogFixture {
         catalogue
             .split(separator: "\n", omittingEmptySubsequences: false)
             .filter { line in
-                !line.hasPrefix("\"POT-Creation-Date:")
-                    && !line.hasPrefix("\"PO-Revision-Date:")
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                // X-Generator says which tool last wrote the file, which is
+                // exactly the kind of change that must not fail a test about
+                // what the catalogue translates.
+                return !trimmed.hasPrefix("\"POT-Creation-Date:")
+                    && !trimmed.hasPrefix("\"PO-Revision-Date:")
+                    && !trimmed.hasPrefix("\"X-Generator:")
             }
             .joined(separator: "\n")
     }
