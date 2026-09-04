@@ -495,10 +495,7 @@ struct LocalizationCatalogTests {
 
 /// Shared parsing helpers. Kept separate from the test bodies so the intent of
 /// each assertion stays readable.
-/// Shared vocabulary for the localization guards: the catalogue and
-/// template on disk, the extractor's view of `Sources/`, and the process
-/// plumbing both suites need.
-enum LocalizationCatalogFixture {
+private enum LocalizationCatalogFixture {
     /// Catalogue entries that legitimately have no matching `.localized` call:
     /// the gettext header, plus anything a future maintainer deliberately keeps.
     static let permittedOrphans: Set<String> = [""]
@@ -592,60 +589,20 @@ enum LocalizationCatalogFixture {
             }
             let scriptURL = LocalizationCatalogFixture.packageRoot
                 .appendingPathComponent("scripts/extract-i18n.swift")
-            // Find swift in PATH
-            let swiftBin = { () -> URL? in
-                guard let path = ProcessInfo.processInfo.environment["PATH"] else { return nil }
-                for dir in path.split(separator: ":") {
-                    let candidate = URL(fileURLWithPath: String(dir)).appendingPathComponent("swift")
-                    if FileManager.default.fileExists(atPath: candidate.path) {
-                        return candidate
-                    }
-                }
-                return nil
-            }()
-            guard let swiftBin else { throw FixtureError.noJSONOutput }
-            let process = Process()
-            process.executableURL = swiftBin
-            process.arguments = [scriptURL.path, "--emit-msgids"]
-            let outPipe = Pipe()
-            let errPipe = Pipe()
-            process.standardOutput = outPipe
-            process.standardError = errPipe
-            try process.run()
+            guard let swift = ToolRunner.onPath("swift") else { throw FixtureError.noJSONOutput }
+            let result = try ToolRunner.run(swift, [scriptURL.path, "--emit-msgids"])
 
-            // Read both pipes concurrently so stderr overflow can't block stdout.
-            let outQ = DispatchQueue(label: "swiftynotes.loc.out")
-            let errQ = DispatchQueue(label: "swiftynotes.loc.err")
-            let sem = DispatchSemaphore(value: 0)
-
-            var outData = Data()
-            var errData = Data()
-
-        let outWork = DispatchWorkItem {
-            outData = outPipe.fileHandleForReading.readDataToEndOfFile()
-            sem.signal()
-        }
-        let errWork = DispatchWorkItem {
-            errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-            sem.signal()
-        }
-        outQ.async(execute: outWork)
-        errQ.async(execute: errWork)
-        sem.wait()
-        sem.wait()
-            outWork.cancel()
-            errWork.cancel()
-            process.waitUntilExit()
-
-            if let diagText = String(data: errData, encoding: .utf8),
-               !diagText.isEmpty {
-                diagnostics = diagText.components(separatedBy: "\n").filter { !$0.isEmpty }
+            if !result.stderr.isEmpty {
+                diagnostics = result.stderr.components(separatedBy: "\n").filter { !$0.isEmpty }
             }
-
-            guard let json = String(data: outData, encoding: .utf8) else {
-                throw FixtureError.noJSONOutput
+            guard let data = result.stdout.data(using: .utf8), !data.isEmpty else {
+                // The extractor prints nothing when it refuses the tree, so a
+                // diagnostic is the answer here rather than a parse failure.
+                throw diagnostics.isEmpty
+                    ? FixtureError.noJSONOutput
+                    : FixtureError.diagnostics(diagnostics)
             }
-            let decoded = try JSONDecoder().decode(EmitResult.self, from: json.data(using: .utf8)!)
+            let decoded = try JSONDecoder().decode(EmitResult.self, from: data)
             cache = decoded
             return decoded
         }
@@ -838,22 +795,66 @@ enum LocalizationCatalogFixture {
         ],
     ]
 
-    /// Literals in `Sources/` that appear verbatim in the catalogue yet carry
-    /// no `.localized`.
+    /// The part of a line that is code: everything before a `//` outside a
+    /// string literal.
     ///
-    /// A literal handed to a call that localizes it — `nlocalized`,
-    /// `localizedWithContext`, `nlocalizedWithContext` — is skipped, since the
-    /// suffix would be wrong there. Which ones those are comes from the
-    /// extractor, by position: it reports the offset of every opening quote
-    /// its calls consume.
+    /// Mirrors `codePortion(of:)` in `scripts/extract-i18n.swift` — the two
+    /// have to agree on what counts as code, and they cannot share it: one is
+    /// a script the other runs as a subprocess. Literal-aware because the
+    /// obvious shortcut breaks the obvious case: the `//` in
+    /// `"https://example.com"` starts no comment.
+    static func codePortion(of line: String) -> String {
+        var index = line.startIndex
+        var insideLiteral = false
+        while index < line.endIndex {
+            let character = line[index]
+            if insideLiteral {
+                if character == "\\" {
+                    let next = line.index(after: index)
+                    index = next < line.endIndex ? line.index(after: next) : next
+                    continue
+                }
+                if character == "\"" {
+                    insideLiteral = false
+                }
+                index = line.index(after: index)
+                continue
+            }
+            if character == "\"" {
+                insideLiteral = true
+                index = line.index(after: index)
+                continue
+            }
+            if character == "/" {
+                let next = line.index(after: index)
+                if next < line.endIndex, line[next] == "/" {
+                    return String(line[line.startIndex ..< index])
+                }
+            }
+            index = line.index(after: index)
+        }
+        return line
+    }
+
+    /// Literals in `Sources/` that appear verbatim in the catalogue yet are
+    /// not localized.
     ///
-    /// Position rather than text, because both earlier attempts lost real
-    /// offenders. Skipping any line that mentioned a localizing call hid every
-    /// literal on it; skipping any literal whose *text* the call consumed hid
-    /// a bare second copy of the same string on the same line. And walking
-    /// back over the line counting parentheses — the attempt before that —
-    /// counted the ones inside string literals too, so a msgid holding an
-    /// unbalanced `(` turned a correct call site into a reported offender.
+    /// Every literal the extractor localizes — the four call forms and the
+    /// `.localized` property, wrapped onto the next line or not — is reported
+    /// back by position, and this skips exactly those. Position rather than
+    /// text, and the extractor's answer rather than a second opinion, because
+    /// each earlier attempt lost real offenders:
+    ///
+    /// * Skipping any line that mentioned a localizing call hid every literal
+    ///   on it.
+    /// * Skipping any literal whose *text* a call consumed hid a bare second
+    ///   copy of the same string on the same line.
+    /// * Recognising `.localized` here rather than asking the extractor got
+    ///   the wrapped form backwards: the suffix is on the next line, so the
+    ///   guard reported a literal the extractor had already filed as a msgid.
+    /// * Walking back over the line counting parentheses counted the ones
+    ///   inside string literals, so a msgid holding an unbalanced `(` turned a
+    ///   correct call site into a reported offender.
     static func unlocalizedCatalogueLiterals(
         ignoring ignored: Set<String> = [],
     ) async throws -> [String] {
@@ -874,9 +875,8 @@ enum LocalizationCatalogFixture {
             let relative = url.path.replacingOccurrences(of: packageRoot.path + "/", with: "")
             let permitted = permittedBareLiterals[relative] ?? []
             for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-                let lineText = String(line)
-                let trimmed = lineText.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("//") else { continue }
+                // A literal in a comment is prose, not a string the app shows.
+                let lineText = codePortion(of: String(line))
                 let localized = consumed["\(relative):\(offset + 1)"] ?? []
                 for hit in stringLiterals(in: lineText) {
                     guard let literal = unescape(hit.literal),
@@ -886,8 +886,6 @@ enum LocalizationCatalogFixture {
                     else { continue }
                     let column = lineText.distance(from: lineText.startIndex, to: hit.start)
                     guard !localized.contains(column) else { continue }
-                    let rest = lineText[hit.end...].drop(while: { $0 == " " })
-                    guard !rest.hasPrefix(".localized") else { continue }
                     offenders.append("\(relative):\(offset + 1): \(literal.debugDescription)")
                 }
             }
@@ -1156,74 +1154,23 @@ enum LocalizationCatalogFixture {
         return specifiers.sorted()
     }
 
-    struct ToolResult {
-        let status: Int32
-        let stdout: String
-        let stderr: String
-    }
-
-    /// Runs an external process, reading stdout and stderr concurrently so a
-    /// full stderr pipe cannot block reading stdout.
-    static func run(_ executable: URL, _ arguments: [String]) throws -> ToolResult {
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
-        let out = Pipe()
-        let err = Pipe()
-        process.standardOutput = out
-        process.standardError = err
-        try process.run()
-
-        let outQ = DispatchQueue(label: "swiftynotes.loc.run.out")
-        let errQ = DispatchQueue(label: "swiftynotes.loc.run.err")
-        let sem = DispatchSemaphore(value: 0)
-
-        var outData = Data()
-        var errData = Data()
-
-        let outWork = DispatchWorkItem {
-            outData = out.fileHandleForReading.readDataToEndOfFile()
-            sem.signal()
-        }
-        let errWork = DispatchWorkItem {
-            errData = err.fileHandleForReading.readDataToEndOfFile()
-            sem.signal()
-        }
-        outQ.async(execute: outWork)
-        errQ.async(execute: errWork)
-        sem.wait()
-        sem.wait()
-        outWork.cancel()
-        errWork.cancel()
-        process.waitUntilExit()
-
-        return ToolResult(
-            status: process.terminationStatus,
-            stdout: String(decoding: outData, as: UTF8.self),
-            stderr: String(decoding: errData, as: UTF8.self),
-        )
-    }
-
     /// Drops header fields that change on every edit without changing what the
     /// catalogue translates.
     static func stripVolatileHeaders(_ catalogue: String) -> String {
-        let volatile = ["\"PO-Revision-Date:", "\"POT-Creation-Date:", "\"X-Generator:"]
-        return catalogue
+        catalogue
             .split(separator: "\n", omittingEmptySubsequences: false)
             .filter { line in
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                return !volatile.contains { trimmed.hasPrefix($0) }
+                !line.hasPrefix("\"POT-Creation-Date:")
+                    && !line.hasPrefix("\"PO-Revision-Date:")
             }
             .joined(separator: "\n")
     }
 
     static func toolURL(named name: String) -> URL? {
-        for directory in ["/usr/bin", "/bin", "/usr/local/bin", "/opt/homebrew/bin"] {
-            let candidate = URL(fileURLWithPath: directory).appendingPathComponent(name)
-            if FileManager.default.isExecutableFile(atPath: candidate.path) {
-                return candidate
-            }
-        }
-        return nil
+        ToolRunner.systemTool(name)
+    }
+
+    static func run(_ executable: URL, _ arguments: [String]) throws -> ToolRunner.Result {
+        try ToolRunner.run(executable, arguments)
     }
 }

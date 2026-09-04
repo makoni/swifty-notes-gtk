@@ -125,22 +125,16 @@ struct ExtractorTests {
         // form is a separate key, and folding it into the plural entry (which
         // is what this did at first) deletes it from the template and ships
         // the string in English.
-        let entries = try extract(
-            """
-            let a = nlocalized("%d note", "%d notes", count: n)
-            let b = "%d notes".localized
-            """,
-        )
+        let source = """
+        let a = nlocalized("%d note", "%d notes", count: n)
+        let b = "%d notes".localized
+        """
+        let entries = try extract(source)
         #expect(entries.contains(Entry(context: nil, singular: "%d note", plural: "%d notes")))
         #expect(entries.contains(Entry(context: nil, singular: "%d notes", plural: nil)))
 
         // Both keys, and gettext accepts them side by side.
-        try template(
-            """
-            let a = nlocalized("%d note", "%d notes", count: n)
-            let b = "%d notes".localized
-            """,
-        ) { url in
+        try template(source) { url in
             let compile = try run(tool: "msgfmt", arguments: ["-o", "/dev/null", url.path])
             #expect(compile.status == 0, "msgfmt rejected the template:\n\(compile.stderr)")
         }
@@ -175,10 +169,6 @@ struct ExtractorTests {
         #expect(result.status != 0, "an unreadable call site has to fail the extraction")
         #expect(result.stderr.contains("argument 1 must be a string literal"))
         #expect(result.stderr.contains("mode.context"))
-        #expect(
-            !result.stdout.contains("text-x-generic"),
-            "the icon name must not become a msgid: \(result.stdout)",
-        )
     }
 
     @Test("A call wrapped across lines is reported")
@@ -241,22 +231,21 @@ struct ExtractorTests {
         )
         #expect(result.status != 0, "a ternary argument has to fail the extraction")
         #expect(result.stderr.contains("argument 1 must be a string literal"))
-        #expect(
-            !result.stdout.contains("settings group"),
-            "half the ternary must not become a context: \(result.stdout)",
-        )
     }
 
-    @Test("A labelled argument is still read as a literal")
-    func aLabelledArgumentIsStillReadAsALiteral() throws {
-        // The label check has to stay permissive enough for the real thing.
-        let entries = try extract(
+    @Test("A labelled leading argument is reported rather than guessed at")
+    func aLabelledLeadingArgumentIsReportedRatherThanGuessedAt() throws {
+        // None of the three call forms labels the arguments that become
+        // msgids, and accepting a label meant finding it by looking for a
+        // colon — which is what let a ternary through. If a call form ever
+        // does label them, this says so instead of guessing.
+        let result = try extractRaw(
             """
-            let a = nlocalized("%d note", "%d notes", count: n)
-            let b = view.set(text: localizedWithContext("ctx", "Labelled"))
+            let a = localizedWithContext(context: "ctx", "Labelled")
             """,
         )
-        #expect(entries.contains(Entry(context: "ctx", singular: "Labelled", plural: nil)))
+        #expect(result.status != 0)
+        #expect(result.stderr.contains("argument 1 must be a string literal"))
     }
 
     @Test("Carriage returns are escaped rather than written raw")
@@ -281,20 +270,114 @@ struct ExtractorTests {
         }
     }
 
+    // MARK: - Where a literal already is localized
+
+    @Test("Localized literals are reported by position, bare ones included")
+    func localizedLiteralsAreReportedByPositionBareOnesIncluded() throws {
+        // What the bare-literal guard reads. It cannot work from the text: a
+        // line can localize one copy of a string and leave another bare, and
+        // only the column tells them apart.
+        let source = #"let a = view.set(localizedWithContext("ctx", "Preview"), "Preview")"#
+        let result = try emitted(source)
+        let offsets = try #require(result.consumedLiterals["Sources/Fixture.swift:1"])
+
+        let quotes = source.indices.filter { source[$0] == "\"" }
+        let openingQuotes = stride(from: 0, to: quotes.count, by: 2)
+            .map { source.distance(from: source.startIndex, to: quotes[$0]) }
+        #expect(openingQuotes.count == 3, "fixture should hold three literals")
+        // The call consumes its context and its msgid; the third literal is
+        // the bare copy, and it must not be reported as consumed.
+        #expect(offsets.sorted() == Array(openingQuotes.prefix(2)))
+    }
+
+    @Test("A literal handed to .localized on the next line is still reported")
+    func aLiteralHandedToLocalizedOnTheNextLineIsStillReported() throws {
+        // This shape is deliberately supported, and its offset has to be
+        // reported too — a guard that recognised `.localized` itself instead
+        // looks at the end of the first line, finds nothing, and reports a
+        // correctly localized literal as bare.
+        let result = try emitted(
+            """
+            let title = "Wrapped String"
+                .localized
+            """,
+        )
+        #expect(result.entries.contains { $0.singular == "Wrapped String" })
+        #expect(result.consumedLiterals["Sources/Fixture.swift:1"] == [12])
+    }
+
+    // MARK: - Comments are not code
+
+    @Test("A call inside a trailing comment is not a call site")
+    func aCallInsideATrailingCommentIsNotACallSite() throws {
+        // Whole-line comments were always skipped; a comment after code was
+        // scanned as code. That was a spurious template entry until
+        // conflicting plural forms became a hard error, at which point a note
+        // to a future reader could stop the whole po/ pipeline.
+        let result = try emitted(
+            """
+            let a = nlocalized("%d file", "%d files", count: n)
+            let b = 1 // this used to be nlocalized("%d file", "%d docs", count: n)
+            let c = "Real".localized // and "Phantom".localized here
+            """,
+        )
+        #expect(result.entries.count == 2, "got \(result.entries.map(\.singular))")
+        #expect(result.entries.contains { $0.singular == "%d file" && $0.plural == "%d files" })
+        #expect(result.entries.contains { $0.singular == "Real" })
+        #expect(!result.entries.contains { $0.singular == "Phantom" })
+    }
+
+    @Test("A double slash inside a literal does not start a comment")
+    func aDoubleSlashInsideALiteralDoesNotStartAComment() throws {
+        let entries = try extract(#"let a = "https://example.com".localized"#)
+        #expect(entries == [Entry(context: nil, singular: "https://example.com", plural: nil)])
+    }
+
+    // MARK: - What a PO file can carry
+
+    @Test("A control character with no PO escape is refused")
+    func aControlCharacterWithNoPOEscapeIsRefused() throws {
+        // `unescapeWithSupport` accepts \0 and arbitrary \u{…}, so a source
+        // literal can hold anything. A NUL written raw into the template
+        // terminates the string for every C consumer downstream of msgfmt.
+        let refused = try extractRaw(##"let a = "nul\0x".localized"##)
+        #expect(refused.status != 0)
+        #expect(refused.stderr.contains("U+0000"))
+
+        // The ones gettext does define an escape for stay welcome.
+        let accepted = try extract(##"let a = "bell\u{7}x".localized"##)
+        #expect(accepted.count == 1)
+    }
+
+    @Test("Nothing is printed when the source tree is refused")
+    func nothingIsPrintedWhenTheSourceTreeIsRefused() throws {
+        // The JSON used to be encoded and printed before the diagnostics were
+        // checked, so a consumer reading stdout without also testing the exit
+        // status ingested a catalogue with a duplicate key in it.
+        let result = try extractRaw(
+            """
+            let a = nlocalized("%d file", "%d files", count: n)
+            let b = nlocalized("%d file", "%d docs", count: n)
+            """,
+        )
+        #expect(result.status != 0)
+        #expect(result.stdout.isEmpty, "got: \(result.stdout)")
+    }
+
     // MARK: - Determinism
 
-    @Test("Entries differing only in their plural form still have an order")
-    func entriesDifferingOnlyInTheirPluralFormStillHaveAnOrder() throws {
-        // Sorting on a subset of the fields leaves two such entries
-        // incomparable, and `Set` iteration order is seeded per process — so
-        // the template comes out in a different order on different runs and
-        // every diff carries noise. Asserting one exact expected order catches
-        // that; re-running and comparing would agree by chance one run in
-        // sixteen.
+    @Test("The template comes out in one defined order")
+    func theTemplateComesOutInOneDefinedOrder() throws {
+        // Entries come out of a `Set`, whose iteration order is seeded per
+        // process, so the sort is the only thing standing between the
+        // template and a diff full of noise. Asserting one exact expected
+        // order catches a comparator that leaves two entries incomparable;
+        // re-running and comparing would agree by chance.
         //
-        // The two entries share a context but differ in singular, because two
-        // plural forms for the *same* key are a source bug the extractor
-        // refuses outright.
+        // Bare entries sort before context-qualified ones, and within a
+        // context by msgid. Two plural forms for the same key would exercise
+        // the last tiebreaker, but that is a source bug the extractor refuses
+        // outright, so no successful run can contain one.
         try template(
             """
             let a = nlocalizedWithContext("search", "%d match", "%d matches", count: n)
@@ -351,8 +434,7 @@ struct ExtractorTests {
             """,
         )
         #expect(result.status != 0, "a key with two plural forms has to fail the extraction")
-        #expect(result.stderr.contains("two different plural forms")
-            || result.stderr.contains("2 different plural forms"))
+        #expect(result.stderr.contains("is asked for with 2 different plural forms"))
         // Both sites, so the disagreement can be settled.
         #expect(result.stderr.contains("Fixture.swift:1"))
         #expect(result.stderr.contains("Fixture.swift:2"))
@@ -423,6 +505,7 @@ struct ExtractorTests {
 
     private struct Emitted: Codable {
         let entries: [DecodedEntry]
+        let consumedLiterals: [String: [Int]]
     }
 
     /// Writes `source` as the only file of a throwaway source tree and runs
@@ -430,7 +513,7 @@ struct ExtractorTests {
     private func extractRaw(
         _ source: String,
         emitMsgids: Bool = true,
-    ) throws -> LocalizationCatalogFixture.ToolResult {
+    ) throws -> ToolRunner.Result {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("swiftynotes-extractor-\(UUID().uuidString)", isDirectory: true)
         let sources = root.appendingPathComponent("Sources", isDirectory: true)
@@ -448,10 +531,14 @@ struct ExtractorTests {
     }
 
     private func extractJSON(_ source: String) throws -> [DecodedEntry] {
+        try emitted(source).entries
+    }
+
+    private func emitted(_ source: String) throws -> Emitted {
         let result = try extractRaw(source)
         #expect(result.status == 0, "\(result.stderr)")
         let data = try #require(result.stdout.data(using: .utf8))
-        return try JSONDecoder().decode(Emitted.self, from: data).entries
+        return try JSONDecoder().decode(Emitted.self, from: data)
     }
 
     private func extract(_ source: String) throws -> Set<Entry> {
@@ -502,22 +589,9 @@ struct ExtractorTests {
     }
 
     /// Runs `tool` from PATH.
-    ///
-    /// Delegates the process plumbing to ``LocalizationCatalogFixture/run(_:_:)``,
-    /// which drains stdout and stderr concurrently — reading one to EOF first
-    /// deadlocks as soon as the child fills the other's ~64KB pipe buffer, and
-    /// the extractor is the one tool here designed to write a diagnostic per
-    /// offending call site.
-    ///
-    /// PATH rather than the fixture's fixed directory list: `swift` lives
-    /// wherever the toolchain was installed.
-    private func run(tool: String, arguments: [String]) throws -> LocalizationCatalogFixture.ToolResult {
-        let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
-        let executable = path.split(separator: ":")
-            .map { URL(fileURLWithPath: String($0)).appendingPathComponent(tool) }
-            .first { FileManager.default.isExecutableFile(atPath: $0.path) }
-        let resolved = try #require(executable, "\(tool) is not on PATH")
-        return try LocalizationCatalogFixture.run(resolved, arguments)
+    private func run(tool: String, arguments: [String]) throws -> ToolRunner.Result {
+        let resolved = try #require(ToolRunner.onPath(tool), "\(tool) is not on PATH")
+        return try ToolRunner.run(resolved, arguments)
     }
 }
 #endif

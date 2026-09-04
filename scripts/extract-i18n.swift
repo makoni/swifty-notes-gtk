@@ -5,8 +5,10 @@ import Foundation
 
 // MARK: - Scanner helpers (ported from LocalizationCatalogTests.swift)
 
-private func stringLiterals(in line: String) -> [(literal: String, end: String.Index)] {
-    var results: [(String, String.Index)] = []
+private func stringLiterals(
+    in line: String
+) -> [(literal: String, start: String.Index, end: String.Index)] {
+    var results: [(String, String.Index, String.Index)] = []
     var index = line.startIndex
     while index < line.endIndex {
         guard line[index] == "\"" else {
@@ -35,12 +37,56 @@ private func stringLiterals(in line: String) -> [(literal: String, end: String.I
             cursor = line.index(after: cursor)
         }
         guard closed else { break }
-        results.append((body, cursor))
+        results.append((body, index, cursor))
         index = cursor
     }
     return results
 }
 
+
+/// The part of `line` that is code: everything before a `//` that is not
+/// inside a string literal.
+///
+/// Whole-line comments were already skipped, but a comment *after* code was
+/// scanned as code — so a call quoted in a note to a future reader was filed
+/// as a real call site. That was merely a spurious template entry until
+/// conflicting plural forms became a hard error, at which point a comment
+/// could stop the whole po/ pipeline and point the developer at prose.
+///
+/// Literal-aware because the alternative breaks the obvious cases: a `//`
+/// inside `"https://example.com"` does not start a comment.
+private func codePortion(of line: String) -> String {
+    var index = line.startIndex
+    var insideLiteral = false
+    while index < line.endIndex {
+        let character = line[index]
+        if insideLiteral {
+            if character == "\\" {
+                let next = line.index(after: index)
+                index = next < line.endIndex ? line.index(after: next) : next
+                continue
+            }
+            if character == "\"" {
+                insideLiteral = false
+            }
+            index = line.index(after: index)
+            continue
+        }
+        if character == "\"" {
+            insideLiteral = true
+            index = line.index(after: index)
+            continue
+        }
+        if character == "/" {
+            let next = line.index(after: index)
+            if next < line.endIndex, line[next] == "/" {
+                return String(line[line.startIndex ..< index])
+            }
+        }
+        index = line.index(after: index)
+    }
+    return line
+}
 
 /// Unescapes with `\u{...}` support. Returns `(value, diagnostics)` where diagnostics
 /// is non-empty if an unrecognised escape was encountered.
@@ -101,11 +147,20 @@ private func unescapeWithSupport(_ raw: String, file: String) -> (value: String?
     return (output, diagnostics)
 }
 
-private func localizedLiterals(in line: String, nextLine: String?, file: String) -> (found: Set<String>, diagnostics: [String]) {
+private func localizedLiterals(
+    in line: String,
+    nextLine: String?,
+    file: String
+) -> (found: Set<String>, consumed: Set<Int>, diagnostics: [String]) {
     var found: Set<String> = []
+    // Where each localized literal starts. The guard that hunts for
+    // unlocalized literals reads these: asking it to recognise `.localized`
+    // itself gave the wrong answer for the form that wraps onto the next
+    // line, which this scanner accepts on purpose.
+    var consumed: Set<Int> = []
     var diagnostics: [String] = []
     let literals = stringLiterals(in: line)
-    for (offset, (literal, endIndex)) in literals.enumerated() {
+    for (offset, (literal, startIndex, endIndex)) in literals.enumerated() {
         let rest = line[endIndex...]
         let afterWhitespace = rest.drop(while: { $0 == " " })
         var isLocalized = afterWhitespace.hasPrefix(".localized")
@@ -123,6 +178,7 @@ private func localizedLiterals(in line: String, nextLine: String?, file: String)
             }
         }
         guard isLocalized else { continue }
+        consumed.insert(line.distance(from: line.startIndex, to: startIndex))
         guard !literal.contains("\\(") else { continue }
         let (unescaped, diag) = unescapeWithSupport(literal, file: file)
         if !diag.isEmpty {
@@ -132,7 +188,7 @@ private func localizedLiterals(in line: String, nextLine: String?, file: String)
             found.insert(unescaped)
         }
     }
-    return (found, diagnostics)
+    return (found, consumed, diagnostics)
 }
 // MARK: - Entries
 
@@ -285,37 +341,23 @@ private func argumentList(
 
 /// The raw literal an argument consists of and how far into the argument its
 /// opening quote sits, or `nil` when the argument is anything else — a
-/// variable, an expression, two literals concatenated.
+/// variable, an expression, a ternary, two literals concatenated.
+///
+/// An argument has to be *nothing but* a literal. Accepting a labelled form
+/// (`label: "text"`) meant finding the label by looking for a colon, and a
+/// ternary has one of those too, so `flag ? "a" : "b"` came through as `"b"`
+/// with nothing reported. None of the three call forms labels the arguments
+/// that become msgids, so the leniency bought nothing; if one ever does, this
+/// reports it rather than guessing.
 private func soleLiteral(in argument: String) -> (literal: String, offset: Int)? {
-    let leadingSpaces = argument.prefix { $0 == " " || $0 == "\t" }.count
-    let trimmed = argument.trimmingCharacters(in: .whitespaces)
-
-    // A labelled argument (`label: "text"`) still counts, so long as what
-    // follows the label is nothing but the literal. The label has to be a
-    // plain identifier: taking everything before the first colon instead
-    // swallows the condition of a ternary, so
-    // `localizedWithContext(flag ? "a" : "b", "X")` would file only "b" and
-    // report nothing — the same silent-truncation defect this parser exists
-    // to remove.
-    var value = trimmed
-    var offset = leadingSpaces
-    if !trimmed.hasPrefix("\""), let colon = trimmed.firstIndex(of: ":") {
-        let label = trimmed[trimmed.startIndex ..< colon]
-        let isIdentifier = !label.isEmpty
-            && label.allSatisfy { $0.isLetter || $0.isNumber || $0 == "_" }
-        guard isIdentifier else { return nil }
-        let afterLabel = trimmed[trimmed.index(after: colon)...]
-        let padding = afterLabel.prefix { $0 == " " || $0 == "\t" }.count
-        offset += trimmed.distance(from: trimmed.startIndex, to: colon) + 1 + padding
-        value = String(afterLabel).trimmingCharacters(in: .whitespaces)
-    }
-
+    let leadingWhitespace = argument.prefix { $0 == " " || $0 == "\t" }.count
+    let value = argument.trimmingCharacters(in: .whitespaces)
     guard value.hasPrefix("\""), value.hasSuffix("\""), value.count >= 2 else { return nil }
     // One literal has to account for the whole argument, which rejects
     // `"a" + "b"` and `"a" "b"` — neither is a msgid.
     let literals = stringLiterals(in: value)
     guard literals.count == 1, literals[0].end == value.endIndex else { return nil }
-    return (literals[0].literal, offset)
+    return (literals[0].literal, leadingWhitespace)
 }
 
 /// The entries a line's context and plural calls ask for.
@@ -335,7 +377,9 @@ private func callEntries(
     var consumed: Set<Int> = []
     var diagnostics: [String] = []
     // Almost no line calls any of these; skip the Unicode-aware searches.
-    guard line.contains("localized(") || line.contains("WithContext(") else {
+    // Read off the same list the loop below iterates, so adding a call form
+    // cannot silently skip every line that uses it.
+    guard localizingCalls.contains(where: { line.contains($0.keyword) }) else {
         return (entries, consumed, diagnostics)
     }
     let context = line.trimmingCharacters(in: .whitespaces)
@@ -446,7 +490,7 @@ private func scanSources() throws -> (
             guard !trimmed.hasPrefix("//") else { continue }
 
             // Check for `"""` on this line — skip multi-line literals
-            let lineStr = String(line)
+            let lineStr = codePortion(of: String(line))
             if lineStr.contains("\"\"\"") {
                 // Detect if a `"""` literal has `.localized` applied — that's an error
                 // Simple heuristic: if `.localized` appears on the same line as `"""`
@@ -467,8 +511,13 @@ private func scanSources() throws -> (
             }
 
             let site = "\(relative):\(i + 1)"
-            let nextLine: String? = i + 1 < lines.count ? String(lines[i + 1]) : nil
-            let (found, localDiagnostics) = localizedLiterals(in: lineStr, nextLine: nextLine, file: relative)
+            let nextLine: String? = (i + 1 < lines.count ? String(lines[i + 1]) : nil)
+                .map(codePortion(of:))
+            let (found, bareConsumed, localDiagnostics) = localizedLiterals(
+                in: lineStr,
+                nextLine: nextLine,
+                file: relative
+            )
             for msgid in found {
                 entries[ScannedEntry(context: nil, singular: msgid, plural: nil), default: []].insert(site)
             }
@@ -478,8 +527,12 @@ private func scanSources() throws -> (
             for entry in called {
                 entries[entry, default: []].insert(site)
             }
-            if !callConsumed.isEmpty {
-                consumed[site, default: []].formUnion(callConsumed)
+            // Both scanners report offsets on the same line, so the two sets
+            // merge — but each site is visited once, so this is an
+            // assignment rather than an accumulation.
+            let lineConsumed = bareConsumed.union(callConsumed)
+            if !lineConsumed.isEmpty {
+                consumed[site] = lineConsumed
             }
             diagnostics.append(contentsOf: callDiagnostics)
         }
@@ -551,7 +604,7 @@ private func conflictingPluralForms(_ entries: [ScannedEntry: Set<String>]) -> [
                 "  \(form.debugDescription) at \(sites.sorted(by: siteIsBefore).joined(separator: ", "))"
             }
             .joined(separator: "\n")
-        let name = key.context.map { "\($0)\u{4}\(key.msgid)" } ?? key.msgid
+        let name = ScannedEntry(context: key.context, singular: key.msgid, plural: nil).lookupKey
         diagnostics.append(
             "\(name.debugDescription) is asked for with \(forms.count) different plural forms; "
                 + "gettext keys a plural entry on its singular alone, so this cannot be "
@@ -565,13 +618,18 @@ private func conflictingPluralForms(_ entries: [ScannedEntry: Set<String>]) -> [
 
 /// Escapes a msgid for a PO file.
 ///
-/// Iterates unicode scalars rather than characters on purpose: Swift treats
-/// CR+LF as a single `Character`, so a switch over characters matches
-/// neither half of it and writes a raw line break inside the quoted string
-/// — which msgfmt refuses outright ("end-of-line within string"). A lone
-/// CR is the quieter version of the same bug: it compiles, and then an
-/// editor or msgmerge normalises the line ending and rewrites the msgid out
-/// from under the lookup.
+/// Iterates unicode scalars rather than characters on purpose: Swift reads
+/// CR+LF as a single `Character`, so a switch over characters matches neither
+/// half of it and writes a raw line break inside the quoted string — which
+/// msgfmt refuses outright ("end-of-line within string"). A lone CR is the
+/// quieter version of the same bug: it compiles, and then an editor or
+/// msgmerge normalises the line ending and rewrites the msgid out from under
+/// the lookup.
+///
+/// The escapes are the ones gettext defines. Anything else in the C0 range
+/// has no PO spelling at all and is dropped here — ``unrepresentableScalars``
+/// reports those before a template is written, so the drop is unreachable in
+/// practice.
 private func escapePO(_ string: String) -> String {
     var output = ""
     for scalar in string.unicodeScalars {
@@ -580,17 +638,62 @@ private func escapePO(_ string: String) -> String {
             output += "\\\\"
         case "\"":
             output += "\\\""
+        case "\u{07}":
+            output += "\\a"
+        case "\u{08}":
+            output += "\\b"
+        case "\u{0C}":
+            output += "\\f"
         case "\n":
             output += "\\n"
         case "\r":
             output += "\\r"
         case "\t":
             output += "\\t"
+        case "\u{0B}":
+            output += "\\v"
         default:
+            guard !isUnrepresentableInPO(scalar) else { continue }
             output.unicodeScalars.append(scalar)
         }
     }
     return output
+}
+
+/// Whether a scalar has no PO spelling: a control character that gettext
+/// defines no escape for.
+///
+/// Writing one raw is worse than useless — a NUL terminates the string for
+/// every C consumer downstream of msgfmt, and this template is merged with
+/// one xgettext wrote, so the two have to agree on what is representable.
+private func isUnrepresentableInPO(_ scalar: Unicode.Scalar) -> Bool {
+    switch scalar {
+    case "\u{07}", "\u{08}", "\u{0B}", "\u{0C}", "\n", "\r", "\t":
+        false
+    default:
+        scalar.value < 0x20 || scalar.value == 0x7F
+    }
+}
+
+/// Reports every msgid holding a character a PO file cannot carry.
+///
+/// `unescapeWithSupport` accepts `\0` and arbitrary `\u{…}`, so a source
+/// literal can hold anything; this is where that stops.
+private func unrepresentableScalars(_ entries: [ScannedEntry: Set<String>]) -> [String] {
+    var diagnostics: [String] = []
+    for (entry, sites) in entries {
+        let site = sites.sorted(by: siteIsBefore).first ?? "?"
+        for text in [entry.context, entry.singular, entry.plural].compactMap({ $0 }) {
+            for scalar in text.unicodeScalars where isUnrepresentableInPO(scalar) {
+                let code = String(format: "%04X", scalar.value)
+                diagnostics.append(
+                    "\(site): a msgid cannot carry U+\(code); gettext defines no escape for it: "
+                        + text.debugDescription
+                )
+            }
+        }
+    }
+    return diagnostics.sorted()
 }
 
 // MARK: - Catalogue plural forms (xgettext convention for .pot)
@@ -630,7 +733,20 @@ do {
     // Reported alongside the scan's own: two call sites disagreeing about a
     // plural form is a source bug, not a scanning failure, but it stops the
     // catalogue from compiling all the same.
-    let diagnostics = scanDiagnostics + conflictingPluralForms(entries)
+    let diagnostics = scanDiagnostics
+        + conflictingPluralForms(entries)
+        + unrepresentableScalars(entries)
+
+    // Before anything is printed, either way: a template that cannot compile
+    // must not reach a consumer at all. Emitting the JSON first and exiting 1
+    // afterwards hands well-formed-looking JSON with a duplicate key in it to
+    // anything that reads stdout without checking the status.
+    if !diagnostics.isEmpty {
+        for diagnostic in diagnostics {
+            fputs(diagnostic + "\n", stderr)
+        }
+        exit(1)
+    }
 
     if CommandLine.arguments.contains("--emit-msgids") {
         let result = EmitMsgidsResult(
@@ -650,20 +766,7 @@ do {
            let json = String(data: data, encoding: .utf8) {
             print(json)
         }
-        if !diagnostics.isEmpty {
-            for diagnostic in diagnostics {
-                fputs(diagnostic + "\n", stderr)
-            }
-            exit(1)
-        }
         exit(0)
-    }
-
-    if !diagnostics.isEmpty {
-        for diagnostic in diagnostics {
-            fputs(diagnostic + "\n", stderr)
-        }
-        exit(1)
     }
 
     let now = Date()
