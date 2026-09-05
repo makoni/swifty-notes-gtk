@@ -914,6 +914,24 @@ public final class NotesRepository: @unchecked Sendable {
     /// notes can be grouped.
     public static let defaultSeedGuidesFolder = "Guides"
 
+    /// The seeded notes stay in English on purpose, in every language the
+    /// build ships.
+    ///
+    /// They are the one piece of user-visible text the catalogues do not
+    /// cover, and that is a decision rather than an oversight (#39). What is
+    /// seeded is *content*: markdown written into the user's own notes folder,
+    /// which they then edit. Translating it would make first launch decide,
+    /// once and permanently, which language a user's files are in — picking a
+    /// different interface language later cannot retranslate a file they may
+    /// already have edited.
+    ///
+    /// It would also be the only localized text with nothing to keep it
+    /// honest. Every catalogue string is held by `msgcmp` and the guards in
+    /// `LocalizationCatalogTests`; prose in a markdown seed has no key to
+    /// compare, so editing the English would leave thirteen translations
+    /// silently stale. On top of that the showcase note is a typography demo
+    /// whose content is half the point, and the CLI guide is mostly shell
+    /// commands that have to stay literal.
     @discardableResult
     public func seedDefaultNotesIfNeeded(createdAt: Date = Date()) throws -> [Note] {
         try queue.sync { () throws -> [Note] in
@@ -1269,9 +1287,15 @@ public final class NotesRepository: @unchecked Sendable {
         try data.write(to: assetURL, options: .atomic)
     }
 
+    /// Identified by the asset the note links to, not by its title.
+    ///
+    /// A title is the first meaningful line of the user's own markdown, so it
+    /// changes the moment they rename the seeded note — and then the image
+    /// stops being repaired, for a note that still links to it. The link is
+    /// the durable signal, and it is the one
+    /// ``copyLegacyShowcaseAssetUnlockedIfNeeded`` has always used.
     private func repairShowcaseImageUnlockedIfNeeded(for note: Note) throws {
-        guard note.title == "Markdown Showcase",
-              note.content.contains(MarkdownShowcaseSeed.imageAssetPath) else { return }
+        guard note.content.contains(MarkdownShowcaseSeed.imageAssetPath) else { return }
         try persistShowcaseImageUnlockedIfNeeded(for: note)
     }
 
