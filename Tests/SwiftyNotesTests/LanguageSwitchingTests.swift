@@ -98,6 +98,50 @@ struct LanguageSwitchingTests {
         )
     }
 
+    /// Every shipped catalogue, reached through the app's own switch.
+    ///
+    /// The catalogue guards compare each `.po` against its compiled `.mo`, and
+    /// the switch has one test of its own — but between them sits
+    /// ``AppLanguage/catalogueCode``, and nothing checked that picking a
+    /// language lands on *that* language's catalogue. A case whose code named
+    /// a neighbour would leave every existing test green: the strings would
+    /// still be translated, just into the wrong language.
+    ///
+    /// Three labels rather than one, and compared against what the `.po` on
+    /// disk says rather than against "not English", because "not English" is
+    /// exactly what a cross-wired code produces.
+    @Test(
+        "Every shipped language reaches its own catalogue",
+        arguments: LanguageSwitchingTests.shippedLanguageCodes,
+    ) @MainActor
+    func everyShippedLanguageReachesItsOwnCatalogue(_ code: String) throws {
+        let language = try #require(
+            AppLanguage(rawValue: code),
+            "po/LINGUAS ships \(code) with no AppLanguage case to select it",
+        )
+        try withRestoredLanguage {
+            try #require(
+                applyLanguage(language),
+                "no usable locale on this host — gettext ignores LANGUAGE under C",
+            )
+            for msgid in ["Save Note", "Settings", "Trash"] {
+                let expected = try #require(
+                    Self.catalogueTranslation(of: msgid, in: code),
+                    "po/\(code).po has no single-line entry for \(msgid.debugDescription)",
+                )
+                #expect(
+                    msgid.localized == expected,
+                    """
+                    picking \(code) translated \(msgid.debugDescription) as \
+                    \(msgid.localized.debugDescription), but po/\(code).po says \
+                    \(expected.debugDescription) — the switch reached a different \
+                    catalogue than the one selected
+                    """,
+                )
+            }
+        }
+    }
+
     // MARK: - The gettext switch
 
     @Test("Pinning a language changes lookups without a restart") @MainActor
@@ -830,4 +874,48 @@ struct LanguageSwitchingTests {
         LocalizationTestSupport.applySessionLanguage(language)
     }
 }
+// MARK: - Fixture
+
+extension LanguageSwitchingTests {
+    fileprivate static let packageRoot = URL(fileURLWithPath: #filePath, isDirectory: false)
+        .deletingLastPathComponent() // SwiftyNotesTests
+        .deletingLastPathComponent() // Tests
+        .deletingLastPathComponent() // <package root>
+
+    /// The language codes `build-locales.sh` compiles and packaging installs.
+    /// Read rather than tabulated, so adding a language extends the coverage
+    /// by itself.
+    fileprivate static let shippedLanguageCodes: [String] = {
+        let linguas = packageRoot.appendingPathComponent("po/LINGUAS")
+        guard let text = try? String(contentsOf: linguas, encoding: .utf8) else { return [] }
+        return text
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+    }()
+
+    /// What `po/<language>.po` translates `msgid` as, for an entry that has no
+    /// context and fits on one line — which the three labels above do in every
+    /// shipped catalogue. Anything else returns `nil` and fails the test that
+    /// asked, rather than guessing.
+    fileprivate static func catalogueTranslation(of msgid: String, in language: String) -> String? {
+        let url = packageRoot.appendingPathComponent("po/\(language).po")
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        for (index, line) in lines.enumerated()
+            where line == "msgid \"\(msgid)\"" && index + 1 < lines.count {
+            // A preceding msgctxt would make this a different lookup key.
+            if index > 0, lines[index - 1].hasPrefix("msgctxt ") { continue }
+            let translation = lines[index + 1]
+            guard translation.hasPrefix("msgstr \""), translation.hasSuffix("\""), translation.count > 9 else {
+                continue
+            }
+            return String(translation.dropFirst(8).dropLast())
+                .replacingOccurrences(of: "\\\"", with: "\"")
+                .replacingOccurrences(of: "\\\\", with: "\\")
+        }
+        return nil
+    }
+}
+
 #endif
