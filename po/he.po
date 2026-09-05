@@ -1,0 +1,1278 @@
+# Hebrew translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Hebrew\n"
+"Language: he\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " הפתקים יועברו לאשפה כך שניתן יהיה לשחזר אותם."
+
+msgid " and "
+msgstr " ו־"
+
+msgid "\"%@\" contains %@."
+msgstr "“%@” מכיל %@."
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "“%@” מכיל %@. יש להעביר ‎--yes‎ כדי למחוק אותו על תוכנו."
+
+msgid "\"%@\" is empty."
+msgstr "“%@” ריק."
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "“%@” אינו שם תיקייה תקין."
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d התאמה"
+msgstr[1] "%d התאמות"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d פתק"
+msgstr[1] "%d פתקים"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "%d פתק יימחק לצמיתות. לא ניתן לבטל פעולה זו."
+msgstr[1] "%d פתקים יימחקו לצמיתות. לא ניתן לבטל פעולה זו."
+
+msgid "%d of %d"
+msgstr "%d מתוך %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d מקטע"
+msgstr[1] "%d מקטעים"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d תת־תיקייה"
+msgstr[1] "%d תת־תיקיות"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d תת־מקטע"
+msgstr[1] "%d תת־מקטעים"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d מילה"
+msgstr[1] "%d מילים"
+
+msgid "%d × %d table"
+msgstr "טבלה %d × %d"
+
+msgid "%d × %d table — column alignment"
+msgstr "טבלה %d × %d — יישור עמודות"
+
+msgid "(Root)"
+msgstr "(שורש)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "כבר קיימים תיקייה או פתק ב־“%@”."
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "יישום פתקי Markdown מקורי ל־GTK, כתוב ב־Swift בעזרת swift-adwaita."
+
+msgid "About Swifty Notes"
+msgstr "על אודות Swifty Notes"
+
+msgid "After 30 days"
+msgstr "אחרי 30 ימים"
+
+msgid "After 7 days"
+msgstr "אחרי 7 ימים"
+
+msgid "After 90 days"
+msgstr "אחרי 90 ימים"
+
+msgid "After a year"
+msgstr "אחרי שנה"
+
+msgid "All files"
+msgstr "כל הקבצים"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "כבר קיימת תיקיית “assets” לצד הייצוא. מיזוג ידרוס קבצים בעלי אותו שם."
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "כבר קיימת תיקיית “assets” ב־%@."
+
+msgid "Appearance"
+msgstr "מראה"
+
+msgid "Applies immediately — no restart."
+msgstr "חל מיד, בלי הפעלה מחדש."
+
+msgid "Autosave delay"
+msgstr "השהיית שמירה אוטומטית"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "השמירה האוטומטית פועלת אחרי העריכה האחרונה, לפי ההשהיה שנקבעה."
+
+msgid "Back to size picker"
+msgstr "חזרה לבחירת הגודל"
+
+msgid "Bold"
+msgstr "מודגש"
+
+msgid "Breadcrumb strip above editor"
+msgstr "רצועת הנתיב מעל העורך"
+
+msgid "Browse…"
+msgstr "עיון…"
+
+msgid "Bulleted List"
+msgstr "רשימת תבליטים"
+
+msgid "Bullets"
+msgstr "תבליטים"
+
+msgid "Cancel"
+msgstr "ביטול"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "לא ניתן להעביר את “%@” אל “%@” שנמצא בתוכו."
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "לא ניתן להניח תיקייה או פתק בתוך תיקיית הפתק ב־“%@”."
+
+msgid "Case Sensitive"
+msgstr "תלוי רישיות"
+
+msgid "Centred"
+msgstr "ממורכז"
+
+msgid "Check for Updates…"
+msgstr "בדיקת עדכונים…"
+
+msgid "Choose Notes Folder"
+msgstr "בחירת תיקיית הפתקים"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "נא לבחור תיקיית יעד עבור “%@”."
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "נא לבחור מילון, או לעקוב אחרי אזור המערכת."
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "נא לבחור תיקיית יעד ריקה לפתקים שלך."
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "נא לבחור היכן Swifty Notes ישמור קובצי Markdown ואת המשאבים הנלווים."
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "נא לבחור אם מקש Tab מוסיף רווחים או תווי טאב."
+
+msgid "Code"
+msgstr "קוד"
+
+msgid "Collapse section"
+msgstr "צמצום המקטע"
+
+msgid "Column %d: %@ — click to change"
+msgstr "עמודה %d: %@ — לחיצה משנה"
+
+msgid "Columns"
+msgstr "עמודות"
+
+msgid "Comfortable"
+msgstr "מרווח"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "“מרווח” הוא בררת המחדל; “צפוף” מקטין את הריווח בין השורות."
+
+msgid "Compact"
+msgstr "צפוף"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "קביעת אופן ההצגה של Markdown בתצוגה המקדימה."
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "קביעת גלישת שורות, הזחה וגודל הטקסט בעורך."
+
+msgid "Copied note ID"
+msgstr "מזהה הפתק הועתק"
+
+msgid "Copy code to clipboard"
+msgstr "העתקת הקוד ללוח הגזירים"
+
+msgid "Copy note ID"
+msgstr "העתקת מזהה הפתק"
+
+msgid "Could not add image"
+msgstr "לא ניתן להוסיף את התמונה"
+
+msgid "Could not change the notes folder"
+msgstr "לא ניתן לשנות את תיקיית הפתקים"
+
+msgid "Could not check for updates: %@"
+msgstr "לא ניתן לבדוק עדכונים: %@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "לא ניתן לבדוק עדכונים: אין חיבור לאינטרנט."
+
+msgid "Could not choose a notes folder"
+msgstr "לא ניתן לבחור תיקיית פתקים"
+
+msgid "Could not create folder"
+msgstr "לא ניתן ליצור את התיקייה"
+
+msgid "Could not create note"
+msgstr "לא ניתן ליצור את הפתק"
+
+msgid "Could not delete folder"
+msgstr "לא ניתן למחוק את התיקייה"
+
+msgid "Could not delete note"
+msgstr "לא ניתן למחוק את הפתק"
+
+msgid "Could not duplicate note"
+msgstr "לא ניתן לשכפל את הפתק"
+
+msgid "Could not empty Trash"
+msgstr "לא ניתן לרוקן את האשפה"
+
+msgid "Could not encode CLI output"
+msgstr "לא ניתן לקודד את פלט שורת הפקודה"
+
+msgid "Could not export note"
+msgstr "לא ניתן לייצא את הפתק"
+
+msgid "Could not import file into library"
+msgstr "לא ניתן לייבא את הקובץ לספרייה"
+
+msgid "Could not import note"
+msgstr "לא ניתן לייבא את הפתק"
+
+msgid "Could not inspect markdown file"
+msgstr "לא ניתן לבדוק את קובץ ה־Markdown"
+
+msgid "Could not inspect notes directory"
+msgstr "לא ניתן לבדוק את תיקיית הפתקים"
+
+msgid "Could not load notes"
+msgstr "לא ניתן לטעון את הפתקים"
+
+msgid "Could not move folder"
+msgstr "לא ניתן להעביר את התיקייה"
+
+msgid "Could not move note"
+msgstr "לא ניתן להעביר את הפתק"
+
+msgid "Could not open containing folder"
+msgstr "לא ניתן לפתוח את התיקייה המכילה"
+
+msgid "Could not open export dialog"
+msgstr "לא ניתן לפתוח את חלון הייצוא"
+
+msgid "Could not open file dialog"
+msgstr "לא ניתן לפתוח את חלון הקבצים"
+
+msgid "Could not open import dialog"
+msgstr "לא ניתן לפתוח את חלון הייבוא"
+
+msgid "Could not open markdown file"
+msgstr "לא ניתן לפתוח את קובץ ה־Markdown"
+
+msgid "Could not open notes folder"
+msgstr "לא ניתן לפתוח את תיקיית הפתקים"
+
+msgid "Could not open release page: %@"
+msgstr "לא ניתן לפתוח את עמוד הגרסה: %@"
+
+msgid "Could not open save dialog"
+msgstr "לא ניתן לפתוח את חלון השמירה"
+
+msgid "Could not open settings"
+msgstr "לא ניתן לפתוח את ההגדרות"
+
+msgid "Could not parse current version \"%@\""
+msgstr "לא ניתן לפענח את הגרסה הנוכחית “%@”"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "לא ניתן לפענח את הגרסה המרוחקת “%@”"
+
+msgid "Could not paste files"
+msgstr "לא ניתן להדביק את הקבצים"
+
+msgid "Could not paste image"
+msgstr "לא ניתן להדביק את התמונה"
+
+msgid "Could not permanently delete note"
+msgstr "לא ניתן למחוק את הפתק לצמיתות"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "לא ניתן לקרוא תוכן UTF-8 מהקלט התקני"
+
+msgid "Could not reload file"
+msgstr "לא ניתן לטעון מחדש את הקובץ"
+
+msgid "Could not reload notes"
+msgstr "לא ניתן לטעון מחדש את הפתקים"
+
+msgid "Could not rename folder"
+msgstr "לא ניתן לשנות את שם התיקייה"
+
+msgid "Could not rename note"
+msgstr "לא ניתן לשנות את שם הפתק"
+
+msgid "Could not restore note"
+msgstr "לא ניתן לשחזר את הפתק"
+
+msgid "Could not save file: %@"
+msgstr "לא ניתן לשמור את הקובץ: %@"
+
+msgid "Could not save note: %@"
+msgstr "לא ניתן לשמור את הפתק: %@"
+
+msgid "Could not store workspace state"
+msgstr "לא ניתן לשמור את מצב סביבת העבודה"
+
+msgid "Could not update notes index"
+msgstr "לא ניתן לעדכן את מפתח הפתקים"
+
+msgid "Could not update settings"
+msgstr "לא ניתן לעדכן את ההגדרות"
+
+msgid "Create"
+msgstr "יצירה"
+
+msgid "Dark"
+msgstr "כהה"
+
+msgid "Delete"
+msgstr "מחיקה"
+
+msgid "Delete Note"
+msgstr "מחיקת הפתק"
+
+msgid "Delete folder?"
+msgstr "למחוק את התיקייה?"
+
+msgid "Delete folder…"
+msgstr "מחיקת התיקייה…"
+
+msgid "Delete forever"
+msgstr "מחיקה לצמיתות"
+
+msgid "Delete forever…"
+msgstr "מחיקה לצמיתות…"
+
+msgid "Delete “%@” forever?"
+msgstr "למחוק את “%@” לצמיתות?"
+
+msgid "Deleted"
+msgstr "נמחק"
+
+msgid "Deleted %@"
+msgstr "%@ נמחק"
+
+msgid "Delete…"
+msgstr "מחיקה…"
+
+msgid "Dismiss"
+msgstr "סגירה"
+
+msgid "Dismiss update notification"
+msgstr "סגירת התראת העדכון"
+
+msgid "Document"
+msgstr "מסמך"
+
+msgid "Document Menu"
+msgstr "תפריט המסמך"
+
+msgid "Drag handles on hover"
+msgstr "ידיות גרירה בריחוף"
+
+msgid "Duplicate note"
+msgstr "שכפול הפתק"
+
+msgid "Editor"
+msgstr "עורך"
+
+msgid "Editor font size"
+msgstr "גודל הגופן בעורך"
+
+msgid "Editor only"
+msgstr "עורך בלבד"
+
+msgid "Empty Trash"
+msgstr "ריקון האשפה"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "ריקון האשפה (%d פתק)…"
+msgstr[1] "ריקון האשפה (%d פתקים)…"
+
+msgid "Empty Trash automatically"
+msgstr "ריקון האשפה אוטומטית"
+
+msgid "Empty Trash?"
+msgstr "לרוקן את האשפה?"
+
+msgid "Enable spell-check"
+msgstr "הפעלת בדיקת איות"
+
+msgid "Expand section"
+msgstr "הרחבת המקטע"
+
+msgid "Export"
+msgstr "ייצוא"
+
+msgid "Export Note"
+msgstr "ייצוא הפתק"
+
+msgid "Export note…"
+msgstr "ייצוא הפתק…"
+
+msgid "Exported %@"
+msgstr "%@ יוצא"
+
+msgid "Exported %@ with %d %@"
+msgstr "%@ יוצא עם %d %@"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "הקובץ השתנה בכונן. יש לשמור או לטעון מחדש כדי לסנכרן."
+
+msgid "File reloaded from disk"
+msgstr "הקובץ נטען מחדש מהכונן"
+
+msgid "File saved"
+msgstr "הקובץ נשמר"
+
+msgid "Filter Outline"
+msgstr "סינון המתאר"
+
+msgid "Filter headings…"
+msgstr "סינון כותרות…"
+
+msgid "Find…"
+msgstr "חיפוש…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "התיקייה “%@” לא נמצאה."
+
+msgid "Folder %@"
+msgstr "תיקייה %@"
+
+msgid "Folder deleted"
+msgstr "התיקייה נמחקה"
+
+msgid "Folder moved"
+msgstr "התיקייה הועברה"
+
+msgid "Folder name"
+msgstr "שם התיקייה"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "שם התיקייה “%@” חורג ממגבלת מערכת הקבצים של %d בתים."
+
+msgid "Folder name or Work/Drafts"
+msgstr "שם תיקייה, או עבודה/טיוטות"
+
+msgid "Folder renamed"
+msgstr "שם התיקייה שונה"
+
+msgid "Follow system"
+msgstr "מעקב אחרי המערכת"
+
+msgid "Follow system locale"
+msgstr "מעקב אחרי אזור המערכת"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "מעקב אחרי המערכת, או קיבוע השפה שבה משתמשת המנשק."
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "כותרת"
+
+msgid "Help"
+msgstr "עזרה"
+
+msgid "Hide Notes Sidebar"
+msgstr "הסתרת סרגל הפתקים"
+
+msgid "Hide outline (F9)"
+msgstr "הסתרת המתאר (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "הדגשת שגיאות כתיב בתוך הטקסט בעזרת libspelling ומילוני המערכת."
+
+msgid "Hover to pick size"
+msgstr "ריחוף בוחר את הגודל"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "תמונה נוספה לפתק"
+msgstr[1] "תמונות נוספו לפתק"
+
+msgid "Image pasted into note"
+msgstr "תמונה הודבקה בפתק"
+
+msgid "Import"
+msgstr "ייבוא"
+
+msgid "Import into Library"
+msgstr "ייבוא לספרייה"
+
+msgid "Import into Library…"
+msgstr "ייבוא לספרייה…"
+
+msgid "Imported %@"
+msgstr "%@ יובא"
+
+msgid "Imported %@ into library"
+msgstr "%@ יובא לספרייה"
+
+msgid "Indent style"
+msgstr "סגנון ההזחה"
+
+msgid "Insert"
+msgstr "הוספה"
+
+msgid "Insert Table"
+msgstr "הוספת טבלה"
+
+msgid "Insert a markdown link"
+msgstr "הוספת קישור Markdown"
+
+msgid "Insert a markdown table"
+msgstr "הוספת טבלת Markdown"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "הוספת קוד בשורה או מקטע קוד"
+
+msgid "Interface language"
+msgstr "שפת המנשק"
+
+msgid "Invalid note ID: %@"
+msgstr "מזהה פתק שגוי: %@"
+
+msgid "Italic"
+msgstr "נטוי"
+
+msgid "Jump to heading"
+msgstr "קפיצה לכותרת"
+
+msgid "Jump to heading…"
+msgstr "קפיצה לכותרת…"
+
+msgid "Jump-to-heading results"
+msgstr "תוצאות הקפיצה לכותרת"
+
+msgid "Language"
+msgstr "שפה"
+
+msgid "Left-aligned"
+msgstr "יישור לשמאל"
+
+msgid "Library"
+msgstr "ספרייה"
+
+msgid "Light"
+msgstr "בהיר"
+
+msgid "Link"
+msgstr "קישור"
+
+msgid "Main Menu"
+msgstr "תפריט ראשי"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Markdown Editor"
+msgstr "עורך Markdown"
+
+msgid "Markdown Preview"
+msgstr "תצוגה מקדימה של Markdown"
+
+msgid "Markdown notes"
+msgstr "פתקי Markdown"
+
+msgid "Merge"
+msgstr "מיזוג"
+
+msgid "Missing value for --content-file."
+msgstr "חסר ערך עבור ‎--content-file‎."
+
+msgid "Missing value for --content."
+msgstr "חסר ערך עבור ‎--content‎."
+
+msgid "Missing value for --folder."
+msgstr "חסר ערך עבור ‎--folder‎."
+
+msgid "Missing value for --notes-dir."
+msgstr "חסר ערך עבור ‎--notes-dir‎."
+
+msgid "Missing value for --to."
+msgstr "חסר ערך עבור ‎--to‎."
+
+msgid "Move"
+msgstr "העברה"
+
+msgid "Move note"
+msgstr "העברת הפתק"
+
+msgid "Move to…"
+msgstr "העברה אל…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "“%@” הועבר לאשפה"
+
+msgid "Never"
+msgstr "לעולם לא"
+
+msgid "New Folder"
+msgstr "תיקייה חדשה"
+
+msgid "New Note"
+msgstr "פתק חדש"
+
+msgid "New folder"
+msgstr "תיקייה חדשה"
+
+msgid "New note here"
+msgstr "פתק חדש כאן"
+
+msgid "New subfolder in \"%@\""
+msgstr "תת־תיקייה חדשה ב־“%@”"
+
+msgid "New subfolder…"
+msgstr "תת־תיקייה חדשה…"
+
+msgid "Newest First"
+msgstr "החדשים תחילה"
+
+msgid "Newest first"
+msgstr "החדשים תחילה"
+
+msgid "Next Match"
+msgstr "ההתאמה הבאה"
+
+msgid "No headings in this note."
+msgstr "אין כותרות בפתק הזה."
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "אין כותרות בפתק הזה. <a href=\"insert-heading\">להוסיף <tt>## כותרת</tt></a> כדי להתחיל."
+
+msgid "No headings match \"%@\""
+msgstr "אין כותרות התואמות ל־“%@”"
+
+msgid "No headings match the filter."
+msgstr "אין כותרות התואמות לסינון."
+
+msgid "No headings to jump to."
+msgstr "אין כותרות לקפוץ אליהן."
+
+msgid "No matches"
+msgstr "אין התאמות"
+
+msgid "No matches to replace."
+msgstr "אין התאמות להחלפה."
+
+msgid "No note found for ID %@"
+msgstr "לא נמצא פתק עם המזהה %@"
+
+msgid "No notes match \"%@\"."
+msgstr "אין פתקים התואמים ל־“%@”."
+
+msgid "No notes yet."
+msgstr "אין פתקים עדיין."
+
+msgid "No notes yet. Create one with +."
+msgstr "אין פתקים עדיין. אפשר ליצור אחד עם +."
+
+msgid "No other folders to move into"
+msgstr "אין תיקיות אחרות להעביר אליהן"
+
+msgid "Note Outline"
+msgstr "מתאר הפתק"
+
+msgid "Note duplicated"
+msgstr "הפתק שוכפל"
+
+msgid "Note moved"
+msgstr "הפתק הועבר"
+
+msgid "Note permanently deleted"
+msgstr "הפתק נמחק לצמיתות"
+
+msgid "Note renamed"
+msgstr "שם הפתק שונה"
+
+msgid "Note restored"
+msgstr "הפתק שוחזר"
+
+msgid "Note saved"
+msgstr "הפתק נשמר"
+
+msgid "Notes"
+msgstr "פתקים"
+
+msgid "Notes (%d)"
+msgstr "פתקים (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "פתקים (%d/%d)"
+
+msgid "Notes List"
+msgstr "רשימת הפתקים"
+
+msgid "Notes Sidebar"
+msgstr "סרגל הפתקים"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "הפתקים השתנו בכונן. יש לשמור או לטעון מחדש כדי לסנכרן."
+
+msgid "Notes folder"
+msgstr "תיקיית הפתקים"
+
+msgid "Notes folder updated"
+msgstr "תיקיית הפתקים עודכנה"
+
+msgid "Notes reloaded from disk"
+msgstr "הפתקים נטענו מחדש מהכונן"
+
+msgid "Nothing to preview yet."
+msgstr "אין עדיין מה להציג."
+
+msgid "Numbered List"
+msgstr "רשימה ממוספרת"
+
+msgid "OK"
+msgstr "אישור"
+
+msgid "Oldest First"
+msgstr "הישנים תחילה"
+
+msgid "Oldest first"
+msgstr "הישנים תחילה"
+
+msgid "Open"
+msgstr "פתיחה"
+
+msgid "Open Markdown File"
+msgstr "פתיחת קובץ Markdown"
+
+msgid "Open Markdown File…"
+msgstr "פתיחת קובץ Markdown…"
+
+msgid "Open current folder"
+msgstr "פתיחת התיקייה הנוכחית"
+
+msgid "Open notes folder"
+msgstr "פתיחת תיקיית הפתקים"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "יש לפתוח או ליצור פתק לפני גרירת תמונות או הדבקתן."
+
+msgid "Outline"
+msgstr "מתאר"
+
+msgid "Outline Sidebar"
+msgstr "סרגל המתאר"
+
+msgid "Outline density"
+msgstr "צפיפות המתאר"
+
+msgid "Override the application theme or follow the system."
+msgstr "קביעת ערכת הנושא של היישום, או מעקב אחרי המערכת."
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "הנתיב “%@” חורג ממגבלת מערכת הקבצים של %d בתים."
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "מחיקת פתקים שבאשפה לצמיתות אחרי שיעבור פרק הזמן הזה."
+
+msgid "Points"
+msgstr "נקודות"
+
+msgid "Preferences"
+msgstr "העדפות"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "הפיכת השורות הנבחרות לרשימת תבליטים"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "הפיכת השורות הנבחרות לרשימה ממוספרת"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "הפיכת השורות הנבחרות לציטוט"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "הפיכת השורות הנבחרות לרשימת משימות"
+
+msgid "Preview only"
+msgstr "תצוגה מקדימה בלבד"
+
+msgid "Previous Match"
+msgstr "ההתאמה הקודמת"
+
+msgid "Quick Jump"
+msgstr "קפיצה מהירה"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "קפיצה מהירה… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "ציטוט"
+
+msgid "Regular Expression"
+msgstr "ביטוי רגולרי"
+
+msgid "Reload"
+msgstr "טעינה מחדש"
+
+msgid "Reload from disk"
+msgstr "טעינה מחדש מהכונן"
+
+msgid "Rename"
+msgstr "שינוי שם"
+
+msgid "Rename folder"
+msgstr "שינוי שם התיקייה"
+
+msgid "Rename folder…"
+msgstr "שינוי שם התיקייה…"
+
+msgid "Rename note"
+msgstr "שינוי שם הפתק"
+
+msgid "Rename note…"
+msgstr "שינוי שם הפתק…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "משנה את שם “%@”. שמות תיקיות אינם יכולים להכיל לוכסנים (/)."
+
+msgid "Render emoji shortcodes"
+msgstr "הצגת קודי אמוג׳י"
+
+msgid "Replace"
+msgstr "החלפה"
+
+msgid "Replace All"
+msgstr "החלפת הכול"
+
+msgid "Replace every match"
+msgstr "החלפת כל ההתאמות"
+
+msgid "Replace existing assets?"
+msgstr "להחליף את המשאבים הקיימים?"
+
+msgid "Replace the current match"
+msgstr "החלפת ההתאמה הנוכחית"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "%d מופע הוחלף."
+msgstr[1] "%d מופעים הוחלפו."
+
+msgid "Replacement content is required."
+msgstr "נדרש תוכן להחלפה."
+
+msgid "Replace…"
+msgstr "החלפה…"
+
+msgid "Reset"
+msgstr "איפוס"
+
+msgid "Restore"
+msgstr "שחזור"
+
+msgid "Reveal in Folder"
+msgstr "הצגה בתיקייה"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "הצגת תיקיית הפתקים הפעילה במנהל הקבצים."
+
+msgid "Right-aligned"
+msgstr "יישור לימין"
+
+msgid "Save"
+msgstr "שמירה"
+
+msgid "Save As…"
+msgstr "שמירה בשם…"
+
+msgid "Save File"
+msgstr "שמירת הקובץ"
+
+msgid "Save Markdown File As"
+msgstr "שמירת קובץ Markdown בשם"
+
+msgid "Save Note"
+msgstr "שמירת הפתק"
+
+msgid "Saved"
+msgstr "נשמר"
+
+msgid "Saved as %@"
+msgstr "נשמר בשם %@"
+
+msgid "Saving"
+msgstr "בשמירה"
+
+msgid "Search Notes"
+msgstr "חיפוש בפתקים"
+
+msgid "Search notes"
+msgstr "חיפוש בפתקים"
+
+msgid "Seconds"
+msgstr "שניות"
+
+msgid "Settings"
+msgstr "הגדרות"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr "הצגת כינויי ‎:shortcode:‎ (למשל ‎:rocket:‎) כאמוג׳י. טקסט המקור והקוד נשארים כמו שהם."
+
+msgid "Show Notes Sidebar"
+msgstr "הצגת סרגל הפתקים"
+
+msgid "Show outline (F9)"
+msgstr "הצגת המתאר (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "הצגת סימן הגרירה בריחוף. שינוי סדר בגרירה יגיע בנפרד."
+
+msgid "Size"
+msgstr "גודל"
+
+msgid "Sort Notes"
+msgstr "מיון הפתקים"
+
+msgid "Sort Notes by Newest First"
+msgstr "מיון הפתקים לפי החדשים תחילה"
+
+msgid "Sort Notes by Oldest First"
+msgstr "מיון הפתקים לפי הישנים תחילה"
+
+msgid "Sort Notes by Title"
+msgstr "מיון הפתקים לפי כותרת"
+
+msgid "Sort by Title"
+msgstr "מיון לפי כותרת"
+
+msgid "Sorting by newest first"
+msgstr "ממוין לפי החדשים תחילה"
+
+msgid "Sorting by oldest first"
+msgstr "ממוין לפי הישנים תחילה"
+
+msgid "Sorting by title"
+msgstr "ממוין לפי כותרת"
+
+msgid "Source Code"
+msgstr "קוד המקור"
+
+msgid "Spaces"
+msgstr "רווחים"
+
+msgid "Spell check"
+msgstr "בדיקת איות"
+
+msgid "Spell-check language"
+msgstr "שפת בדיקת האיות"
+
+msgid "Split"
+msgstr "מפוצל"
+
+msgid "Split view"
+msgstr "תצוגה מפוצלת"
+
+msgid "Storage"
+msgstr "אחסון"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "‏Swifty Notes יכול לפתוח רק קובצי Markdown מקומיים."
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "אין ל־Swifty Notes הרשאה לגשת לתיקייה הזאת. כדאי לבחור מיקום אחר."
+
+msgid "Swifty Notes is up to date."
+msgstr "‏Swifty Notes מעודכן."
+
+msgid "System language"
+msgstr "שפת המערכת"
+
+msgid "Tab width"
+msgstr "רוחב הטאב"
+
+msgid "Table"
+msgstr "טבלה"
+
+msgid "Tabs"
+msgstr "טאבים"
+
+msgid "Takes effect the next time the app starts."
+msgstr "ייכנס לתוקף בהפעלה הבאה של היישום."
+
+msgid "Task List"
+msgstr "רשימת משימות"
+
+msgid "The application instance is not available."
+msgstr "עותק היישום אינו זמין."
+
+msgid "The current notes folder could not be found."
+msgstr "לא נמצאה תיקיית הפתקים הנוכחית."
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "תיקיית הפתקים החדשה אינה יכולה להיות בתוך התיקייה הנוכחית."
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "כותרת הפתק נגזרת מהשורה המשמעותית הראשונה."
+
+msgid "The selected destination is not a folder."
+msgstr "היעד שנבחר אינו תיקייה."
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "התיקייה שנבחרה נמצאת במערכת קבצים לקריאה בלבד ואינה יכולה לאחסן פתקים."
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "אין מספיק מקום בכונן כדי להעביר את הפתקים לתיקייה הזאת."
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "פעולה זו מסירה את הפתק מהכונן לצמיתות. לא ניתן לבטל אותה."
+
+msgid "Title"
+msgstr "כותרת"
+
+msgid "Toggle Outline"
+msgstr "הצגה או הסתרה של המתאר"
+
+msgid "Trash"
+msgstr "אשפה"
+
+msgid "Trash emptied"
+msgstr "האשפה רוקנה"
+
+msgid "Tree lines under H2 sections"
+msgstr "קווי עץ מתחת למקטעי H2"
+
+msgid "Turn the current line into a heading"
+msgstr "הפיכת השורה הנוכחית לכותרת"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "התאמת לוח המתאר שבצד ורצועת הנתיב מעל העורך."
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "סימון שגיאות כתיב בקו תחתון בזמן ההקלדה והצעת תיקונים בתפריט הלחיצה הימנית."
+
+msgid "Undo"
+msgstr "ביטול פעולה"
+
+msgid "Unknown CLI command: %@"
+msgstr "פקודה לא ידועה: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "פקודה לא ידועה לעזרה: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "תת־פקודה לא ידועה של folders: %@"
+
+msgid "Unknown option: %@"
+msgstr "אפשרות לא ידועה: %@"
+
+msgid "Unsaved changes"
+msgstr "שינויים שלא נשמרו"
+
+msgid "Unsupported image type for %@."
+msgstr "סוג התמונה של %@ אינו נתמך."
+
+msgid "Update"
+msgstr "עדכון"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "אפשר להשתמש ב־/ כדי ליצור תיקיות מקוננות בבת אחת, למשל עבודה/טיוטות."
+
+msgid "Use default location"
+msgstr "שימוש במיקום בררת המחדל"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "יש להשתמש רק באחת מבין ‎--content‎, ‎--content-file‎ ו־‎--stdin‎."
+
+msgid "Version %@ is available."
+msgstr "גרסה %@ זמינה."
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "קווים אנכיים המחברים תת־מקטעי H3 ומטה למקטע ה־H2 שמעליהם."
+
+msgid "Whole Word Match"
+msgstr "התאמת מילה שלמה"
+
+msgid "Wrap long lines"
+msgstr "גלישת שורות ארוכות"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "גלישת פסקאות Markdown במקום גלילה לרוחב."
+
+msgid "Wrap the selection in bold markdown"
+msgstr "עטיפת הבחירה בהדגשת Markdown"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "עטיפת הבחירה בנטייה של Markdown"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "‏`folders create` דורשת נתיב תיקייה אחד בדיוק."
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "‏`folders move <path> --to <parent>` דורשת גם נתיב וגם תיקיית יעד."
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "‏`folders move` מקבלת נתיב תיקייה אחד בדיוק."
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "‏`folders rename` דורשת <path> <new-name>."
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "‏`folders rm` מקבלת נתיב תיקייה אחד בדיוק."
+
+msgid "`folders rm` cannot delete the root."
+msgstr "‏`folders rm` אינה יכולה למחוק את השורש."
+
+msgid "`folders rm` requires a folder path."
+msgstr "‏`folders rm` דורשת נתיב תיקייה."
+
+msgid "`get` expects exactly one note ID."
+msgstr "‏`get` מצפה למזהה פתק אחד בדיוק."
+
+msgid "`get` requires a note ID."
+msgstr "‏`get` דורשת מזהה פתק."
+
+msgid "`help` accepts at most one command name."
+msgstr "‏`help` מקבלת שם פקודה אחד לכל היותר."
+
+msgid "`move` expects exactly one note ID."
+msgstr "‏`move` מצפה למזהה פתק אחד בדיוק."
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "‏`move` דורשת ‎--folder PATH‎ (יש להשתמש ב־‎--folder \"\"‎ כדי להעביר לשורש)."
+
+msgid "`move` requires a note ID."
+msgstr "‏`move` דורשת מזהה פתק."
+
+msgid "`update` requires a note ID."
+msgstr "‏`update` דורשת מזהה פתק."
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "משאב"
+msgstr[1] "משאבים"
+
+msgid "current"
+msgstr "נוכחי"
+
+msgid "“%@” is in the Trash"
+msgstr "“%@” נמצא באשפה"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "רצועת “אתה כאן” מעל סרגל הכלים של העורך."
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ ניווט · ↵ קפיצה · Esc סגירה"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "תצוגה מקדימה"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "כותרת"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "תצוגה מקדימה"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "פתקי Markdown מקוריים ל־GTK עם תצוגה מקדימה ואוטומציה"
+
+msgid "notes"
+msgstr "פתקים"
+
+msgid "markdown"
+msgstr "markdown"
+
+msgid "editor"
+msgstr "עורך"
+
+msgid "preview"
+msgstr "תצוגה מקדימה"
+
+msgid "cli"
+msgstr "שורת פקודה"
+
+msgid "automation"
+msgstr "אוטומציה"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "‏Swifty Notes הוא יישום פתקי Markdown מקורי ל־GTK/libadwaita בלינוקס, כתוב ב־Swift."
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "יישום שולחן העבודה הוא החוויה המרכזית: כתיבה, ארגון ותצוגה מקדימה של פתקי Markdown בעזרת פקדי GTK מקוריים, שמירה אוטומטית, זכירת מצב סביבת העבודה והגדרות עורך שניתן לכוונן כמו גודל גופן, גלישת שורות, הזחה ומראה."
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "שורת הפקודה הכלולה עובדת על אותם פתקים השמורים כקבצים, כך שסקריפטים של מעטפת, אוטומציה וסוכני בינה מלאכותית יכולים לבחון או לעדכן פתקים בבטחה בלי מסד נתונים נפרד או שירות רקע."
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "יצירה, שינוי שם, שכפול, ייצוא ומחיקה של פתקי Markdown."
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "שמירה אוטומטית של עריכות, זכירת מצב סביבת העבודה ושמירת תמונות הפתק יחד איתו."
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "כוונון גודל הגופן בעורך והעדפות כתיבה נוספות כדי להתאים למסכים ולדרכי עבודה שונות."
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "בחירת מקום האחסון של הפתקים, כולל תיקייה מסונכרנת בענן, כך שאותם קבצים פשוטים יישארו מסונכרנים בין מכשירים."
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "ייבוא תמונות בגרירה והצגת Markdown בתצוגה מקדימה מקורית של GTK במקום תצוגת רשת."
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "שימוש בשורת הפקודה לאוטומציה של פתקים בפורמט JSON מתוך סקריפטים, צינורות מעטפת וסוכני בינה מלאכותית."
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "החלפת שפת המנשק בין שפת המערכת לכל שפה שמגיעה עם הבנייה, בלי להפעיל מחדש את היישום."
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "תצוגה מפוצלת עם סרגל הצד, סרגל העיצוב, התצוגה המקדימה החיה והמתאר."
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "תצוגה מקדימה מקורית של Markdown עם מתאר המסמך לניווט בפתקים ארוכים."
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "עורך מלא עם סרגל העיצוב ולוח מתאר המסמך."
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "פתקי Markdown מקוריים ל־GTK עם תצוגה מקדימה ואוטומציה משורת הפקודה"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "פתקים;markdown;עורך;טקסט;שורת פקודה;אוטומציה;"
+
+msgid "New Window"
+msgstr "חלון חדש"
