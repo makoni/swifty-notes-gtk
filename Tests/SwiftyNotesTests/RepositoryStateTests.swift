@@ -391,6 +391,61 @@ struct RepositoryStateTests {
         #expect(!FileManager.default.fileExists(atPath: legacyImageURL.path()))
     }
 
+    /// Renaming the seeded note is the ordinary thing to do with it — it is
+    /// the user's own markdown, and its title is just its first heading. The
+    /// repair used to key off that title, so a renamed note stopped getting
+    /// its image back while still linking to it.
+    @Test("Repository repairs the showcase asset for a note that was renamed")
+    func repositoryRepairsTheShowcaseAssetForANoteThatWasRenamed() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let repository = NotesRepository(notesDirectory: temp)
+        let noteID = UUID()
+        let noteDirectory = temp.appendingPathComponent(noteID.uuidString.lowercased(), isDirectory: true)
+        try FileManager.default.createDirectory(at: noteDirectory, withIntermediateDirectories: true)
+        let renamed = MarkdownShowcaseSeed.content.replacingOccurrences(
+            of: "# Markdown Showcase",
+            with: "# Мои заметки",
+        )
+        try #require(
+            renamed != MarkdownShowcaseSeed.content,
+            "the seed no longer opens with the heading this test renames",
+        )
+        try renamed.write(
+            to: noteDirectory.appendingPathComponent("note.md", isDirectory: false),
+            atomically: true,
+            encoding: .utf8,
+        )
+
+        let metadata = """
+        {
+          "createdAt" : "2026-04-08T08:49:57.000Z",
+          "id" : "\(noteID.uuidString.uppercased())",
+          "schemaVersion" : 1,
+          "updatedAt" : "2026-04-08T09:02:30.000Z"
+        }
+        """
+        try metadata.write(
+            to: noteDirectory.appendingPathComponent("meta.json", isDirectory: false),
+            atomically: true,
+            encoding: .utf8,
+        )
+
+        let notes = try repository.loadNotes()
+        #expect(notes.count == 1)
+        #expect(notes[0].title == "Мои заметки")
+
+        let repairedAssetURL = repository
+            .noteAssetsDirectoryURL(for: notes[0])
+            .appendingPathComponent(MarkdownShowcaseSeed.imageFilename, isDirectory: false)
+        #expect(
+            FileManager.default.fileExists(atPath: repairedAssetURL.path()),
+            "the note still links to the showcase image, so renaming it must not strand the asset",
+        )
+        #expect(try Data(contentsOf: repairedAssetURL) == MarkdownShowcaseSeed.imageData())
+    }
+
     @Test("Repository repairs missing bundled showcase asset for directory backed note")
     func repositoryRepairsMissingBundledShowcaseAssetForDirectoryBackedNote() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
