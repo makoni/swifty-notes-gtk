@@ -1,0 +1,1267 @@
+# Japanese translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " ノートはゴミ箱に移動するので、あとで復元できます。"
+
+msgid " and "
+msgstr "と"
+
+msgid "\"%@\" contains %@."
+msgstr "「%@」には%@が含まれています。"
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "「%@」には%@が含まれています。中身ごと削除するには --yes を指定してください。"
+
+msgid "\"%@\" is empty."
+msgstr "「%@」は空です。"
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "「%@」はフォルダー名として使えません。"
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d件の一致"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d件のノート"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "%d件のノートを完全に削除します。この操作は取り消せません。"
+
+msgid "%d of %d"
+msgstr "%d / %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d個のセクション"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d個のサブフォルダー"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d個のサブセクション"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d語"
+
+msgid "%d × %d table"
+msgstr "%d × %d の表"
+
+msgid "%d × %d table — column alignment"
+msgstr "%d × %d の表 — 列の配置"
+
+msgid "(Root)"
+msgstr "(ルート)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "「%@」にはすでにフォルダーかノートがあります。"
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "swift-adwaita を使い Swift で書かれた、ネイティブ GTK の Markdown ノートアプリです。"
+
+msgid "About Swifty Notes"
+msgstr "Swifty Notes について"
+
+msgid "After 30 days"
+msgstr "30日後"
+
+msgid "After 7 days"
+msgstr "7日後"
+
+msgid "After 90 days"
+msgstr "90日後"
+
+msgid "After a year"
+msgstr "1年後"
+
+msgid "All files"
+msgstr "すべてのファイル"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "エクスポート先にはすでに「assets」フォルダーがあります。統合すると同名のファイルは上書きされます。"
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "%@ にはすでに「assets」フォルダーがあります。"
+
+msgid "Appearance"
+msgstr "外観"
+
+msgid "Applies immediately — no restart."
+msgstr "再起動せずにすぐ反映されます。"
+
+msgid "Autosave delay"
+msgstr "自動保存までの待ち時間"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "自動保存は、最後の編集から設定した時間が経つと実行されます。"
+
+msgid "Back to size picker"
+msgstr "サイズ選択に戻る"
+
+msgid "Bold"
+msgstr "太字"
+
+msgid "Breadcrumb strip above editor"
+msgstr "エディター上部のパンくずリスト"
+
+msgid "Browse…"
+msgstr "参照…"
+
+msgid "Bulleted List"
+msgstr "箇条書き"
+
+msgid "Bullets"
+msgstr "行頭記号"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "「%@」を、その中にある「%@」へは移動できません。"
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "「%@」にあるノートのディレクトリの中には、フォルダーやノートを置けません。"
+
+msgid "Case Sensitive"
+msgstr "大文字と小文字を区別"
+
+msgid "Centred"
+msgstr "中央揃え"
+
+msgid "Check for Updates…"
+msgstr "更新を確認…"
+
+msgid "Choose Notes Folder"
+msgstr "ノートのフォルダーを選択"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "「%@」の移動先フォルダーを選んでください。"
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "辞書を選ぶか、システムのロケールに従います。"
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "ノートの移動先として空のフォルダーを選んでください。"
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "Swifty Notes が Markdown ファイルと付随するアセットを保存する場所を選びます。"
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "Tab キーでスペースとタブ文字のどちらを入力するかを選びます。"
+
+msgid "Code"
+msgstr "コード"
+
+msgid "Collapse section"
+msgstr "セクションを折りたたむ"
+
+msgid "Column %d: %@ — click to change"
+msgstr "%d列目: %@ — クリックで変更"
+
+msgid "Columns"
+msgstr "列"
+
+msgid "Comfortable"
+msgstr "ゆったり"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "「ゆったり」が既定です。「コンパクト」は行の余白を詰めます。"
+
+msgid "Compact"
+msgstr "コンパクト"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "プレビューでの Markdown の見え方を調整します。"
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "折り返し、インデント、エディターの文字サイズを調整します。"
+
+msgid "Copied note ID"
+msgstr "ノートIDをコピーしました"
+
+msgid "Copy code to clipboard"
+msgstr "コードをクリップボードにコピー"
+
+msgid "Copy note ID"
+msgstr "ノートIDをコピー"
+
+msgid "Could not add image"
+msgstr "画像を追加できませんでした"
+
+msgid "Could not change the notes folder"
+msgstr "ノートのフォルダーを変更できませんでした"
+
+msgid "Could not check for updates: %@"
+msgstr "更新を確認できませんでした: %@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "更新を確認できませんでした: インターネットに接続していません。"
+
+msgid "Could not choose a notes folder"
+msgstr "ノートのフォルダーを選べませんでした"
+
+msgid "Could not create folder"
+msgstr "フォルダーを作成できませんでした"
+
+msgid "Could not create note"
+msgstr "ノートを作成できませんでした"
+
+msgid "Could not delete folder"
+msgstr "フォルダーを削除できませんでした"
+
+msgid "Could not delete note"
+msgstr "ノートを削除できませんでした"
+
+msgid "Could not duplicate note"
+msgstr "ノートを複製できませんでした"
+
+msgid "Could not empty Trash"
+msgstr "ゴミ箱を空にできませんでした"
+
+msgid "Could not encode CLI output"
+msgstr "コマンドラインの出力をエンコードできませんでした"
+
+msgid "Could not export note"
+msgstr "ノートをエクスポートできませんでした"
+
+msgid "Could not import file into library"
+msgstr "ファイルをライブラリーにインポートできませんでした"
+
+msgid "Could not import note"
+msgstr "ノートをインポートできませんでした"
+
+msgid "Could not inspect markdown file"
+msgstr "Markdown ファイルを調べられませんでした"
+
+msgid "Could not inspect notes directory"
+msgstr "ノートのディレクトリを調べられませんでした"
+
+msgid "Could not load notes"
+msgstr "ノートを読み込めませんでした"
+
+msgid "Could not move folder"
+msgstr "フォルダーを移動できませんでした"
+
+msgid "Could not move note"
+msgstr "ノートを移動できませんでした"
+
+msgid "Could not open containing folder"
+msgstr "親フォルダーを開けませんでした"
+
+msgid "Could not open export dialog"
+msgstr "エクスポートのダイアログを開けませんでした"
+
+msgid "Could not open file dialog"
+msgstr "ファイルのダイアログを開けませんでした"
+
+msgid "Could not open import dialog"
+msgstr "インポートのダイアログを開けませんでした"
+
+msgid "Could not open markdown file"
+msgstr "Markdown ファイルを開けませんでした"
+
+msgid "Could not open notes folder"
+msgstr "ノートのフォルダーを開けませんでした"
+
+msgid "Could not open release page: %@"
+msgstr "リリースページを開けませんでした: %@"
+
+msgid "Could not open save dialog"
+msgstr "保存のダイアログを開けませんでした"
+
+msgid "Could not open settings"
+msgstr "設定を開けませんでした"
+
+msgid "Could not parse current version \"%@\""
+msgstr "現在のバージョン「%@」を解釈できませんでした"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "サーバー上のバージョン「%@」を解釈できませんでした"
+
+msgid "Could not paste files"
+msgstr "ファイルを貼り付けられませんでした"
+
+msgid "Could not paste image"
+msgstr "画像を貼り付けられませんでした"
+
+msgid "Could not permanently delete note"
+msgstr "ノートを完全に削除できませんでした"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "標準入力から UTF-8 の内容を読み取れませんでした"
+
+msgid "Could not reload file"
+msgstr "ファイルを再読み込みできませんでした"
+
+msgid "Could not reload notes"
+msgstr "ノートを再読み込みできませんでした"
+
+msgid "Could not rename folder"
+msgstr "フォルダーの名前を変更できませんでした"
+
+msgid "Could not rename note"
+msgstr "ノートの名前を変更できませんでした"
+
+msgid "Could not restore note"
+msgstr "ノートを復元できませんでした"
+
+msgid "Could not save file: %@"
+msgstr "ファイルを保存できませんでした: %@"
+
+msgid "Could not save note: %@"
+msgstr "ノートを保存できませんでした: %@"
+
+msgid "Could not store workspace state"
+msgstr "作業状態を保存できませんでした"
+
+msgid "Could not update notes index"
+msgstr "ノートのインデックスを更新できませんでした"
+
+msgid "Could not update settings"
+msgstr "設定を更新できませんでした"
+
+msgid "Create"
+msgstr "作成"
+
+msgid "Dark"
+msgstr "ダーク"
+
+msgid "Delete"
+msgstr "削除"
+
+msgid "Delete Note"
+msgstr "ノートを削除"
+
+msgid "Delete folder?"
+msgstr "フォルダーを削除しますか?"
+
+msgid "Delete folder…"
+msgstr "フォルダーを削除…"
+
+msgid "Delete forever"
+msgstr "完全に削除"
+
+msgid "Delete forever…"
+msgstr "完全に削除…"
+
+msgid "Delete “%@” forever?"
+msgstr "「%@」を完全に削除しますか?"
+
+msgid "Deleted"
+msgstr "削除済み"
+
+msgid "Deleted %@"
+msgstr "%@ を削除しました"
+
+msgid "Delete…"
+msgstr "削除…"
+
+msgid "Dismiss"
+msgstr "閉じる"
+
+msgid "Dismiss update notification"
+msgstr "更新の通知を閉じる"
+
+msgid "Document"
+msgstr "ドキュメント"
+
+msgid "Document Menu"
+msgstr "ドキュメントメニュー"
+
+msgid "Drag handles on hover"
+msgstr "ポインターを重ねるとドラッグハンドルを表示"
+
+msgid "Duplicate note"
+msgstr "ノートを複製"
+
+msgid "Editor"
+msgstr "エディター"
+
+msgid "Editor font size"
+msgstr "エディターの文字サイズ"
+
+msgid "Editor only"
+msgstr "エディターのみ"
+
+msgid "Empty Trash"
+msgstr "ゴミ箱を空にする"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "ゴミ箱を空にする (%d件のノート)…"
+
+msgid "Empty Trash automatically"
+msgstr "ゴミ箱を自動で空にする"
+
+msgid "Empty Trash?"
+msgstr "ゴミ箱を空にしますか?"
+
+msgid "Enable spell-check"
+msgstr "スペルチェックを有効にする"
+
+msgid "Expand section"
+msgstr "セクションを展開する"
+
+msgid "Export"
+msgstr "エクスポート"
+
+msgid "Export Note"
+msgstr "ノートをエクスポート"
+
+msgid "Export note…"
+msgstr "ノートをエクスポート…"
+
+msgid "Exported %@"
+msgstr "%@ をエクスポートしました"
+
+msgid "Exported %@ with %d %@"
+msgstr "%@ を %d個の%@ とともにエクスポートしました"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "ディスク上でファイルが変更されました。保存するか再読み込みして同期してください。"
+
+msgid "File reloaded from disk"
+msgstr "ディスクからファイルを再読み込みしました"
+
+msgid "File saved"
+msgstr "ファイルを保存しました"
+
+msgid "Filter Outline"
+msgstr "アウトラインを絞り込む"
+
+msgid "Filter headings…"
+msgstr "見出しを絞り込む…"
+
+msgid "Find…"
+msgstr "検索…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "フォルダー「%@」が見つかりませんでした。"
+
+msgid "Folder %@"
+msgstr "フォルダー %@"
+
+msgid "Folder deleted"
+msgstr "フォルダーを削除しました"
+
+msgid "Folder moved"
+msgstr "フォルダーを移動しました"
+
+msgid "Folder name"
+msgstr "フォルダー名"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "フォルダー名「%@」はファイルシステムの上限 %d バイトを超えています。"
+
+msgid "Folder name or Work/Drafts"
+msgstr "フォルダー名、または 仕事/下書き"
+
+msgid "Folder renamed"
+msgstr "フォルダーの名前を変更しました"
+
+msgid "Follow system"
+msgstr "システムに従う"
+
+msgid "Follow system locale"
+msgstr "システムのロケールに従う"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "システムに従うか、画面で使う言語を固定します。"
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "見出し"
+
+msgid "Help"
+msgstr "ヘルプ"
+
+msgid "Hide Notes Sidebar"
+msgstr "ノートのサイドバーを隠す"
+
+msgid "Hide outline (F9)"
+msgstr "アウトラインを隠す (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "libspelling とシステムの辞書を使い、つづりの誤りを本文中で強調します。"
+
+msgid "Hover to pick size"
+msgstr "ポインターを重ねてサイズを選択"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "ノートに画像を追加しました"
+
+msgid "Image pasted into note"
+msgstr "ノートに画像を貼り付けました"
+
+msgid "Import"
+msgstr "インポート"
+
+msgid "Import into Library"
+msgstr "ライブラリーにインポート"
+
+msgid "Import into Library…"
+msgstr "ライブラリーにインポート…"
+
+msgid "Imported %@"
+msgstr "%@ をインポートしました"
+
+msgid "Imported %@ into library"
+msgstr "%@ をライブラリーにインポートしました"
+
+msgid "Indent style"
+msgstr "インデントの種類"
+
+msgid "Insert"
+msgstr "挿入"
+
+msgid "Insert Table"
+msgstr "表を挿入"
+
+msgid "Insert a markdown link"
+msgstr "Markdown のリンクを挿入します"
+
+msgid "Insert a markdown table"
+msgstr "Markdown の表を挿入します"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "インラインコードまたはコードブロックを挿入します"
+
+msgid "Interface language"
+msgstr "画面の言語"
+
+msgid "Invalid note ID: %@"
+msgstr "ノートIDが不正です: %@"
+
+msgid "Italic"
+msgstr "斜体"
+
+msgid "Jump to heading"
+msgstr "見出しへ移動"
+
+msgid "Jump to heading…"
+msgstr "見出しへ移動…"
+
+msgid "Jump-to-heading results"
+msgstr "見出しへの移動の候補"
+
+msgid "Language"
+msgstr "言語"
+
+msgid "Left-aligned"
+msgstr "左揃え"
+
+msgid "Library"
+msgstr "ライブラリー"
+
+msgid "Light"
+msgstr "ライト"
+
+msgid "Link"
+msgstr "リンク"
+
+msgid "Main Menu"
+msgstr "メインメニュー"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Markdown Editor"
+msgstr "Markdown エディター"
+
+msgid "Markdown Preview"
+msgstr "Markdown のプレビュー"
+
+msgid "Markdown notes"
+msgstr "Markdown のノート"
+
+msgid "Merge"
+msgstr "統合"
+
+msgid "Missing value for --content-file."
+msgstr "--content-file の値がありません。"
+
+msgid "Missing value for --content."
+msgstr "--content の値がありません。"
+
+msgid "Missing value for --folder."
+msgstr "--folder の値がありません。"
+
+msgid "Missing value for --notes-dir."
+msgstr "--notes-dir の値がありません。"
+
+msgid "Missing value for --to."
+msgstr "--to の値がありません。"
+
+msgid "Move"
+msgstr "移動"
+
+msgid "Move note"
+msgstr "ノートを移動"
+
+msgid "Move to…"
+msgstr "移動先…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "「%@」をゴミ箱に移動しました"
+
+msgid "Never"
+msgstr "しない"
+
+msgid "New Folder"
+msgstr "新しいフォルダー"
+
+msgid "New Note"
+msgstr "新しいノート"
+
+msgid "New folder"
+msgstr "新しいフォルダー"
+
+msgid "New note here"
+msgstr "ここに新しいノート"
+
+msgid "New subfolder in \"%@\""
+msgstr "「%@」に新しいサブフォルダー"
+
+msgid "New subfolder…"
+msgstr "新しいサブフォルダー…"
+
+msgid "Newest First"
+msgstr "新しい順"
+
+msgid "Newest first"
+msgstr "新しい順"
+
+msgid "Next Match"
+msgstr "次の一致"
+
+msgid "No headings in this note."
+msgstr "このノートには見出しがありません。"
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "このノートには見出しがありません。<a href=\"insert-heading\"><tt>## 見出し</tt>を追加</a>して始めましょう。"
+
+msgid "No headings match \"%@\""
+msgstr "「%@」に一致する見出しはありません"
+
+msgid "No headings match the filter."
+msgstr "絞り込みに一致する見出しはありません。"
+
+msgid "No headings to jump to."
+msgstr "移動できる見出しがありません。"
+
+msgid "No matches"
+msgstr "一致なし"
+
+msgid "No matches to replace."
+msgstr "置換する一致がありません。"
+
+msgid "No note found for ID %@"
+msgstr "ID %@ のノートが見つかりません"
+
+msgid "No notes match \"%@\"."
+msgstr "「%@」に一致するノートはありません。"
+
+msgid "No notes yet."
+msgstr "まだノートがありません。"
+
+msgid "No notes yet. Create one with +."
+msgstr "まだノートがありません。+ で作成できます。"
+
+msgid "No other folders to move into"
+msgstr "移動先にできる他のフォルダーがありません"
+
+msgid "Note Outline"
+msgstr "ノートのアウトライン"
+
+msgid "Note duplicated"
+msgstr "ノートを複製しました"
+
+msgid "Note moved"
+msgstr "ノートを移動しました"
+
+msgid "Note permanently deleted"
+msgstr "ノートを完全に削除しました"
+
+msgid "Note renamed"
+msgstr "ノートの名前を変更しました"
+
+msgid "Note restored"
+msgstr "ノートを復元しました"
+
+msgid "Note saved"
+msgstr "ノートを保存しました"
+
+msgid "Notes"
+msgstr "ノート"
+
+msgid "Notes (%d)"
+msgstr "ノート (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "ノート (%d/%d)"
+
+msgid "Notes List"
+msgstr "ノートの一覧"
+
+msgid "Notes Sidebar"
+msgstr "ノートのサイドバー"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "ディスク上でノートが変更されました。保存するか再読み込みして同期してください。"
+
+msgid "Notes folder"
+msgstr "ノートのフォルダー"
+
+msgid "Notes folder updated"
+msgstr "ノートのフォルダーを更新しました"
+
+msgid "Notes reloaded from disk"
+msgstr "ディスクからノートを再読み込みしました"
+
+msgid "Nothing to preview yet."
+msgstr "まだプレビューするものがありません。"
+
+msgid "Numbered List"
+msgstr "番号付きリスト"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Oldest First"
+msgstr "古い順"
+
+msgid "Oldest first"
+msgstr "古い順"
+
+msgid "Open"
+msgstr "開く"
+
+msgid "Open Markdown File"
+msgstr "Markdown ファイルを開く"
+
+msgid "Open Markdown File…"
+msgstr "Markdown ファイルを開く…"
+
+msgid "Open current folder"
+msgstr "現在のフォルダーを開く"
+
+msgid "Open notes folder"
+msgstr "ノートのフォルダーを開く"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "画像をドロップまたは貼り付ける前に、ノートを開くか作成してください。"
+
+msgid "Outline"
+msgstr "アウトライン"
+
+msgid "Outline Sidebar"
+msgstr "アウトラインのサイドバー"
+
+msgid "Outline density"
+msgstr "アウトラインの行間"
+
+msgid "Override the application theme or follow the system."
+msgstr "アプリのテーマを指定するか、システムに従います。"
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "パス「%@」はファイルシステムの上限 %d バイトを超えています。"
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "ゴミ箱のノートを、この時間が経ったら完全に削除します。"
+
+msgid "Points"
+msgstr "ポイント"
+
+msgid "Preferences"
+msgstr "環境設定"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "選択した行を箇条書きにします"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "選択した行を番号付きリストにします"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "選択した行を引用にします"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "選択した行をタスクリストにします"
+
+msgid "Preview only"
+msgstr "プレビューのみ"
+
+msgid "Previous Match"
+msgstr "前の一致"
+
+msgid "Quick Jump"
+msgstr "クイックジャンプ"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "クイックジャンプ… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "引用"
+
+msgid "Regular Expression"
+msgstr "正規表現"
+
+msgid "Reload"
+msgstr "再読み込み"
+
+msgid "Reload from disk"
+msgstr "ディスクから再読み込み"
+
+msgid "Rename"
+msgstr "名前を変更"
+
+msgid "Rename folder"
+msgstr "フォルダーの名前を変更"
+
+msgid "Rename folder…"
+msgstr "フォルダーの名前を変更…"
+
+msgid "Rename note"
+msgstr "ノートの名前を変更"
+
+msgid "Rename note…"
+msgstr "ノートの名前を変更…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "「%@」の名前を変更します。フォルダー名にスラッシュ (/) は使えません。"
+
+msgid "Render emoji shortcodes"
+msgstr "絵文字のショートコードを表示"
+
+msgid "Replace"
+msgstr "置換"
+
+msgid "Replace All"
+msgstr "すべて置換"
+
+msgid "Replace every match"
+msgstr "一致したすべてを置換します"
+
+msgid "Replace existing assets?"
+msgstr "既存のアセットを置き換えますか?"
+
+msgid "Replace the current match"
+msgstr "現在の一致を置換します"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "%d件を置換しました。"
+
+msgid "Replacement content is required."
+msgstr "置き換える内容が必要です。"
+
+msgid "Replace…"
+msgstr "置換…"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Restore"
+msgstr "復元"
+
+msgid "Reveal in Folder"
+msgstr "フォルダーで表示"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "使用中のノートのフォルダーをファイルマネージャーで表示します。"
+
+msgid "Right-aligned"
+msgstr "右揃え"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Save As…"
+msgstr "名前を付けて保存…"
+
+msgid "Save File"
+msgstr "ファイルを保存"
+
+msgid "Save Markdown File As"
+msgstr "Markdown ファイルに名前を付けて保存"
+
+msgid "Save Note"
+msgstr "ノートを保存"
+
+msgid "Saved"
+msgstr "保存済み"
+
+msgid "Saved as %@"
+msgstr "%@ として保存しました"
+
+msgid "Saving"
+msgstr "保存中"
+
+msgid "Search Notes"
+msgstr "ノートを検索"
+
+msgid "Search notes"
+msgstr "ノートを検索"
+
+msgid "Seconds"
+msgstr "秒"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr ":shortcode: 形式の別名 (例: :rocket:) を絵文字として表示します。元の文とコードはそのままです。"
+
+msgid "Show Notes Sidebar"
+msgstr "ノートのサイドバーを表示"
+
+msgid "Show outline (F9)"
+msgstr "アウトラインを表示 (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "ポインターを重ねたときにドラッグ用の目印を表示します。ドラッグでの並べ替えは別途対応します。"
+
+msgid "Size"
+msgstr "サイズ"
+
+msgid "Sort Notes"
+msgstr "ノートを並べ替え"
+
+msgid "Sort Notes by Newest First"
+msgstr "ノートを新しい順に並べ替え"
+
+msgid "Sort Notes by Oldest First"
+msgstr "ノートを古い順に並べ替え"
+
+msgid "Sort Notes by Title"
+msgstr "ノートをタイトル順に並べ替え"
+
+msgid "Sort by Title"
+msgstr "タイトル順に並べ替え"
+
+msgid "Sorting by newest first"
+msgstr "新しい順に並べています"
+
+msgid "Sorting by oldest first"
+msgstr "古い順に並べています"
+
+msgid "Sorting by title"
+msgstr "タイトル順に並べています"
+
+msgid "Source Code"
+msgstr "ソースコード"
+
+msgid "Spaces"
+msgstr "スペース"
+
+msgid "Spell check"
+msgstr "スペルチェック"
+
+msgid "Spell-check language"
+msgstr "スペルチェックの言語"
+
+msgid "Split"
+msgstr "分割"
+
+msgid "Split view"
+msgstr "分割表示"
+
+msgid "Storage"
+msgstr "保存場所"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "Swifty Notes が開けるのはローカルの Markdown ファイルだけです。"
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "Swifty Notes にはそのフォルダーへのアクセス権がありません。別の場所を選んでください。"
+
+msgid "Swifty Notes is up to date."
+msgstr "Swifty Notes は最新です。"
+
+msgid "System language"
+msgstr "システムの言語"
+
+msgid "Tab width"
+msgstr "タブ幅"
+
+msgid "Table"
+msgstr "表"
+
+msgid "Tabs"
+msgstr "タブ"
+
+msgid "Takes effect the next time the app starts."
+msgstr "次回のアプリ起動時に反映されます。"
+
+msgid "Task List"
+msgstr "タスクリスト"
+
+msgid "The application instance is not available."
+msgstr "アプリケーションのインスタンスを利用できません。"
+
+msgid "The current notes folder could not be found."
+msgstr "現在のノートのフォルダーが見つかりませんでした。"
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "新しいノートのフォルダーを、現在のノートのフォルダーの中には置けません。"
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "ノートのタイトルは、最初の意味のある行から決まります。"
+
+msgid "The selected destination is not a folder."
+msgstr "選んだ移動先はフォルダーではありません。"
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "選んだフォルダーは読み取り専用のファイルシステム上にあり、ノートを保存できません。"
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "そのフォルダーにノートを移動するだけのディスク容量がありません。"
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "ノートをディスクから完全に削除します。この操作は取り消せません。"
+
+msgid "Title"
+msgstr "タイトル"
+
+msgid "Toggle Outline"
+msgstr "アウトラインの表示を切り替え"
+
+msgid "Trash"
+msgstr "ゴミ箱"
+
+msgid "Trash emptied"
+msgstr "ゴミ箱を空にしました"
+
+msgid "Tree lines under H2 sections"
+msgstr "H2 セクションの下にツリー線を表示"
+
+msgid "Turn the current line into a heading"
+msgstr "現在の行を見出しにします"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "右側のアウトラインパネルと、エディター上部のパンくずリストを調整します。"
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "入力中につづりの誤りに下線を引き、右クリックメニューで修正候補を出します。"
+
+msgid "Undo"
+msgstr "元に戻す"
+
+msgid "Unknown CLI command: %@"
+msgstr "不明なコマンドです: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "ヘルプの対象として不明なコマンドです: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "folders の不明なサブコマンドです: %@"
+
+msgid "Unknown option: %@"
+msgstr "不明なオプションです: %@"
+
+msgid "Unsaved changes"
+msgstr "未保存の変更"
+
+msgid "Unsupported image type for %@."
+msgstr "%@ の画像形式には対応していません。"
+
+msgid "Update"
+msgstr "更新"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "/ を使うと入れ子のフォルダーを一度に作成できます (例: 仕事/下書き)。"
+
+msgid "Use default location"
+msgstr "既定の場所を使う"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "--content、--content-file、--stdin はどれか1つだけ指定してください。"
+
+msgid "Version %@ is available."
+msgstr "バージョン %@ が利用できます。"
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "H3 以下のサブセクションを親の H2 につなぐ縦線です。"
+
+msgid "Whole Word Match"
+msgstr "単語単位で一致"
+
+msgid "Wrap long lines"
+msgstr "長い行を折り返す"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "横スクロールせずに Markdown の段落を折り返します。"
+
+msgid "Wrap the selection in bold markdown"
+msgstr "選択部分を Markdown の太字にします"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "選択部分を Markdown の斜体にします"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "`folders create` にはフォルダーのパスをちょうど1つ指定してください。"
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "`folders move <path> --to <parent>` にはパスと移動先の両方が必要です。"
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "`folders move` が受け付けるフォルダーのパスはちょうど1つです。"
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "`folders rename` には <path> <new-name> が必要です。"
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "`folders rm` が受け付けるフォルダーのパスはちょうど1つです。"
+
+msgid "`folders rm` cannot delete the root."
+msgstr "`folders rm` でルートは削除できません。"
+
+msgid "`folders rm` requires a folder path."
+msgstr "`folders rm` にはフォルダーのパスが必要です。"
+
+msgid "`get` expects exactly one note ID."
+msgstr "`get` が受け付けるノートIDはちょうど1つです。"
+
+msgid "`get` requires a note ID."
+msgstr "`get` にはノートIDが必要です。"
+
+msgid "`help` accepts at most one command name."
+msgstr "`help` が受け付けるコマンド名は多くても1つです。"
+
+msgid "`move` expects exactly one note ID."
+msgstr "`move` が受け付けるノートIDはちょうど1つです。"
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "`move` には --folder PATH が必要です (ルートに移動するには --folder \"\" を指定します)。"
+
+msgid "`move` requires a note ID."
+msgstr "`move` にはノートIDが必要です。"
+
+msgid "`update` requires a note ID."
+msgstr "`update` にはノートIDが必要です。"
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "アセット"
+
+msgid "current"
+msgstr "現在"
+
+msgid "“%@” is in the Trash"
+msgstr "「%@」はゴミ箱にあります"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "エディターのツールバー上部に表示する現在地のバーです。"
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ 移動 · ↵ 決定 · Esc 閉じる"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "プレビュー"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "タイトル"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "プレビュー"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "プレビューと自動化に対応した、ネイティブ GTK の Markdown ノート"
+
+msgid "notes"
+msgstr "ノート"
+
+msgid "markdown"
+msgstr "markdown"
+
+msgid "editor"
+msgstr "エディター"
+
+msgid "preview"
+msgstr "プレビュー"
+
+msgid "cli"
+msgstr "cli"
+
+msgid "automation"
+msgstr "自動化"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "Swifty Notes は、Swift で書かれた Linux 向けのネイティブ GTK/libadwaita 製 Markdown ノートアプリです。"
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "中心となるのはデスクトップアプリです。ネイティブの GTK ウィジェット、自動保存、作業状態の記憶、そして文字サイズ・折り返し・インデント・外観といった調整可能なエディター設定とともに、Markdown のノートを書き、整理し、プレビューできます。"
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "付属のコマンドラインツールは同じファイル形式のノートを扱うため、シェルスクリプトや自動化、AI エージェントが、別のデータベースや常駐サービスなしにノートを安全に参照・更新できます。"
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "Markdown のノートの作成、名前の変更、複製、エクスポート、削除。"
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "編集の自動保存、作業状態の記憶、そして各ノートの画像アセットをノートと一緒に保管。"
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "画面や作業の進め方に合わせて、エディターの文字サイズなどの設定を調整。"
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "クラウド同期フォルダーを含め、ノートの保存場所を選択。同じ素のファイルを複数の端末で同期できます。"
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "ドラッグ＆ドロップで画像をインポートし、ウェブビューではなくネイティブ GTK のプレビューで Markdown を表示。"
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "スクリプトやシェルのパイプライン、AI エージェントから、JSON で扱いやすいノートの自動化をコマンドラインで実行。"
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "アプリを再起動せずに、画面の言語をシステムの既定と同梱のどの言語にも切り替え。"
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "サイドバー、書式ツールバー、リアルタイムのプレビュー、アウトラインを並べた分割表示。"
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "長いノートを行き来するためのドキュメントアウトラインを備えた、ネイティブの Markdown プレビュー。"
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "書式ツールバーとドキュメントアウトラインのパネルを備えたエディター全体。"
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "プレビューとコマンドラインでの自動化に対応した、ネイティブ GTK の Markdown ノート"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "ノート;メモ;markdown;エディター;テキスト;cli;自動化;"
+
+msgid "New Window"
+msgstr "新しいウィンドウ"
