@@ -290,21 +290,31 @@ struct UISmokeTests {
     /// walk reads freed memory and takes the whole run down. A process of its
     /// own is the fix, and this harness already gives every test one.
     ///
-    /// No Arabic catalogue is needed, and that is the point: the direction
-    /// comes from the language, not from a translation, so right-to-left
-    /// layout works for a language before anyone has translated a word of it.
+    /// The direction comes from the language rather than from a catalogue —
+    /// `isRightToLeft` is unit-tested against languages this build ships no
+    /// translation for — so what is left to assert here is the geometry. It
+    /// runs against the shipped Arabic catalogue, which is the path a user
+    /// takes, and that is why the labels it looks up are localized: the
+    /// accessible names retranslate along with everything else, so the same
+    /// widget answers to "Notes Sidebar" in English and to
+    /// "شريط الملاحظات الجانبي" in Arabic.
     @Test("An Arabic interface mirrors the window under headless wayland")
     func anArabicInterfaceMirrorsTheWindowUnderHeadlessWayland() throws {
-        let extents = """
-        frame = wait_for_frame()
-        for label in ("Notes Sidebar", "Outline Sidebar"):
-            node = require_named(frame, label)
-            # Window coordinates, not desktop: headless, every desktop
-            # coordinate comes back as zero and the assertion would compare
-            # nothing with nothing.
-            x, y, w, h = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
-            print(f"EXTENT {label} x={x} w={w}")
-        """
+        // The panes are found by their localized accessible names and printed
+        // under a fixed key, so the two runs measure the same widgets while
+        // naming them in their own language.
+        let extents = { (notes: String, outline: String) in
+            """
+            frame = wait_for_frame()
+            for key, label in (("notes", "\(notes)"), ("outline", "\(outline)")):
+                node = require_named(frame, label)
+                # Window coordinates, not desktop: headless, every desktop
+                # coordinate comes back as zero and the assertion would compare
+                # nothing with nothing.
+                x, y, w, h = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+                print(f"EXTENT {key} x={x} w={w}")
+            """
+        }
 
         // Both panes are seeded visible rather than inherited from the
         // defaults, so the test states what it needs instead of failing the
@@ -327,13 +337,14 @@ struct UISmokeTests {
         }
 
         let leftToRight = try runWaylandUIScript(
-            extents,
+            extents("Notes Sidebar", "Outline Sidebar"),
             prepare: showBothPanes,
             environment: ["LANGUAGE": "en"],
         )
         expectUIScriptSucceeded(leftToRight)
+        // The Arabic for the two labels, as po/ar.po translates them.
         let rightToLeft = try runWaylandUIScript(
-            extents,
+            extents("شريط الملاحظات الجانبي", "شريط المخطط الجانبي"),
             prepare: showBothPanes,
             environment: ["LANGUAGE": "ar"],
         )
@@ -343,8 +354,8 @@ struct UISmokeTests {
             return
         }
 
-        let notes = "Notes Sidebar"
-        let outline = "Outline Sidebar"
+        let notes = "notes"
+        let outline = "outline"
         let ltrNotes = try #require(ltr[notes], "no extents for the notes sidebar in English")
         let ltrOutline = try #require(ltr[outline], "no extents for the outline sidebar in English")
         let rtlNotes = try #require(rtl[notes], "no extents for the notes sidebar in Arabic")
