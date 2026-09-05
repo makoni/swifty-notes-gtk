@@ -218,6 +218,11 @@ extension MainWindow {
         }
     }
 
+    // This autopilot drives the settings window's language row via
+    // `SettingsWindow.debugSetLanguage`, which is itself `#if DEBUG`-only —
+    // so the whole hook (and its call site in MainWindow) must be gated too,
+    // or the release build fails to compile.
+    #if DEBUG
     /// Flips the Settings window's language row after launch, through the row's
     /// real `notify::selected` signal.
     ///
@@ -282,6 +287,7 @@ extension MainWindow {
             selectDebugLanguagesInSequence(rest)
         }
     }
+    #endif
 
     func scheduleDebugCreateNoteIfRequested() {
         guard !hasScheduledDebugCreateNote else { return }

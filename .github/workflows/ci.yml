@@ -67,6 +67,15 @@ jobs:
       - name: Build project
         run: swift build
 
+      # Debug and release are not the same compile: `#if DEBUG` code is
+      # dropped, so a debug-only helper called from a hook that is not
+      # itself gated compiles here and fails there. That is exactly what
+      # happened — the release build was broken from #31 until 1.5.0 was
+      # prepared, and nothing in CI looked. Release is also what packaging
+      # actually builds.
+      - name: Build project (release)
+        run: swift build -c release
+
       - name: Run core test suites
         run: |
           xvfb-run -a dbus-run-session -- bash -lc \

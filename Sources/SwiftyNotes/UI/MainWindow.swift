@@ -346,11 +346,11 @@ final class MainWindow {
         scheduleDebugHeaderSubtitleLogIfRequested()
         scheduleDebugSettingsOpenIfRequested()
         scheduleDebugCreateNoteIfRequested()
-        scheduleDebugLanguageSwitchIfRequested()
         scheduleDebugSelectionSwitchIfRequested()
         scheduleDebugTypingBurstIfRequested()
         scheduleDebugScrollSweepIfRequested()
         #if DEBUG
+        scheduleDebugLanguageSwitchIfRequested()
         scheduleDebugPreviewSearchIfRequested()
         #endif
         MainContext.idle { [weak self] in
