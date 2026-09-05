@@ -1,0 +1,1267 @@
+# Traditional Chinese translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Traditional Chinese\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " 筆記會移到垃圾桶，之後仍可還原。"
+
+msgid " and "
+msgstr "和"
+
+msgid "\"%@\" contains %@."
+msgstr "「%@」裡有%@。"
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "「%@」裡有%@。加上 --yes 可連同內容一併刪除。"
+
+msgid "\"%@\" is empty."
+msgstr "「%@」是空的。"
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "「%@」不是有效的資料夾名稱。"
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d 個相符項目"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d 篇筆記"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "將永久刪除 %d 篇筆記。這項操作無法復原。"
+
+msgid "%d of %d"
+msgstr "第 %d 個，共 %d 個"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d 個章節"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d 個子資料夾"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d 個子章節"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d 個字"
+
+msgid "%d × %d table"
+msgstr "%d × %d 表格"
+
+msgid "%d × %d table — column alignment"
+msgstr "%d × %d 表格 — 欄位對齊"
+
+msgid "(Root)"
+msgstr "(根目錄)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "「%@」已經有資料夾或筆記了。"
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "以 Swift 搭配 swift-adwaita 寫成的原生 GTK Markdown 筆記程式。"
+
+msgid "About Swifty Notes"
+msgstr "關於 Swifty Notes"
+
+msgid "After 30 days"
+msgstr "30 天後"
+
+msgid "After 7 days"
+msgstr "7 天後"
+
+msgid "After 90 days"
+msgstr "90 天後"
+
+msgid "After a year"
+msgstr "一年後"
+
+msgid "All files"
+msgstr "所有檔案"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "匯出位置旁已經有「assets」資料夾。合併會覆寫同名的檔案。"
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "%@ 已經有「assets」資料夾。"
+
+msgid "Appearance"
+msgstr "外觀"
+
+msgid "Applies immediately — no restart."
+msgstr "立即生效，不必重新啟動。"
+
+msgid "Autosave delay"
+msgstr "自動儲存延遲"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "自動儲存會在最後一次編輯後，依設定的延遲執行。"
+
+msgid "Back to size picker"
+msgstr "回到尺寸選擇"
+
+msgid "Bold"
+msgstr "粗體"
+
+msgid "Breadcrumb strip above editor"
+msgstr "編輯器上方的路徑列"
+
+msgid "Browse…"
+msgstr "瀏覽…"
+
+msgid "Bulleted List"
+msgstr "項目符號清單"
+
+msgid "Bullets"
+msgstr "項目符號"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "無法將「%@」移到它自己底下的「%@」。"
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "無法在「%@」的筆記目錄裡放置資料夾或筆記。"
+
+msgid "Case Sensitive"
+msgstr "區分大小寫"
+
+msgid "Centred"
+msgstr "置中對齊"
+
+msgid "Check for Updates…"
+msgstr "檢查更新…"
+
+msgid "Choose Notes Folder"
+msgstr "選擇筆記資料夾"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "為「%@」選擇目標資料夾。"
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "選擇字典，或跟隨系統的地區設定。"
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "為筆記選擇一個空的目標資料夾。"
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "選擇 Swifty Notes 存放 Markdown 檔案與相關資源的位置。"
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "選擇 Tab 鍵要輸入空格還是定位字元。"
+
+msgid "Code"
+msgstr "程式碼"
+
+msgid "Collapse section"
+msgstr "收合章節"
+
+msgid "Column %d: %@ — click to change"
+msgstr "第 %d 欄：%@ — 點按可變更"
+
+msgid "Columns"
+msgstr "欄"
+
+msgid "Comfortable"
+msgstr "寬鬆"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "「寬鬆」是預設值；「精簡」會縮小列的留白。"
+
+msgid "Compact"
+msgstr "精簡"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "控制 Markdown 在預覽中呈現的樣子。"
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "控制換行、縮排與編輯器的文字大小。"
+
+msgid "Copied note ID"
+msgstr "已複製筆記 ID"
+
+msgid "Copy code to clipboard"
+msgstr "將程式碼複製到剪貼簿"
+
+msgid "Copy note ID"
+msgstr "複製筆記 ID"
+
+msgid "Could not add image"
+msgstr "無法加入圖片"
+
+msgid "Could not change the notes folder"
+msgstr "無法變更筆記資料夾"
+
+msgid "Could not check for updates: %@"
+msgstr "無法檢查更新：%@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "無法檢查更新：沒有網際網路連線。"
+
+msgid "Could not choose a notes folder"
+msgstr "無法選擇筆記資料夾"
+
+msgid "Could not create folder"
+msgstr "無法建立資料夾"
+
+msgid "Could not create note"
+msgstr "無法建立筆記"
+
+msgid "Could not delete folder"
+msgstr "無法刪除資料夾"
+
+msgid "Could not delete note"
+msgstr "無法刪除筆記"
+
+msgid "Could not duplicate note"
+msgstr "無法再製筆記"
+
+msgid "Could not empty Trash"
+msgstr "無法清空垃圾桶"
+
+msgid "Could not encode CLI output"
+msgstr "無法編碼指令列的輸出"
+
+msgid "Could not export note"
+msgstr "無法匯出筆記"
+
+msgid "Could not import file into library"
+msgstr "無法將檔案匯入筆記庫"
+
+msgid "Could not import note"
+msgstr "無法匯入筆記"
+
+msgid "Could not inspect markdown file"
+msgstr "無法檢查 Markdown 檔案"
+
+msgid "Could not inspect notes directory"
+msgstr "無法檢查筆記目錄"
+
+msgid "Could not load notes"
+msgstr "無法載入筆記"
+
+msgid "Could not move folder"
+msgstr "無法移動資料夾"
+
+msgid "Could not move note"
+msgstr "無法移動筆記"
+
+msgid "Could not open containing folder"
+msgstr "無法開啟所在的資料夾"
+
+msgid "Could not open export dialog"
+msgstr "無法開啟匯出對話方塊"
+
+msgid "Could not open file dialog"
+msgstr "無法開啟檔案對話方塊"
+
+msgid "Could not open import dialog"
+msgstr "無法開啟匯入對話方塊"
+
+msgid "Could not open markdown file"
+msgstr "無法開啟 Markdown 檔案"
+
+msgid "Could not open notes folder"
+msgstr "無法開啟筆記資料夾"
+
+msgid "Could not open release page: %@"
+msgstr "無法開啟版本頁面：%@"
+
+msgid "Could not open save dialog"
+msgstr "無法開啟儲存對話方塊"
+
+msgid "Could not open settings"
+msgstr "無法開啟設定"
+
+msgid "Could not parse current version \"%@\""
+msgstr "無法解析目前的版本「%@」"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "無法解析遠端的版本「%@」"
+
+msgid "Could not paste files"
+msgstr "無法貼上檔案"
+
+msgid "Could not paste image"
+msgstr "無法貼上圖片"
+
+msgid "Could not permanently delete note"
+msgstr "無法永久刪除筆記"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "無法從標準輸入讀取 UTF-8 內容"
+
+msgid "Could not reload file"
+msgstr "無法重新載入檔案"
+
+msgid "Could not reload notes"
+msgstr "無法重新載入筆記"
+
+msgid "Could not rename folder"
+msgstr "無法重新命名資料夾"
+
+msgid "Could not rename note"
+msgstr "無法重新命名筆記"
+
+msgid "Could not restore note"
+msgstr "無法還原筆記"
+
+msgid "Could not save file: %@"
+msgstr "無法儲存檔案：%@"
+
+msgid "Could not save note: %@"
+msgstr "無法儲存筆記：%@"
+
+msgid "Could not store workspace state"
+msgstr "無法儲存工作區狀態"
+
+msgid "Could not update notes index"
+msgstr "無法更新筆記索引"
+
+msgid "Could not update settings"
+msgstr "無法更新設定"
+
+msgid "Create"
+msgstr "建立"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "Delete"
+msgstr "刪除"
+
+msgid "Delete Note"
+msgstr "刪除筆記"
+
+msgid "Delete folder?"
+msgstr "要刪除資料夾嗎？"
+
+msgid "Delete folder…"
+msgstr "刪除資料夾…"
+
+msgid "Delete forever"
+msgstr "永久刪除"
+
+msgid "Delete forever…"
+msgstr "永久刪除…"
+
+msgid "Delete “%@” forever?"
+msgstr "要永久刪除「%@」嗎？"
+
+msgid "Deleted"
+msgstr "已刪除"
+
+msgid "Deleted %@"
+msgstr "已刪除 %@"
+
+msgid "Delete…"
+msgstr "刪除…"
+
+msgid "Dismiss"
+msgstr "關閉"
+
+msgid "Dismiss update notification"
+msgstr "關閉更新通知"
+
+msgid "Document"
+msgstr "文件"
+
+msgid "Document Menu"
+msgstr "文件選單"
+
+msgid "Drag handles on hover"
+msgstr "游標移過時顯示拖曳握把"
+
+msgid "Duplicate note"
+msgstr "再製筆記"
+
+msgid "Editor"
+msgstr "編輯器"
+
+msgid "Editor font size"
+msgstr "編輯器字型大小"
+
+msgid "Editor only"
+msgstr "只顯示編輯器"
+
+msgid "Empty Trash"
+msgstr "清空垃圾桶"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "清空垃圾桶（%d 篇筆記）…"
+
+msgid "Empty Trash automatically"
+msgstr "自動清空垃圾桶"
+
+msgid "Empty Trash?"
+msgstr "要清空垃圾桶嗎？"
+
+msgid "Enable spell-check"
+msgstr "啟用拼字檢查"
+
+msgid "Expand section"
+msgstr "展開章節"
+
+msgid "Export"
+msgstr "匯出"
+
+msgid "Export Note"
+msgstr "匯出筆記"
+
+msgid "Export note…"
+msgstr "匯出筆記…"
+
+msgid "Exported %@"
+msgstr "已匯出 %@"
+
+msgid "Exported %@ with %d %@"
+msgstr "已匯出 %@，含 %d 個%@"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "磁碟上的檔案已變更。請儲存或重新載入以同步。"
+
+msgid "File reloaded from disk"
+msgstr "已從磁碟重新載入檔案"
+
+msgid "File saved"
+msgstr "檔案已儲存"
+
+msgid "Filter Outline"
+msgstr "篩選大綱"
+
+msgid "Filter headings…"
+msgstr "篩選標題…"
+
+msgid "Find…"
+msgstr "尋找…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "找不到資料夾「%@」。"
+
+msgid "Folder %@"
+msgstr "資料夾 %@"
+
+msgid "Folder deleted"
+msgstr "已刪除資料夾"
+
+msgid "Folder moved"
+msgstr "已移動資料夾"
+
+msgid "Folder name"
+msgstr "資料夾名稱"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "資料夾名稱「%@」超過檔案系統 %d 位元組的上限。"
+
+msgid "Folder name or Work/Drafts"
+msgstr "資料夾名稱，或 工作/草稿"
+
+msgid "Folder renamed"
+msgstr "已重新命名資料夾"
+
+msgid "Follow system"
+msgstr "跟隨系統"
+
+msgid "Follow system locale"
+msgstr "跟隨系統的地區設定"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "跟隨系統，或固定介面使用的語言。"
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "標題"
+
+msgid "Help"
+msgstr "說明"
+
+msgid "Hide Notes Sidebar"
+msgstr "隱藏筆記側邊欄"
+
+msgid "Hide outline (F9)"
+msgstr "隱藏大綱 (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "使用 libspelling 與系統字典，在內文中標示拼字錯誤。"
+
+msgid "Hover to pick size"
+msgstr "將游標移過去選擇尺寸"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "已將圖片加入筆記"
+
+msgid "Image pasted into note"
+msgstr "已將圖片貼到筆記"
+
+msgid "Import"
+msgstr "匯入"
+
+msgid "Import into Library"
+msgstr "匯入筆記庫"
+
+msgid "Import into Library…"
+msgstr "匯入筆記庫…"
+
+msgid "Imported %@"
+msgstr "已匯入 %@"
+
+msgid "Imported %@ into library"
+msgstr "已將 %@ 匯入筆記庫"
+
+msgid "Indent style"
+msgstr "縮排方式"
+
+msgid "Insert"
+msgstr "插入"
+
+msgid "Insert Table"
+msgstr "插入表格"
+
+msgid "Insert a markdown link"
+msgstr "插入 Markdown 連結"
+
+msgid "Insert a markdown table"
+msgstr "插入 Markdown 表格"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "插入行內程式碼或程式碼區塊"
+
+msgid "Interface language"
+msgstr "介面語言"
+
+msgid "Invalid note ID: %@"
+msgstr "無效的筆記 ID：%@"
+
+msgid "Italic"
+msgstr "斜體"
+
+msgid "Jump to heading"
+msgstr "跳至標題"
+
+msgid "Jump to heading…"
+msgstr "跳至標題…"
+
+msgid "Jump-to-heading results"
+msgstr "跳至標題的結果"
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Left-aligned"
+msgstr "靠左對齊"
+
+msgid "Library"
+msgstr "筆記庫"
+
+msgid "Light"
+msgstr "淺色"
+
+msgid "Link"
+msgstr "連結"
+
+msgid "Main Menu"
+msgstr "主選單"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Markdown Editor"
+msgstr "Markdown 編輯器"
+
+msgid "Markdown Preview"
+msgstr "Markdown 預覽"
+
+msgid "Markdown notes"
+msgstr "Markdown 筆記"
+
+msgid "Merge"
+msgstr "合併"
+
+msgid "Missing value for --content-file."
+msgstr "缺少 --content-file 的值。"
+
+msgid "Missing value for --content."
+msgstr "缺少 --content 的值。"
+
+msgid "Missing value for --folder."
+msgstr "缺少 --folder 的值。"
+
+msgid "Missing value for --notes-dir."
+msgstr "缺少 --notes-dir 的值。"
+
+msgid "Missing value for --to."
+msgstr "缺少 --to 的值。"
+
+msgid "Move"
+msgstr "移動"
+
+msgid "Move note"
+msgstr "移動筆記"
+
+msgid "Move to…"
+msgstr "移動至…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "已將「%@」移到垃圾桶"
+
+msgid "Never"
+msgstr "永不"
+
+msgid "New Folder"
+msgstr "新增資料夾"
+
+msgid "New Note"
+msgstr "新增筆記"
+
+msgid "New folder"
+msgstr "新增資料夾"
+
+msgid "New note here"
+msgstr "在這裡新增筆記"
+
+msgid "New subfolder in \"%@\""
+msgstr "在「%@」中新增子資料夾"
+
+msgid "New subfolder…"
+msgstr "新增子資料夾…"
+
+msgid "Newest First"
+msgstr "最新的在前"
+
+msgid "Newest first"
+msgstr "最新的在前"
+
+msgid "Next Match"
+msgstr "下一個相符項目"
+
+msgid "No headings in this note."
+msgstr "這篇筆記沒有標題。"
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "這篇筆記沒有標題。<a href=\"insert-heading\">加上 <tt>## 標題</tt></a> 就能開始。"
+
+msgid "No headings match \"%@\""
+msgstr "沒有標題符合「%@」"
+
+msgid "No headings match the filter."
+msgstr "沒有標題符合篩選條件。"
+
+msgid "No headings to jump to."
+msgstr "沒有可以跳至的標題。"
+
+msgid "No matches"
+msgstr "沒有相符項目"
+
+msgid "No matches to replace."
+msgstr "沒有可取代的相符項目。"
+
+msgid "No note found for ID %@"
+msgstr "找不到 ID 為 %@ 的筆記"
+
+msgid "No notes match \"%@\"."
+msgstr "沒有筆記符合「%@」。"
+
+msgid "No notes yet."
+msgstr "還沒有筆記。"
+
+msgid "No notes yet. Create one with +."
+msgstr "還沒有筆記。按 + 新增一篇。"
+
+msgid "No other folders to move into"
+msgstr "沒有其他可以移入的資料夾"
+
+msgid "Note Outline"
+msgstr "筆記大綱"
+
+msgid "Note duplicated"
+msgstr "已再製筆記"
+
+msgid "Note moved"
+msgstr "已移動筆記"
+
+msgid "Note permanently deleted"
+msgstr "已永久刪除筆記"
+
+msgid "Note renamed"
+msgstr "已重新命名筆記"
+
+msgid "Note restored"
+msgstr "已還原筆記"
+
+msgid "Note saved"
+msgstr "已儲存筆記"
+
+msgid "Notes"
+msgstr "筆記"
+
+msgid "Notes (%d)"
+msgstr "筆記 (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "筆記 (%d/%d)"
+
+msgid "Notes List"
+msgstr "筆記清單"
+
+msgid "Notes Sidebar"
+msgstr "筆記側邊欄"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "磁碟上的筆記已變更。請儲存或重新載入以同步。"
+
+msgid "Notes folder"
+msgstr "筆記資料夾"
+
+msgid "Notes folder updated"
+msgstr "已更新筆記資料夾"
+
+msgid "Notes reloaded from disk"
+msgstr "已從磁碟重新載入筆記"
+
+msgid "Nothing to preview yet."
+msgstr "目前沒有可預覽的內容。"
+
+msgid "Numbered List"
+msgstr "編號清單"
+
+msgid "OK"
+msgstr "確定"
+
+msgid "Oldest First"
+msgstr "最舊的在前"
+
+msgid "Oldest first"
+msgstr "最舊的在前"
+
+msgid "Open"
+msgstr "開啟"
+
+msgid "Open Markdown File"
+msgstr "開啟 Markdown 檔案"
+
+msgid "Open Markdown File…"
+msgstr "開啟 Markdown 檔案…"
+
+msgid "Open current folder"
+msgstr "開啟目前的資料夾"
+
+msgid "Open notes folder"
+msgstr "開啟筆記資料夾"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "請先開啟或新增筆記，再拖放或貼上圖片。"
+
+msgid "Outline"
+msgstr "大綱"
+
+msgid "Outline Sidebar"
+msgstr "大綱側邊欄"
+
+msgid "Outline density"
+msgstr "大綱密度"
+
+msgid "Override the application theme or follow the system."
+msgstr "指定應用程式的佈景主題，或跟隨系統。"
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "路徑「%@」超過檔案系統 %d 位元組的上限。"
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "垃圾桶中的筆記經過這段時間後永久刪除。"
+
+msgid "Points"
+msgstr "點"
+
+msgid "Preferences"
+msgstr "偏好設定"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "把選取的行變成項目符號清單"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "把選取的行變成編號清單"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "把選取的行變成引言"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "把選取的行變成待辦清單"
+
+msgid "Preview only"
+msgstr "只顯示預覽"
+
+msgid "Previous Match"
+msgstr "上一個相符項目"
+
+msgid "Quick Jump"
+msgstr "快速跳至"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "快速跳至…（Ctrl+G）"
+
+msgid "Quote"
+msgstr "引言"
+
+msgid "Regular Expression"
+msgstr "正規表示式"
+
+msgid "Reload"
+msgstr "重新載入"
+
+msgid "Reload from disk"
+msgstr "從磁碟重新載入"
+
+msgid "Rename"
+msgstr "重新命名"
+
+msgid "Rename folder"
+msgstr "重新命名資料夾"
+
+msgid "Rename folder…"
+msgstr "重新命名資料夾…"
+
+msgid "Rename note"
+msgstr "重新命名筆記"
+
+msgid "Rename note…"
+msgstr "重新命名筆記…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "正在重新命名「%@」。資料夾名稱不能包含斜線 (/)。"
+
+msgid "Render emoji shortcodes"
+msgstr "呈現表情符號短代碼"
+
+msgid "Replace"
+msgstr "取代"
+
+msgid "Replace All"
+msgstr "全部取代"
+
+msgid "Replace every match"
+msgstr "取代所有相符項目"
+
+msgid "Replace existing assets?"
+msgstr "要取代現有的資源嗎？"
+
+msgid "Replace the current match"
+msgstr "取代目前的相符項目"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "已取代 %d 處。"
+
+msgid "Replacement content is required."
+msgstr "必須提供要取代的內容。"
+
+msgid "Replace…"
+msgstr "取代…"
+
+msgid "Reset"
+msgstr "重設"
+
+msgid "Restore"
+msgstr "還原"
+
+msgid "Reveal in Folder"
+msgstr "在資料夾中顯示"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "在檔案管理程式中顯示目前使用的筆記資料夾。"
+
+msgid "Right-aligned"
+msgstr "靠右對齊"
+
+msgid "Save"
+msgstr "儲存"
+
+msgid "Save As…"
+msgstr "另存新檔…"
+
+msgid "Save File"
+msgstr "儲存檔案"
+
+msgid "Save Markdown File As"
+msgstr "將 Markdown 檔案另存新檔"
+
+msgid "Save Note"
+msgstr "儲存筆記"
+
+msgid "Saved"
+msgstr "已儲存"
+
+msgid "Saved as %@"
+msgstr "已儲存為 %@"
+
+msgid "Saving"
+msgstr "正在儲存"
+
+msgid "Search Notes"
+msgstr "搜尋筆記"
+
+msgid "Search notes"
+msgstr "搜尋筆記"
+
+msgid "Seconds"
+msgstr "秒"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr "把 :shortcode: 別名（例如 :rocket:）顯示成表情符號。原始文字與程式碼維持不變。"
+
+msgid "Show Notes Sidebar"
+msgstr "顯示筆記側邊欄"
+
+msgid "Show outline (F9)"
+msgstr "顯示大綱 (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "游標移過時顯示拖曳提示。拖曳排序會另外提供。"
+
+msgid "Size"
+msgstr "尺寸"
+
+msgid "Sort Notes"
+msgstr "筆記排序"
+
+msgid "Sort Notes by Newest First"
+msgstr "依最新的在前排序筆記"
+
+msgid "Sort Notes by Oldest First"
+msgstr "依最舊的在前排序筆記"
+
+msgid "Sort Notes by Title"
+msgstr "依標題排序筆記"
+
+msgid "Sort by Title"
+msgstr "依標題排序"
+
+msgid "Sorting by newest first"
+msgstr "正依最新的在前排序"
+
+msgid "Sorting by oldest first"
+msgstr "正依最舊的在前排序"
+
+msgid "Sorting by title"
+msgstr "正依標題排序"
+
+msgid "Source Code"
+msgstr "原始碼"
+
+msgid "Spaces"
+msgstr "空格"
+
+msgid "Spell check"
+msgstr "拼字檢查"
+
+msgid "Spell-check language"
+msgstr "拼字檢查語言"
+
+msgid "Split"
+msgstr "分割"
+
+msgid "Split view"
+msgstr "分割檢視"
+
+msgid "Storage"
+msgstr "儲存"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "Swifty Notes 只能開啟本機的 Markdown 檔案。"
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "Swifty Notes 沒有存取該資料夾的權限。請改選其他位置。"
+
+msgid "Swifty Notes is up to date."
+msgstr "Swifty Notes 已是最新版本。"
+
+msgid "System language"
+msgstr "系統語言"
+
+msgid "Tab width"
+msgstr "定位字元寬度"
+
+msgid "Table"
+msgstr "表格"
+
+msgid "Tabs"
+msgstr "定位字元"
+
+msgid "Takes effect the next time the app starts."
+msgstr "下次啟動應用程式時生效。"
+
+msgid "Task List"
+msgstr "待辦清單"
+
+msgid "The application instance is not available."
+msgstr "無法使用應用程式的執行實體。"
+
+msgid "The current notes folder could not be found."
+msgstr "找不到目前的筆記資料夾。"
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "新的筆記資料夾不能位於目前的筆記資料夾裡面。"
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "筆記標題取自第一行有內容的文字。"
+
+msgid "The selected destination is not a folder."
+msgstr "選擇的目標不是資料夾。"
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "選擇的資料夾位於唯讀的檔案系統上，無法存放筆記。"
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "磁碟空間不足，無法把筆記移到該資料夾。"
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "這會把筆記從磁碟上永久移除。這項操作無法復原。"
+
+msgid "Title"
+msgstr "標題"
+
+msgid "Toggle Outline"
+msgstr "切換大綱"
+
+msgid "Trash"
+msgstr "垃圾桶"
+
+msgid "Trash emptied"
+msgstr "已清空垃圾桶"
+
+msgid "Tree lines under H2 sections"
+msgstr "在 H2 章節下顯示樹狀連線"
+
+msgid "Turn the current line into a heading"
+msgstr "把目前這行變成標題"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "調整右側的大綱面板與編輯器上方的路徑列。"
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "輸入時為拼字錯誤加上底線，並在右鍵選單提供修正建議。"
+
+msgid "Undo"
+msgstr "復原"
+
+msgid "Unknown CLI command: %@"
+msgstr "未知的指令：%@"
+
+msgid "Unknown command for help: %@"
+msgstr "說明中未知的指令：%@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "未知的 folders 子指令：%@"
+
+msgid "Unknown option: %@"
+msgstr "未知的選項：%@"
+
+msgid "Unsaved changes"
+msgstr "未儲存的變更"
+
+msgid "Unsupported image type for %@."
+msgstr "不支援 %@ 的圖片格式。"
+
+msgid "Update"
+msgstr "更新"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "用 / 可以一次建立多層資料夾，例如 工作/草稿。"
+
+msgid "Use default location"
+msgstr "使用預設位置"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "--content、--content-file 與 --stdin 只能擇一使用。"
+
+msgid "Version %@ is available."
+msgstr "有可用的版本 %@。"
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "把 H3 以下的子章節連到所屬 H2 的垂直線。"
+
+msgid "Whole Word Match"
+msgstr "全字相符"
+
+msgid "Wrap long lines"
+msgstr "長行自動換行"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "讓 Markdown 段落自動換行，而不是水平捲動。"
+
+msgid "Wrap the selection in bold markdown"
+msgstr "把選取的內容設為 Markdown 粗體"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "把選取的內容設為 Markdown 斜體"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "`folders create` 只接受一個資料夾路徑。"
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "`folders move <path> --to <parent>` 需要同時提供路徑與目標資料夾。"
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "`folders move` 只接受一個資料夾路徑。"
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "`folders rename` 需要 <path> <new-name>。"
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "`folders rm` 只接受一個資料夾路徑。"
+
+msgid "`folders rm` cannot delete the root."
+msgstr "`folders rm` 無法刪除根目錄。"
+
+msgid "`folders rm` requires a folder path."
+msgstr "`folders rm` 需要一個資料夾路徑。"
+
+msgid "`get` expects exactly one note ID."
+msgstr "`get` 只接受一個筆記 ID。"
+
+msgid "`get` requires a note ID."
+msgstr "`get` 需要一個筆記 ID。"
+
+msgid "`help` accepts at most one command name."
+msgstr "`help` 最多接受一個指令名稱。"
+
+msgid "`move` expects exactly one note ID."
+msgstr "`move` 只接受一個筆記 ID。"
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "`move` 需要 --folder PATH（用 --folder \"\" 可移到根目錄）。"
+
+msgid "`move` requires a note ID."
+msgstr "`move` 需要一個筆記 ID。"
+
+msgid "`update` requires a note ID."
+msgstr "`update` 需要一個筆記 ID。"
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "資源"
+
+msgid "current"
+msgstr "目前"
+
+msgid "“%@” is in the Trash"
+msgstr "「%@」在垃圾桶裡"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "編輯器工具列上方顯示目前位置的橫條。"
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ 瀏覽 · ↵ 跳至 · Esc 關閉"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "預覽"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "標題"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "預覽"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "具備預覽與自動化的原生 GTK Markdown 筆記"
+
+msgid "notes"
+msgstr "筆記"
+
+msgid "markdown"
+msgstr "markdown"
+
+msgid "editor"
+msgstr "編輯器"
+
+msgid "preview"
+msgstr "預覽"
+
+msgid "cli"
+msgstr "cli"
+
+msgid "automation"
+msgstr "自動化"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "Swifty Notes 是一套以 Swift 寫成、給 Linux 使用的原生 GTK/libadwaita Markdown 筆記程式。"
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "桌面程式是主要的使用方式：以原生 GTK 元件撰寫、整理並預覽 Markdown 筆記，還有自動儲存、記住工作區狀態，以及字型大小、換行、縮排與外觀等可調整的編輯器設定。"
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "內附的指令列工具處理的是同一批以檔案存放的筆記，因此 shell 指令碼、自動化流程與 AI 代理程式都能安全地查看或更新筆記，不需要另外的資料庫或背景服務。"
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "建立、重新命名、再製、匯出與刪除 Markdown 筆記。"
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "自動儲存編輯內容、記住工作區狀態，並把每篇筆記的圖片資源與筆記放在一起。"
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "調整編輯器字型大小等寫作偏好，以配合不同的螢幕與工作流程。"
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "自由選擇筆記存放的位置，包括雲端同步資料夾，讓同一批純文字檔案在多台裝置間保持同步。"
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "以拖放方式匯入圖片，並用原生 GTK 預覽而非網頁檢視來呈現 Markdown。"
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "在指令碼、shell 管線與 AI 代理程式中，用指令列完成適合 JSON 處理的筆記自動化。"
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "不必重新啟動應用程式，就能在系統預設語言與隨版本附帶的任何語言之間切換介面語言。"
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "包含側邊欄、格式工具列、即時預覽與大綱的分割檢視。"
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "具備文件大綱的原生 Markdown 預覽，方便瀏覽長篇筆記。"
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "具備格式工具列與文件大綱面板的完整編輯器。"
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "具備預覽與指令列自動化的原生 GTK Markdown 筆記"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "筆記;markdown;編輯器;文字;cli;自動化;"
+
+msgid "New Window"
+msgstr "新增視窗"
