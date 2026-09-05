@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-04 02:40+0700\n"
+"POT-Creation-Date: 2026-09-05 12:14+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -1375,11 +1375,11 @@ msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:40
 msgid ""
-"Switch the interface language between the system default, English, and "
-"Russian without restarting the app."
+"Switch the interface language between the system default and any language "
+"the build ships, without restarting the app."
 msgstr ""
-"Переключение языка интерфейса между системным, английским и русским без "
-"перезапуска приложения."
+"Переключение языка интерфейса между системным и любым языком, входящим в "
+"сборку, без перезапуска приложения."
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:49
 msgid ""

@@ -14,6 +14,7 @@ import Foundation
 public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
     case system
     case english = "en"
+    case german = "de"
     case russian = "ru"
 
     /// The gettext language code to pin, or `nil` to follow the session.
@@ -36,6 +37,8 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             []
         case .english:
             ["en_US.UTF-8", "en_GB.UTF-8"]
+        case .german:
+            ["de_DE.UTF-8", "de_AT.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .russian:
             ["ru_RU.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         }
@@ -52,6 +55,8 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             "System language".localized
         case .english:
             "English"
+        case .german:
+            "Deutsch"
         case .russian:
             "Русский"
         }
