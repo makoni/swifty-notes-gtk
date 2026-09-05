@@ -5,9 +5,26 @@ or died on whether we could read `sysprof` captures meaningfully.
 This doc records the toolchain so the next perf episode can skip
 the discovery phase.
 
-`SCROLL_PERF_PLAN.md` covers the specific scroll-perf hypothesis +
-the option tree we worked through. This file is the tooling
-companion — what to install, what to run, how to read the output.
+What came of that episode, so the conclusions outlive the plan
+document they were written in:
+
+- The renderer is not the bottleneck. Profiles under the OpenGL and
+  Cairo renderers came out within 3% of each other, which rules out
+  the GL compatibility layer and pointed at the scenegraph itself —
+  a deep widget tree walked in full on every frame.
+- Two fixes shipped in `MarkdownPreview` (commit `a9ce1df`). Runs of
+  pure text coalesce into a single rich-text Label instead of a
+  widget per block, and past ~120 rows the preview switches to a
+  virtualized `ListView` so only visible rows are realized. Both
+  thresholds can be forced for testing with
+  `SWIFTY_NOTES_DEBUG_FORCE_CUSTOM_TEXT_PREVIEW` and
+  `SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW`.
+- Per-frame texture conversion for image blocks was identified as a
+  secondary cost and never pursued, on the grounds that the two
+  changes above moved the frame budget far enough.
+
+This file is the tooling companion — what to install, what to run,
+how to read the output.
 
 ## Why sysprof, not macOS Time Profiler
 

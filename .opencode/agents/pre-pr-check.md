@@ -100,8 +100,8 @@ explicit, not "happens to work on my machine".
 ### 6. Stale notes
 
 The repo has a few documents that document past work:
-- `SCROLL_PERF_PLAN.md` — scroll perf episode (May 2026).
-- `docs/PROFILING.md` — sysprof workflow.
+- `docs/PROFILING.md` — sysprof workflow, and what the May 2026
+  scroll-perf episode concluded.
 - `README.md` — user-facing summary.
 
 If the diff changes user-visible behavior that's described in

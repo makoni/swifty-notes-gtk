@@ -119,7 +119,7 @@ Symptom → likely location:
 - **Update banner** → `Services/UpdateChecker.swift`,
   `UI/UpdateBanner.swift`.
 - **Performance / scroll** → `docs/PROFILING.md` has the sysprof
-  workflow; `SCROLL_PERF_PLAN.md` has the past plan.
+  workflow and what the past scroll-perf work concluded.
 
 ## What you do NOT do
 

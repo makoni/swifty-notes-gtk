@@ -586,8 +586,8 @@ struct MarkdownPreviewWidgetTests {
         try app.register()
 
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
-        // Phase B.1 of SCROLL_PERF_PLAN coalesces a heading + its
-        // trailing paragraphs into a single `richTextRun` Label, so
+        // A heading and its trailing paragraphs coalesce into a single
+        // `richTextRun` Label, so
         // `heading + paragraph + blockquote` now renders as 2 widgets
         // (one Label for the rich-text run, one Box for the
         // blockquote) — not 3. The in-place update path still has to

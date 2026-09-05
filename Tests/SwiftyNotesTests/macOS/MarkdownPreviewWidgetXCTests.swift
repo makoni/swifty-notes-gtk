@@ -509,8 +509,8 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         try app.register()
 
         let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
-        // Phase B.1 of SCROLL_PERF_PLAN coalesces a heading + its
-        // trailing paragraphs into a single richTextRun Label, so
+        // A heading and its trailing paragraphs coalesce into a single
+        // richTextRun Label, so
         // `heading + paragraph + blockquote` renders as 2 widgets
         // (rich-text label + blockquote box) — not 3.
         preview.render(blocks: [

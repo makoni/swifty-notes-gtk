@@ -12,10 +12,13 @@ final class MarkdownPreview {
     private typealias ListPreviewItem = (text: RenderedText, depth: Int, marker: String, loose: Bool, taskIndex: Int?)
 
     /// Inline segment carried inside a ``PreviewRow/richTextRun``.
-    /// Phase B.1 of SCROLL_PERF_PLAN.md coalesces a heading and its
-    /// trailing paragraphs into a single rich-text Label — segments
-    /// describe what each part of that Label is so the markup builder
-    /// can apply the right Pango styling.
+    ///
+    /// A heading and the paragraphs that follow it coalesce into one
+    /// rich-text Label rather than a widget apiece — the scroll cost of a
+    /// long note is dominated by walking the widget tree, so collapsing
+    /// runs of pure text is where the frame budget comes back. Segments
+    /// describe what each part of that Label is, so the markup builder can
+    /// apply the right Pango styling.
     enum RichTextSegment: Sendable, Equatable {
         case heading(level: Int, text: RenderedText)
         case paragraph(text: RenderedText)
