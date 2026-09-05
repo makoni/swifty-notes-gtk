@@ -476,6 +476,13 @@ struct LocalizationCatalogTests {
     /// number that would precede them, so for a countless message the two must
     /// read identically — otherwise adding a fifth image turns a correct toast
     /// into "Изображений добавлено в заметку".
+    ///
+    /// The comparison covers the forms that only ever stand for a plural, not
+    /// every form past the first. A language that marks a true dual — Arabic
+    /// here — says "two images" in words rather than digits, so that form is
+    /// distinguishable on screen and stays free to differ, as does whichever
+    /// form the language uses for one. Everything else has nothing but the
+    /// number to tell 5 from 50, and this message does not print it.
     @Test(
         "A plural entry that prints no count reads the same for every plural form",
         arguments: LocalizationCatalogFixture.shippedCatalogues,
@@ -484,17 +491,19 @@ struct LocalizationCatalogTests {
         _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
     ) throws {
         let entries = try LocalizationCatalogFixture.pluralEntries(at: shipped.url)
+        let pluralOnlyForms = try shipped.pluralFormsThatOnlyMeanPlural().sorted()
         for entry in entries {
             guard LocalizationCatalogFixture.formatSpecifiers(in: entry.singular).isEmpty,
                   LocalizationCatalogFixture.formatSpecifiers(in: entry.plural).isEmpty
             else { continue }
-            let pluralForms = Set(entry.translations.dropFirst())
+            let forms = pluralOnlyForms.filter(entry.translations.indices.contains)
             #expect(
-                pluralForms.count <= 1,
+                Set(forms.map { entry.translations[$0] }).count <= 1,
                 """
                 \(entry.lookupKey.debugDescription) substitutes no count, so \
-                nothing on screen distinguishes 2 from 5 — yet its plural forms \
-                differ: \(entry.translations.dropFirst().map(\.debugDescription).joined(separator: " vs "))
+                nothing on screen distinguishes 5 from 50 — yet the forms \
+                po/\(shipped.language).po uses for those counts differ: \
+                \(forms.map { entry.translations[$0].debugDescription }.joined(separator: " vs "))
                 """,
             )
         }
@@ -641,11 +650,40 @@ private enum LocalizationCatalogFixture {
         /// msgfmt compiles against, so a mismatch between the two is the bug
         /// this makes visible.
         func declaredPluralForms() throws -> Int? {
-            let text = try String(contentsOf: url, encoding: .utf8)
+            let text = try headerText()
             guard let match = text.range(of: #"nplurals=[0-9]+"#, options: .regularExpression) else {
                 return nil
             }
             return Int(text[match].dropFirst("nplurals=".count))
+        }
+
+        /// The catalogue's header entry, unfolded.
+        ///
+        /// PO wraps a long header line across several adjacent quoted strings,
+        /// and `Plural-Forms` is the one field long enough for that to happen —
+        /// Russian's rule already wraps. Reading the raw file would cut the
+        /// expression at the wrap.
+        private func headerText() throws -> String {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let header = text.components(separatedBy: "\n\n").first ?? text
+            return header
+                .split(separator: "\n")
+                .filter { $0.hasPrefix("\"") && $0.hasSuffix("\"") }
+                .map { $0.dropFirst().dropLast() }
+                .joined()
+                .replacingOccurrences(of: "\\n", with: "\n")
+        }
+
+        /// The `msgstr[…]` indices that stand for a plain plural in this
+        /// language, read from the header's own `plural=` expression.
+        ///
+        /// Which index means what is language-specific — index 0 is the
+        /// singular in German and Russian but the *zero* form in Arabic — so
+        /// a guard that wants "the forms a plural selects" has to evaluate the
+        /// expression rather than count from one end.
+        func pluralFormsThatOnlyMeanPlural() throws -> Set<Int> {
+            guard let expression = try PluralFormsExpression(header: headerText()) else { return [] }
+            return expression.formsThatOnlyMeanPlural()
         }
     }
 
