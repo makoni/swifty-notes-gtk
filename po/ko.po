@@ -1,0 +1,1267 @@
+# Korean translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Korean\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " 노트는 휴지통으로 이동하므로 나중에 복원할 수 있습니다."
+
+msgid " and "
+msgstr ", "
+
+msgid "\"%@\" contains %@."
+msgstr "“%@”에 %@이(가) 있습니다."
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "“%@”에 %@이(가) 있습니다. 내용까지 삭제하려면 --yes를 지정하세요."
+
+msgid "\"%@\" is empty."
+msgstr "“%@”이(가) 비어 있습니다."
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "“%@”은(는) 폴더 이름으로 쓸 수 없습니다."
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "일치 항목 %d개"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "노트 %d개"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "노트 %d개를 영구히 삭제합니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "%d of %d"
+msgstr "%d / %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "섹션 %d개"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "하위 폴더 %d개"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "하위 섹션 %d개"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "단어 %d개"
+
+msgid "%d × %d table"
+msgstr "%d × %d 표"
+
+msgid "%d × %d table — column alignment"
+msgstr "%d × %d 표 — 열 정렬"
+
+msgid "(Root)"
+msgstr "(최상위)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "“%@”에 이미 폴더나 노트가 있습니다."
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "swift-adwaita를 사용해 Swift로 작성한 네이티브 GTK 마크다운 노트 앱입니다."
+
+msgid "About Swifty Notes"
+msgstr "Swifty Notes 정보"
+
+msgid "After 30 days"
+msgstr "30일 후"
+
+msgid "After 7 days"
+msgstr "7일 후"
+
+msgid "After 90 days"
+msgstr "90일 후"
+
+msgid "After a year"
+msgstr "1년 후"
+
+msgid "All files"
+msgstr "모든 파일"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "내보내는 위치에 이미 “assets” 폴더가 있습니다. 병합하면 이름이 같은 파일을 덮어씁니다."
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "%@에 이미 “assets” 폴더가 있습니다."
+
+msgid "Appearance"
+msgstr "모양"
+
+msgid "Applies immediately — no restart."
+msgstr "다시 시작하지 않아도 바로 적용됩니다."
+
+msgid "Autosave delay"
+msgstr "자동 저장 지연 시간"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "자동 저장은 마지막 편집 후 설정한 시간이 지나면 실행됩니다."
+
+msgid "Back to size picker"
+msgstr "크기 선택으로 돌아가기"
+
+msgid "Bold"
+msgstr "굵게"
+
+msgid "Breadcrumb strip above editor"
+msgstr "편집기 위쪽 경로 표시줄"
+
+msgid "Browse…"
+msgstr "찾아보기…"
+
+msgid "Bulleted List"
+msgstr "글머리 기호 목록"
+
+msgid "Bullets"
+msgstr "글머리 기호"
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "“%@”을(를) 그 하위 항목인 “%@”(으)로 옮길 수 없습니다."
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "“%@”에 있는 노트 디렉터리 안에는 폴더나 노트를 둘 수 없습니다."
+
+msgid "Case Sensitive"
+msgstr "대소문자 구분"
+
+msgid "Centred"
+msgstr "가운데 정렬"
+
+msgid "Check for Updates…"
+msgstr "업데이트 확인…"
+
+msgid "Choose Notes Folder"
+msgstr "노트 폴더 선택"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "“%@”을(를) 옮길 폴더를 선택하세요."
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "사전을 선택하거나 시스템 로캘을 따릅니다."
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "노트를 옮길 빈 폴더를 선택하세요."
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "Swifty Notes가 마크다운 파일과 관련 에셋을 저장할 위치를 선택합니다."
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "Tab 키로 공백과 탭 문자 중 무엇을 입력할지 선택합니다."
+
+msgid "Code"
+msgstr "코드"
+
+msgid "Collapse section"
+msgstr "섹션 접기"
+
+msgid "Column %d: %@ — click to change"
+msgstr "%d번째 열: %@ — 클릭해서 변경"
+
+msgid "Columns"
+msgstr "열"
+
+msgid "Comfortable"
+msgstr "여유롭게"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "“여유롭게”가 기본값이고, “좁게”는 행 여백을 줄입니다."
+
+msgid "Compact"
+msgstr "좁게"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "미리 보기에서 마크다운이 보이는 방식을 조정합니다."
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "줄 바꿈, 들여쓰기, 편집기 글자 크기를 조정합니다."
+
+msgid "Copied note ID"
+msgstr "노트 ID를 복사했습니다"
+
+msgid "Copy code to clipboard"
+msgstr "코드를 클립보드에 복사"
+
+msgid "Copy note ID"
+msgstr "노트 ID 복사"
+
+msgid "Could not add image"
+msgstr "이미지를 추가하지 못했습니다"
+
+msgid "Could not change the notes folder"
+msgstr "노트 폴더를 변경하지 못했습니다"
+
+msgid "Could not check for updates: %@"
+msgstr "업데이트를 확인하지 못했습니다: %@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "업데이트를 확인하지 못했습니다: 인터넷에 연결되어 있지 않습니다."
+
+msgid "Could not choose a notes folder"
+msgstr "노트 폴더를 선택하지 못했습니다"
+
+msgid "Could not create folder"
+msgstr "폴더를 만들지 못했습니다"
+
+msgid "Could not create note"
+msgstr "노트를 만들지 못했습니다"
+
+msgid "Could not delete folder"
+msgstr "폴더를 삭제하지 못했습니다"
+
+msgid "Could not delete note"
+msgstr "노트를 삭제하지 못했습니다"
+
+msgid "Could not duplicate note"
+msgstr "노트를 복제하지 못했습니다"
+
+msgid "Could not empty Trash"
+msgstr "휴지통을 비우지 못했습니다"
+
+msgid "Could not encode CLI output"
+msgstr "명령줄 출력을 인코딩하지 못했습니다"
+
+msgid "Could not export note"
+msgstr "노트를 내보내지 못했습니다"
+
+msgid "Could not import file into library"
+msgstr "파일을 라이브러리로 가져오지 못했습니다"
+
+msgid "Could not import note"
+msgstr "노트를 가져오지 못했습니다"
+
+msgid "Could not inspect markdown file"
+msgstr "마크다운 파일을 확인하지 못했습니다"
+
+msgid "Could not inspect notes directory"
+msgstr "노트 디렉터리를 확인하지 못했습니다"
+
+msgid "Could not load notes"
+msgstr "노트를 불러오지 못했습니다"
+
+msgid "Could not move folder"
+msgstr "폴더를 옮기지 못했습니다"
+
+msgid "Could not move note"
+msgstr "노트를 옮기지 못했습니다"
+
+msgid "Could not open containing folder"
+msgstr "상위 폴더를 열지 못했습니다"
+
+msgid "Could not open export dialog"
+msgstr "내보내기 대화 상자를 열지 못했습니다"
+
+msgid "Could not open file dialog"
+msgstr "파일 대화 상자를 열지 못했습니다"
+
+msgid "Could not open import dialog"
+msgstr "가져오기 대화 상자를 열지 못했습니다"
+
+msgid "Could not open markdown file"
+msgstr "마크다운 파일을 열지 못했습니다"
+
+msgid "Could not open notes folder"
+msgstr "노트 폴더를 열지 못했습니다"
+
+msgid "Could not open release page: %@"
+msgstr "릴리스 페이지를 열지 못했습니다: %@"
+
+msgid "Could not open save dialog"
+msgstr "저장 대화 상자를 열지 못했습니다"
+
+msgid "Could not open settings"
+msgstr "설정을 열지 못했습니다"
+
+msgid "Could not parse current version \"%@\""
+msgstr "현재 버전 “%@”을(를) 해석하지 못했습니다"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "원격 버전 “%@”을(를) 해석하지 못했습니다"
+
+msgid "Could not paste files"
+msgstr "파일을 붙여 넣지 못했습니다"
+
+msgid "Could not paste image"
+msgstr "이미지를 붙여 넣지 못했습니다"
+
+msgid "Could not permanently delete note"
+msgstr "노트를 영구히 삭제하지 못했습니다"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "표준 입력에서 UTF-8 내용을 읽지 못했습니다"
+
+msgid "Could not reload file"
+msgstr "파일을 다시 불러오지 못했습니다"
+
+msgid "Could not reload notes"
+msgstr "노트를 다시 불러오지 못했습니다"
+
+msgid "Could not rename folder"
+msgstr "폴더 이름을 바꾸지 못했습니다"
+
+msgid "Could not rename note"
+msgstr "노트 이름을 바꾸지 못했습니다"
+
+msgid "Could not restore note"
+msgstr "노트를 복원하지 못했습니다"
+
+msgid "Could not save file: %@"
+msgstr "파일을 저장하지 못했습니다: %@"
+
+msgid "Could not save note: %@"
+msgstr "노트를 저장하지 못했습니다: %@"
+
+msgid "Could not store workspace state"
+msgstr "작업 상태를 저장하지 못했습니다"
+
+msgid "Could not update notes index"
+msgstr "노트 색인을 업데이트하지 못했습니다"
+
+msgid "Could not update settings"
+msgstr "설정을 업데이트하지 못했습니다"
+
+msgid "Create"
+msgstr "만들기"
+
+msgid "Dark"
+msgstr "어두움"
+
+msgid "Delete"
+msgstr "삭제"
+
+msgid "Delete Note"
+msgstr "노트 삭제"
+
+msgid "Delete folder?"
+msgstr "폴더를 삭제할까요?"
+
+msgid "Delete folder…"
+msgstr "폴더 삭제…"
+
+msgid "Delete forever"
+msgstr "영구히 삭제"
+
+msgid "Delete forever…"
+msgstr "영구히 삭제…"
+
+msgid "Delete “%@” forever?"
+msgstr "“%@”을(를) 영구히 삭제할까요?"
+
+msgid "Deleted"
+msgstr "삭제됨"
+
+msgid "Deleted %@"
+msgstr "%@ 삭제됨"
+
+msgid "Delete…"
+msgstr "삭제…"
+
+msgid "Dismiss"
+msgstr "닫기"
+
+msgid "Dismiss update notification"
+msgstr "업데이트 알림 닫기"
+
+msgid "Document"
+msgstr "문서"
+
+msgid "Document Menu"
+msgstr "문서 메뉴"
+
+msgid "Drag handles on hover"
+msgstr "포인터를 올리면 드래그 핸들 표시"
+
+msgid "Duplicate note"
+msgstr "노트 복제"
+
+msgid "Editor"
+msgstr "편집기"
+
+msgid "Editor font size"
+msgstr "편집기 글자 크기"
+
+msgid "Editor only"
+msgstr "편집기만"
+
+msgid "Empty Trash"
+msgstr "휴지통 비우기"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "휴지통 비우기 (노트 %d개)…"
+
+msgid "Empty Trash automatically"
+msgstr "휴지통 자동으로 비우기"
+
+msgid "Empty Trash?"
+msgstr "휴지통을 비울까요?"
+
+msgid "Enable spell-check"
+msgstr "맞춤법 검사 사용"
+
+msgid "Expand section"
+msgstr "섹션 펼치기"
+
+msgid "Export"
+msgstr "내보내기"
+
+msgid "Export Note"
+msgstr "노트 내보내기"
+
+msgid "Export note…"
+msgstr "노트 내보내기…"
+
+msgid "Exported %@"
+msgstr "%@ 내보냄"
+
+msgid "Exported %@ with %d %@"
+msgstr "%@을(를) 내보냈습니다. %d개의 %@ 포함."
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "디스크에서 파일이 바뀌었습니다. 저장하거나 다시 불러와 동기화하세요."
+
+msgid "File reloaded from disk"
+msgstr "디스크에서 파일을 다시 불러왔습니다"
+
+msgid "File saved"
+msgstr "파일을 저장했습니다"
+
+msgid "Filter Outline"
+msgstr "개요 거르기"
+
+msgid "Filter headings…"
+msgstr "제목 거르기…"
+
+msgid "Find…"
+msgstr "찾기…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "폴더 “%@”을(를) 찾지 못했습니다."
+
+msgid "Folder %@"
+msgstr "폴더 %@"
+
+msgid "Folder deleted"
+msgstr "폴더를 삭제했습니다"
+
+msgid "Folder moved"
+msgstr "폴더를 옮겼습니다"
+
+msgid "Folder name"
+msgstr "폴더 이름"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "폴더 이름 “%@”이(가) 파일 시스템 한도인 %d바이트를 넘습니다."
+
+msgid "Folder name or Work/Drafts"
+msgstr "폴더 이름 또는 업무/초안"
+
+msgid "Folder renamed"
+msgstr "폴더 이름을 바꿨습니다"
+
+msgid "Follow system"
+msgstr "시스템 따르기"
+
+msgid "Follow system locale"
+msgstr "시스템 로캘 따르기"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "시스템을 따르거나 화면에 쓸 언어를 고정합니다."
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "제목"
+
+msgid "Help"
+msgstr "도움말"
+
+msgid "Hide Notes Sidebar"
+msgstr "노트 사이드바 숨기기"
+
+msgid "Hide outline (F9)"
+msgstr "개요 숨기기 (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "libspelling과 시스템 사전을 사용해 본문에서 맞춤법 오류를 강조합니다."
+
+msgid "Hover to pick size"
+msgstr "포인터를 올려 크기 선택"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "노트에 이미지를 추가했습니다"
+
+msgid "Image pasted into note"
+msgstr "노트에 이미지를 붙여 넣었습니다"
+
+msgid "Import"
+msgstr "가져오기"
+
+msgid "Import into Library"
+msgstr "라이브러리로 가져오기"
+
+msgid "Import into Library…"
+msgstr "라이브러리로 가져오기…"
+
+msgid "Imported %@"
+msgstr "%@ 가져옴"
+
+msgid "Imported %@ into library"
+msgstr "%@을(를) 라이브러리로 가져왔습니다"
+
+msgid "Indent style"
+msgstr "들여쓰기 방식"
+
+msgid "Insert"
+msgstr "삽입"
+
+msgid "Insert Table"
+msgstr "표 삽입"
+
+msgid "Insert a markdown link"
+msgstr "마크다운 링크를 삽입합니다"
+
+msgid "Insert a markdown table"
+msgstr "마크다운 표를 삽입합니다"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "인라인 코드나 코드 블록을 삽입합니다"
+
+msgid "Interface language"
+msgstr "화면 언어"
+
+msgid "Invalid note ID: %@"
+msgstr "잘못된 노트 ID: %@"
+
+msgid "Italic"
+msgstr "기울임"
+
+msgid "Jump to heading"
+msgstr "제목으로 이동"
+
+msgid "Jump to heading…"
+msgstr "제목으로 이동…"
+
+msgid "Jump-to-heading results"
+msgstr "제목 이동 결과"
+
+msgid "Language"
+msgstr "언어"
+
+msgid "Left-aligned"
+msgstr "왼쪽 정렬"
+
+msgid "Library"
+msgstr "라이브러리"
+
+msgid "Light"
+msgstr "밝음"
+
+msgid "Link"
+msgstr "링크"
+
+msgid "Main Menu"
+msgstr "주 메뉴"
+
+msgid "Markdown"
+msgstr "마크다운"
+
+msgid "Markdown Editor"
+msgstr "마크다운 편집기"
+
+msgid "Markdown Preview"
+msgstr "마크다운 미리 보기"
+
+msgid "Markdown notes"
+msgstr "마크다운 노트"
+
+msgid "Merge"
+msgstr "병합"
+
+msgid "Missing value for --content-file."
+msgstr "--content-file의 값이 없습니다."
+
+msgid "Missing value for --content."
+msgstr "--content의 값이 없습니다."
+
+msgid "Missing value for --folder."
+msgstr "--folder의 값이 없습니다."
+
+msgid "Missing value for --notes-dir."
+msgstr "--notes-dir의 값이 없습니다."
+
+msgid "Missing value for --to."
+msgstr "--to의 값이 없습니다."
+
+msgid "Move"
+msgstr "이동"
+
+msgid "Move note"
+msgstr "노트 이동"
+
+msgid "Move to…"
+msgstr "이동할 위치…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "“%@”을(를) 휴지통으로 옮겼습니다"
+
+msgid "Never"
+msgstr "안 함"
+
+msgid "New Folder"
+msgstr "새 폴더"
+
+msgid "New Note"
+msgstr "새 노트"
+
+msgid "New folder"
+msgstr "새 폴더"
+
+msgid "New note here"
+msgstr "여기에 새 노트"
+
+msgid "New subfolder in \"%@\""
+msgstr "“%@”에 새 하위 폴더"
+
+msgid "New subfolder…"
+msgstr "새 하위 폴더…"
+
+msgid "Newest First"
+msgstr "최신순"
+
+msgid "Newest first"
+msgstr "최신순"
+
+msgid "Next Match"
+msgstr "다음 일치 항목"
+
+msgid "No headings in this note."
+msgstr "이 노트에는 제목이 없습니다."
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "이 노트에는 제목이 없습니다. <a href=\"insert-heading\"><tt>## 제목</tt> 추가</a>로 시작하세요."
+
+msgid "No headings match \"%@\""
+msgstr "“%@”과(와) 일치하는 제목이 없습니다"
+
+msgid "No headings match the filter."
+msgstr "거르기 조건과 일치하는 제목이 없습니다."
+
+msgid "No headings to jump to."
+msgstr "이동할 제목이 없습니다."
+
+msgid "No matches"
+msgstr "일치 항목 없음"
+
+msgid "No matches to replace."
+msgstr "바꿀 일치 항목이 없습니다."
+
+msgid "No note found for ID %@"
+msgstr "ID가 %@인 노트를 찾지 못했습니다"
+
+msgid "No notes match \"%@\"."
+msgstr "“%@”과(와) 일치하는 노트가 없습니다."
+
+msgid "No notes yet."
+msgstr "아직 노트가 없습니다."
+
+msgid "No notes yet. Create one with +."
+msgstr "아직 노트가 없습니다. +로 하나 만드세요."
+
+msgid "No other folders to move into"
+msgstr "옮길 만한 다른 폴더가 없습니다"
+
+msgid "Note Outline"
+msgstr "노트 개요"
+
+msgid "Note duplicated"
+msgstr "노트를 복제했습니다"
+
+msgid "Note moved"
+msgstr "노트를 옮겼습니다"
+
+msgid "Note permanently deleted"
+msgstr "노트를 영구히 삭제했습니다"
+
+msgid "Note renamed"
+msgstr "노트 이름을 바꿨습니다"
+
+msgid "Note restored"
+msgstr "노트를 복원했습니다"
+
+msgid "Note saved"
+msgstr "노트를 저장했습니다"
+
+msgid "Notes"
+msgstr "노트"
+
+msgid "Notes (%d)"
+msgstr "노트 (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "노트 (%d/%d)"
+
+msgid "Notes List"
+msgstr "노트 목록"
+
+msgid "Notes Sidebar"
+msgstr "노트 사이드바"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "디스크에서 노트가 바뀌었습니다. 저장하거나 다시 불러와 동기화하세요."
+
+msgid "Notes folder"
+msgstr "노트 폴더"
+
+msgid "Notes folder updated"
+msgstr "노트 폴더를 업데이트했습니다"
+
+msgid "Notes reloaded from disk"
+msgstr "디스크에서 노트를 다시 불러왔습니다"
+
+msgid "Nothing to preview yet."
+msgstr "아직 미리 볼 내용이 없습니다."
+
+msgid "Numbered List"
+msgstr "번호 매기기 목록"
+
+msgid "OK"
+msgstr "확인"
+
+msgid "Oldest First"
+msgstr "오래된순"
+
+msgid "Oldest first"
+msgstr "오래된순"
+
+msgid "Open"
+msgstr "열기"
+
+msgid "Open Markdown File"
+msgstr "마크다운 파일 열기"
+
+msgid "Open Markdown File…"
+msgstr "마크다운 파일 열기…"
+
+msgid "Open current folder"
+msgstr "현재 폴더 열기"
+
+msgid "Open notes folder"
+msgstr "노트 폴더 열기"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "이미지를 끌어 놓거나 붙여 넣기 전에 노트를 열거나 만드세요."
+
+msgid "Outline"
+msgstr "개요"
+
+msgid "Outline Sidebar"
+msgstr "개요 사이드바"
+
+msgid "Outline density"
+msgstr "개요 간격"
+
+msgid "Override the application theme or follow the system."
+msgstr "앱 테마를 지정하거나 시스템을 따릅니다."
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "경로 “%@”이(가) 파일 시스템 한도인 %d바이트를 넘습니다."
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "휴지통의 노트를 이만큼 시간이 지나면 영구히 삭제합니다."
+
+msgid "Points"
+msgstr "포인트"
+
+msgid "Preferences"
+msgstr "환경 설정"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "선택한 줄을 글머리 기호 목록으로 만듭니다"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "선택한 줄을 번호 매기기 목록으로 만듭니다"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "선택한 줄을 인용문으로 만듭니다"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "선택한 줄을 할 일 목록으로 만듭니다"
+
+msgid "Preview only"
+msgstr "미리 보기만"
+
+msgid "Previous Match"
+msgstr "이전 일치 항목"
+
+msgid "Quick Jump"
+msgstr "빠른 이동"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "빠른 이동… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "인용문"
+
+msgid "Regular Expression"
+msgstr "정규 표현식"
+
+msgid "Reload"
+msgstr "다시 불러오기"
+
+msgid "Reload from disk"
+msgstr "디스크에서 다시 불러오기"
+
+msgid "Rename"
+msgstr "이름 바꾸기"
+
+msgid "Rename folder"
+msgstr "폴더 이름 바꾸기"
+
+msgid "Rename folder…"
+msgstr "폴더 이름 바꾸기…"
+
+msgid "Rename note"
+msgstr "노트 이름 바꾸기"
+
+msgid "Rename note…"
+msgstr "노트 이름 바꾸기…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "“%@”의 이름을 바꿉니다. 폴더 이름에는 슬래시(/)를 쓸 수 없습니다."
+
+msgid "Render emoji shortcodes"
+msgstr "이모지 단축코드 표시"
+
+msgid "Replace"
+msgstr "바꾸기"
+
+msgid "Replace All"
+msgstr "모두 바꾸기"
+
+msgid "Replace every match"
+msgstr "일치하는 항목을 모두 바꿉니다"
+
+msgid "Replace existing assets?"
+msgstr "기존 에셋을 바꿀까요?"
+
+msgid "Replace the current match"
+msgstr "현재 일치 항목을 바꿉니다"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "%d곳을 바꿨습니다."
+
+msgid "Replacement content is required."
+msgstr "바꿀 내용이 필요합니다."
+
+msgid "Replace…"
+msgstr "바꾸기…"
+
+msgid "Reset"
+msgstr "초기화"
+
+msgid "Restore"
+msgstr "복원"
+
+msgid "Reveal in Folder"
+msgstr "폴더에서 보기"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "사용 중인 노트 폴더를 파일 관리자에서 엽니다."
+
+msgid "Right-aligned"
+msgstr "오른쪽 정렬"
+
+msgid "Save"
+msgstr "저장"
+
+msgid "Save As…"
+msgstr "다른 이름으로 저장…"
+
+msgid "Save File"
+msgstr "파일 저장"
+
+msgid "Save Markdown File As"
+msgstr "마크다운 파일을 다른 이름으로 저장"
+
+msgid "Save Note"
+msgstr "노트 저장"
+
+msgid "Saved"
+msgstr "저장됨"
+
+msgid "Saved as %@"
+msgstr "%@(으)로 저장됨"
+
+msgid "Saving"
+msgstr "저장 중"
+
+msgid "Search Notes"
+msgstr "노트 검색"
+
+msgid "Search notes"
+msgstr "노트 검색"
+
+msgid "Seconds"
+msgstr "초"
+
+msgid "Settings"
+msgstr "설정"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr ":shortcode: 형식의 별칭(예: :rocket:)을 이모지로 표시합니다. 원본 텍스트와 코드는 그대로입니다."
+
+msgid "Show Notes Sidebar"
+msgstr "노트 사이드바 표시"
+
+msgid "Show outline (F9)"
+msgstr "개요 표시 (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "포인터를 올리면 드래그 표시를 보여 줍니다. 끌어서 순서 바꾸기는 따로 제공됩니다."
+
+msgid "Size"
+msgstr "크기"
+
+msgid "Sort Notes"
+msgstr "노트 정렬"
+
+msgid "Sort Notes by Newest First"
+msgstr "노트를 최신순으로 정렬"
+
+msgid "Sort Notes by Oldest First"
+msgstr "노트를 오래된순으로 정렬"
+
+msgid "Sort Notes by Title"
+msgstr "노트를 제목순으로 정렬"
+
+msgid "Sort by Title"
+msgstr "제목순 정렬"
+
+msgid "Sorting by newest first"
+msgstr "최신순으로 정렬 중"
+
+msgid "Sorting by oldest first"
+msgstr "오래된순으로 정렬 중"
+
+msgid "Sorting by title"
+msgstr "제목순으로 정렬 중"
+
+msgid "Source Code"
+msgstr "소스 코드"
+
+msgid "Spaces"
+msgstr "공백"
+
+msgid "Spell check"
+msgstr "맞춤법 검사"
+
+msgid "Spell-check language"
+msgstr "맞춤법 검사 언어"
+
+msgid "Split"
+msgstr "분할"
+
+msgid "Split view"
+msgstr "분할 보기"
+
+msgid "Storage"
+msgstr "저장 공간"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "Swifty Notes는 로컬 마크다운 파일만 열 수 있습니다."
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "Swifty Notes에 그 폴더의 접근 권한이 없습니다. 다른 위치를 선택해 보세요."
+
+msgid "Swifty Notes is up to date."
+msgstr "Swifty Notes가 최신 상태입니다."
+
+msgid "System language"
+msgstr "시스템 언어"
+
+msgid "Tab width"
+msgstr "탭 너비"
+
+msgid "Table"
+msgstr "표"
+
+msgid "Tabs"
+msgstr "탭 문자"
+
+msgid "Takes effect the next time the app starts."
+msgstr "앱을 다음에 시작할 때 적용됩니다."
+
+msgid "Task List"
+msgstr "할 일 목록"
+
+msgid "The application instance is not available."
+msgstr "애플리케이션 인스턴스를 사용할 수 없습니다."
+
+msgid "The current notes folder could not be found."
+msgstr "현재 노트 폴더를 찾지 못했습니다."
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "새 노트 폴더를 현재 노트 폴더 안에 둘 수는 없습니다."
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "노트 제목은 내용이 있는 첫 줄에서 정해집니다."
+
+msgid "The selected destination is not a folder."
+msgstr "선택한 대상이 폴더가 아닙니다."
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "선택한 폴더는 읽기 전용 파일 시스템에 있어 노트를 저장할 수 없습니다."
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "그 폴더로 노트를 옮길 디스크 공간이 부족합니다."
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "노트를 디스크에서 영구히 지웁니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "Title"
+msgstr "제목"
+
+msgid "Toggle Outline"
+msgstr "개요 켜기/끄기"
+
+msgid "Trash"
+msgstr "휴지통"
+
+msgid "Trash emptied"
+msgstr "휴지통을 비웠습니다"
+
+msgid "Tree lines under H2 sections"
+msgstr "H2 섹션 아래에 트리 선 표시"
+
+msgid "Turn the current line into a heading"
+msgstr "현재 줄을 제목으로 만듭니다"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "오른쪽 개요 패널과 편집기 위쪽 경로 표시줄을 조정합니다."
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "입력하는 동안 맞춤법 오류에 밑줄을 긋고 오른쪽 클릭 메뉴에서 고칠 말을 제안합니다."
+
+msgid "Undo"
+msgstr "실행 취소"
+
+msgid "Unknown CLI command: %@"
+msgstr "알 수 없는 명령: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "도움말에서 알 수 없는 명령: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "알 수 없는 folders 하위 명령: %@"
+
+msgid "Unknown option: %@"
+msgstr "알 수 없는 옵션: %@"
+
+msgid "Unsaved changes"
+msgstr "저장하지 않은 변경 사항"
+
+msgid "Unsupported image type for %@."
+msgstr "%@의 이미지 형식은 지원하지 않습니다."
+
+msgid "Update"
+msgstr "업데이트"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "/를 쓰면 하위 폴더를 한 번에 만들 수 있습니다. 예: 업무/초안."
+
+msgid "Use default location"
+msgstr "기본 위치 사용"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "--content, --content-file, --stdin 중 하나만 사용하세요."
+
+msgid "Version %@ is available."
+msgstr "버전 %@을(를) 사용할 수 있습니다."
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "H3 이하 하위 섹션을 상위 H2에 잇는 세로선입니다."
+
+msgid "Whole Word Match"
+msgstr "단어 단위 일치"
+
+msgid "Wrap long lines"
+msgstr "긴 줄 바꿈"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "가로로 스크롤하는 대신 마크다운 문단을 줄 바꿈합니다."
+
+msgid "Wrap the selection in bold markdown"
+msgstr "선택한 부분을 마크다운 굵게로 감쌉니다"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "선택한 부분을 마크다운 기울임으로 감쌉니다"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "`folders create`에는 폴더 경로를 정확히 하나 지정해야 합니다."
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "`folders move <path> --to <parent>`에는 경로와 대상 폴더가 모두 필요합니다."
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "`folders move`는 폴더 경로를 정확히 하나만 받습니다."
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "`folders rename`에는 <path> <new-name>이 필요합니다."
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "`folders rm`은 폴더 경로를 정확히 하나만 받습니다."
+
+msgid "`folders rm` cannot delete the root."
+msgstr "`folders rm`으로 최상위는 삭제할 수 없습니다."
+
+msgid "`folders rm` requires a folder path."
+msgstr "`folders rm`에는 폴더 경로가 필요합니다."
+
+msgid "`get` expects exactly one note ID."
+msgstr "`get`은 노트 ID를 정확히 하나만 받습니다."
+
+msgid "`get` requires a note ID."
+msgstr "`get`에는 노트 ID가 필요합니다."
+
+msgid "`help` accepts at most one command name."
+msgstr "`help`는 명령 이름을 많아야 하나만 받습니다."
+
+msgid "`move` expects exactly one note ID."
+msgstr "`move`는 노트 ID를 정확히 하나만 받습니다."
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "`move`에는 --folder PATH가 필요합니다(최상위로 옮기려면 --folder \"\"를 쓰세요)."
+
+msgid "`move` requires a note ID."
+msgstr "`move`에는 노트 ID가 필요합니다."
+
+msgid "`update` requires a note ID."
+msgstr "`update`에는 노트 ID가 필요합니다."
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "에셋"
+
+msgid "current"
+msgstr "현재"
+
+msgid "“%@” is in the Trash"
+msgstr "“%@”은(는) 휴지통에 있습니다"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "편집기 도구 모음 위에 현재 위치를 보여 주는 줄입니다."
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ 이동 · ↵ 열기 · Esc 닫기"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "미리 보기"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "제목"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "미리 보기"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "미리 보기와 자동화를 갖춘 네이티브 GTK 마크다운 노트"
+
+msgid "notes"
+msgstr "노트"
+
+msgid "markdown"
+msgstr "마크다운"
+
+msgid "editor"
+msgstr "편집기"
+
+msgid "preview"
+msgstr "미리 보기"
+
+msgid "cli"
+msgstr "cli"
+
+msgid "automation"
+msgstr "자동화"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "Swifty Notes는 Swift로 작성한 리눅스용 네이티브 GTK/libadwaita 마크다운 노트 앱입니다."
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "데스크톱 앱이 중심입니다. 네이티브 GTK 위젯, 자동 저장, 작업 상태 기억, 그리고 글자 크기·줄 바꿈·들여쓰기·모양 같은 조절 가능한 편집기 설정과 함께 마크다운 노트를 쓰고 정리하고 미리 볼 수 있습니다."
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "함께 제공되는 명령줄 도구는 같은 파일 기반 노트를 다루므로, 셸 스크립트와 자동화, AI 에이전트가 별도의 데이터베이스나 백그라운드 서비스 없이 노트를 안전하게 확인하거나 수정할 수 있습니다."
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "마크다운 노트를 만들고, 이름을 바꾸고, 복제하고, 내보내고, 삭제합니다."
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "편집 내용을 자동으로 저장하고, 작업 상태를 기억하며, 각 노트의 이미지 에셋을 노트와 함께 보관합니다."
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "화면과 작업 방식에 맞게 편집기 글자 크기를 비롯한 글쓰기 설정을 조정합니다."
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "클라우드 동기화 폴더를 포함해 노트를 저장할 위치를 고르면, 같은 일반 파일을 여러 기기에서 동기화할 수 있습니다."
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "이미지를 끌어 놓아 가져오고, 웹 뷰가 아닌 네이티브 GTK 미리 보기로 마크다운을 표시합니다."
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "스크립트와 셸 파이프라인, AI 에이전트에서 명령줄로 JSON에 어울리는 노트 자동화를 수행합니다."
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "앱을 다시 시작하지 않고도 화면 언어를 시스템 기본값과 함께 제공되는 어떤 언어로든 바꿉니다."
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "사이드바, 서식 도구 모음, 실시간 미리 보기, 개요를 함께 보는 분할 보기입니다."
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "긴 노트를 오갈 수 있는 문서 개요를 갖춘 네이티브 마크다운 미리 보기입니다."
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "서식 도구 모음과 문서 개요 패널을 갖춘 전체 편집기입니다."
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "미리 보기와 명령줄 자동화를 갖춘 네이티브 GTK 마크다운 노트"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "노트;메모;마크다운;편집기;텍스트;cli;자동화;"
+
+msgid "New Window"
+msgstr "새 창"

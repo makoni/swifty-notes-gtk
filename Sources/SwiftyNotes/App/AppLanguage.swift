@@ -20,6 +20,7 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
     case italian = "it"
     case dutch = "nl"
     case japanese = "ja"
+    case korean = "ko"
     case brazilianPortuguese = "pt_BR"
     case russian = "ru"
     case simplifiedChinese = "zh_CN"
@@ -56,6 +57,8 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             ["nl_NL.UTF-8", "nl_BE.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .japanese:
             ["ja_JP.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
+        case .korean:
+            ["ko_KR.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .brazilianPortuguese:
             ["pt_BR.UTF-8", "pt_PT.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .russian:
@@ -88,6 +91,8 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             "Nederlands"
         case .japanese:
             "日本語"
+        case .korean:
+            "한국어"
         case .brazilianPortuguese:
             "Português (Brasil)"
         case .russian:
