@@ -316,26 +316,6 @@ struct UISmokeTests {
             """
         }
 
-        // Both panes are seeded visible rather than inherited from the
-        // defaults, so the test states what it needs instead of failing the
-        // day a default changes.
-        let showBothPanes: (URL, URL, URL) throws -> Void = { _, stateHome, _ in
-            let stateFile = stateHome
-                .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
-                .appendingPathComponent("workspace.json", isDirectory: false)
-            try FileManager.default.createDirectory(
-                at: stateFile.deletingLastPathComponent(),
-                withIntermediateDirectories: true,
-            )
-            let store = WorkspaceStateStore(stateFileURL: stateFile)
-            try store.save(WorkspaceState(
-                isSidebarVisible: true,
-                windowWidth: 1400,
-                windowHeight: 900,
-                isOutlineVisible: true,
-            ))
-        }
-
         let leftToRight = try runWaylandUIScript(
             extents("Notes Sidebar", "Outline Sidebar"),
             prepare: showBothPanes,
@@ -381,6 +361,111 @@ struct UISmokeTests {
         // is the feature working, not the layout failing. "One pane merely got
         // wider" is already ruled out by both of them moving, in opposite
         // directions, above.
+    }
+
+    /// Mirroring on a *live* switch, and un-mirroring on the way back.
+    ///
+    /// The test above starts the app already in Arabic, which only proves the
+    /// direction is right at startup — the path GTK itself handles, since it
+    /// reads the direction from its own catalogue during `gtk_init`. Changing
+    /// it afterwards is the app's own work, and it is one-way code until
+    /// something switches home again: a window that mirrors when Arabic is
+    /// picked has to come back when English is, and only a second switch in
+    /// the same process shows that.
+    ///
+    /// Both switches go through the settings row's real signal, so this
+    /// exercises the picker rather than a launch flag.
+    @Test("Switching to Arabic mirrors the window live, and switching back restores it")
+    func switchingToArabicMirrorsTheWindowLiveAndSwitchingBackRestoresIt() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+
+            def report(stage, notes_label, outline_label):
+                for key, label in ((stage + "-notes", notes_label), (stage + "-outline", outline_label)):
+                    node = require_named(frame, label)
+                    # Window coordinates, not desktop: headless, every desktop
+                    # coordinate comes back as zero and the assertion would
+                    # compare nothing with nothing.
+                    x, y, w, h = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+                    print(f"EXTENT {key} x={x} w={w}")
+
+            def wait_for(label):
+                wait_until(
+                    lambda: label in visible_names(frame),
+                    f"{label} appears",
+                    timeout=30,
+                )
+
+            ENGLISH = ("Notes Sidebar", "Outline Sidebar")
+            ARABIC = ("شريط الملاحظات الجانبي", "شريط المخطط الجانبي")
+
+            wait_for(ENGLISH[0])
+            report("ltr", *ENGLISH)
+
+            wait_for(ARABIC[0])
+            report("rtl", *ARABIC)
+            names = visible_names(frame)
+            assert ENGLISH[0] not in names, f"English label survived the switch: {names}"
+
+            wait_for(ENGLISH[0])
+            report("back", *ENGLISH)
+            names = visible_names(frame)
+            assert ARABIC[0] not in names, f"Arabic label survived the switch back: {names}"
+            """,
+            prepare: showBothPanes,
+            environment: [
+                // Nothing stored, so the app starts in the session's language
+                // and the two switches below are the only thing that changes
+                // it.
+                "LANGUAGE": "en",
+                "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_ON_LAUNCH": "1",
+                "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS": "400",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH": "ar",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN": "en",
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "1200",
+            ],
+        )
+        expectUIScriptSucceeded(result)
+
+        guard let extents = try parsedExtents(result) else { return }
+        let ltrNotes = try #require(extents["ltr-notes"], "no extents for the notes sidebar in English")
+        let ltrOutline = try #require(extents["ltr-outline"], "no extents for the outline sidebar in English")
+        let rtlNotes = try #require(extents["rtl-notes"], "no extents for the notes sidebar in Arabic")
+        let rtlOutline = try #require(extents["rtl-outline"], "no extents for the outline sidebar in Arabic")
+        let backNotes = try #require(extents["back-notes"], "no extents for the notes sidebar after switching back")
+        let backOutline = try #require(
+            extents["back-outline"],
+            "no extents for the outline sidebar after switching back",
+        )
+
+        #expect(ltrNotes.x < ltrOutline.x, "English: the notes sidebar belongs left of the outline")
+        #expect(
+            rtlNotes.x > rtlOutline.x,
+            """
+            Arabic: the notes sidebar is still left of the outline \
+            (notes x=\(rtlNotes.x), outline x=\(rtlOutline.x)) — picking a \
+            right-to-left language did not mirror the window
+            """,
+        )
+        #expect(
+            backNotes.x < backOutline.x,
+            """
+            back in English: the notes sidebar is still right of the outline \
+            (notes x=\(backNotes.x), outline x=\(backOutline.x)) — the window \
+            mirrored on the way out and stayed mirrored
+            """,
+        )
+        // Not merely "left of" again but back where it started: a layout that
+        // un-mirrors by shuffling panes into a third arrangement would satisfy
+        // the ordering above and still be wrong.
+        #expect(
+            backNotes.x == ltrNotes.x && backOutline.x == ltrOutline.x,
+            """
+            switching back left the panes somewhere new: notes \(ltrNotes.x) -> \
+            \(backNotes.x), outline \(ltrOutline.x) -> \(backOutline.x)
+            """,
+        )
     }
 
     /// The whole localization stack through the real binary: catalogue
@@ -524,6 +609,25 @@ struct UISmokeTests {
         )
         expectUIScriptSucceeded(result)
     }
+}
+
+/// Seeds both side panes visible, so a layout test states what it needs
+/// instead of failing the day a default changes.
+private func showBothPanes(_: URL, _ stateHome: URL, _: URL) throws {
+    let stateFile = stateHome
+        .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+        .appendingPathComponent("workspace.json", isDirectory: false)
+    try FileManager.default.createDirectory(
+        at: stateFile.deletingLastPathComponent(),
+        withIntermediateDirectories: true,
+    )
+    let store = WorkspaceStateStore(stateFileURL: stateFile)
+    try store.save(WorkspaceState(
+        isSidebarVisible: true,
+        windowWidth: 1400,
+        windowHeight: 900,
+        isOutlineVisible: true,
+    ))
 }
 
 private struct UIScriptResult {

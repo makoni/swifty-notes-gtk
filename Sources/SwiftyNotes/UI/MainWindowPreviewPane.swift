@@ -225,6 +225,12 @@ extension MainWindow {
     /// not reproduce, because the crash it exposed needs a running main loop.
     /// `SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH=ru` alongside
     /// `SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_ON_LAUNCH=1` drives it deterministically.
+    ///
+    /// `SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN=en` adds further switches, applied
+    /// in sequence a delay apart. One process can then go left-to-right,
+    /// right-to-left and back — which is the interesting direction for layout,
+    /// since a window that mirrors on the way out has to un-mirror on the way
+    /// home, and only a live switch exercises that.
     func scheduleDebugLanguageSwitchIfRequested() {
         guard !hasScheduledDebugLanguageSwitch,
               let raw = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH"]?
@@ -236,16 +242,44 @@ extension MainWindow {
         }
 
         hasScheduledDebugLanguageSwitch = true
-        let delayMilliseconds = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS"]
+        MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds)) { [weak self] in
+            guard let self else { return }
+            selectDebugLanguage(language)
+            let followUps = (ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN"] ?? "")
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+                .compactMap(AppLanguage.init(rawValue:))
+            selectDebugLanguagesInSequence(followUps)
+        }
+    }
+
+    private var debugLanguageSwitchDelayMilliseconds: Int {
+        let configured = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS"]
             .flatMap(Int.init) ?? 1500
-        MainContext.delay(for: .milliseconds(max(delayMilliseconds, 0))) { [weak self] in
-            guard let settingsWindow = self?.activeSettingsWindow else {
-                FileHandle.standardError.write(Data("[debug-language] no settings window open\n".utf8))
-                return
-            }
-            FileHandle.standardError.write(Data("[debug-language] selecting \(language.rawValue)\n".utf8))
-            settingsWindow.debugSetLanguage(language)
-            FileHandle.standardError.write(Data("[debug-language] survived the switch\n".utf8))
+        return max(configured, 0)
+    }
+
+    /// Both markers are printed because they answer different questions: the
+    /// first says the switch was reached at all, the second that the process
+    /// came back from assigning GTK's default direction.
+    private func selectDebugLanguage(_ language: AppLanguage) {
+        guard let settingsWindow = activeSettingsWindow else {
+            FileHandle.standardError.write(Data("[debug-language] no settings window open\n".utf8))
+            return
+        }
+        FileHandle.standardError.write(Data("[debug-language] selecting \(language.rawValue)\n".utf8))
+        settingsWindow.debugSetLanguage(language)
+        FileHandle.standardError.write(Data("[debug-language] survived the switch\n".utf8))
+    }
+
+    private func selectDebugLanguagesInSequence(_ languages: [AppLanguage]) {
+        guard let next = languages.first else { return }
+        let rest = Array(languages.dropFirst())
+        MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds)) { [weak self] in
+            guard let self else { return }
+            selectDebugLanguage(next)
+            selectDebugLanguagesInSequence(rest)
         }
     }
 
