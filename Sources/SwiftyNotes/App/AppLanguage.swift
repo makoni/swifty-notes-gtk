@@ -16,6 +16,10 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
     case english = "en"
     case german = "de"
     case french = "fr"
+    case spanish = "es"
+    case italian = "it"
+    case dutch = "nl"
+    case brazilianPortuguese = "pt_BR"
     case russian = "ru"
 
     /// The gettext language code to pin, or `nil` to follow the session.
@@ -42,6 +46,14 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             ["de_DE.UTF-8", "de_AT.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .french:
             ["fr_FR.UTF-8", "fr_CA.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
+        case .spanish:
+            ["es_ES.UTF-8", "es_MX.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
+        case .italian:
+            ["it_IT.UTF-8", "it_CH.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
+        case .dutch:
+            ["nl_NL.UTF-8", "nl_BE.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
+        case .brazilianPortuguese:
+            ["pt_BR.UTF-8", "pt_PT.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .russian:
             ["ru_RU.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         }
@@ -62,6 +74,14 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             "Deutsch"
         case .french:
             "Français"
+        case .spanish:
+            "Español"
+        case .italian:
+            "Italiano"
+        case .dutch:
+            "Nederlands"
+        case .brazilianPortuguese:
+            "Português (Brasil)"
         case .russian:
             "Русский"
         }

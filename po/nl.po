@@ -1,0 +1,1278 @@
+# Dutch translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Dutch\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " De notities gaan naar de prullenbak en kunnen daar worden hersteld."
+
+msgid " and "
+msgstr " en "
+
+msgid "\"%@\" contains %@."
+msgstr "‘%@’ bevat %@."
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "‘%@’ bevat %@. Geef --yes mee om de map met inhoud te verwijderen."
+
+msgid "\"%@\" is empty."
+msgstr "‘%@’ is leeg."
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "‘%@’ is geen geldige mapnaam."
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d resultaat"
+msgstr[1] "%d resultaten"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d notitie"
+msgstr[1] "%d notities"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "%d notitie wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt."
+msgstr[1] "%d notities worden definitief verwijderd. Dit kan niet ongedaan worden gemaakt."
+
+msgid "%d of %d"
+msgstr "%d van %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d sectie"
+msgstr[1] "%d secties"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d submap"
+msgstr[1] "%d submappen"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d subsectie"
+msgstr[1] "%d subsecties"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d woord"
+msgstr[1] "%d woorden"
+
+msgid "%d × %d table"
+msgstr "Tabel van %d × %d"
+
+msgid "%d × %d table — column alignment"
+msgstr "Tabel van %d × %d: kolomuitlijning"
+
+msgid "(Root)"
+msgstr "(Hoofdmap)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "Op ‘%@’ bestaat al een map of notitie."
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "Een native GTK-app voor Markdown-notities, geschreven in Swift met swift-adwaita."
+
+msgid "About Swifty Notes"
+msgstr "Over Swifty Notes"
+
+msgid "After 30 days"
+msgstr "Na 30 dagen"
+
+msgid "After 7 days"
+msgstr "Na 7 dagen"
+
+msgid "After 90 days"
+msgstr "Na 90 dagen"
+
+msgid "After a year"
+msgstr "Na een jaar"
+
+msgid "All files"
+msgstr "Alle bestanden"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "Naast de export bestaat al een map ‘assets’. Bij samenvoegen worden bestanden met dezelfde naam overschreven."
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "Op %@ bestaat al een map ‘assets’."
+
+msgid "Appearance"
+msgstr "Weergave"
+
+msgid "Applies immediately — no restart."
+msgstr "Werkt meteen, zonder herstarten."
+
+msgid "Autosave delay"
+msgstr "Vertraging automatisch opslaan"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "Automatisch opslaan gebeurt na de laatste bewerking, met de ingestelde vertraging."
+
+msgid "Back to size picker"
+msgstr "Terug naar de afmetingskiezer"
+
+msgid "Bold"
+msgstr "Vet"
+
+msgid "Breadcrumb strip above editor"
+msgstr "Kruimelpad boven de editor"
+
+msgid "Browse…"
+msgstr "Bladeren…"
+
+msgid "Bulleted List"
+msgstr "Opsomming"
+
+msgid "Bullets"
+msgstr "Opsommingstekens"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "‘%@’ kan niet worden verplaatst naar ‘%@’, een eigen submap."
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "Een map of notitie kan niet in de notitiemap op ‘%@’ worden gezet."
+
+msgid "Case Sensitive"
+msgstr "Hoofdlettergevoelig"
+
+msgid "Centred"
+msgstr "Gecentreerd"
+
+msgid "Check for Updates…"
+msgstr "Controleren op updates…"
+
+msgid "Choose Notes Folder"
+msgstr "Notitiemap kiezen"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "Kies een doelmap voor ‘%@’."
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "Kies een woordenboek of volg de systeemtaal."
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "Kies een lege doelmap voor je notities."
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "Kies waar Swifty Notes Markdown-bestanden en bijbehorende bijlagen bewaart."
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "Kies of Tab spaties of echte tabs invoegt."
+
+msgid "Code"
+msgstr "Code"
+
+msgid "Collapse section"
+msgstr "Sectie inklappen"
+
+msgid "Column %d: %@ — click to change"
+msgstr "Kolom %d: %@ — klik om te wijzigen"
+
+msgid "Columns"
+msgstr "Kolommen"
+
+msgid "Comfortable"
+msgstr "Ruim"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "‘Ruim’ is de standaard; ‘Compact’ maakt de regelafstand kleiner."
+
+msgid "Compact"
+msgstr "Compact"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "Bepaal hoe opgemaakte Markdown er in het voorbeeld uitziet."
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "Bepaal regelterugloop, inspringing en de tekstgrootte van de editor."
+
+msgid "Copied note ID"
+msgstr "Notitie-id gekopieerd"
+
+msgid "Copy code to clipboard"
+msgstr "Code naar het klembord kopiëren"
+
+msgid "Copy note ID"
+msgstr "Notitie-id kopiëren"
+
+msgid "Could not add image"
+msgstr "Kan de afbeelding niet toevoegen"
+
+msgid "Could not change the notes folder"
+msgstr "Kan de notitiemap niet wijzigen"
+
+msgid "Could not check for updates: %@"
+msgstr "Kan niet op updates controleren: %@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "Kan niet op updates controleren: geen internetverbinding."
+
+msgid "Could not choose a notes folder"
+msgstr "Kan geen notitiemap kiezen"
+
+msgid "Could not create folder"
+msgstr "Kan de map niet aanmaken"
+
+msgid "Could not create note"
+msgstr "Kan de notitie niet aanmaken"
+
+msgid "Could not delete folder"
+msgstr "Kan de map niet verwijderen"
+
+msgid "Could not delete note"
+msgstr "Kan de notitie niet verwijderen"
+
+msgid "Could not duplicate note"
+msgstr "Kan de notitie niet dupliceren"
+
+msgid "Could not empty Trash"
+msgstr "Kan de prullenbak niet legen"
+
+msgid "Could not encode CLI output"
+msgstr "Kan de uitvoer van de opdrachtregel niet coderen"
+
+msgid "Could not export note"
+msgstr "Kan de notitie niet exporteren"
+
+msgid "Could not import file into library"
+msgstr "Kan het bestand niet in de bibliotheek importeren"
+
+msgid "Could not import note"
+msgstr "Kan de notitie niet importeren"
+
+msgid "Could not inspect markdown file"
+msgstr "Kan het Markdown-bestand niet inspecteren"
+
+msgid "Could not inspect notes directory"
+msgstr "Kan de notitiemap niet inspecteren"
+
+msgid "Could not load notes"
+msgstr "Kan de notities niet laden"
+
+msgid "Could not move folder"
+msgstr "Kan de map niet verplaatsen"
+
+msgid "Could not move note"
+msgstr "Kan de notitie niet verplaatsen"
+
+msgid "Could not open containing folder"
+msgstr "Kan de bovenliggende map niet openen"
+
+msgid "Could not open export dialog"
+msgstr "Kan het exportvenster niet openen"
+
+msgid "Could not open file dialog"
+msgstr "Kan het bestandsvenster niet openen"
+
+msgid "Could not open import dialog"
+msgstr "Kan het importvenster niet openen"
+
+msgid "Could not open markdown file"
+msgstr "Kan het Markdown-bestand niet openen"
+
+msgid "Could not open notes folder"
+msgstr "Kan de notitiemap niet openen"
+
+msgid "Could not open release page: %@"
+msgstr "Kan de releasepagina niet openen: %@"
+
+msgid "Could not open save dialog"
+msgstr "Kan het opslagvenster niet openen"
+
+msgid "Could not open settings"
+msgstr "Kan de instellingen niet openen"
+
+msgid "Could not parse current version \"%@\""
+msgstr "Kan de huidige versie ‘%@’ niet lezen"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "Kan de versie op de server ‘%@’ niet lezen"
+
+msgid "Could not paste files"
+msgstr "Kan de bestanden niet plakken"
+
+msgid "Could not paste image"
+msgstr "Kan de afbeelding niet plakken"
+
+msgid "Could not permanently delete note"
+msgstr "Kan de notitie niet definitief verwijderen"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "Kan geen UTF-8-inhoud van stdin lezen"
+
+msgid "Could not reload file"
+msgstr "Kan het bestand niet opnieuw laden"
+
+msgid "Could not reload notes"
+msgstr "Kan de notities niet opnieuw laden"
+
+msgid "Could not rename folder"
+msgstr "Kan de map niet hernoemen"
+
+msgid "Could not rename note"
+msgstr "Kan de notitie niet hernoemen"
+
+msgid "Could not restore note"
+msgstr "Kan de notitie niet herstellen"
+
+msgid "Could not save file: %@"
+msgstr "Kan het bestand niet opslaan: %@"
+
+msgid "Could not save note: %@"
+msgstr "Kan de notitie niet opslaan: %@"
+
+msgid "Could not store workspace state"
+msgstr "Kan de staat van de werkomgeving niet bewaren"
+
+msgid "Could not update notes index"
+msgstr "Kan de notitie-index niet bijwerken"
+
+msgid "Could not update settings"
+msgstr "Kan de instellingen niet bijwerken"
+
+msgid "Create"
+msgstr "Aanmaken"
+
+msgid "Dark"
+msgstr "Donker"
+
+msgid "Delete"
+msgstr "Verwijderen"
+
+msgid "Delete Note"
+msgstr "Notitie verwijderen"
+
+msgid "Delete folder?"
+msgstr "Map verwijderen?"
+
+msgid "Delete folder…"
+msgstr "Map verwijderen…"
+
+msgid "Delete forever"
+msgstr "Definitief verwijderen"
+
+msgid "Delete forever…"
+msgstr "Definitief verwijderen…"
+
+msgid "Delete “%@” forever?"
+msgstr "‘%@’ definitief verwijderen?"
+
+msgid "Deleted"
+msgstr "Verwijderd"
+
+msgid "Deleted %@"
+msgstr "%@ verwijderd"
+
+msgid "Delete…"
+msgstr "Verwijderen…"
+
+msgid "Dismiss"
+msgstr "Sluiten"
+
+msgid "Dismiss update notification"
+msgstr "Updatemelding sluiten"
+
+msgid "Document"
+msgstr "Document"
+
+msgid "Document Menu"
+msgstr "Documentmenu"
+
+msgid "Drag handles on hover"
+msgstr "Sleepgrepen bij aanwijzen"
+
+msgid "Duplicate note"
+msgstr "Notitie dupliceren"
+
+msgid "Editor"
+msgstr "Editor"
+
+msgid "Editor font size"
+msgstr "Tekengrootte van de editor"
+
+msgid "Editor only"
+msgstr "Alleen editor"
+
+msgid "Empty Trash"
+msgstr "Prullenbak legen"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "Prullenbak legen (%d notitie)…"
+msgstr[1] "Prullenbak legen (%d notities)…"
+
+msgid "Empty Trash automatically"
+msgstr "Prullenbak automatisch legen"
+
+msgid "Empty Trash?"
+msgstr "Prullenbak legen?"
+
+msgid "Enable spell-check"
+msgstr "Spellingcontrole inschakelen"
+
+msgid "Expand section"
+msgstr "Sectie uitklappen"
+
+msgid "Export"
+msgstr "Exporteren"
+
+msgid "Export Note"
+msgstr "Notitie exporteren"
+
+msgid "Export note…"
+msgstr "Notitie exporteren…"
+
+msgid "Exported %@"
+msgstr "%@ geëxporteerd"
+
+msgid "Exported %@ with %d %@"
+msgstr "%@ geëxporteerd met %d %@"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "Het bestand is op schijf gewijzigd. Sla op of laad opnieuw om te synchroniseren."
+
+msgid "File reloaded from disk"
+msgstr "Bestand opnieuw geladen vanaf schijf"
+
+msgid "File saved"
+msgstr "Bestand opgeslagen"
+
+msgid "Filter Outline"
+msgstr "Overzicht filteren"
+
+msgid "Filter headings…"
+msgstr "Koppen filteren…"
+
+msgid "Find…"
+msgstr "Zoeken…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "Map ‘%@’ is niet gevonden."
+
+msgid "Folder %@"
+msgstr "Map %@"
+
+msgid "Folder deleted"
+msgstr "Map verwijderd"
+
+msgid "Folder moved"
+msgstr "Map verplaatst"
+
+msgid "Folder name"
+msgstr "Mapnaam"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "Mapnaam ‘%@’ overschrijdt de limiet van het bestandssysteem van %d bytes."
+
+msgid "Folder name or Work/Drafts"
+msgstr "Mapnaam of Werk/Concepten"
+
+msgid "Folder renamed"
+msgstr "Map hernoemd"
+
+msgid "Follow system"
+msgstr "Systeem volgen"
+
+msgid "Follow system locale"
+msgstr "Systeemtaal volgen"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "Volg het systeem of leg de taal van de interface vast."
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "Kop"
+
+msgid "Help"
+msgstr "Hulp"
+
+msgid "Hide Notes Sidebar"
+msgstr "Notitiezijbalk verbergen"
+
+msgid "Hide outline (F9)"
+msgstr "Overzicht verbergen (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "Markeer spelfouten in de tekst met libspelling en de woordenboeken van het systeem."
+
+msgid "Hover to pick size"
+msgstr "Wijs aan om de afmetingen te kiezen"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "Afbeelding toegevoegd aan de notitie"
+msgstr[1] "Afbeeldingen toegevoegd aan de notitie"
+
+msgid "Image pasted into note"
+msgstr "Afbeelding in de notitie geplakt"
+
+msgid "Import"
+msgstr "Importeren"
+
+msgid "Import into Library"
+msgstr "In de bibliotheek importeren"
+
+msgid "Import into Library…"
+msgstr "In de bibliotheek importeren…"
+
+msgid "Imported %@"
+msgstr "%@ geïmporteerd"
+
+msgid "Imported %@ into library"
+msgstr "%@ in de bibliotheek geïmporteerd"
+
+msgid "Indent style"
+msgstr "Inspringstijl"
+
+msgid "Insert"
+msgstr "Invoegen"
+
+msgid "Insert Table"
+msgstr "Tabel invoegen"
+
+msgid "Insert a markdown link"
+msgstr "Een Markdown-koppeling invoegen"
+
+msgid "Insert a markdown table"
+msgstr "Een Markdown-tabel invoegen"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "Code in de regel of een codeblok invoegen"
+
+msgid "Interface language"
+msgstr "Taal van de interface"
+
+msgid "Invalid note ID: %@"
+msgstr "Ongeldig notitie-id: %@"
+
+msgid "Italic"
+msgstr "Cursief"
+
+msgid "Jump to heading"
+msgstr "Naar kop springen"
+
+msgid "Jump to heading…"
+msgstr "Naar kop springen…"
+
+msgid "Jump-to-heading results"
+msgstr "Resultaten van ‘Naar kop springen’"
+
+msgid "Language"
+msgstr "Taal"
+
+msgid "Left-aligned"
+msgstr "Links uitgelijnd"
+
+msgid "Library"
+msgstr "Bibliotheek"
+
+msgid "Light"
+msgstr "Licht"
+
+msgid "Link"
+msgstr "Koppeling"
+
+msgid "Main Menu"
+msgstr "Hoofdmenu"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Markdown Editor"
+msgstr "Markdown-editor"
+
+msgid "Markdown Preview"
+msgstr "Markdown-voorbeeld"
+
+msgid "Markdown notes"
+msgstr "Markdown-notities"
+
+msgid "Merge"
+msgstr "Samenvoegen"
+
+msgid "Missing value for --content-file."
+msgstr "Waarde voor --content-file ontbreekt."
+
+msgid "Missing value for --content."
+msgstr "Waarde voor --content ontbreekt."
+
+msgid "Missing value for --folder."
+msgstr "Waarde voor --folder ontbreekt."
+
+msgid "Missing value for --notes-dir."
+msgstr "Waarde voor --notes-dir ontbreekt."
+
+msgid "Missing value for --to."
+msgstr "Waarde voor --to ontbreekt."
+
+msgid "Move"
+msgstr "Verplaatsen"
+
+msgid "Move note"
+msgstr "Notitie verplaatsen"
+
+msgid "Move to…"
+msgstr "Verplaatsen naar…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "‘%@’ naar de prullenbak verplaatst"
+
+msgid "Never"
+msgstr "Nooit"
+
+msgid "New Folder"
+msgstr "Nieuwe map"
+
+msgid "New Note"
+msgstr "Nieuwe notitie"
+
+msgid "New folder"
+msgstr "Nieuwe map"
+
+msgid "New note here"
+msgstr "Nieuwe notitie hier"
+
+msgid "New subfolder in \"%@\""
+msgstr "Nieuwe submap in ‘%@’"
+
+msgid "New subfolder…"
+msgstr "Nieuwe submap…"
+
+msgid "Newest First"
+msgstr "Nieuwste eerst"
+
+msgid "Newest first"
+msgstr "Nieuwste eerst"
+
+msgid "Next Match"
+msgstr "Volgend resultaat"
+
+msgid "No headings in this note."
+msgstr "Geen koppen in deze notitie."
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "Geen koppen in deze notitie. <a href=\"insert-heading\">Voeg <tt>## Kop</tt> toe</a> om te beginnen."
+
+msgid "No headings match \"%@\""
+msgstr "Geen koppen komen overeen met ‘%@’"
+
+msgid "No headings match the filter."
+msgstr "Geen koppen komen overeen met het filter."
+
+msgid "No headings to jump to."
+msgstr "Geen koppen om naartoe te springen."
+
+msgid "No matches"
+msgstr "Geen resultaten"
+
+msgid "No matches to replace."
+msgstr "Geen resultaten om te vervangen."
+
+msgid "No note found for ID %@"
+msgstr "Geen notitie gevonden voor id %@"
+
+msgid "No notes match \"%@\"."
+msgstr "Geen notities komen overeen met ‘%@’."
+
+msgid "No notes yet."
+msgstr "Nog geen notities."
+
+msgid "No notes yet. Create one with +."
+msgstr "Nog geen notities. Maak er een met +."
+
+msgid "No other folders to move into"
+msgstr "Geen andere mappen om naartoe te verplaatsen"
+
+msgid "Note Outline"
+msgstr "Notitieoverzicht"
+
+msgid "Note duplicated"
+msgstr "Notitie gedupliceerd"
+
+msgid "Note moved"
+msgstr "Notitie verplaatst"
+
+msgid "Note permanently deleted"
+msgstr "Notitie definitief verwijderd"
+
+msgid "Note renamed"
+msgstr "Notitie hernoemd"
+
+msgid "Note restored"
+msgstr "Notitie hersteld"
+
+msgid "Note saved"
+msgstr "Notitie opgeslagen"
+
+msgid "Notes"
+msgstr "Notities"
+
+msgid "Notes (%d)"
+msgstr "Notities (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "Notities (%d/%d)"
+
+msgid "Notes List"
+msgstr "Notitielijst"
+
+msgid "Notes Sidebar"
+msgstr "Notitiezijbalk"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "De notities zijn op schijf gewijzigd. Sla op of laad opnieuw om te synchroniseren."
+
+msgid "Notes folder"
+msgstr "Notitiemap"
+
+msgid "Notes folder updated"
+msgstr "Notitiemap bijgewerkt"
+
+msgid "Notes reloaded from disk"
+msgstr "Notities opnieuw geladen vanaf schijf"
+
+msgid "Nothing to preview yet."
+msgstr "Nog niets om te tonen."
+
+msgid "Numbered List"
+msgstr "Genummerde lijst"
+
+msgid "OK"
+msgstr "Oké"
+
+msgid "Oldest First"
+msgstr "Oudste eerst"
+
+msgid "Oldest first"
+msgstr "Oudste eerst"
+
+msgid "Open"
+msgstr "Openen"
+
+msgid "Open Markdown File"
+msgstr "Markdown-bestand openen"
+
+msgid "Open Markdown File…"
+msgstr "Markdown-bestand openen…"
+
+msgid "Open current folder"
+msgstr "Huidige map openen"
+
+msgid "Open notes folder"
+msgstr "Notitiemap openen"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "Open of maak een notitie voordat je afbeeldingen sleept of plakt."
+
+msgid "Outline"
+msgstr "Overzicht"
+
+msgid "Outline Sidebar"
+msgstr "Overzichtszijbalk"
+
+msgid "Outline density"
+msgstr "Dichtheid van het overzicht"
+
+msgid "Override the application theme or follow the system."
+msgstr "Stel het thema van de app in of volg het systeem."
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "Pad ‘%@’ overschrijdt de limiet van het bestandssysteem van %d bytes."
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "Verwijder notities in de prullenbak definitief nadat deze tijd is verstreken."
+
+msgid "Points"
+msgstr "Punten"
+
+msgid "Preferences"
+msgstr "Voorkeuren"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "De geselecteerde regels als opsomming opmaken"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "De geselecteerde regels als genummerde lijst opmaken"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "De geselecteerde regels als citaat opmaken"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "De geselecteerde regels als takenlijst opmaken"
+
+msgid "Preview only"
+msgstr "Alleen voorbeeld"
+
+msgid "Previous Match"
+msgstr "Vorig resultaat"
+
+msgid "Quick Jump"
+msgstr "Snel springen"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "Snel springen… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "Citaat"
+
+msgid "Regular Expression"
+msgstr "Reguliere expressie"
+
+msgid "Reload"
+msgstr "Opnieuw laden"
+
+msgid "Reload from disk"
+msgstr "Opnieuw laden vanaf schijf"
+
+msgid "Rename"
+msgstr "Hernoemen"
+
+msgid "Rename folder"
+msgstr "Map hernoemen"
+
+msgid "Rename folder…"
+msgstr "Map hernoemen…"
+
+msgid "Rename note"
+msgstr "Notitie hernoemen"
+
+msgid "Rename note…"
+msgstr "Notitie hernoemen…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "‘%@’ hernoemen. Mapnamen mogen geen schuine strepen (/) bevatten."
+
+msgid "Render emoji shortcodes"
+msgstr "Emoji-shortcodes tonen"
+
+msgid "Replace"
+msgstr "Vervangen"
+
+msgid "Replace All"
+msgstr "Alles vervangen"
+
+msgid "Replace every match"
+msgstr "Elk resultaat vervangen"
+
+msgid "Replace existing assets?"
+msgstr "Bestaande bijlagen vervangen?"
+
+msgid "Replace the current match"
+msgstr "Het huidige resultaat vervangen"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "%d resultaat vervangen."
+msgstr[1] "%d resultaten vervangen."
+
+msgid "Replacement content is required."
+msgstr "Vervangende inhoud is verplicht."
+
+msgid "Replace…"
+msgstr "Vervangen…"
+
+msgid "Reset"
+msgstr "Herstellen"
+
+msgid "Restore"
+msgstr "Terugzetten"
+
+msgid "Reveal in Folder"
+msgstr "Tonen in map"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "Toon de actieve notitiemap in je bestandsbeheerder."
+
+msgid "Right-aligned"
+msgstr "Rechts uitgelijnd"
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Save As…"
+msgstr "Opslaan als…"
+
+msgid "Save File"
+msgstr "Bestand opslaan"
+
+msgid "Save Markdown File As"
+msgstr "Markdown-bestand opslaan als"
+
+msgid "Save Note"
+msgstr "Notitie opslaan"
+
+msgid "Saved"
+msgstr "Opgeslagen"
+
+msgid "Saved as %@"
+msgstr "Opgeslagen als %@"
+
+msgid "Saving"
+msgstr "Bezig met opslaan"
+
+msgid "Search Notes"
+msgstr "Notities doorzoeken"
+
+msgid "Search notes"
+msgstr "Notities doorzoeken"
+
+msgid "Seconds"
+msgstr "Seconden"
+
+msgid "Settings"
+msgstr "Instellingen"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr "Toon :shortcode:-aliassen (bijvoorbeeld :rocket:) als emoji. De brontekst en code blijven ongewijzigd."
+
+msgid "Show Notes Sidebar"
+msgstr "Notitiezijbalk tonen"
+
+msgid "Show outline (F9)"
+msgstr "Overzicht tonen (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "Toon de sleepgreep bij aanwijzen. Slepen om te herschikken komt apart."
+
+msgid "Size"
+msgstr "Afmetingen"
+
+msgid "Sort Notes"
+msgstr "Notities sorteren"
+
+msgid "Sort Notes by Newest First"
+msgstr "Notities sorteren op nieuwste eerst"
+
+msgid "Sort Notes by Oldest First"
+msgstr "Notities sorteren op oudste eerst"
+
+msgid "Sort Notes by Title"
+msgstr "Notities sorteren op titel"
+
+msgid "Sort by Title"
+msgstr "Sorteren op titel"
+
+msgid "Sorting by newest first"
+msgstr "Gesorteerd op nieuwste eerst"
+
+msgid "Sorting by oldest first"
+msgstr "Gesorteerd op oudste eerst"
+
+msgid "Sorting by title"
+msgstr "Gesorteerd op titel"
+
+msgid "Source Code"
+msgstr "Broncode"
+
+msgid "Spaces"
+msgstr "Spaties"
+
+msgid "Spell check"
+msgstr "Spellingcontrole"
+
+msgid "Spell-check language"
+msgstr "Taal voor spellingcontrole"
+
+msgid "Split"
+msgstr "Gesplitst"
+
+msgid "Split view"
+msgstr "Gesplitste weergave"
+
+msgid "Storage"
+msgstr "Opslag"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "Swifty Notes kan alleen lokale Markdown-bestanden openen."
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "Swifty Notes heeft geen toegang tot die map. Kies een andere locatie."
+
+msgid "Swifty Notes is up to date."
+msgstr "Swifty Notes is up-to-date."
+
+msgid "System language"
+msgstr "Systeemtaal"
+
+msgid "Tab width"
+msgstr "Tabbreedte"
+
+msgid "Table"
+msgstr "Tabel"
+
+msgid "Tabs"
+msgstr "Tabs"
+
+msgid "Takes effect the next time the app starts."
+msgstr "Wordt actief bij de volgende start van de app."
+
+msgid "Task List"
+msgstr "Takenlijst"
+
+msgid "The application instance is not available."
+msgstr "De instantie van de app is niet beschikbaar."
+
+msgid "The current notes folder could not be found."
+msgstr "De huidige notitiemap is niet gevonden."
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "De nieuwe notitiemap mag niet in de huidige notitiemap liggen."
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "De titel van de notitie komt uit de eerste betekenisvolle regel."
+
+msgid "The selected destination is not a folder."
+msgstr "De gekozen bestemming is geen map."
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "De gekozen map staat op een alleen-lezen bestandssysteem en kan geen notities bewaren."
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "Er is niet genoeg schijfruimte om je notities naar die map te verplaatsen."
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "Hiermee wordt de notitie definitief van de schijf verwijderd. Dit kan niet ongedaan worden gemaakt."
+
+msgid "Title"
+msgstr "Titel"
+
+msgid "Toggle Outline"
+msgstr "Overzicht in- of uitschakelen"
+
+msgid "Trash"
+msgstr "Prullenbak"
+
+msgid "Trash emptied"
+msgstr "Prullenbak geleegd"
+
+msgid "Tree lines under H2 sections"
+msgstr "Boomlijnen onder H2-secties"
+
+msgid "Turn the current line into a heading"
+msgstr "De huidige regel omzetten in een kop"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "Stel het overzichtspaneel rechts en het kruimelpad boven de editor in."
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "Onderstreep spelfouten tijdens het typen en bied correcties aan in het rechtermuisknopmenu."
+
+msgid "Undo"
+msgstr "Ongedaan maken"
+
+msgid "Unknown CLI command: %@"
+msgstr "Onbekende opdracht: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "Onbekende opdracht voor hulp: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "Onbekend subcommando van folders: %@"
+
+msgid "Unknown option: %@"
+msgstr "Onbekende optie: %@"
+
+msgid "Unsaved changes"
+msgstr "Niet-opgeslagen wijzigingen"
+
+msgid "Unsupported image type for %@."
+msgstr "Niet-ondersteund afbeeldingstype voor %@."
+
+msgid "Update"
+msgstr "Bijwerken"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "Gebruik / om in één keer geneste mappen te maken, bijvoorbeeld Werk/Concepten."
+
+msgid "Use default location"
+msgstr "Standaardlocatie gebruiken"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "Gebruik maar één van --content, --content-file en --stdin."
+
+msgid "Version %@ is available."
+msgstr "Versie %@ is beschikbaar."
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "Verticale lijnen die subsecties vanaf H3 met hun H2-sectie verbinden."
+
+msgid "Whole Word Match"
+msgstr "Heel woord"
+
+msgid "Wrap long lines"
+msgstr "Lange regels afbreken"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "Breek Markdown-alinea's af in plaats van horizontaal te scrollen."
+
+msgid "Wrap the selection in bold markdown"
+msgstr "De selectie vet maken in Markdown"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "De selectie cursief maken in Markdown"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "`folders create` vereist precies één mappad."
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "`folders move <path> --to <parent>` vereist zowel een pad als een doelmap."
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "`folders move` accepteert precies één mappad."
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "`folders rename` vereist <path> <new-name>."
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "`folders rm` accepteert precies één mappad."
+
+msgid "`folders rm` cannot delete the root."
+msgstr "`folders rm` kan de hoofdmap niet verwijderen."
+
+msgid "`folders rm` requires a folder path."
+msgstr "`folders rm` vereist een mappad."
+
+msgid "`get` expects exactly one note ID."
+msgstr "`get` verwacht precies één notitie-id."
+
+msgid "`get` requires a note ID."
+msgstr "`get` vereist een notitie-id."
+
+msgid "`help` accepts at most one command name."
+msgstr "`help` accepteert hoogstens één opdrachtnaam."
+
+msgid "`move` expects exactly one note ID."
+msgstr "`move` verwacht precies één notitie-id."
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "`move` vereist --folder PATH (gebruik --folder \"\" om naar de hoofdmap te verplaatsen)."
+
+msgid "`move` requires a note ID."
+msgstr "`move` vereist een notitie-id."
+
+msgid "`update` requires a note ID."
+msgstr "`update` vereist een notitie-id."
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "bijlage"
+msgstr[1] "bijlagen"
+
+msgid "current"
+msgstr "huidige"
+
+msgid "“%@” is in the Trash"
+msgstr "‘%@’ zit in de prullenbak"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "De ‘je bent hier’-balk boven de werkbalk van de editor."
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ navigeren · ↵ springen · Esc sluiten"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "Voorbeeld"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "Titel"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "Voorbeeld"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "Native GTK-notities in Markdown, met voorbeeld en automatisering"
+
+msgid "notes"
+msgstr "notities"
+
+msgid "markdown"
+msgstr "markdown"
+
+msgid "editor"
+msgstr "editor"
+
+msgid "preview"
+msgstr "voorbeeld"
+
+msgid "cli"
+msgstr "cli"
+
+msgid "automation"
+msgstr "automatisering"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "Swifty Notes is een native GTK/libadwaita-toepassing voor Markdown-notities op Linux, geschreven in Swift."
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "De bureaubladapp staat voorop: schrijf, orden en bekijk Markdown-notities met native GTK-widgets, automatisch opslaan, een onthouden werkomgeving en instelbare editoropties zoals tekengrootte, regelterugloop, inspringing en weergave."
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "De meegeleverde opdrachtregel werkt op dezelfde notities in bestanden, zodat shellscripts, automatisering en AI-agenten notities veilig kunnen bekijken of bijwerken zonder aparte database of achtergronddienst."
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "Markdown-notities aanmaken, hernoemen, dupliceren, exporteren en verwijderen."
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "Wijzigingen automatisch opslaan, de werkomgeving onthouden en de afbeeldingen van een notitie bij die notitie houden."
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "De tekengrootte van de editor en andere schrijfvoorkeuren aanpassen aan verschillende schermen en werkwijzen."
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "Kiezen waar notities worden bewaard, ook in een met de cloud gesynchroniseerde map, zodat dezelfde platte bestanden op al je apparaten synchroon blijven."
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "Afbeeldingen importeren door slepen en neerzetten, en Markdown tonen met een native GTK-voorbeeld in plaats van een webweergave."
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "De opdrachtregel gebruiken voor notitieautomatisering met JSON vanuit scripts, shellpijplijnen en AI-agenten."
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "De taal van de interface wisselen tussen de systeemtaal en elke meegeleverde taal, zonder de app te herstarten."
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "Gesplitste weergave met de zijbalk, de opmaakwerkbalk, het live voorbeeld en het overzicht."
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "Native Markdown-voorbeeld met het documentoverzicht om door lange notities te navigeren."
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "Volledige editor met de opmaakwerkbalk en het paneel met het documentoverzicht."
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "Native GTK-notities in Markdown, met voorbeeld en automatisering via de opdrachtregel"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "notities;markdown;editor;tekst;cli;automatisering;"
+
+msgid "New Window"
+msgstr "Nieuw venster"

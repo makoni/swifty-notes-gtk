@@ -1,0 +1,1278 @@
+# Brazilian Portuguese translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Brazilian Portuguese\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " As notas irão para a lixeira e poderão ser restauradas."
+
+msgid " and "
+msgstr " e "
+
+msgid "\"%@\" contains %@."
+msgstr "“%@” contém %@."
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "“%@” contém %@. Use --yes para excluí-la recursivamente."
+
+msgid "\"%@\" is empty."
+msgstr "“%@” está vazia."
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "“%@” não é um nome de pasta válido."
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d ocorrência"
+msgstr[1] "%d ocorrências"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d nota"
+msgstr[1] "%d notas"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "%d nota será excluída permanentemente. Não é possível desfazer esta ação."
+msgstr[1] "%d notas serão excluídas permanentemente. Não é possível desfazer esta ação."
+
+msgid "%d of %d"
+msgstr "%d de %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d seção"
+msgstr[1] "%d seções"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d subpasta"
+msgstr[1] "%d subpastas"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d subseção"
+msgstr[1] "%d subseções"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d palavra"
+msgstr[1] "%d palavras"
+
+msgid "%d × %d table"
+msgstr "Tabela %d × %d"
+
+msgid "%d × %d table — column alignment"
+msgstr "Tabela %d × %d: alinhamento das colunas"
+
+msgid "(Root)"
+msgstr "(Raiz)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "Já existe uma pasta ou nota em “%@”."
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "Um aplicativo GTK nativo de notas em Markdown, escrito em Swift com swift-adwaita."
+
+msgid "About Swifty Notes"
+msgstr "Sobre o Swifty Notes"
+
+msgid "After 30 days"
+msgstr "Depois de 30 dias"
+
+msgid "After 7 days"
+msgstr "Depois de 7 dias"
+
+msgid "After 90 days"
+msgstr "Depois de 90 dias"
+
+msgid "After a year"
+msgstr "Depois de um ano"
+
+msgid "All files"
+msgstr "Todos os arquivos"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "Já existe uma pasta “assets” junto da exportação. Ao mesclar, os arquivos com o mesmo nome serão sobrescritos."
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "Já existe uma pasta “assets” em %@."
+
+msgid "Appearance"
+msgstr "Aparência"
+
+msgid "Applies immediately — no restart."
+msgstr "Aplica-se na hora, sem reiniciar."
+
+msgid "Autosave delay"
+msgstr "Atraso do salvamento automático"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "O salvamento automático ocorre após a última edição, com o atraso configurado."
+
+msgid "Back to size picker"
+msgstr "Voltar ao seletor de tamanho"
+
+msgid "Bold"
+msgstr "Negrito"
+
+msgid "Breadcrumb strip above editor"
+msgstr "Barra de caminho acima do editor"
+
+msgid "Browse…"
+msgstr "Procurar…"
+
+msgid "Bulleted List"
+msgstr "Lista com marcadores"
+
+msgid "Bullets"
+msgstr "Marcadores"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "Não é possível mover “%@” para “%@”, que é uma subpasta dela."
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "Não é possível colocar uma pasta ou nota dentro do diretório da nota em “%@”."
+
+msgid "Case Sensitive"
+msgstr "Diferenciar maiúsculas"
+
+msgid "Centred"
+msgstr "Centralizado"
+
+msgid "Check for Updates…"
+msgstr "Verificar atualizações…"
+
+msgid "Choose Notes Folder"
+msgstr "Escolher a pasta de notas"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "Escolha uma pasta de destino para “%@”."
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "Escolha um dicionário ou siga o idioma do sistema."
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "Escolha uma pasta de destino vazia para as suas notas."
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "Escolha onde o Swifty Notes guarda os arquivos Markdown e os recursos associados."
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "Escolha se a tecla Tab insere espaços ou tabulações."
+
+msgid "Code"
+msgstr "Código"
+
+msgid "Collapse section"
+msgstr "Recolher a seção"
+
+msgid "Column %d: %@ — click to change"
+msgstr "Coluna %d: %@ — clique para alterar"
+
+msgid "Columns"
+msgstr "Colunas"
+
+msgid "Comfortable"
+msgstr "Confortável"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "“Confortável” é o padrão; “Compacta” reduz o espaçamento das linhas."
+
+msgid "Compact"
+msgstr "Compacta"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "Controle como o Markdown renderizado aparece na visualização."
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "Controle a quebra de linha, o recuo e o tamanho do texto do editor."
+
+msgid "Copied note ID"
+msgstr "ID da nota copiado"
+
+msgid "Copy code to clipboard"
+msgstr "Copiar o código para a área de transferência"
+
+msgid "Copy note ID"
+msgstr "Copiar o ID da nota"
+
+msgid "Could not add image"
+msgstr "Não foi possível adicionar a imagem"
+
+msgid "Could not change the notes folder"
+msgstr "Não foi possível alterar a pasta de notas"
+
+msgid "Could not check for updates: %@"
+msgstr "Não foi possível verificar atualizações: %@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "Não foi possível verificar atualizações: sem conexão com a internet."
+
+msgid "Could not choose a notes folder"
+msgstr "Não foi possível escolher uma pasta de notas"
+
+msgid "Could not create folder"
+msgstr "Não foi possível criar a pasta"
+
+msgid "Could not create note"
+msgstr "Não foi possível criar a nota"
+
+msgid "Could not delete folder"
+msgstr "Não foi possível excluir a pasta"
+
+msgid "Could not delete note"
+msgstr "Não foi possível excluir a nota"
+
+msgid "Could not duplicate note"
+msgstr "Não foi possível duplicar a nota"
+
+msgid "Could not empty Trash"
+msgstr "Não foi possível esvaziar a lixeira"
+
+msgid "Could not encode CLI output"
+msgstr "Não foi possível codificar a saída da linha de comando"
+
+msgid "Could not export note"
+msgstr "Não foi possível exportar a nota"
+
+msgid "Could not import file into library"
+msgstr "Não foi possível importar o arquivo para a biblioteca"
+
+msgid "Could not import note"
+msgstr "Não foi possível importar a nota"
+
+msgid "Could not inspect markdown file"
+msgstr "Não foi possível inspecionar o arquivo Markdown"
+
+msgid "Could not inspect notes directory"
+msgstr "Não foi possível inspecionar o diretório de notas"
+
+msgid "Could not load notes"
+msgstr "Não foi possível carregar as notas"
+
+msgid "Could not move folder"
+msgstr "Não foi possível mover a pasta"
+
+msgid "Could not move note"
+msgstr "Não foi possível mover a nota"
+
+msgid "Could not open containing folder"
+msgstr "Não foi possível abrir a pasta que a contém"
+
+msgid "Could not open export dialog"
+msgstr "Não foi possível abrir a janela de exportação"
+
+msgid "Could not open file dialog"
+msgstr "Não foi possível abrir a janela de arquivos"
+
+msgid "Could not open import dialog"
+msgstr "Não foi possível abrir a janela de importação"
+
+msgid "Could not open markdown file"
+msgstr "Não foi possível abrir o arquivo Markdown"
+
+msgid "Could not open notes folder"
+msgstr "Não foi possível abrir a pasta de notas"
+
+msgid "Could not open release page: %@"
+msgstr "Não foi possível abrir a página da versão: %@"
+
+msgid "Could not open save dialog"
+msgstr "Não foi possível abrir a janela de salvamento"
+
+msgid "Could not open settings"
+msgstr "Não foi possível abrir as configurações"
+
+msgid "Could not parse current version \"%@\""
+msgstr "Não foi possível interpretar a versão atual “%@”"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "Não foi possível interpretar a versão remota “%@”"
+
+msgid "Could not paste files"
+msgstr "Não foi possível colar os arquivos"
+
+msgid "Could not paste image"
+msgstr "Não foi possível colar a imagem"
+
+msgid "Could not permanently delete note"
+msgstr "Não foi possível excluir a nota permanentemente"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "Não foi possível ler conteúdo UTF-8 da entrada padrão"
+
+msgid "Could not reload file"
+msgstr "Não foi possível recarregar o arquivo"
+
+msgid "Could not reload notes"
+msgstr "Não foi possível recarregar as notas"
+
+msgid "Could not rename folder"
+msgstr "Não foi possível renomear a pasta"
+
+msgid "Could not rename note"
+msgstr "Não foi possível renomear a nota"
+
+msgid "Could not restore note"
+msgstr "Não foi possível restaurar a nota"
+
+msgid "Could not save file: %@"
+msgstr "Não foi possível salvar o arquivo: %@"
+
+msgid "Could not save note: %@"
+msgstr "Não foi possível salvar a nota: %@"
+
+msgid "Could not store workspace state"
+msgstr "Não foi possível guardar o estado do espaço de trabalho"
+
+msgid "Could not update notes index"
+msgstr "Não foi possível atualizar o índice de notas"
+
+msgid "Could not update settings"
+msgstr "Não foi possível atualizar as configurações"
+
+msgid "Create"
+msgstr "Criar"
+
+msgid "Dark"
+msgstr "Escuro"
+
+msgid "Delete"
+msgstr "Excluir"
+
+msgid "Delete Note"
+msgstr "Excluir a nota"
+
+msgid "Delete folder?"
+msgstr "Excluir a pasta?"
+
+msgid "Delete folder…"
+msgstr "Excluir a pasta…"
+
+msgid "Delete forever"
+msgstr "Excluir permanentemente"
+
+msgid "Delete forever…"
+msgstr "Excluir permanentemente…"
+
+msgid "Delete “%@” forever?"
+msgstr "Excluir “%@” permanentemente?"
+
+msgid "Deleted"
+msgstr "Excluída"
+
+msgid "Deleted %@"
+msgstr "%@ excluída"
+
+msgid "Delete…"
+msgstr "Excluir…"
+
+msgid "Dismiss"
+msgstr "Dispensar"
+
+msgid "Dismiss update notification"
+msgstr "Dispensar a notificação de atualização"
+
+msgid "Document"
+msgstr "Documento"
+
+msgid "Document Menu"
+msgstr "Menu do documento"
+
+msgid "Drag handles on hover"
+msgstr "Alças de arrasto ao passar o cursor"
+
+msgid "Duplicate note"
+msgstr "Duplicar a nota"
+
+msgid "Editor"
+msgstr "Editor"
+
+msgid "Editor font size"
+msgstr "Tamanho da fonte do editor"
+
+msgid "Editor only"
+msgstr "Somente editor"
+
+msgid "Empty Trash"
+msgstr "Esvaziar a lixeira"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "Esvaziar a lixeira (%d nota)…"
+msgstr[1] "Esvaziar a lixeira (%d notas)…"
+
+msgid "Empty Trash automatically"
+msgstr "Esvaziar a lixeira automaticamente"
+
+msgid "Empty Trash?"
+msgstr "Esvaziar a lixeira?"
+
+msgid "Enable spell-check"
+msgstr "Ativar a verificação ortográfica"
+
+msgid "Expand section"
+msgstr "Expandir a seção"
+
+msgid "Export"
+msgstr "Exportar"
+
+msgid "Export Note"
+msgstr "Exportar a nota"
+
+msgid "Export note…"
+msgstr "Exportar a nota…"
+
+msgid "Exported %@"
+msgstr "%@ exportada"
+
+msgid "Exported %@ with %d %@"
+msgstr "%@ exportada com %d %@"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "O arquivo mudou no disco. Salve ou recarregue para sincronizar."
+
+msgid "File reloaded from disk"
+msgstr "Arquivo recarregado do disco"
+
+msgid "File saved"
+msgstr "Arquivo salvo"
+
+msgid "Filter Outline"
+msgstr "Filtrar a estrutura"
+
+msgid "Filter headings…"
+msgstr "Filtrar os títulos…"
+
+msgid "Find…"
+msgstr "Localizar…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "A pasta “%@” não foi encontrada."
+
+msgid "Folder %@"
+msgstr "Pasta %@"
+
+msgid "Folder deleted"
+msgstr "Pasta excluída"
+
+msgid "Folder moved"
+msgstr "Pasta movida"
+
+msgid "Folder name"
+msgstr "Nome da pasta"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "O nome de pasta “%@” excede o limite de %d bytes do sistema de arquivos."
+
+msgid "Folder name or Work/Drafts"
+msgstr "Nome da pasta ou Trabalho/Rascunhos"
+
+msgid "Folder renamed"
+msgstr "Pasta renomeada"
+
+msgid "Follow system"
+msgstr "Seguir o sistema"
+
+msgid "Follow system locale"
+msgstr "Seguir o idioma do sistema"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "Siga o sistema ou fixe o idioma usado pela interface."
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "Título"
+
+msgid "Help"
+msgstr "Ajuda"
+
+msgid "Hide Notes Sidebar"
+msgstr "Ocultar a barra lateral de notas"
+
+msgid "Hide outline (F9)"
+msgstr "Ocultar a estrutura (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "Destaque os erros de ortografia no texto usando a libspelling e os dicionários do sistema."
+
+msgid "Hover to pick size"
+msgstr "Passe o cursor para escolher o tamanho"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "Imagem adicionada à nota"
+msgstr[1] "Imagens adicionadas à nota"
+
+msgid "Image pasted into note"
+msgstr "Imagem colada na nota"
+
+msgid "Import"
+msgstr "Importar"
+
+msgid "Import into Library"
+msgstr "Importar para a biblioteca"
+
+msgid "Import into Library…"
+msgstr "Importar para a biblioteca…"
+
+msgid "Imported %@"
+msgstr "%@ importada"
+
+msgid "Imported %@ into library"
+msgstr "%@ importada para a biblioteca"
+
+msgid "Indent style"
+msgstr "Estilo de recuo"
+
+msgid "Insert"
+msgstr "Inserir"
+
+msgid "Insert Table"
+msgstr "Inserir uma tabela"
+
+msgid "Insert a markdown link"
+msgstr "Inserir um link Markdown"
+
+msgid "Insert a markdown table"
+msgstr "Inserir uma tabela Markdown"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "Inserir código em linha ou um bloco de código delimitado"
+
+msgid "Interface language"
+msgstr "Idioma da interface"
+
+msgid "Invalid note ID: %@"
+msgstr "ID de nota inválido: %@"
+
+msgid "Italic"
+msgstr "Itálico"
+
+msgid "Jump to heading"
+msgstr "Ir para o título"
+
+msgid "Jump to heading…"
+msgstr "Ir para o título…"
+
+msgid "Jump-to-heading results"
+msgstr "Resultados de “Ir para o título”"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Left-aligned"
+msgstr "Alinhado à esquerda"
+
+msgid "Library"
+msgstr "Biblioteca"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Link"
+msgstr "Link"
+
+msgid "Main Menu"
+msgstr "Menu principal"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Markdown Editor"
+msgstr "Editor Markdown"
+
+msgid "Markdown Preview"
+msgstr "Visualização do Markdown"
+
+msgid "Markdown notes"
+msgstr "Notas em Markdown"
+
+msgid "Merge"
+msgstr "Mesclar"
+
+msgid "Missing value for --content-file."
+msgstr "Falta o valor de --content-file."
+
+msgid "Missing value for --content."
+msgstr "Falta o valor de --content."
+
+msgid "Missing value for --folder."
+msgstr "Falta o valor de --folder."
+
+msgid "Missing value for --notes-dir."
+msgstr "Falta o valor de --notes-dir."
+
+msgid "Missing value for --to."
+msgstr "Falta o valor de --to."
+
+msgid "Move"
+msgstr "Mover"
+
+msgid "Move note"
+msgstr "Mover a nota"
+
+msgid "Move to…"
+msgstr "Mover para…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "“%@” movida para a lixeira"
+
+msgid "Never"
+msgstr "Nunca"
+
+msgid "New Folder"
+msgstr "Nova pasta"
+
+msgid "New Note"
+msgstr "Nova nota"
+
+msgid "New folder"
+msgstr "Nova pasta"
+
+msgid "New note here"
+msgstr "Nova nota aqui"
+
+msgid "New subfolder in \"%@\""
+msgstr "Nova subpasta em “%@”"
+
+msgid "New subfolder…"
+msgstr "Nova subpasta…"
+
+msgid "Newest First"
+msgstr "Mais recentes primeiro"
+
+msgid "Newest first"
+msgstr "Mais recentes primeiro"
+
+msgid "Next Match"
+msgstr "Próxima ocorrência"
+
+msgid "No headings in this note."
+msgstr "Nenhum título nesta nota."
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "Nenhum título nesta nota. <a href=\"insert-heading\">Adicione <tt>## Título</tt></a> para começar."
+
+msgid "No headings match \"%@\""
+msgstr "Nenhum título corresponde a “%@”"
+
+msgid "No headings match the filter."
+msgstr "Nenhum título corresponde ao filtro."
+
+msgid "No headings to jump to."
+msgstr "Nenhum título para onde ir."
+
+msgid "No matches"
+msgstr "Nenhuma ocorrência"
+
+msgid "No matches to replace."
+msgstr "Nenhuma ocorrência para substituir."
+
+msgid "No note found for ID %@"
+msgstr "Nenhuma nota encontrada para o ID %@"
+
+msgid "No notes match \"%@\"."
+msgstr "Nenhuma nota corresponde a “%@”."
+
+msgid "No notes yet."
+msgstr "Ainda não há notas."
+
+msgid "No notes yet. Create one with +."
+msgstr "Ainda não há notas. Crie uma com +."
+
+msgid "No other folders to move into"
+msgstr "Nenhuma outra pasta para onde mover"
+
+msgid "Note Outline"
+msgstr "Estrutura da nota"
+
+msgid "Note duplicated"
+msgstr "Nota duplicada"
+
+msgid "Note moved"
+msgstr "Nota movida"
+
+msgid "Note permanently deleted"
+msgstr "Nota excluída permanentemente"
+
+msgid "Note renamed"
+msgstr "Nota renomeada"
+
+msgid "Note restored"
+msgstr "Nota restaurada"
+
+msgid "Note saved"
+msgstr "Nota salva"
+
+msgid "Notes"
+msgstr "Notas"
+
+msgid "Notes (%d)"
+msgstr "Notas (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "Notas (%d/%d)"
+
+msgid "Notes List"
+msgstr "Lista de notas"
+
+msgid "Notes Sidebar"
+msgstr "Barra lateral de notas"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "As notas mudaram no disco. Salve ou recarregue para sincronizar."
+
+msgid "Notes folder"
+msgstr "Pasta de notas"
+
+msgid "Notes folder updated"
+msgstr "Pasta de notas atualizada"
+
+msgid "Notes reloaded from disk"
+msgstr "Notas recarregadas do disco"
+
+msgid "Nothing to preview yet."
+msgstr "Ainda não há nada para visualizar."
+
+msgid "Numbered List"
+msgstr "Lista numerada"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Oldest First"
+msgstr "Mais antigas primeiro"
+
+msgid "Oldest first"
+msgstr "Mais antigas primeiro"
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Open Markdown File"
+msgstr "Abrir um arquivo Markdown"
+
+msgid "Open Markdown File…"
+msgstr "Abrir um arquivo Markdown…"
+
+msgid "Open current folder"
+msgstr "Abrir a pasta atual"
+
+msgid "Open notes folder"
+msgstr "Abrir a pasta de notas"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "Abra ou crie uma nota antes de arrastar ou colar imagens."
+
+msgid "Outline"
+msgstr "Estrutura"
+
+msgid "Outline Sidebar"
+msgstr "Barra lateral da estrutura"
+
+msgid "Outline density"
+msgstr "Densidade da estrutura"
+
+msgid "Override the application theme or follow the system."
+msgstr "Defina o tema do aplicativo ou siga o sistema."
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "O caminho “%@” excede o limite de %d bytes do sistema de arquivos."
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "Excluir permanentemente as notas na lixeira depois desse tempo."
+
+msgid "Points"
+msgstr "Pontos"
+
+msgid "Preferences"
+msgstr "Preferências"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "Transformar as linhas selecionadas em uma lista com marcadores"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "Transformar as linhas selecionadas em uma lista numerada"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "Transformar as linhas selecionadas em uma citação"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "Transformar as linhas selecionadas em uma lista de tarefas"
+
+msgid "Preview only"
+msgstr "Somente visualização"
+
+msgid "Previous Match"
+msgstr "Ocorrência anterior"
+
+msgid "Quick Jump"
+msgstr "Salto rápido"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "Salto rápido… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "Citação"
+
+msgid "Regular Expression"
+msgstr "Expressão regular"
+
+msgid "Reload"
+msgstr "Recarregar"
+
+msgid "Reload from disk"
+msgstr "Recarregar do disco"
+
+msgid "Rename"
+msgstr "Renomear"
+
+msgid "Rename folder"
+msgstr "Renomear a pasta"
+
+msgid "Rename folder…"
+msgstr "Renomear a pasta…"
+
+msgid "Rename note"
+msgstr "Renomear a nota"
+
+msgid "Rename note…"
+msgstr "Renomear a nota…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "Renomeando “%@”. Nomes de pasta não podem conter barras (/)."
+
+msgid "Render emoji shortcodes"
+msgstr "Renderizar os shortcodes de emoji"
+
+msgid "Replace"
+msgstr "Substituir"
+
+msgid "Replace All"
+msgstr "Substituir tudo"
+
+msgid "Replace every match"
+msgstr "Substituir todas as ocorrências"
+
+msgid "Replace existing assets?"
+msgstr "Substituir os recursos existentes?"
+
+msgid "Replace the current match"
+msgstr "Substituir a ocorrência atual"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "%d ocorrência substituída."
+msgstr[1] "%d ocorrências substituídas."
+
+msgid "Replacement content is required."
+msgstr "O conteúdo de substituição é obrigatório."
+
+msgid "Replace…"
+msgstr "Substituir…"
+
+msgid "Reset"
+msgstr "Redefinir"
+
+msgid "Restore"
+msgstr "Restaurar"
+
+msgid "Reveal in Folder"
+msgstr "Mostrar na pasta"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "Mostre a pasta de notas ativa no seu gerenciador de arquivos."
+
+msgid "Right-aligned"
+msgstr "Alinhado à direita"
+
+msgid "Save"
+msgstr "Salvar"
+
+msgid "Save As…"
+msgstr "Salvar como…"
+
+msgid "Save File"
+msgstr "Salvar o arquivo"
+
+msgid "Save Markdown File As"
+msgstr "Salvar o arquivo Markdown como"
+
+msgid "Save Note"
+msgstr "Salvar a nota"
+
+msgid "Saved"
+msgstr "Salva"
+
+msgid "Saved as %@"
+msgstr "Salva como %@"
+
+msgid "Saving"
+msgstr "Salvando"
+
+msgid "Search Notes"
+msgstr "Pesquisar nas notas"
+
+msgid "Search notes"
+msgstr "Pesquisar nas notas"
+
+msgid "Seconds"
+msgstr "Segundos"
+
+msgid "Settings"
+msgstr "Configurações"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr "Mostre os apelidos :shortcode: (por exemplo, :rocket:) como emoji. O texto de origem e o código não mudam."
+
+msgid "Show Notes Sidebar"
+msgstr "Mostrar a barra lateral de notas"
+
+msgid "Show outline (F9)"
+msgstr "Mostrar a estrutura (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "Mostre a alça de arrasto ao passar o cursor. O reordenamento por arrasto vem depois."
+
+msgid "Size"
+msgstr "Tamanho"
+
+msgid "Sort Notes"
+msgstr "Ordenar as notas"
+
+msgid "Sort Notes by Newest First"
+msgstr "Ordenar as notas pelas mais recentes"
+
+msgid "Sort Notes by Oldest First"
+msgstr "Ordenar as notas pelas mais antigas"
+
+msgid "Sort Notes by Title"
+msgstr "Ordenar as notas por título"
+
+msgid "Sort by Title"
+msgstr "Ordenar por título"
+
+msgid "Sorting by newest first"
+msgstr "Ordenando pelas mais recentes"
+
+msgid "Sorting by oldest first"
+msgstr "Ordenando pelas mais antigas"
+
+msgid "Sorting by title"
+msgstr "Ordenando por título"
+
+msgid "Source Code"
+msgstr "Código-fonte"
+
+msgid "Spaces"
+msgstr "Espaços"
+
+msgid "Spell check"
+msgstr "Verificação ortográfica"
+
+msgid "Spell-check language"
+msgstr "Idioma da verificação ortográfica"
+
+msgid "Split"
+msgstr "Dividida"
+
+msgid "Split view"
+msgstr "Visão dividida"
+
+msgid "Storage"
+msgstr "Armazenamento"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "O Swifty Notes só abre arquivos Markdown locais."
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "O Swifty Notes não tem permissão para acessar essa pasta. Tente escolher outro local."
+
+msgid "Swifty Notes is up to date."
+msgstr "O Swifty Notes está atualizado."
+
+msgid "System language"
+msgstr "Idioma do sistema"
+
+msgid "Tab width"
+msgstr "Largura da tabulação"
+
+msgid "Table"
+msgstr "Tabela"
+
+msgid "Tabs"
+msgstr "Tabulações"
+
+msgid "Takes effect the next time the app starts."
+msgstr "Entra em vigor na próxima vez que o aplicativo iniciar."
+
+msgid "Task List"
+msgstr "Lista de tarefas"
+
+msgid "The application instance is not available."
+msgstr "A instância do aplicativo não está disponível."
+
+msgid "The current notes folder could not be found."
+msgstr "Não foi possível encontrar a pasta de notas atual."
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "A nova pasta de notas não pode ficar dentro da pasta de notas atual."
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "O título da nota vem da primeira linha com conteúdo."
+
+msgid "The selected destination is not a folder."
+msgstr "O destino escolhido não é uma pasta."
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "A pasta escolhida está em um sistema de arquivos somente leitura e não pode guardar notas."
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "Não há espaço em disco suficiente para mover as suas notas para essa pasta."
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "Isso remove a nota do disco permanentemente. Não é possível desfazer esta ação."
+
+msgid "Title"
+msgstr "Título"
+
+msgid "Toggle Outline"
+msgstr "Alternar a estrutura"
+
+msgid "Trash"
+msgstr "Lixeira"
+
+msgid "Trash emptied"
+msgstr "Lixeira esvaziada"
+
+msgid "Tree lines under H2 sections"
+msgstr "Linhas de árvore sob as seções H2"
+
+msgid "Turn the current line into a heading"
+msgstr "Transformar a linha atual em um título"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "Ajuste o painel de estrutura à direita e a barra de caminho acima do editor."
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "Sublinhe os erros de ortografia enquanto você digita e ofereça correções no menu de contexto."
+
+msgid "Undo"
+msgstr "Desfazer"
+
+msgid "Unknown CLI command: %@"
+msgstr "Comando desconhecido: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "Comando desconhecido para a ajuda: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "Subcomando de folders desconhecido: %@"
+
+msgid "Unknown option: %@"
+msgstr "Opção desconhecida: %@"
+
+msgid "Unsaved changes"
+msgstr "Alterações não salvas"
+
+msgid "Unsupported image type for %@."
+msgstr "Tipo de imagem não suportado para %@."
+
+msgid "Update"
+msgstr "Atualizar"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "Use / para criar pastas aninhadas de uma só vez, por exemplo Trabalho/Rascunhos."
+
+msgid "Use default location"
+msgstr "Usar o local padrão"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "Use apenas uma entre --content, --content-file e --stdin."
+
+msgid "Version %@ is available."
+msgstr "A versão %@ está disponível."
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "Guias verticais ligando as subseções H3 em diante à seção H2 correspondente."
+
+msgid "Whole Word Match"
+msgstr "Palavra inteira"
+
+msgid "Wrap long lines"
+msgstr "Quebrar as linhas longas"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "Quebre os parágrafos Markdown em vez de rolar na horizontal."
+
+msgid "Wrap the selection in bold markdown"
+msgstr "Deixar a seleção em negrito no Markdown"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "Deixar a seleção em itálico no Markdown"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "`folders create` exige exatamente um caminho de pasta."
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "`folders move <path> --to <parent>` exige tanto um caminho quanto uma pasta de destino."
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "`folders move` aceita exatamente um caminho de pasta."
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "`folders rename` exige <path> <new-name>."
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "`folders rm` aceita exatamente um caminho de pasta."
+
+msgid "`folders rm` cannot delete the root."
+msgstr "`folders rm` não pode excluir a raiz."
+
+msgid "`folders rm` requires a folder path."
+msgstr "`folders rm` exige um caminho de pasta."
+
+msgid "`get` expects exactly one note ID."
+msgstr "`get` espera exatamente um ID de nota."
+
+msgid "`get` requires a note ID."
+msgstr "`get` exige um ID de nota."
+
+msgid "`help` accepts at most one command name."
+msgstr "`help` aceita no máximo um nome de comando."
+
+msgid "`move` expects exactly one note ID."
+msgstr "`move` espera exatamente um ID de nota."
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "`move` exige --folder PATH (use --folder \"\" para mover para a raiz)."
+
+msgid "`move` requires a note ID."
+msgstr "`move` exige um ID de nota."
+
+msgid "`update` requires a note ID."
+msgstr "`update` exige um ID de nota."
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "recurso"
+msgstr[1] "recursos"
+
+msgid "current"
+msgstr "atual"
+
+msgid "“%@” is in the Trash"
+msgstr "“%@” está na lixeira"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "A barra “você está aqui” acima da barra de ferramentas do editor."
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ navegar · ↵ ir · Esc fechar"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "Visualização"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "Título"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "Visualização"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "Notas em Markdown nativas do GTK, com visualização e automação"
+
+msgid "notes"
+msgstr "notas"
+
+msgid "markdown"
+msgstr "markdown"
+
+msgid "editor"
+msgstr "editor"
+
+msgid "preview"
+msgstr "visualização"
+
+msgid "cli"
+msgstr "cli"
+
+msgid "automation"
+msgstr "automação"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "O Swifty Notes é um aplicativo nativo GTK/libadwaita de notas em Markdown para Linux, escrito em Swift."
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "O aplicativo de desktop é a experiência principal: escreva, organize e visualize notas em Markdown com widgets GTK nativos, salvamento automático, memória do espaço de trabalho e ajustes do editor como tamanho da fonte, quebra de linha, recuo e aparência."
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "A linha de comando incluída trabalha sobre as mesmas notas guardadas em arquivos, para que scripts de shell, automações e agentes de IA possam consultá-las ou atualizá-las com segurança, sem um banco de dados à parte nem um serviço em segundo plano."
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "Criar, renomear, duplicar, exportar e excluir notas em Markdown."
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "Salvar as edições automaticamente, lembrar o estado do espaço de trabalho e manter as imagens de cada nota junto dela."
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "Ajustar o tamanho da fonte do editor e outras preferências de escrita a telas e fluxos de trabalho diferentes."
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "Escolher onde as notas ficam guardadas, inclusive em uma pasta sincronizada na nuvem, para que os mesmos arquivos simples fiquem em sincronia entre dispositivos."
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "Importar imagens arrastando e soltando e renderizar o Markdown com uma visualização GTK nativa em vez de uma visão web."
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "Usar a linha de comando para automatizar notas em JSON a partir de scripts, pipelines de shell e agentes de IA."
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "Trocar o idioma da interface entre o padrão do sistema e qualquer idioma incluído, sem reiniciar o aplicativo."
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "Visão dividida com a barra lateral, a barra de formatação, a visualização ao vivo e a estrutura."
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "Visualização nativa do Markdown com a estrutura do documento para navegar por notas longas."
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "Editor completo com a barra de formatação e o painel de estrutura do documento."
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "Notas em Markdown nativas do GTK, com visualização e automação pela linha de comando"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "notas;markdown;editor;texto;cli;automação;"
+
+msgid "New Window"
+msgstr "Nova janela"
