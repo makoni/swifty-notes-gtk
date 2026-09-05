@@ -72,6 +72,32 @@ struct LanguageSwitchingTests {
         )
     }
 
+    /// The case order is the picker's row order, and with fourteen languages
+    /// an arbitrary one means reading every row to find yours.
+    ///
+    /// Sorted by the name each row shows, not by language code: the code is
+    /// not on screen, so ordering by it would look random to the reader who
+    /// sees العربية first. A plain string sort groups the scripts — Latin,
+    /// Cyrillic, Hebrew, Arabic, CJK — which is as close to "alphabetical" as
+    /// a list spanning five writing systems gets.
+    @Test("The picker lists the system row first, then the languages by name") @MainActor
+    func pickerListsTheSystemRowFirstThenTheLanguagesByName() {
+        #expect(AppLanguage.allCases.first == .system)
+        #expect(
+            !AppLanguage.allCases.dropFirst().contains(.system),
+            "the follow-the-session row belongs at the top, and only there",
+        )
+
+        let names = AppLanguage.allCases.dropFirst().map(\.displayName)
+        #expect(
+            names == names.sorted(),
+            """
+            the picker's rows are out of order: \(names.joined(separator: ", ")). \
+            A new language goes in its sorted place in AppLanguage, not at the end.
+            """,
+        )
+    }
+
     // MARK: - The gettext switch
 
     @Test("Pinning a language changes lookups without a restart") @MainActor
