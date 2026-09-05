@@ -1312,6 +1312,27 @@ msgstr "معاينة ماركداون أصيلة مع مخطط المستند ل
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "محرر كامل مع شريط التنسيق ولوحة مخطط المستند."
 
+msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
+msgstr "‏Swifty Notes صار يتحدث لغتك: ثلاث عشرة لغة، والتبديل بينها يسري فورًا."
+
+msgid "The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr "الواجهة متاحة بالعربية والألمانية والإسبانية والفرنسية والعبرية والإيطالية واليابانية والكورية والهولندية والبرتغالية البرازيلية والروسية والصينية المبسطة والصينية التقليدية، إلى جانب الإنجليزية. صف «اللغة» في الإعدادات يختار واحدة منها أو يتبع سطح مكتبك، وتُعاد ترجمة النافذة كلها في مكانها: دون إعادة تشغيل، ودون فقدان ما كان مفتوحًا."
+
+msgid "Arabic and Hebrew read right to left. The notes sidebar moves to the right, the outline panel to the left, and the toolbar and the editor follow. Switching back to a left-to-right language puts everything where it was."
+msgstr "تُقرأ العربية والعبرية من اليمين إلى اليسار. ينتقل شريط الملاحظات الجانبي إلى اليمين والمخطط إلى اليسار، ويتبعهما شريط الأدوات والمحرر. وبالعودة إلى لغة تُكتب من اليسار إلى اليمين يعود كل شيء إلى موضعه."
+
+msgid "Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set."
+msgstr "صارت التواريخ في قائمة الملاحظات تتبع اللغة التي تقرأ بها. كانت من قبل تبقى بالإنجليزية مهما كان ضبط الواجهة."
+
+msgid "Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all."
+msgstr "صار اختيار اللغة يعمل على الأنظمة التي لا لغة محلية مضبوطة لها، مثل صناديق Flatpak المعزولة والحاويات المصغّرة، حيث كان الإعداد يبدو بلا أي أثر."
+
+msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
+msgstr "الاسم والوصف المختصر الظاهران في مركز البرمجيات مترجمان أيضًا، فصار العثور على Swifty Notes بلغتك أسهل."
+
+msgid "Renaming the seeded showcase note no longer strands its image."
+msgstr "لم يعد تغيير اسم ملاحظة العرض المرفقة يترك صورتها بلا رابط."
+
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "ملاحظات ماركداون أصيلة لـ GTK مع معاينة وأتمتة عبر سطر الأوامر"
 

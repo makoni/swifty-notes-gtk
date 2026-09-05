@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-09-05 12:14+0700\n"
+"POT-Creation-Date: 2026-09-06 00:55+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -1318,6 +1318,51 @@ msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:57
 msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:68
+msgid ""
+"Swifty Notes now speaks your language: thirteen of them, and switching "
+"between them takes effect straight away."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:70
+msgid ""
+"The interface is available in Arabic, German, Spanish, French, Hebrew, "
+"Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified "
+"Chinese and Traditional Chinese, alongside English. The Language row in "
+"Settings picks one or follows your desktop, and the whole window "
+"retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:71
+msgid ""
+"Arabic and Hebrew read right to left. The notes sidebar moves to the right, "
+"the outline panel to the left, and the toolbar and the editor follow. "
+"Switching back to a left-to-right language puts everything where it was."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:72
+msgid ""
+"Dates in the notes list now follow the language you are reading in. They "
+"used to stay English however the interface was set."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:73
+msgid ""
+"Picking a language now works on systems that have no locale of their own "
+"configured, such as Flatpak sandboxes and minimal containers, where the "
+"setting previously appeared to do nothing at all."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:74
+msgid ""
+"The name and summary shown in your software centre are translated too, so "
+"Swifty Notes is easier to find in your own language."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:75
+msgid "Renaming the seeded showcase note no longer strands its image."
 msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.desktop.in:3

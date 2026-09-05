@@ -1257,6 +1257,27 @@ msgstr "긴 노트를 오갈 수 있는 문서 개요를 갖춘 네이티브 마
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "서식 도구 모음과 문서 개요 패널을 갖춘 전체 편집기입니다."
 
+msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
+msgstr "Swifty Notes가 이제 여러분의 언어로 말합니다. 열세 가지 언어를 지원하며, 전환하면 바로 반영됩니다."
+
+msgid "The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr "화면은 아랍어, 독일어, 스페인어, 프랑스어, 히브리어, 이탈리아어, 일본어, 한국어, 네덜란드어, 브라질 포르투갈어, 러시아어, 간체 중국어, 번체 중국어와 영어로 제공됩니다. 설정의 “언어” 행에서 하나를 고르거나 데스크톱을 따르게 할 수 있고, 창 전체가 그 자리에서 다시 번역됩니다. 다시 시작할 필요도 없고, 열어 둔 것도 그대로 남습니다."
+
+msgid "Arabic and Hebrew read right to left. The notes sidebar moves to the right, the outline panel to the left, and the toolbar and the editor follow. Switching back to a left-to-right language puts everything where it was."
+msgstr "아랍어와 히브리어는 오른쪽에서 왼쪽으로 읽습니다. 노트 사이드바는 오른쪽으로, 개요는 왼쪽으로 옮겨 가고 도구 모음과 편집기도 따라갑니다. 왼쪽에서 오른쪽으로 읽는 언어로 돌아가면 모두 제자리로 돌아옵니다."
+
+msgid "Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set."
+msgstr "노트 목록의 날짜가 이제 읽고 있는 언어를 따릅니다. 그동안은 화면 설정과 상관없이 영어로 남아 있었습니다."
+
+msgid "Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all."
+msgstr "자체 로캘이 설정되지 않은 시스템, 이를테면 Flatpak 샌드박스나 최소 구성 컨테이너에서도 언어 선택이 동작합니다. 전에는 설정해도 아무 일도 없는 것처럼 보였습니다."
+
+msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
+msgstr "소프트웨어 센터에 보이는 이름과 요약도 번역되어, 자기 언어로 Swifty Notes를 찾기가 쉬워졌습니다."
+
+msgid "Renaming the seeded showcase note no longer strands its image."
+msgstr "함께 제공되는 예시 노트의 이름을 바꿔도 그 이미지가 끊기지 않습니다."
+
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "미리 보기와 명령줄 자동화를 갖춘 네이티브 GTK 마크다운 노트"
 

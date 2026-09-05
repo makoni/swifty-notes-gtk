@@ -509,6 +509,54 @@ struct LocalizationCatalogTests {
         }
     }
 
+    /// Text `xgettext` will extract from the metadata templates has to be
+    /// pure ASCII.
+    ///
+    /// gettext 0.23's ITS-driven XML extractor silently drops non-ASCII from
+    /// a translatable element: an em dash comes out as nothing at all, and
+    /// the msgid that reaches the catalogue is missing characters the source
+    /// still has. It warns ("invalid multibyte sequence") on a stream nobody
+    /// reads, and `--from-code=UTF-8` does not help — nor does an XML
+    /// character reference, which is resolved before the same code path.
+    ///
+    /// Untranslatable text is exempt: the archived release descriptions are
+    /// marked `translate="no"`, never reach `xgettext`, and keep the
+    /// typography they shipped with.
+    @Test("Translatable metadata is ASCII, because xgettext mangles the rest")
+    func translatableMetadataIsASCIIBecauseXgettextManglesTheRest() throws {
+        for url in [
+            LocalizationCatalogFixture.metainfoTemplateURL,
+            LocalizationCatalogFixture.desktopTemplateURL,
+        ] {
+            let name = url.lastPathComponent
+            var skippingUntil: String?
+            for (offset, line) in try String(contentsOf: url, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+                if let closing = skippingUntil {
+                    if line.contains(closing) { skippingUntil = nil }
+                    continue
+                }
+                if line.contains("translate=\"no\""),
+                   let open = line.firstIndex(of: "<") {
+                    let rest = line[line.index(after: open)...]
+                    let element = rest.prefix { !$0.isWhitespace && $0 != ">" }
+                    // A self-closing element opens no region to skip.
+                    if !line.contains("/>") { skippingUntil = "</\(element)>" }
+                    continue
+                }
+                let offenders = Set(line.unicodeScalars.filter { !$0.isASCII })
+                #expect(
+                    offenders.isEmpty,
+                    """
+                    \(name):\(offset + 1) has \(offenders.map { "U+\(String($0.value, radix: 16, uppercase: true))" }.sorted()) \
+                    in text xgettext will extract, and it drops those on the floor. \
+                    Use ASCII punctuation here, or mark the element translate="no".
+                    """,
+                )
+            }
+        }
+    }
+
     /// The desktop entry and the AppStream metainfo are English templates;
     /// their translations come from `po/` at build time via
     /// `scripts/render-metadata.sh`. A hand-written `xml:lang` or `Name[xx]`

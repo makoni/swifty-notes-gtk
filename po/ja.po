@@ -1257,6 +1257,27 @@ msgstr "長いノートを行き来するためのドキュメントアウトラ
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "書式ツールバーとドキュメントアウトラインのパネルを備えたエディター全体。"
 
+msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
+msgstr "Swifty Notes があなたの言語を話すようになりました。13の言語に対応し、切り替えはその場ですぐ反映されます。"
+
+msgid "The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr "画面はアラビア語、ドイツ語、スペイン語、フランス語、ヘブライ語、イタリア語、日本語、韓国語、オランダ語、ブラジルポルトガル語、ロシア語、簡体字中国語、繁体字中国語、そして英語で利用できます。設定の「言語」の行でどれかを選ぶか、デスクトップに合わせられます。ウィンドウ全体がその場で翻訳し直されるので、再起動は不要で、開いていたものも失われません。"
+
+msgid "Arabic and Hebrew read right to left. The notes sidebar moves to the right, the outline panel to the left, and the toolbar and the editor follow. Switching back to a left-to-right language puts everything where it was."
+msgstr "アラビア語とヘブライ語は右から左に読みます。ノートのサイドバーは右へ、アウトラインは左へ移り、ツールバーとエディターもそれに合わせて動きます。左から右に読む言語に戻せば、すべて元の位置に戻ります。"
+
+msgid "Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set."
+msgstr "ノート一覧の日付が、読んでいる言語に合うようになりました。これまでは画面の設定にかかわらず英語のままでした。"
+
+msgid "Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all."
+msgstr "独自のロケールが設定されていないシステム、たとえば Flatpak のサンドボックスや最小構成のコンテナーでも、言語の選択が効くようになりました。これまでは設定しても何も起きないように見えていました。"
+
+msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
+msgstr "ソフトウェアセンターに表示される名前と概要も翻訳されているので、自分の言語で Swifty Notes を見つけやすくなりました。"
+
+msgid "Renaming the seeded showcase note no longer strands its image."
+msgstr "付属のサンプルノートの名前を変えても、その画像が取り残されなくなりました。"
+
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "プレビューとコマンドラインでの自動化に対応した、ネイティブ GTK の Markdown ノート"
 

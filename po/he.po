@@ -1268,6 +1268,27 @@ msgstr "תצוגה מקדימה מקורית של Markdown עם מתאר המס�
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "עורך מלא עם סרגל העיצוב ולוח מתאר המסמך."
 
+msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
+msgstr "‏Swifty Notes מדבר עכשיו בשפה שלך: שלוש עשרה שפות, והמעבר ביניהן נכנס לתוקף מיד."
+
+msgid "The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr "המנשק זמין בערבית, גרמנית, ספרדית, צרפתית, עברית, איטלקית, יפנית, קוריאנית, הולנדית, פורטוגזית ברזילאית, רוסית, סינית מפושטת וסינית מסורתית, לצד אנגלית. שורת „שפה” בהגדרות בוחרת אחת מהן או עוקבת אחרי שולחן העבודה, וכל החלון מתורגם מחדש במקום: בלי הפעלה מחדש, ובלי לאבד את מה שהיה פתוח."
+
+msgid "Arabic and Hebrew read right to left. The notes sidebar moves to the right, the outline panel to the left, and the toolbar and the editor follow. Switching back to a left-to-right language puts everything where it was."
+msgstr "ערבית ועברית נקראות מימין לשמאל. סרגל הפתקים עובר ימינה, המתאר שמאלה, וסרגל הכלים והעורך נעים בהתאם. חזרה לשפה משמאל לימין מחזירה הכול למקומו."
+
+msgid "Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set."
+msgstr "התאריכים ברשימת הפתקים עוקבים עכשיו אחרי השפה שבה קוראים. עד כה הם נשארו באנגלית לא משנה איך הוגדר המנשק."
+
+msgid "Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all."
+msgstr "בחירת שפה עובדת עכשיו גם במערכות שאין בהן אזור מוגדר משלהן, כמו ארגזי החול של Flatpak ומכולות מינימליות, שבהן ההגדרה נראתה עד כה חסרת כל השפעה."
+
+msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
+msgstr "גם השם והתקציר שמופיעים במרכז התוכנה מתורגמים, כך שקל יותר למצוא את Swifty Notes בשפה שלך."
+
+msgid "Renaming the seeded showcase note no longer strands its image."
+msgstr "שינוי שם של פתק ההדגמה המצורף כבר לא משאיר את התמונה שלו מנותקת."
+
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "פתקי Markdown מקוריים ל־GTK עם תצוגה מקדימה ואוטומציה משורת הפקודה"
 

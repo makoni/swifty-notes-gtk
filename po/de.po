@@ -1268,6 +1268,27 @@ msgstr "Native Markdown-Vorschau mit Dokumentgliederung für lange Notizen."
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "Vollständiger Editor mit Formatierungsleiste und Gliederungsbereich."
 
+msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
+msgstr "Swifty Notes spricht jetzt Ihre Sprache – dreizehn davon, und der Wechsel zwischen ihnen wirkt sofort."
+
+msgid "The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr "Die Oberfläche ist auf Arabisch, Deutsch, Spanisch, Französisch, Hebräisch, Italienisch, Japanisch, Koreanisch, Niederländisch, brasilianischem Portugiesisch, Russisch, vereinfachtem und traditionellem Chinesisch verfügbar, dazu Englisch. Die Zeile „Sprache“ in den Einstellungen wählt eine davon aus oder folgt Ihrer Arbeitsumgebung, und das gesamte Fenster wird auf der Stelle neu übersetzt: kein Neustart, und nichts Geöffnetes geht verloren."
+
+msgid "Arabic and Hebrew read right to left. The notes sidebar moves to the right, the outline panel to the left, and the toolbar and the editor follow. Switching back to a left-to-right language puts everything where it was."
+msgstr "Arabisch und Hebräisch werden von rechts nach links gelesen. Die Notiz-Seitenleiste wandert nach rechts, die Gliederung nach links, Werkzeugleiste und Editor folgen. Zurück zu einer Sprache von links nach rechts steht alles wieder dort, wo es war."
+
+msgid "Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set."
+msgstr "Datumsangaben in der Notizliste folgen jetzt der Sprache, in der Sie lesen. Bisher blieben sie englisch, wie die Oberfläche auch eingestellt war."
+
+msgid "Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all."
+msgstr "Die Sprachauswahl wirkt jetzt auch auf Systemen ohne eigene konfigurierte Locale, etwa in Flatpak-Sandboxes und schlanken Containern, wo die Einstellung zuvor schlicht wirkungslos schien."
+
+msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
+msgstr "Auch Name und Kurzbeschreibung in Ihrer Softwareverwaltung sind übersetzt, sodass Swifty Notes in Ihrer Sprache leichter zu finden ist."
+
+msgid "Renaming the seeded showcase note no longer strands its image."
+msgstr "Das Umbenennen der mitgelieferten Beispielnotiz lässt ihr Bild nicht mehr zurück."
+
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "Native GTK-Notizen in Markdown mit Vorschau und CLI-Automatisierung"
 

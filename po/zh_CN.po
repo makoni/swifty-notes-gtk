@@ -1257,6 +1257,27 @@ msgstr "带文档大纲的原生 Markdown 预览，便于浏览长笔记。"
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "带格式工具栏和文档大纲面板的完整编辑器。"
 
+msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
+msgstr "Swifty Notes 现在会说你的语言了：共十三种，切换后立即生效。"
+
+msgid "The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost."
+msgstr "界面提供阿拉伯语、德语、西班牙语、法语、希伯来语、意大利语、日语、韩语、荷兰语、巴西葡萄牙语、俄语、简体中文和繁体中文，以及英语。在设置的“语言”一行中选择一种，或跟随桌面环境，整个窗口会就地重新翻译：无需重启，已经打开的内容也不会丢失。"
+
+msgid "Arabic and Hebrew read right to left. The notes sidebar moves to the right, the outline panel to the left, and the toolbar and the editor follow. Switching back to a left-to-right language puts everything where it was."
+msgstr "阿拉伯语和希伯来语从右往左读。笔记侧边栏移到右侧，大纲移到左侧，工具栏和编辑器随之调整。切回从左往右的语言后，一切都会回到原位。"
+
+msgid "Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set."
+msgstr "笔记列表中的日期现在跟随你正在阅读的语言。以前无论界面如何设置，它们都保持英文。"
+
+msgid "Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all."
+msgstr "在没有配置自身区域设置的系统上（例如 Flatpak 沙箱和精简容器），选择语言现在也能生效；此前这项设置看上去毫无作用。"
+
+msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
+msgstr "软件中心里显示的名称和简介同样已翻译，用自己的语言更容易找到 Swifty Notes。"
+
+msgid "Renaming the seeded showcase note no longer strands its image."
+msgstr "重命名随附的示例笔记后，它的图片不会再失去关联。"
+
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "带预览和命令行自动化的原生 GTK Markdown 笔记"
 
