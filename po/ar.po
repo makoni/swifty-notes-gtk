@@ -1,0 +1,1322 @@
+# Arabic translation for Swifty Notes.
+# Copyright (C) 2026 Swifty Notes contributors
+# This file is distributed under the same license as the swifty-notes-gtk package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: swifty-notes-gtk\n"
+"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"PO-Revision-Date: 2026-09-05 12:40+0700\n"
+"Last-Translator: Swifty Notes contributors\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+"X-Generator: Local\n"
+
+msgid " The notes will move to Trash so you can restore them."
+msgstr " ستنتقل الملاحظات إلى المهملات بحيث يمكنك استعادتها."
+
+msgid " and "
+msgstr " و"
+
+msgid "\"%@\" contains %@."
+msgstr "«%@» يحتوي على %@."
+
+msgid "\"%@\" contains %@. Pass --yes to delete it recursively."
+msgstr "«%@» يحتوي على %@. مرّر ‎--yes‎ لحذفه بما فيه."
+
+msgid "\"%@\" is empty."
+msgstr "«%@» فارغ."
+
+msgid "\"%@\" is not a valid folder name."
+msgstr "«%@» ليس اسم مجلد صالحًا."
+
+msgid "%d match"
+msgid_plural "%d matches"
+msgstr[0] "%d مطابقة"
+msgstr[1] "%d مطابقة"
+msgstr[2] "%d مطابقتان"
+msgstr[3] "%d مطابقات"
+msgstr[4] "%d مطابقة"
+msgstr[5] "%d مطابقة"
+
+msgid "%d note"
+msgid_plural "%d notes"
+msgstr[0] "%d ملاحظة"
+msgstr[1] "%d ملاحظة"
+msgstr[2] "%d ملاحظتان"
+msgstr[3] "%d ملاحظات"
+msgstr[4] "%d ملاحظة"
+msgstr[5] "%d ملاحظة"
+
+msgid "%d note will be permanently deleted. This action can't be undone."
+msgid_plural "%d notes will be permanently deleted. This action can't be undone."
+msgstr[0] "سيتم حذف %d ملاحظة نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+msgstr[1] "سيتم حذف %d ملاحظة نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+msgstr[2] "سيتم حذف %d ملاحظتين نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+msgstr[3] "سيتم حذف %d ملاحظات نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+msgstr[4] "سيتم حذف %d ملاحظة نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+msgstr[5] "سيتم حذف %d ملاحظة نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+
+msgid "%d of %d"
+msgstr "%d من %d"
+
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] "%d قسم"
+msgstr[1] "%d قسم"
+msgstr[2] "%d قسمان"
+msgstr[3] "%d أقسام"
+msgstr[4] "%d قسمًا"
+msgstr[5] "%d قسم"
+
+msgid "%d subfolder"
+msgid_plural "%d subfolders"
+msgstr[0] "%d مجلد فرعي"
+msgstr[1] "%d مجلد فرعي"
+msgstr[2] "%d مجلدان فرعيان"
+msgstr[3] "%d مجلدات فرعية"
+msgstr[4] "%d مجلدًا فرعيًا"
+msgstr[5] "%d مجلد فرعي"
+
+msgid "%d subsection"
+msgid_plural "%d subsections"
+msgstr[0] "%d قسم فرعي"
+msgstr[1] "%d قسم فرعي"
+msgstr[2] "%d قسمان فرعيان"
+msgstr[3] "%d أقسام فرعية"
+msgstr[4] "%d قسمًا فرعيًا"
+msgstr[5] "%d قسم فرعي"
+
+msgid "%d word"
+msgid_plural "%d words"
+msgstr[0] "%d كلمة"
+msgstr[1] "%d كلمة"
+msgstr[2] "%d كلمتان"
+msgstr[3] "%d كلمات"
+msgstr[4] "%d كلمة"
+msgstr[5] "%d كلمة"
+
+msgid "%d × %d table"
+msgstr "جدول %d × %d"
+
+msgid "%d × %d table — column alignment"
+msgstr "جدول %d × %d — محاذاة الأعمدة"
+
+msgid "(Root)"
+msgstr "(الجذر)"
+
+msgid "A folder or note already exists at \"%@\"."
+msgstr "يوجد بالفعل مجلد أو ملاحظة في «%@»."
+
+msgid "A native GTK markdown notes app written in Swift using swift-adwaita."
+msgstr "تطبيق ملاحظات ماركداون أصيل لـ GTK، مكتوب بلغة Swift باستخدام swift-adwaita."
+
+msgid "About Swifty Notes"
+msgstr "عن Swifty Notes"
+
+msgid "After 30 days"
+msgstr "بعد 30 يومًا"
+
+msgid "After 7 days"
+msgstr "بعد 7 أيام"
+
+msgid "After 90 days"
+msgstr "بعد 90 يومًا"
+
+msgid "After a year"
+msgstr "بعد سنة"
+
+msgid "All files"
+msgstr "كل الملفات"
+
+msgid "An \"assets\" folder already exists alongside the export. Merging will overwrite files with the same name."
+msgstr "يوجد بالفعل مجلد «assets» بجوار التصدير. الدمج سيستبدل الملفات التي تحمل الاسم نفسه."
+
+msgid "An \"assets\" folder already exists at %@."
+msgstr "يوجد بالفعل مجلد «assets» في %@."
+
+msgid "Appearance"
+msgstr "المظهر"
+
+msgid "Applies immediately — no restart."
+msgstr "يُطبّق فورًا، دون إعادة تشغيل."
+
+msgid "Autosave delay"
+msgstr "مهلة الحفظ التلقائي"
+
+msgid "Autosave runs after the last edit using the configured delay."
+msgstr "يعمل الحفظ التلقائي بعد آخر تعديل وفق المهلة المضبوطة."
+
+msgid "Back to size picker"
+msgstr "العودة إلى اختيار المقاس"
+
+msgid "Bold"
+msgstr "عريض"
+
+msgid "Breadcrumb strip above editor"
+msgstr "شريط المسار أعلى المحرر"
+
+msgid "Browse…"
+msgstr "تصفّح…"
+
+msgid "Bulleted List"
+msgstr "قائمة نقطية"
+
+msgid "Bullets"
+msgstr "نقاط"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Cannot move \"%@\" into its own descendant \"%@\"."
+msgstr "لا يمكن نقل «%@» إلى «%@» المتفرّع عنه."
+
+msgid "Cannot place a folder or note inside the note directory at \"%@\"."
+msgstr "لا يمكن وضع مجلد أو ملاحظة داخل دليل الملاحظة في «%@»."
+
+msgid "Case Sensitive"
+msgstr "مطابقة حالة الأحرف"
+
+msgid "Centred"
+msgstr "توسيط"
+
+msgid "Check for Updates…"
+msgstr "التحقق من التحديثات…"
+
+msgid "Choose Notes Folder"
+msgstr "اختيار مجلد الملاحظات"
+
+msgid "Choose a destination folder for \"%@\"."
+msgstr "اختر مجلد وجهة لـ «%@»."
+
+msgid "Choose a dictionary, or follow the system locale."
+msgstr "اختر قاموسًا أو اتبع لغة النظام."
+
+msgid "Choose an empty destination folder for your notes."
+msgstr "اختر مجلد وجهة فارغًا لملاحظاتك."
+
+msgid "Choose where Swifty Notes stores markdown files and companion assets."
+msgstr "اختر أين يحفظ Swifty Notes ملفات ماركداون والموارد المرافقة لها."
+
+msgid "Choose whether Tab inserts spaces or hard tabs."
+msgstr "اختر هل يُدرج مفتاح Tab مسافات أم علامات جدولة."
+
+msgid "Code"
+msgstr "شفرة"
+
+msgid "Collapse section"
+msgstr "طيّ القسم"
+
+msgid "Column %d: %@ — click to change"
+msgstr "العمود %d: %@ — انقر للتغيير"
+
+msgid "Columns"
+msgstr "الأعمدة"
+
+msgid "Comfortable"
+msgstr "مريحة"
+
+msgid "Comfortable matches the default; Compact tightens row padding."
+msgstr "«مريحة» هي المبدئية، و«مضغوطة» تقلّل تباعد الصفوف."
+
+msgid "Compact"
+msgstr "مضغوطة"
+
+msgid "Control how rendered Markdown appears in the preview."
+msgstr "تحكّم في شكل ماركداون داخل المعاينة."
+
+msgid "Control wrapping, indentation, and editor text size."
+msgstr "تحكّم في لفّ السطور والإزاحة وحجم نص المحرر."
+
+msgid "Copied note ID"
+msgstr "نُسخ معرّف الملاحظة"
+
+msgid "Copy code to clipboard"
+msgstr "نسخ الشفرة إلى الحافظة"
+
+msgid "Copy note ID"
+msgstr "نسخ معرّف الملاحظة"
+
+msgid "Could not add image"
+msgstr "تعذّر إضافة الصورة"
+
+msgid "Could not change the notes folder"
+msgstr "تعذّر تغيير مجلد الملاحظات"
+
+msgid "Could not check for updates: %@"
+msgstr "تعذّر التحقق من التحديثات: %@"
+
+msgid "Could not check for updates: no internet connection."
+msgstr "تعذّر التحقق من التحديثات: لا يوجد اتصال بالإنترنت."
+
+msgid "Could not choose a notes folder"
+msgstr "تعذّر اختيار مجلد للملاحظات"
+
+msgid "Could not create folder"
+msgstr "تعذّر إنشاء المجلد"
+
+msgid "Could not create note"
+msgstr "تعذّر إنشاء الملاحظة"
+
+msgid "Could not delete folder"
+msgstr "تعذّر حذف المجلد"
+
+msgid "Could not delete note"
+msgstr "تعذّر حذف الملاحظة"
+
+msgid "Could not duplicate note"
+msgstr "تعذّر تكرار الملاحظة"
+
+msgid "Could not empty Trash"
+msgstr "تعذّر إفراغ المهملات"
+
+msgid "Could not encode CLI output"
+msgstr "تعذّر ترميز خرج سطر الأوامر"
+
+msgid "Could not export note"
+msgstr "تعذّر تصدير الملاحظة"
+
+msgid "Could not import file into library"
+msgstr "تعذّر استيراد الملف إلى المكتبة"
+
+msgid "Could not import note"
+msgstr "تعذّر استيراد الملاحظة"
+
+msgid "Could not inspect markdown file"
+msgstr "تعذّر فحص ملف ماركداون"
+
+msgid "Could not inspect notes directory"
+msgstr "تعذّر فحص دليل الملاحظات"
+
+msgid "Could not load notes"
+msgstr "تعذّر تحميل الملاحظات"
+
+msgid "Could not move folder"
+msgstr "تعذّر نقل المجلد"
+
+msgid "Could not move note"
+msgstr "تعذّر نقل الملاحظة"
+
+msgid "Could not open containing folder"
+msgstr "تعذّر فتح المجلد الحاوي"
+
+msgid "Could not open export dialog"
+msgstr "تعذّر فتح حوار التصدير"
+
+msgid "Could not open file dialog"
+msgstr "تعذّر فتح حوار الملفات"
+
+msgid "Could not open import dialog"
+msgstr "تعذّر فتح حوار الاستيراد"
+
+msgid "Could not open markdown file"
+msgstr "تعذّر فتح ملف ماركداون"
+
+msgid "Could not open notes folder"
+msgstr "تعذّر فتح مجلد الملاحظات"
+
+msgid "Could not open release page: %@"
+msgstr "تعذّر فتح صفحة الإصدار: %@"
+
+msgid "Could not open save dialog"
+msgstr "تعذّر فتح حوار الحفظ"
+
+msgid "Could not open settings"
+msgstr "تعذّر فتح الإعدادات"
+
+msgid "Could not parse current version \"%@\""
+msgstr "تعذّر تحليل الإصدار الحالي «%@»"
+
+msgid "Could not parse remote version \"%@\""
+msgstr "تعذّر تحليل الإصدار البعيد «%@»"
+
+msgid "Could not paste files"
+msgstr "تعذّر لصق الملفات"
+
+msgid "Could not paste image"
+msgstr "تعذّر لصق الصورة"
+
+msgid "Could not permanently delete note"
+msgstr "تعذّر حذف الملاحظة نهائيًا"
+
+msgid "Could not read UTF-8 content from stdin"
+msgstr "تعذّرت قراءة محتوى UTF-8 من الدخل القياسي"
+
+msgid "Could not reload file"
+msgstr "تعذّر إعادة تحميل الملف"
+
+msgid "Could not reload notes"
+msgstr "تعذّر إعادة تحميل الملاحظات"
+
+msgid "Could not rename folder"
+msgstr "تعذّر تغيير اسم المجلد"
+
+msgid "Could not rename note"
+msgstr "تعذّر تغيير اسم الملاحظة"
+
+msgid "Could not restore note"
+msgstr "تعذّر استعادة الملاحظة"
+
+msgid "Could not save file: %@"
+msgstr "تعذّر حفظ الملف: %@"
+
+msgid "Could not save note: %@"
+msgstr "تعذّر حفظ الملاحظة: %@"
+
+msgid "Could not store workspace state"
+msgstr "تعذّر حفظ حالة مساحة العمل"
+
+msgid "Could not update notes index"
+msgstr "تعذّر تحديث فهرس الملاحظات"
+
+msgid "Could not update settings"
+msgstr "تعذّر تحديث الإعدادات"
+
+msgid "Create"
+msgstr "إنشاء"
+
+msgid "Dark"
+msgstr "داكن"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Delete Note"
+msgstr "حذف الملاحظة"
+
+msgid "Delete folder?"
+msgstr "أتريد حذف المجلد؟"
+
+msgid "Delete folder…"
+msgstr "حذف المجلد…"
+
+msgid "Delete forever"
+msgstr "حذف نهائي"
+
+msgid "Delete forever…"
+msgstr "حذف نهائي…"
+
+msgid "Delete “%@” forever?"
+msgstr "أتريد حذف «%@» نهائيًا؟"
+
+msgid "Deleted"
+msgstr "محذوفة"
+
+msgid "Deleted %@"
+msgstr "حُذفت %@"
+
+msgid "Delete…"
+msgstr "حذف…"
+
+msgid "Dismiss"
+msgstr "إغلاق"
+
+msgid "Dismiss update notification"
+msgstr "إغلاق إشعار التحديث"
+
+msgid "Document"
+msgstr "المستند"
+
+msgid "Document Menu"
+msgstr "قائمة المستند"
+
+msgid "Drag handles on hover"
+msgstr "مقابض السحب عند المرور"
+
+msgid "Duplicate note"
+msgstr "تكرار الملاحظة"
+
+msgid "Editor"
+msgstr "المحرر"
+
+msgid "Editor font size"
+msgstr "حجم خط المحرر"
+
+msgid "Editor only"
+msgstr "المحرر فقط"
+
+msgid "Empty Trash"
+msgstr "إفراغ المهملات"
+
+msgid "Empty Trash (%d note)…"
+msgid_plural "Empty Trash (%d notes)…"
+msgstr[0] "إفراغ المهملات (%d ملاحظة)…"
+msgstr[1] "إفراغ المهملات (%d ملاحظة)…"
+msgstr[2] "إفراغ المهملات (%d ملاحظتان)…"
+msgstr[3] "إفراغ المهملات (%d ملاحظات)…"
+msgstr[4] "إفراغ المهملات (%d ملاحظة)…"
+msgstr[5] "إفراغ المهملات (%d ملاحظة)…"
+
+msgid "Empty Trash automatically"
+msgstr "إفراغ المهملات تلقائيًا"
+
+msgid "Empty Trash?"
+msgstr "أتريد إفراغ المهملات؟"
+
+msgid "Enable spell-check"
+msgstr "تفعيل التدقيق الإملائي"
+
+msgid "Expand section"
+msgstr "بسط القسم"
+
+msgid "Export"
+msgstr "تصدير"
+
+msgid "Export Note"
+msgstr "تصدير الملاحظة"
+
+msgid "Export note…"
+msgstr "تصدير الملاحظة…"
+
+msgid "Exported %@"
+msgstr "صُدّرت %@"
+
+msgid "Exported %@ with %d %@"
+msgstr "صُدّرت %@ مع %d %@"
+
+msgid "File changed on disk. Save or reload to sync."
+msgstr "تغيّر الملف على القرص. احفظ أو أعد التحميل للمزامنة."
+
+msgid "File reloaded from disk"
+msgstr "أُعيد تحميل الملف من القرص"
+
+msgid "File saved"
+msgstr "حُفظ الملف"
+
+msgid "Filter Outline"
+msgstr "ترشيح المخطط"
+
+msgid "Filter headings…"
+msgstr "ترشيح العناوين…"
+
+msgid "Find…"
+msgstr "بحث…"
+
+msgid "Folder \"%@\" was not found."
+msgstr "لم يُعثر على المجلد «%@»."
+
+msgid "Folder %@"
+msgstr "المجلد %@"
+
+msgid "Folder deleted"
+msgstr "حُذف المجلد"
+
+msgid "Folder moved"
+msgstr "نُقل المجلد"
+
+msgid "Folder name"
+msgstr "اسم المجلد"
+
+msgid "Folder name \"%@\" exceeds the file system limit of %d bytes."
+msgstr "اسم المجلد «%@» يتجاوز حدّ نظام الملفات البالغ %d بايت."
+
+msgid "Folder name or Work/Drafts"
+msgstr "اسم المجلد، أو العمل/المسودات"
+
+msgid "Folder renamed"
+msgstr "غُيّر اسم المجلد"
+
+msgid "Follow system"
+msgstr "اتباع النظام"
+
+msgid "Follow system locale"
+msgstr "اتباع لغة النظام"
+
+msgid "Follow the system, or pin the language the interface uses."
+msgstr "اتبع النظام، أو ثبّت اللغة التي تستخدمها الواجهة."
+
+msgid "H%d"
+msgstr "H%d"
+
+msgid "Heading"
+msgstr "عنوان"
+
+msgid "Help"
+msgstr "مساعدة"
+
+msgid "Hide Notes Sidebar"
+msgstr "إخفاء شريط الملاحظات الجانبي"
+
+msgid "Hide outline (F9)"
+msgstr "إخفاء المخطط (F9)"
+
+msgid "Highlight misspellings inline using libspelling and the system dictionaries."
+msgstr "إبراز الأخطاء الإملائية داخل النص باستخدام libspelling وقواميس النظام."
+
+msgid "Hover to pick size"
+msgstr "مرّر المؤشر لاختيار المقاس"
+
+msgid "Image added to note"
+msgid_plural "Images added to note"
+msgstr[0] "أُضيفت صور إلى الملاحظة"
+msgstr[1] "أُضيفت صورة إلى الملاحظة"
+msgstr[2] "أُضيفت صورتان إلى الملاحظة"
+msgstr[3] "أُضيفت صور إلى الملاحظة"
+msgstr[4] "أُضيفت صور إلى الملاحظة"
+msgstr[5] "أُضيفت صور إلى الملاحظة"
+
+msgid "Image pasted into note"
+msgstr "لُصقت صورة في الملاحظة"
+
+msgid "Import"
+msgstr "استيراد"
+
+msgid "Import into Library"
+msgstr "استيراد إلى المكتبة"
+
+msgid "Import into Library…"
+msgstr "استيراد إلى المكتبة…"
+
+msgid "Imported %@"
+msgstr "استُوردت %@"
+
+msgid "Imported %@ into library"
+msgstr "استُوردت %@ إلى المكتبة"
+
+msgid "Indent style"
+msgstr "نمط الإزاحة"
+
+msgid "Insert"
+msgstr "إدراج"
+
+msgid "Insert Table"
+msgstr "إدراج جدول"
+
+msgid "Insert a markdown link"
+msgstr "إدراج رابط ماركداون"
+
+msgid "Insert a markdown table"
+msgstr "إدراج جدول ماركداون"
+
+msgid "Insert inline code or a fenced code block"
+msgstr "إدراج شفرة داخل السطر أو كتلة شفرة"
+
+msgid "Interface language"
+msgstr "لغة الواجهة"
+
+msgid "Invalid note ID: %@"
+msgstr "معرّف ملاحظة غير صالح: %@"
+
+msgid "Italic"
+msgstr "مائل"
+
+msgid "Jump to heading"
+msgstr "الانتقال إلى عنوان"
+
+msgid "Jump to heading…"
+msgstr "الانتقال إلى عنوان…"
+
+msgid "Jump-to-heading results"
+msgstr "نتائج الانتقال إلى عنوان"
+
+msgid "Language"
+msgstr "اللغة"
+
+msgid "Left-aligned"
+msgstr "محاذاة لليسار"
+
+msgid "Library"
+msgstr "المكتبة"
+
+msgid "Light"
+msgstr "فاتح"
+
+msgid "Link"
+msgstr "رابط"
+
+msgid "Main Menu"
+msgstr "القائمة الرئيسية"
+
+msgid "Markdown"
+msgstr "ماركداون"
+
+msgid "Markdown Editor"
+msgstr "محرر ماركداون"
+
+msgid "Markdown Preview"
+msgstr "معاينة ماركداون"
+
+msgid "Markdown notes"
+msgstr "ملاحظات ماركداون"
+
+msgid "Merge"
+msgstr "دمج"
+
+msgid "Missing value for --content-file."
+msgstr "قيمة ‎--content-file‎ ناقصة."
+
+msgid "Missing value for --content."
+msgstr "قيمة ‎--content‎ ناقصة."
+
+msgid "Missing value for --folder."
+msgstr "قيمة ‎--folder‎ ناقصة."
+
+msgid "Missing value for --notes-dir."
+msgstr "قيمة ‎--notes-dir‎ ناقصة."
+
+msgid "Missing value for --to."
+msgstr "قيمة ‎--to‎ ناقصة."
+
+msgid "Move"
+msgstr "نقل"
+
+msgid "Move note"
+msgstr "نقل الملاحظة"
+
+msgid "Move to…"
+msgstr "النقل إلى…"
+
+msgid "Moved \"%@\" to Trash"
+msgstr "نُقلت «%@» إلى المهملات"
+
+msgid "Never"
+msgstr "أبدًا"
+
+msgid "New Folder"
+msgstr "مجلد جديد"
+
+msgid "New Note"
+msgstr "ملاحظة جديدة"
+
+msgid "New folder"
+msgstr "مجلد جديد"
+
+msgid "New note here"
+msgstr "ملاحظة جديدة هنا"
+
+msgid "New subfolder in \"%@\""
+msgstr "مجلد فرعي جديد في «%@»"
+
+msgid "New subfolder…"
+msgstr "مجلد فرعي جديد…"
+
+msgid "Newest First"
+msgstr "الأحدث أولًا"
+
+msgid "Newest first"
+msgstr "الأحدث أولًا"
+
+msgid "Next Match"
+msgstr "المطابقة التالية"
+
+msgid "No headings in this note."
+msgstr "لا عناوين في هذه الملاحظة."
+
+msgid "No headings in this note. <a href=\"insert-heading\">Add <tt>## Heading</tt></a> to start."
+msgstr "لا عناوين في هذه الملاحظة. <a href=\"insert-heading\">أضف <tt>## عنوان</tt></a> للبدء."
+
+msgid "No headings match \"%@\""
+msgstr "لا عناوين تطابق «%@»"
+
+msgid "No headings match the filter."
+msgstr "لا عناوين تطابق المرشّح."
+
+msgid "No headings to jump to."
+msgstr "لا عناوين للانتقال إليها."
+
+msgid "No matches"
+msgstr "لا مطابقات"
+
+msgid "No matches to replace."
+msgstr "لا مطابقات لاستبدالها."
+
+msgid "No note found for ID %@"
+msgstr "لم يُعثر على ملاحظة بالمعرّف %@"
+
+msgid "No notes match \"%@\"."
+msgstr "لا ملاحظات تطابق «%@»."
+
+msgid "No notes yet."
+msgstr "لا ملاحظات بعد."
+
+msgid "No notes yet. Create one with +."
+msgstr "لا ملاحظات بعد. أنشئ واحدة بالزر +."
+
+msgid "No other folders to move into"
+msgstr "لا مجلدات أخرى للنقل إليها"
+
+msgid "Note Outline"
+msgstr "مخطط الملاحظة"
+
+msgid "Note duplicated"
+msgstr "كُرّرت الملاحظة"
+
+msgid "Note moved"
+msgstr "نُقلت الملاحظة"
+
+msgid "Note permanently deleted"
+msgstr "حُذفت الملاحظة نهائيًا"
+
+msgid "Note renamed"
+msgstr "غُيّر اسم الملاحظة"
+
+msgid "Note restored"
+msgstr "استُعيدت الملاحظة"
+
+msgid "Note saved"
+msgstr "حُفظت الملاحظة"
+
+msgid "Notes"
+msgstr "الملاحظات"
+
+msgid "Notes (%d)"
+msgstr "الملاحظات (%d)"
+
+msgid "Notes (%d/%d)"
+msgstr "الملاحظات (%d/%d)"
+
+msgid "Notes List"
+msgstr "قائمة الملاحظات"
+
+msgid "Notes Sidebar"
+msgstr "شريط الملاحظات الجانبي"
+
+msgid "Notes changed on disk. Save or reload to sync."
+msgstr "تغيّرت الملاحظات على القرص. احفظ أو أعد التحميل للمزامنة."
+
+msgid "Notes folder"
+msgstr "مجلد الملاحظات"
+
+msgid "Notes folder updated"
+msgstr "حُدّث مجلد الملاحظات"
+
+msgid "Notes reloaded from disk"
+msgstr "أُعيد تحميل الملاحظات من القرص"
+
+msgid "Nothing to preview yet."
+msgstr "لا شيء لمعاينته بعد."
+
+msgid "Numbered List"
+msgstr "قائمة مرقّمة"
+
+msgid "OK"
+msgstr "موافق"
+
+msgid "Oldest First"
+msgstr "الأقدم أولًا"
+
+msgid "Oldest first"
+msgstr "الأقدم أولًا"
+
+msgid "Open"
+msgstr "فتح"
+
+msgid "Open Markdown File"
+msgstr "فتح ملف ماركداون"
+
+msgid "Open Markdown File…"
+msgstr "فتح ملف ماركداون…"
+
+msgid "Open current folder"
+msgstr "فتح المجلد الحالي"
+
+msgid "Open notes folder"
+msgstr "فتح مجلد الملاحظات"
+
+msgid "Open or create a note before dropping or pasting images."
+msgstr "افتح ملاحظة أو أنشئ واحدة قبل إفلات الصور أو لصقها."
+
+msgid "Outline"
+msgstr "المخطط"
+
+msgid "Outline Sidebar"
+msgstr "شريط المخطط الجانبي"
+
+msgid "Outline density"
+msgstr "كثافة المخطط"
+
+msgid "Override the application theme or follow the system."
+msgstr "حدّد سمة التطبيق أو اتبع النظام."
+
+msgid "Path \"%@\" exceeds the file system limit of %d bytes."
+msgstr "المسار «%@» يتجاوز حدّ نظام الملفات البالغ %d بايت."
+
+msgid "Permanently delete trashed notes after this much time has passed."
+msgstr "احذف ملاحظات المهملات نهائيًا بعد مرور هذه المدة."
+
+msgid "Points"
+msgstr "نقاط"
+
+msgid "Preferences"
+msgstr "التفضيلات"
+
+msgid "Prefix the selected lines as a bulleted list"
+msgstr "تحويل الأسطر المحددة إلى قائمة نقطية"
+
+msgid "Prefix the selected lines as a numbered list"
+msgstr "تحويل الأسطر المحددة إلى قائمة مرقّمة"
+
+msgid "Prefix the selected lines as a quote"
+msgstr "تحويل الأسطر المحددة إلى اقتباس"
+
+msgid "Prefix the selected lines as a task list"
+msgstr "تحويل الأسطر المحددة إلى قائمة مهام"
+
+msgid "Preview only"
+msgstr "المعاينة فقط"
+
+msgid "Previous Match"
+msgstr "المطابقة السابقة"
+
+msgid "Quick Jump"
+msgstr "انتقال سريع"
+
+msgid "Quick jump… (Ctrl+G)"
+msgstr "انتقال سريع… (Ctrl+G)"
+
+msgid "Quote"
+msgstr "اقتباس"
+
+msgid "Regular Expression"
+msgstr "تعبير نمطي"
+
+msgid "Reload"
+msgstr "إعادة تحميل"
+
+msgid "Reload from disk"
+msgstr "إعادة التحميل من القرص"
+
+msgid "Rename"
+msgstr "تغيير الاسم"
+
+msgid "Rename folder"
+msgstr "تغيير اسم المجلد"
+
+msgid "Rename folder…"
+msgstr "تغيير اسم المجلد…"
+
+msgid "Rename note"
+msgstr "تغيير اسم الملاحظة"
+
+msgid "Rename note…"
+msgstr "تغيير اسم الملاحظة…"
+
+msgid "Renaming \"%@\". Folder names cannot contain slashes (/)."
+msgstr "تغيير اسم «%@». لا يمكن أن تحتوي أسماء المجلدات على شرطات مائلة (/)."
+
+msgid "Render emoji shortcodes"
+msgstr "عرض رموز الإيموجي المختصرة"
+
+msgid "Replace"
+msgstr "استبدال"
+
+msgid "Replace All"
+msgstr "استبدال الكل"
+
+msgid "Replace every match"
+msgstr "استبدال كل مطابقة"
+
+msgid "Replace existing assets?"
+msgstr "أتريد استبدال الموارد الموجودة؟"
+
+msgid "Replace the current match"
+msgstr "استبدال المطابقة الحالية"
+
+msgid "Replaced %d occurrence."
+msgid_plural "Replaced %d occurrences."
+msgstr[0] "استُبدلت %d مطابقة."
+msgstr[1] "استُبدلت %d مطابقة."
+msgstr[2] "استُبدلت %d مطابقتان."
+msgstr[3] "استُبدلت %d مطابقات."
+msgstr[4] "استُبدلت %d مطابقة."
+msgstr[5] "استُبدلت %d مطابقة."
+
+msgid "Replacement content is required."
+msgstr "محتوى الاستبدال مطلوب."
+
+msgid "Replace…"
+msgstr "استبدال…"
+
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+msgid "Restore"
+msgstr "استعادة"
+
+msgid "Reveal in Folder"
+msgstr "إظهار في المجلد"
+
+msgid "Reveal the active notes folder in your file manager."
+msgstr "أظهر مجلد الملاحظات المستخدم في مدير الملفات."
+
+msgid "Right-aligned"
+msgstr "محاذاة لليمين"
+
+msgid "Save"
+msgstr "حفظ"
+
+msgid "Save As…"
+msgstr "حفظ باسم…"
+
+msgid "Save File"
+msgstr "حفظ الملف"
+
+msgid "Save Markdown File As"
+msgstr "حفظ ملف ماركداون باسم"
+
+msgid "Save Note"
+msgstr "حفظ الملاحظة"
+
+msgid "Saved"
+msgstr "محفوظة"
+
+msgid "Saved as %@"
+msgstr "حُفظت باسم %@"
+
+msgid "Saving"
+msgstr "جارٍ الحفظ"
+
+msgid "Search Notes"
+msgstr "البحث في الملاحظات"
+
+msgid "Search notes"
+msgstr "البحث في الملاحظات"
+
+msgid "Seconds"
+msgstr "ثوانٍ"
+
+msgid "Settings"
+msgstr "الإعدادات"
+
+msgid "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged."
+msgstr "أظهر الأسماء المختصرة ‎:shortcode:‎ (مثل ‎:rocket:‎) كإيموجي. يبقى النص المصدري والشفرة كما هما."
+
+msgid "Show Notes Sidebar"
+msgstr "إظهار شريط الملاحظات الجانبي"
+
+msgid "Show outline (F9)"
+msgstr "إظهار المخطط (F9)"
+
+msgid "Show the drag affordance on hover. Drag-to-reorder ships separately."
+msgstr "أظهر مؤشر السحب عند مرور المؤشر. إعادة الترتيب بالسحب ستأتي لاحقًا."
+
+msgid "Size"
+msgstr "المقاس"
+
+msgid "Sort Notes"
+msgstr "ترتيب الملاحظات"
+
+msgid "Sort Notes by Newest First"
+msgstr "ترتيب الملاحظات بالأحدث أولًا"
+
+msgid "Sort Notes by Oldest First"
+msgstr "ترتيب الملاحظات بالأقدم أولًا"
+
+msgid "Sort Notes by Title"
+msgstr "ترتيب الملاحظات حسب العنوان"
+
+msgid "Sort by Title"
+msgstr "الترتيب حسب العنوان"
+
+msgid "Sorting by newest first"
+msgstr "الترتيب بالأحدث أولًا"
+
+msgid "Sorting by oldest first"
+msgstr "الترتيب بالأقدم أولًا"
+
+msgid "Sorting by title"
+msgstr "الترتيب حسب العنوان"
+
+msgid "Source Code"
+msgstr "الشفرة المصدرية"
+
+msgid "Spaces"
+msgstr "مسافات"
+
+msgid "Spell check"
+msgstr "التدقيق الإملائي"
+
+msgid "Spell-check language"
+msgstr "لغة التدقيق الإملائي"
+
+msgid "Split"
+msgstr "مقسّم"
+
+msgid "Split view"
+msgstr "عرض مقسّم"
+
+msgid "Storage"
+msgstr "التخزين"
+
+msgid "Swifty Notes can only open local markdown files."
+msgstr "لا يفتح Swifty Notes إلا ملفات ماركداون المحلية."
+
+msgid "Swifty Notes does not have permission to access that folder. Try choosing a different location."
+msgstr "لا يملك Swifty Notes صلاحية الوصول إلى ذلك المجلد. جرّب اختيار موضع آخر."
+
+msgid "Swifty Notes is up to date."
+msgstr "Swifty Notes محدّث."
+
+msgid "System language"
+msgstr "لغة النظام"
+
+msgid "Tab width"
+msgstr "عرض الجدولة"
+
+msgid "Table"
+msgstr "جدول"
+
+msgid "Tabs"
+msgstr "جدولات"
+
+msgid "Takes effect the next time the app starts."
+msgstr "يسري عند تشغيل التطبيق في المرة القادمة."
+
+msgid "Task List"
+msgstr "قائمة مهام"
+
+msgid "The application instance is not available."
+msgstr "نسخة التطبيق غير متاحة."
+
+msgid "The current notes folder could not be found."
+msgstr "تعذّر العثور على مجلد الملاحظات الحالي."
+
+msgid "The new notes folder cannot be inside the current notes folder."
+msgstr "لا يمكن أن يكون مجلد الملاحظات الجديد داخل المجلد الحالي."
+
+msgid "The note title is derived from the first meaningful line."
+msgstr "يُشتق عنوان الملاحظة من أول سطر ذي محتوى."
+
+msgid "The selected destination is not a folder."
+msgstr "الوجهة المختارة ليست مجلدًا."
+
+msgid "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr "المجلد المختار على نظام ملفات للقراءة فقط ولا يمكنه تخزين الملاحظات."
+
+msgid "There is not enough disk space to move your notes to that folder."
+msgstr "لا توجد مساحة كافية على القرص لنقل ملاحظاتك إلى ذلك المجلد."
+
+msgid "This permanently removes the note from disk. This action can't be undone."
+msgstr "يزيل هذا الملاحظة من القرص نهائيًا. لا يمكن التراجع عن هذا الإجراء."
+
+msgid "Title"
+msgstr "العنوان"
+
+msgid "Toggle Outline"
+msgstr "تبديل المخطط"
+
+msgid "Trash"
+msgstr "المهملات"
+
+msgid "Trash emptied"
+msgstr "أُفرغت المهملات"
+
+msgid "Tree lines under H2 sections"
+msgstr "خطوط شجرية تحت أقسام H2"
+
+msgid "Turn the current line into a heading"
+msgstr "تحويل السطر الحالي إلى عنوان"
+
+msgid "Tweak the right-hand outline panel and the breadcrumb strip above the editor."
+msgstr "اضبط لوحة المخطط الجانبية وشريط المسار أعلى المحرر."
+
+msgid "Underline misspellings while you type and offer corrections in the right-click menu."
+msgstr "سطّر الأخطاء الإملائية أثناء الكتابة واعرض التصحيحات في قائمة النقر الأيمن."
+
+msgid "Undo"
+msgstr "تراجع"
+
+msgid "Unknown CLI command: %@"
+msgstr "أمر غير معروف: %@"
+
+msgid "Unknown command for help: %@"
+msgstr "أمر غير معروف في المساعدة: %@"
+
+msgid "Unknown folders subcommand: %@"
+msgstr "أمر فرعي غير معروف لـ folders: %@"
+
+msgid "Unknown option: %@"
+msgstr "خيار غير معروف: %@"
+
+msgid "Unsaved changes"
+msgstr "تغييرات غير محفوظة"
+
+msgid "Unsupported image type for %@."
+msgstr "نوع الصورة غير مدعوم لـ %@."
+
+msgid "Update"
+msgstr "تحديث"
+
+msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
+msgstr "استخدم / لإنشاء مجلدات متداخلة دفعة واحدة، مثل العمل/المسودات."
+
+msgid "Use default location"
+msgstr "استخدام الموضع المبدئي"
+
+msgid "Use only one of --content, --content-file, or --stdin."
+msgstr "استخدم واحدًا فقط من ‎--content‎ أو ‎--content-file‎ أو ‎--stdin‎."
+
+msgid "Version %@ is available."
+msgstr "الإصدار %@ متاح."
+
+msgid "Vertical guides linking H3+ subsections to their H2 parent."
+msgstr "خطوط رأسية تربط الأقسام الفرعية H3 فما دونها بقسم H2 الأصلي."
+
+msgid "Whole Word Match"
+msgstr "مطابقة الكلمة كاملة"
+
+msgid "Wrap long lines"
+msgstr "لفّ السطور الطويلة"
+
+msgid "Wrap markdown paragraphs instead of scrolling horizontally."
+msgstr "لفّ فقرات ماركداون بدلًا من التمرير الأفقي."
+
+msgid "Wrap the selection in bold markdown"
+msgstr "إحاطة التحديد بتنسيق ماركداون العريض"
+
+msgid "Wrap the selection in italic markdown"
+msgstr "إحاطة التحديد بتنسيق ماركداون المائل"
+
+msgid "`folders create` requires exactly one folder path."
+msgstr "يتطلب `folders create` مسار مجلد واحدًا بالضبط."
+
+msgid "`folders move <path> --to <parent>` requires both a path and a parent."
+msgstr "يتطلب `folders move <path> --to <parent>` مسارًا ووجهة معًا."
+
+msgid "`folders move` accepts exactly one folder path."
+msgstr "يقبل `folders move` مسار مجلد واحدًا بالضبط."
+
+msgid "`folders rename` requires <path> <new-name>."
+msgstr "يتطلب `folders rename` القيمتين <path> <new-name>."
+
+msgid "`folders rm` accepts exactly one folder path."
+msgstr "يقبل `folders rm` مسار مجلد واحدًا بالضبط."
+
+msgid "`folders rm` cannot delete the root."
+msgstr "لا يستطيع `folders rm` حذف الجذر."
+
+msgid "`folders rm` requires a folder path."
+msgstr "يتطلب `folders rm` مسار مجلد."
+
+msgid "`get` expects exactly one note ID."
+msgstr "يتوقع `get` معرّف ملاحظة واحدًا بالضبط."
+
+msgid "`get` requires a note ID."
+msgstr "يتطلب `get` معرّف ملاحظة."
+
+msgid "`help` accepts at most one command name."
+msgstr "يقبل `help` اسم أمر واحدًا على الأكثر."
+
+msgid "`move` expects exactly one note ID."
+msgstr "يتوقع `move` معرّف ملاحظة واحدًا بالضبط."
+
+msgid "`move` requires --folder PATH (use --folder \"\" to move to the root)."
+msgstr "يتطلب `move` الخيار ‎--folder PATH‎ (استخدم ‎--folder \"\"‎ للنقل إلى الجذر)."
+
+msgid "`move` requires a note ID."
+msgstr "يتطلب `move` معرّف ملاحظة."
+
+msgid "`update` requires a note ID."
+msgstr "يتطلب `update` معرّف ملاحظة."
+
+msgid "asset"
+msgid_plural "assets"
+msgstr[0] "موارد"
+msgstr[1] "مورد"
+msgstr[2] "موردان"
+msgstr[3] "موارد"
+msgstr[4] "موارد"
+msgstr[5] "موارد"
+
+msgid "current"
+msgstr "الحالي"
+
+msgid "“%@” is in the Trash"
+msgstr "«%@» في المهملات"
+
+msgid "“You are here” strip above the editor toolbar."
+msgstr "شريط «أنت هنا» أعلى شريط أدوات المحرر."
+
+msgid "↑↓ navigate · ↵ jump · Esc close"
+msgstr "↑↓ تنقّل · ↵ انتقال · Esc إغلاق"
+
+msgctxt "settings group"
+msgid "Preview"
+msgstr "المعاينة"
+
+msgctxt "sort mode"
+msgid "Title"
+msgstr "العنوان"
+
+msgctxt "view mode"
+msgid "Preview"
+msgstr "المعاينة"
+
+msgid "Swifty Notes"
+msgstr "Swifty Notes"
+
+msgid "Sergey Armodin"
+msgstr "Sergey Armodin"
+
+msgid "Native GTK markdown notes with preview and automation"
+msgstr "ملاحظات ماركداون أصيلة لـ GTK مع معاينة وأتمتة"
+
+msgid "notes"
+msgstr "ملاحظات"
+
+msgid "markdown"
+msgstr "ماركداون"
+
+msgid "editor"
+msgstr "محرر"
+
+msgid "preview"
+msgstr "معاينة"
+
+msgid "cli"
+msgstr "سطر أوامر"
+
+msgid "automation"
+msgstr "أتمتة"
+
+msgid "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux written in Swift."
+msgstr "‏Swifty Notes تطبيق ملاحظات ماركداون أصيل لـ GTK/libadwaita على لينكس، مكتوب بلغة Swift."
+
+msgid "The desktop app is the primary experience: write, organize, and preview Markdown notes with native GTK widgets, autosave, remembered workspace state, and adjustable editor settings such as font size, wrapping, indentation, and appearance."
+msgstr "تطبيق سطح المكتب هو التجربة الأساسية: اكتب ملاحظات ماركداون ونظّمها وعاينها بعناصر GTK أصيلة، مع حفظ تلقائي وتذكّر لحالة مساحة العمل وإعدادات محرر قابلة للضبط مثل حجم الخط ولفّ السطور والإزاحة والمظهر."
+
+msgid "The included CLI works on the same file-backed notes so shell scripts, automation, and AI agents can safely inspect or update notes without a separate database or background service."
+msgstr "يعمل سطر الأوامر المرفق على الملاحظات نفسها المحفوظة كملفات، فتستطيع سكربتات الصدفة والأتمتة ووكلاء الذكاء الاصطناعي فحص الملاحظات أو تحديثها بأمان دون قاعدة بيانات منفصلة أو خدمة تعمل في الخلفية."
+
+msgid "Create, rename, duplicate, export, and delete Markdown notes."
+msgstr "إنشاء ملاحظات ماركداون وتغيير أسمائها وتكرارها وتصديرها وحذفها."
+
+msgid "Autosave edits, remember workspace state, and keep note-local image assets together with each note."
+msgstr "حفظ التعديلات تلقائيًا، وتذكّر حالة مساحة العمل، وإبقاء صور كل ملاحظة معها."
+
+msgid "Adjust editor font size and other writing preferences to fit different screens and workflows."
+msgstr "ضبط حجم خط المحرر وتفضيلات الكتابة الأخرى لتناسب شاشات وطرق عمل مختلفة."
+
+msgid "Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices."
+msgstr "اختيار موضع تخزين الملاحظات، بما في ذلك مجلد متزامن مع السحابة، لتبقى الملفات نفسها متزامنة بين الأجهزة."
+
+msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
+msgstr "استيراد الصور بالسحب والإفلات وعرض ماركداون بمعاينة GTK أصيلة بدل عرض الويب."
+
+msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
+msgstr "استخدام سطر الأوامر لأتمتة الملاحظات بصيغة JSON من السكربتات وأنابيب الصدفة ووكلاء الذكاء الاصطناعي."
+
+msgid "Switch the interface language between the system default and any language the build ships, without restarting the app."
+msgstr "تبديل لغة الواجهة بين لغة النظام وأي لغة مرفقة بالبناء، دون إعادة تشغيل التطبيق."
+
+msgid "Split view with the sidebar, formatting toolbar, live preview, and outline."
+msgstr "عرض مقسّم يضم الشريط الجانبي وشريط التنسيق والمعاينة الحية والمخطط."
+
+msgid "Native Markdown preview with the document outline for navigating long notes."
+msgstr "معاينة ماركداون أصيلة مع مخطط المستند للتنقل في الملاحظات الطويلة."
+
+msgid "Full editor with the formatting toolbar and the document outline panel."
+msgstr "محرر كامل مع شريط التنسيق ولوحة مخطط المستند."
+
+msgid "Native GTK markdown notes with preview and CLI automation"
+msgstr "ملاحظات ماركداون أصيلة لـ GTK مع معاينة وأتمتة عبر سطر الأوامر"
+
+msgid "notes;markdown;editor;text;cli;automation;"
+msgstr "ملاحظات;ماركداون;محرر;نص;سطر أوامر;أتمتة;"
+
+msgid "New Window"
+msgstr "نافذة جديدة"

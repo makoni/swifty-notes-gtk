@@ -24,6 +24,7 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
     case brazilianPortuguese = "pt_BR"
     case russian = "ru"
     case simplifiedChinese = "zh_CN"
+    case arabic = "ar"
 
     /// The gettext language code to pin, or `nil` to follow the session.
     public var catalogueCode: String? {
@@ -65,6 +66,8 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             ["ru_RU.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         case .simplifiedChinese:
             ["zh_CN.UTF-8", "zh_SG.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
+        case .arabic:
+            ["ar_EG.UTF-8", "ar_SA.UTF-8", "en_US.UTF-8", "en_GB.UTF-8"]
         }
     }
 
@@ -99,6 +102,8 @@ public enum AppLanguage: String, Codable, CaseIterable, Equatable, Sendable {
             "Русский"
         case .simplifiedChinese:
             "简体中文"
+        case .arabic:
+            "العربية"
         }
     }
 }
