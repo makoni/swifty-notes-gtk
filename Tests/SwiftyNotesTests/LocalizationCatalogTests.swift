@@ -12,12 +12,15 @@ import Testing
 struct LocalizationCatalogTests {
     // MARK: - Catalogue coverage
 
-    @Test("Every translatable source string has a catalogue entry")
-    func everyTranslatableSourceStringHasACatalogueEntry() async throws {
+    @Test(
+        "Every translatable source string has a catalogue entry",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func everyTranslatableSourceStringHasACatalogueEntry(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) async throws {
         let source = try await LocalizationCatalogFixture.sourceMessageIDs()
-        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
-        )
+        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(at: shipped.url)
         let missing = source.subtracting(catalogue).sorted()
         #expect(
             missing.isEmpty,
@@ -30,12 +33,15 @@ struct LocalizationCatalogTests {
         )
     }
 
-    @Test("The catalogue carries no entries the source never asks for")
-    func catalogueCarriesNoEntriesTheSourceNeverAsksFor() async throws {
+    @Test(
+        "The catalogue carries no entries the source never asks for",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func catalogueCarriesNoEntriesTheSourceNeverAsksFor(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) async throws {
         let source = try await LocalizationCatalogFixture.sourceMessageIDs()
-        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
-        )
+        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(at: shipped.url)
         let metadata = try LocalizationCatalogFixture.metadataMessageIDs()
         let orphans = catalogue.subtracting(source)
             .subtracting(metadata)
@@ -84,18 +90,16 @@ struct LocalizationCatalogTests {
     /// strings to users. The specifier tests skip empty translations by
     /// design, and the coverage test only checks that a msgid has a key —
     /// neither catches an empty msgstr.
-    @Test("Russian translations are not empty")
-    func russianTranslationsAreNotEmpty() throws {
-        let entries = try LocalizationCatalogFixture.entries(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
-        )
+    @Test("Translations are not empty", arguments: LocalizationCatalogFixture.shippedCatalogues)
+    fileprivate func translationsAreNotEmpty(_ shipped: LocalizationCatalogFixture.ShippedCatalogue) throws {
+        let entries = try LocalizationCatalogFixture.entries(at: shipped.url)
         let empty = entries.filter { entry in
             entry.translations.contains { $0.isEmpty }
         }
         #expect(
             empty.isEmpty,
             """
-            \(empty.count) entry/entries have an empty Russian translation
+            \(empty.count) entry/entries have an empty \(shipped.language) translation
             (msgstr is blank for singular, or any form is blank for plural):
             \(empty.map { "  - \($0.singular.debugDescription)" }.joined(separator: "\n"))
             """,
@@ -107,18 +111,28 @@ struct LocalizationCatalogTests {
     /// Russian selects form 0 for 1, 21, 31, 101… so a `msgstr[0]` that
     /// hardcodes the digit renders "21 notes" as "1 заметка". Every form has to
     /// keep whatever specifier its msgid declares.
-    @Test("Plural entries keep their format specifier in every form")
-    func pluralEntriesKeepTheirFormatSpecifierInEveryForm() throws {
-        let entries = try LocalizationCatalogFixture.pluralEntries(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
+    @Test(
+        "Plural entries keep their format specifier in every form",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func pluralEntriesKeepTheirFormatSpecifierInEveryForm(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
+        let entries = try LocalizationCatalogFixture.pluralEntries(at: shipped.url)
+        #expect(!entries.isEmpty, "expected plural entries in po/\(shipped.language).po")
+        let forms = try #require(
+            try shipped.declaredPluralForms(),
+            "po/\(shipped.language).po declares no nplurals in its Plural-Forms header",
         )
-        #expect(!entries.isEmpty, "expected plural entries in po/ru.po")
 
         for entry in entries {
             let expected = LocalizationCatalogFixture.formatSpecifiers(in: entry.singular)
             #expect(
-                entry.translations.count == 3,
-                "\(entry.lookupKey.debugDescription) has \(entry.translations.count) form(s); Russian needs 3",
+                entry.translations.count == forms,
+                """
+                \(entry.lookupKey.debugDescription) has \(entry.translations.count) form(s); \
+                po/\(shipped.language).po declares nplurals=\(forms)
+                """,
             )
             for (index, translation) in entry.translations.enumerated() where !translation.isEmpty {
                 #expect(
@@ -137,10 +151,15 @@ struct LocalizationCatalogTests {
     /// `String(format:)` matches them positionally, so a missing one shifts
     /// every later argument into the wrong slot and an extra one reads past the
     /// end of the argument list.
-    @Test("Translations carry the same format specifiers as their msgid")
-    func translationsCarryTheSameFormatSpecifiersAsTheirMsgid() throws {
+    @Test(
+        "Translations carry the same format specifiers as their msgid",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func translationsCarryTheSameFormatSpecifiersAsTheirMsgid(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
         let mismatches = try LocalizationCatalogFixture
-            .entries(at: LocalizationCatalogFixture.russianCatalogueURL)
+            .entries(at: shipped.url)
             .filter { entry in
                 guard entry.plural == nil, let translation = entry.translations.first,
                       !translation.isEmpty else { return false }
@@ -165,12 +184,14 @@ struct LocalizationCatalogTests {
     /// not a translation — merging the template over a catalogue full of
     /// mangled fragments produced exactly the wrong pairings, and shipping them
     /// unreviewed is worse than shipping English.
-    @Test("The catalogue contains no unreviewed fuzzy translations")
-    func catalogueContainsNoUnreviewedFuzzyTranslations() throws {
-        let catalogue = try String(
-            contentsOf: LocalizationCatalogFixture.russianCatalogueURL,
-            encoding: .utf8,
-        )
+    @Test(
+        "The catalogue contains no unreviewed fuzzy translations",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func catalogueContainsNoUnreviewedFuzzyTranslations(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
+        let catalogue = try String(contentsOf: shipped.url, encoding: .utf8)
         let fuzzy = catalogue
             .split(separator: "\n", omittingEmptySubsequences: false)
             .filter { $0.trimmingCharacters(in: .whitespaces).hasPrefix("#,") }
@@ -192,14 +213,17 @@ struct LocalizationCatalogTests {
     /// Every `nlocalized` pair the source asks for must be a real plural entry.
     /// Two separate singular entries make `ngettext` return form 0 for every
     /// count, which reads as a grammatical error rather than a missing string.
-    @Test("Every nlocalized pair is a plural entry in the catalogue")
-    func everyNlocalizedPairIsAPluralEntryInTheCatalogue() async throws {
+    @Test(
+        "Every nlocalized pair is a plural entry in the catalogue",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func everyNlocalizedPairIsAPluralEntryInTheCatalogue(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) async throws {
         let pairs = try await LocalizationCatalogFixture.sourcePluralPairs()
         #expect(!pairs.isEmpty, "expected nlocalized call sites in Sources/")
 
-        let entries = try LocalizationCatalogFixture.pluralEntries(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
-        )
+        let entries = try LocalizationCatalogFixture.pluralEntries(at: shipped.url)
         // Keyed with the context, so a plural asked for under a `msgctxt`
         // needs a plural entry *under that context* — the bare entry of the
         // same msgid would never be reached.
@@ -218,8 +242,13 @@ struct LocalizationCatalogTests {
 
     // MARK: - Compiled catalogue
 
-    @Test("The source po file is well formed")
-    func sourcePoFileIsWellFormed() throws {
+    @Test(
+        "The source po file is well formed",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func sourcePoFileIsWellFormed(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
         let msgfmt = try #require(
             LocalizationCatalogFixture.toolURL(named: "msgfmt"),
             "msgfmt not found — install gettext; the build needs it to produce the catalogue",
@@ -230,7 +259,7 @@ struct LocalizationCatalogTests {
 
         let diagnostics = try LocalizationCatalogFixture.run(
             msgfmt,
-            ["--check", "-o", discard.path, LocalizationCatalogFixture.russianCatalogueURL.path],
+            ["--check", "-o", discard.path, shipped.url.path],
         )
         #expect(
             diagnostics.status == 0,
@@ -244,8 +273,13 @@ struct LocalizationCatalogTests {
     /// Compared by content rather than by bytes: `PO-Revision-Date` moves on
     /// every edit and says nothing about what the catalogue contains, so a byte
     /// comparison would fail on a meaningless header bump.
-    @Test("The compiled catalogue carries the same translations as the po file")
-    func compiledCatalogueCarriesTheSameTranslationsAsThePoFile() throws {
+    @Test(
+        "The compiled catalogue carries the same translations as the po file",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func compiledCatalogueCarriesTheSameTranslationsAsThePoFile(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
         let msgfmt = try #require(
             LocalizationCatalogFixture.toolURL(named: "msgfmt"),
             "msgfmt not found — install gettext",
@@ -254,31 +288,27 @@ struct LocalizationCatalogTests {
             LocalizationCatalogFixture.toolURL(named: "msgunfmt"),
             "msgunfmt not found — install gettext",
         )
+        let installed = LocalizationCatalogFixture.compiledCatalogueURL(for: shipped.language)
         #expect(
-            FileManager.default.fileExists(atPath: LocalizationCatalogFixture.compiledCatalogueURL.path),
-            "no compiled catalogue — run scripts/build-locales.sh",
+            FileManager.default.fileExists(atPath: installed.path),
+            "no compiled catalogue for \(shipped.language) — run scripts/build-locales.sh",
         )
-        guard FileManager.default.fileExists(atPath: LocalizationCatalogFixture.compiledCatalogueURL.path) else {
-            return
-        }
+        guard FileManager.default.fileExists(atPath: installed.path) else { return }
 
         let fresh = FileManager.default.temporaryDirectory
             .appendingPathComponent("swiftynotes-fresh-\(UUID().uuidString).mo", isDirectory: false)
         defer { try? FileManager.default.removeItem(at: fresh) }
-        _ = try LocalizationCatalogFixture.run(
-            msgfmt,
-            ["-o", fresh.path, LocalizationCatalogFixture.russianCatalogueURL.path],
-        )
+        _ = try LocalizationCatalogFixture.run(msgfmt, ["-o", fresh.path, shipped.url.path])
 
         let expected = try LocalizationCatalogFixture.run(msgunfmt, [fresh.path]).stdout
-        let shipped = try LocalizationCatalogFixture.run(
-            msgunfmt,
-            [LocalizationCatalogFixture.compiledCatalogueURL.path],
-        ).stdout
+        let installedText = try LocalizationCatalogFixture.run(msgunfmt, [installed.path]).stdout
         #expect(
-            LocalizationCatalogFixture.stripVolatileHeaders(shipped)
+            LocalizationCatalogFixture.stripVolatileHeaders(installedText)
                 == LocalizationCatalogFixture.stripVolatileHeaders(expected),
-            "the shipped .mo does not match po/ru.po — recompile it with scripts/build-locales.sh",
+            """
+            the shipped .mo does not match po/\(shipped.language).po — recompile it with \
+            scripts/build-locales.sh
+            """,
         )
     }
 
@@ -446,11 +476,14 @@ struct LocalizationCatalogTests {
     /// number that would precede them, so for a countless message the two must
     /// read identically — otherwise adding a fifth image turns a correct toast
     /// into "Изображений добавлено в заметку".
-    @Test("A plural entry that prints no count reads the same for every plural form")
-    func pluralEntryThatPrintsNoCountReadsTheSameForEveryPluralForm() throws {
-        let entries = try LocalizationCatalogFixture.pluralEntries(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
-        )
+    @Test(
+        "A plural entry that prints no count reads the same for every plural form",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func pluralEntryThatPrintsNoCountReadsTheSameForEveryPluralForm(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
+        let entries = try LocalizationCatalogFixture.pluralEntries(at: shipped.url)
         for entry in entries {
             guard LocalizationCatalogFixture.formatSpecifiers(in: entry.singular).isEmpty,
                   LocalizationCatalogFixture.formatSpecifiers(in: entry.plural).isEmpty
@@ -507,14 +540,17 @@ struct LocalizationCatalogTests {
     /// Every string the metadata templates expose must reach the catalogue,
     /// or it ships English in the store listing while the rest of the app is
     /// translated.
-    @Test("The catalogue covers the packaging metadata too")
-    func catalogueCoversThePackagingMetadataToo() throws {
+    @Test(
+        "The catalogue covers the packaging metadata too",
+        arguments: LocalizationCatalogFixture.shippedCatalogues,
+    )
+    fileprivate func catalogueCoversThePackagingMetadataToo(
+        _ shipped: LocalizationCatalogFixture.ShippedCatalogue,
+    ) throws {
         let metadata = try LocalizationCatalogFixture.metadataMessageIDs()
         try #require(!metadata.isEmpty, "xgettext or the AppStream ITS rules are missing")
 
-        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(
-            at: LocalizationCatalogFixture.russianCatalogueURL,
-        )
+        let catalogue = try LocalizationCatalogFixture.catalogueMessageIDs(at: shipped.url)
         let missing = metadata.subtracting(catalogue).sorted()
         #expect(
             missing.isEmpty,
@@ -591,13 +627,53 @@ private enum LocalizationCatalogFixture {
         .deletingLastPathComponent() // Tests
         .deletingLastPathComponent() // <package root>
 
+    /// A catalogue the build ships, as `po/LINGUAS` lists it.
+    struct ShippedCatalogue: Sendable, CustomStringConvertible, CustomTestStringConvertible {
+        let language: String
+        let url: URL
+
+        var description: String { language }
+        var testDescription: String { "po/\(language).po" }
+
+        /// How many plural forms the catalogue's own header declares.
+        ///
+        /// Read from the file rather than tabulated here: the header is what
+        /// msgfmt compiles against, so a mismatch between the two is the bug
+        /// this makes visible.
+        func declaredPluralForms() throws -> Int? {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            guard let match = text.range(of: #"nplurals=[0-9]+"#, options: .regularExpression) else {
+                return nil
+            }
+            return Int(text[match].dropFirst("nplurals=".count))
+        }
+    }
+
+    /// Every catalogue the build ships, read from `po/LINGUAS` — which is what
+    /// `build-locales.sh` compiles and what packaging installs. A guard that
+    /// named one language would leave every later one unchecked, and adding a
+    /// language is the moment that matters.
+    static let shippedCatalogues: [ShippedCatalogue] = {
+        let linguas = packageRoot.appendingPathComponent("po/LINGUAS")
+        guard let text = try? String(contentsOf: linguas, encoding: .utf8) else { return [] }
+        return text
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+            .map { ShippedCatalogue(language: $0, url: packageRoot.appendingPathComponent("po/\($0).po")) }
+    }()
+
     static let russianCatalogueURL = packageRoot.appendingPathComponent("po/ru.po")
 
     static let templateURL = packageRoot
         .appendingPathComponent("po/me.spaceinbox.swiftynotes.pot")
 
-    static let compiledCatalogueURL = packageRoot
-        .appendingPathComponent("Sources/SwiftyNotes/locale/ru/LC_MESSAGES/me.spaceinbox.swiftynotes.mo")
+    /// Where `build-locales.sh` installs a language's compiled catalogue.
+    static func compiledCatalogueURL(for language: String) -> URL {
+        packageRoot.appendingPathComponent(
+            "Sources/SwiftyNotes/locale/\(language)/LC_MESSAGES/me.spaceinbox.swiftynotes.mo",
+        )
+    }
 
     struct PluralPair: Hashable {
         /// `nil` for a plural without a `msgctxt`.

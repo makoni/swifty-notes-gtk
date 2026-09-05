@@ -37,7 +37,7 @@
       <li>Choose where notes are stored, including a cloud-synced folder, so the same plain files can stay in sync across devices.</li>
       <li>Import images with drag and drop and render Markdown with a native GTK preview instead of a web view.</li>
       <li>Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents.</li>
-      <li>Switch the interface language between the system default, English, and Russian without restarting the app.</li>
+      <li>Switch the interface language between the system default and any language the build ships, without restarting the app.</li>
     </ul>
   </description>
   <provides>

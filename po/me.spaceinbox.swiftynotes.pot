@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-09-04 12:39+0700\n"
+"POT-Creation-Date: 2026-09-05 12:14+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -1302,8 +1302,8 @@ msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:40
 msgid ""
-"Switch the interface language between the system default, English, and "
-"Russian without restarting the app."
+"Switch the interface language between the system default and any language "
+"the build ships, without restarting the app."
 msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:49
