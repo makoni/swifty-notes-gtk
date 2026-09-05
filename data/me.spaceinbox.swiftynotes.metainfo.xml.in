@@ -65,6 +65,19 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description translate="no">
+        <p>Swifty Notes now speaks your language — thirteen of them, and switching between them takes effect straight away.</p>
+        <ul>
+          <li>The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. Settings → Language picks one or follows your desktop, and the whole window retranslates on the spot — no restart, and nothing you had open is lost.</li>
+          <li>Arabic and Hebrew read right to left: the notes sidebar moves to the right, the outline panel to the left, and the toolbar and editor follow. Switching back to a left-to-right language puts everything where it was.</li>
+          <li>Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set.</li>
+          <li>Picking a language now works on systems that have no locale of their own configured — Flatpak sandboxes and minimal containers among them, where the setting previously appeared to do nothing at all.</li>
+          <li>The app's name and summary in your software centre are translated too, so Swifty Notes is easier to find in your own language.</li>
+          <li>Renaming the seeded showcase note no longer strands its image.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.4.0" date="2026-07-08">
+      <description translate="no">
         <p>This update brings the full navigation and search toolkit to Markdown files you open directly — no notes library required.</p>
         <ul>
           <li>The document Outline (F9) now works when you open a Markdown file straight from your file manager: every heading at a glance, click to jump, and the panel follows along as you scroll. Ctrl+G opens the quick-jump palette there too.</li>
