@@ -44,17 +44,20 @@ apps:
       LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
 parts:
-  # The app links libspelling directly, and the GNOME 46 platform snap does
-  # not ship it: a full walk of that snap finds no libspelling at all, so the
-  # binary's DT_NEEDED on libspelling-1.so.1 cannot be resolved and the app
-  # fails to start. Bring the library into the snap.
+  # The app links libspelling directly and the GNOME 46 platform snap does not
+  # ship it — a walk of that snap finds no libspelling at all — so the
+  # binary's DT_NEEDED on libspelling-1.so.1 had nothing to resolve against
+  # and the snap could not start. Bring the library in.
   #
-  # Only the library, though. apt pulls 122 packages behind libspelling-1-1,
-  # GTK, gtksourceview, pango and the icon themes among them — a second copy
-  # of the stack the platform already provides. So this filter is an allowlist
-  # of the three files that are actually missing: libspelling itself and the
-  # two ICU libraries it needs (libicuuc, libicudata), which the platform also
-  # lacks.
+  # Only the library, though: apt pulls 84 packages behind libspelling-1-1,
+  # GTK, gtksourceview, pango and the icon themes among them, a second copy of
+  # the stack the platform already provides. Hence the allowlist. libspelling
+  # also needs libicuuc and libicudata, which the platform lacks as well, but
+  # they are not listed here: the mesa-2404 GPU provider snap ships them, the
+  # gnome extension's cleanup step deletes any copy of them from prime because
+  # of that, and gpu-2404-provider-wrapper puts that snap's
+  # usr/lib/<triplet> on LD_LIBRARY_PATH at launch. Staging them would be
+  # 32 MB of libicudata that gets thrown away again.
   #
   # It has to be its own part: the app part passes CRAFT_PART_INSTALL to
   # assemble-install-root.sh, and that script starts by removing its --dest.
@@ -64,8 +67,6 @@ parts:
       - libspelling-1-1
     prime:
       - usr/lib/*/libspelling-1.so.*
-      - usr/lib/*/libicuuc.so.*
-      - usr/lib/*/libicudata.so.*
 
   swifty-notes:
     plugin: nil
