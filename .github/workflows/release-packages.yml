@@ -210,6 +210,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      # The install root arrives prebuilt, so nothing is compiled here — but
+      # linuxdeploy still has to *find* the libraries it bundles, and a bare
+      # runner has no GTK at all. Without these it stops at
+      # `Could not find dependency: libadwaita-1.so.0`. The `-dev` packages
+      # rather than the runtime ones so the names match every other job in
+      # this workflow and do not have to be guessed per Ubuntu release.
+      #
+      # `librsvg2-common` and `webp-pixbuf-loader` are the GdkPixbuf loaders
+      # the app actually reaches for — SVG in the preview, WebP images — and
+      # the GTK plugin can only bundle loaders the host has installed.
+      #
       # `zsync` provides zsyncmake, which appimagetool needs to write the
       # .zsync delta file; without it the AppImage is built but silently
       # unpublishable as an update source. `desktop-file-utils` is what
@@ -217,7 +228,17 @@ jobs:
       - name: Install packaging dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y desktop-file-utils zsync
+          sudo apt-get install -y \
+            appstream \
+            desktop-file-utils \
+            libadwaita-1-dev \
+            libcurl4-openssl-dev \
+            libgtk-4-dev \
+            libgtksourceview-5-dev \
+            librsvg2-common \
+            libspelling-1-dev \
+            webp-pixbuf-loader \
+            zsync
 
       - name: Download /usr install root
         uses: actions/download-artifact@v8

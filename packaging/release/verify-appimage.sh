@@ -60,7 +60,14 @@ if [ -n "$appdir" ] && [ -d "$appdir" ]; then
         fail "no apprun-hooks/*.sh in the AppDir: GdkPixbuf and GIO setup would be missing"
     fi
 
-    # 3. The spell-check dictionaries, which reach enchant through
+    # 3. The SVG GdkPixbuf loader, because the preview renders SVG through it
+    #    and the plugin can only bundle a loader the build host installed —
+    #    a missing `librsvg2-common` there costs SVG previews here, silently.
+    if ! find "$appdir" -name 'libpixbufloader*svg*' -print -quit 2>/dev/null | grep -q .; then
+        fail "no SVG GdkPixbuf loader in the AppDir: install librsvg2-common on the build host"
+    fi
+
+    # 4. The spell-check dictionaries, which reach enchant through
     #    XDG_DATA_DIRS and are the half of spell-check a bundle can carry.
     dictionaries=$(find "$appdir/usr/share/hunspell" -name '*.dic' 2>/dev/null | wc -l)
     expected_dictionaries=$(grep -cvE '^#|^$' "$(dirname "${BASH_SOURCE[0]}")/../hunspell-dictionaries.txt")
@@ -68,7 +75,7 @@ if [ -n "$appdir" ] && [ -d "$appdir" ]; then
         fail "AppDir carries $dictionaries hunspell dictionaries, expected $expected_dictionaries"
     fi
 
-    # 4. The real binary must still sit beside the resource bundle SwiftPM
+    # 5. The real binary must still sit beside the resource bundle SwiftPM
     #    emits next to it. linuxdeploy's `--executable` would have moved it to
     #    usr/bin and split the two.
     if [ ! -d "$appdir/usr/libexec/swifty-notes/swifty-notes-gtk_SwiftyNotes.resources" ]; then
@@ -76,7 +83,7 @@ if [ -n "$appdir" ] && [ -d "$appdir" ]; then
     fi
 fi
 
-# 5. It has to start and reach its own catalogues. The CLI is the cheapest path
+# 6. It has to start and reach its own catalogues. The CLI is the cheapest path
 #    that proves the binary runs, finds its resource bundle and translates —
 #    all three of which depend on AppRun getting SWIFTY_NOTES_ROOT_PREFIX right.
 config_home="$(mktemp -d)"
@@ -90,7 +97,7 @@ if [ "$reported" != '`get` erwartet eine Notiz-ID.' ]; then
     fail "the AppImage did not answer in German: its catalogues or its resource bundle are unreachable"
 fi
 
-# 6. Update information and the zsync file are the two halves that let an
+# 7. Update information and the zsync file are the two halves that let an
 #    AppImage updater find the next release. Half of that pair is useless.
 expected_update="gh-releases-zsync|${repo_slug%%/*}|${repo_slug##*/}|latest|swifty-notes-gtk-*${arch}.AppImage.zsync"
 actual_update=$("$appimage" --appimage-updateinformation 2>/dev/null || true)
