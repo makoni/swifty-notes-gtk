@@ -1281,6 +1281,9 @@ msgstr "独自のロケールが設定されていないシステム、たとえ
 msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
 msgstr "ソフトウェアセンターに表示される名前と概要も翻訳されているので、自分の言語で Swifty Notes を見つけやすくなりました。"
 
+msgid "Swifty Notes is now published as an AppImage too, for systems where one self-contained file is easier than a package. On one, the Update button can fetch just the changed parts of the next release and swap it in place, when an AppImage updater is installed."
+msgstr "Swifty Notes は AppImage としても配布されるようになりました。パッケージよりも自己完結した1つのファイルが扱いやすいシステム向けです。その場合、AppImage の更新ツールが入っていれば、「更新」ボタンで次のバージョンの変更部分だけを取得して、その場で入れ替えられます。"
+
 msgid "Renaming the seeded showcase note no longer strands its image."
 msgstr "付属のサンプルノートの名前を変えても、その画像が取り残されなくなりました。"
 

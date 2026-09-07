@@ -1281,6 +1281,9 @@ msgstr "在沒有設定自身地區設定的系統上（例如 Flatpak 沙箱與
 msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
 msgstr "軟體中心裡顯示的名稱與摘要同樣已翻譯，用自己的語言更容易找到 Swifty Notes。"
 
+msgid "Swifty Notes is now published as an AppImage too, for systems where one self-contained file is easier than a package. On one, the Update button can fetch just the changed parts of the next release and swap it in place, when an AppImage updater is installed."
+msgstr "Swifty Notes 現在也以 AppImage 形式發布，適合單一自帶檔案比套件更方便的系統。在這種情況下，只要裝有 AppImage 更新工具，「更新」按鈕就能只下載下一版本中變動的部分並就地替換。"
+
 msgid "Renaming the seeded showcase note no longer strands its image."
 msgstr "重新命名隨附的示範筆記之後，它的圖片不會再失去連結。"
 

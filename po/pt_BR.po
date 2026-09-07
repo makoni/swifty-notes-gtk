@@ -1292,6 +1292,9 @@ msgstr "Escolher um idioma agora funciona em sistemas sem uma localidade própri
 msgid "The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language."
 msgstr "O nome e o resumo exibidos na sua central de aplicativos também estão traduzidos, o que facilita encontrar o Swifty Notes no seu idioma."
 
+msgid "Swifty Notes is now published as an AppImage too, for systems where one self-contained file is easier than a package. On one, the Update button can fetch just the changed parts of the next release and swap it in place, when an AppImage updater is installed."
+msgstr "O Swifty Notes agora também é publicado como AppImage, para sistemas em que um único arquivo autônomo é mais simples que um pacote. Nesse caso, o botão “Atualizar” pode baixar apenas as partes alteradas da próxima versão e substituí-la no lugar, se houver um atualizador de AppImage instalado."
+
 msgid "Renaming the seeded showcase note no longer strands its image."
 msgstr "Renomear a nota de demonstração não deixa mais a imagem dela sem vínculo."
 

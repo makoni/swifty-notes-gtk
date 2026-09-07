@@ -72,6 +72,7 @@
           <li>Dates in the notes list now follow the language you are reading in. They used to stay English however the interface was set.</li>
           <li>Picking a language now works on systems that have no locale of their own configured, such as Flatpak sandboxes and minimal containers, where the setting previously appeared to do nothing at all.</li>
           <li>The name and summary shown in your software centre are translated too, so Swifty Notes is easier to find in your own language.</li>
+          <li>Swifty Notes is now published as an AppImage too, for systems where one self-contained file is easier than a package. On one, the Update button can fetch just the changed parts of the next release and swap it in place, when an AppImage updater is installed.</li>
           <li>Renaming the seeded showcase note no longer strands its image.</li>
         </ul>
       </description>
