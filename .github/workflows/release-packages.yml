@@ -191,6 +191,72 @@ jobs:
           name: ${{ steps.deb-artifact.outputs.name }}
           path: ${{ steps.deb-artifact.outputs.path }}
 
+  build-appimage:
+    name: Build AppImage (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    needs:
+      - resolve-version
+      - prepare-install-roots
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      # `zsync` provides zsyncmake, which appimagetool needs to write the
+      # .zsync delta file; without it the AppImage is built but silently
+      # unpublishable as an update source. `desktop-file-utils` is what
+      # linuxdeploy validates the desktop entry with.
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y desktop-file-utils zsync
+
+      - name: Download /usr install root
+        uses: actions/download-artifact@v8
+        with:
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
+          path: packaging/out/install-root-archive
+
+      - name: Extract /usr install root
+        run: |
+          rm -rf packaging/out/install-root-usr
+          mkdir -p packaging/out/install-root-usr
+          tar -C packaging/out/install-root-usr -xzf \
+            "packaging/out/install-root-archive/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz"
+
+      - name: Build AppImage
+        run: |
+          packaging/release/build-appimage.sh \
+            --install-root packaging/out/install-root-usr \
+            --version "${{ needs.resolve-version.outputs.version }}" \
+            --arch "${{ matrix.arch }}" \
+            --repo-slug "${{ github.repository }}" \
+            --output packaging/out/appimage
+
+      - name: Verify the AppImage
+        run: |
+          packaging/release/verify-appimage.sh \
+            --appimage "packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage" \
+            --appdir packaging/out/appimage/work/AppDir \
+            --repo-slug "${{ github.repository }}" \
+            --arch "${{ matrix.arch }}"
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage
+          path: |
+            packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage
+            packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage.zsync
+
   build-rpm:
     name: Build RPM package (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
@@ -421,6 +487,7 @@ jobs:
       - prepare-install-roots
       - build-deb
       - build-rpm
+      - build-appimage
       - build-flatpak
       - build-snap
       - build-macos

@@ -67,6 +67,34 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 - **A translated interface end to end** (`UISmokeTests`): seeds `settings.json` with `appLanguage: "ru"` and asserts Russian accessible names, so a packaging rule that flattened `<lang>/LC_MESSAGES/` fails a test rather than shipping. It goes through the app's own preference rather than the session locale because that path escapes the C locale through whichever locale the host does have.
 - Still manual: CJK font fallback and line breaking under `ja_JP.UTF-8` / `zh_CN.UTF-8`, for whoever adds those catalogues. Arabic plural agreement (six categories) needs `ar.po` before it can be asserted.
 
+## Packaging
+
+- All five Linux packages start from one `/usr` install root:
+  `packaging/release/assemble-install-root.sh` builds with
+  `--static-swift-stdlib`, renders the metainfo with the version and date, and
+  lays out the desktop entry, icon, licence and resource bundle. The deb, rpm
+  and AppImage jobs all consume that same artifact, so a layout change lands in
+  one place.
+- The real ELF is `usr/libexec/swifty-notes/swiftynotes`, with the SwiftPM
+  resource bundle beside it; `usr/bin/swiftynotes` is a launcher that execs it
+  through `${SWIFTY_NOTES_ROOT_PREFIX}`. Anything that relocates the tree has
+  to set that variable and must not separate the binary from the bundle.
+- **AppImage is not a sandbox** — it is an unconfined self-mounting archive, so
+  the Flatpak and Snap habits do not carry over. What it does have is the
+  opposite problem: every absolute path baked into a dependency points at the
+  host rather than the mount. `docs/APPIMAGE.md` documents which of those can
+  be redirected (the launcher, hunspell dictionaries, glycin's loader configs)
+  and which cannot (enchant's provider modules, so spell check depends on the
+  host having `enchant-2`).
+- Bundled spell-check dictionaries are listed once in
+  `packaging/hunspell-dictionaries.txt`. The Flatpak manifest spells the same
+  list out in its own `hunspell-dictionaries` module; keep the two in step so
+  the packages offer the same languages.
+- Pin third-party build tools by tag *and* checksum. `build-appimage.sh` does
+  this for linuxdeploy, its GTK plugin and the AppImage runtime — the runtime's
+  only maintained tag is `continuous`, so the checksum is what turns an
+  upstream change into a loud failure instead of a differently-behaving bundle.
+
 ## TDD workflow
 
 - Work test-first for behavior changes and bug fixes: add or update a regression test before changing production code when the behavior is reproducible in tests.

@@ -1,0 +1,28 @@
+# Hunspell dictionaries bundled with Swifty Notes, as
+# <upstream-stem-in-LibreOffice/dictionaries> <installed-stem>.
+#
+# Upstream filenames do not all match the locale they serve — German ships as
+# de_DE_frami, French as plain fr — so the second column is the name enchant
+# has to see. Keep this list and the hunspell-dictionaries module in
+# flatpak/me.spaceinbox.swiftynotes.yml.in in step: the Flatpak and the
+# AppImage are meant to offer the same spell-check languages.
+ar/ar ar
+bg_BG/bg_BG bg_BG
+cs_CZ/cs_CZ cs_CZ
+da_DK/da_DK da_DK
+de/de_DE_frami de_DE
+el_GR/el_GR el_GR
+en/en_GB en_GB
+en/en_US en_US
+es/es_ES es_ES
+fr_FR/fr fr_FR
+hu_HU/hu_HU hu_HU
+it_IT/it_IT it_IT
+no/nb_NO nb_NO
+nl_NL/nl_NL nl_NL
+pl_PL/pl_PL pl_PL
+pt_BR/pt_BR pt_BR
+pt_PT/pt_PT pt_PT
+ro/ro_RO ro_RO
+ru_RU/ru_RU ru_RU
+sv_SE/sv_SE sv_SE
