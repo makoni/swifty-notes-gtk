@@ -33,8 +33,40 @@ apps:
     plugs:
       - home
       - network
+    # The built snap.yaml carries LD_LIBRARY_PATH: ${SNAP_LIBRARY_PATH} and
+    # nothing else — snapcraft adds $SNAP's own lib dirs only when a part
+    # primes libraries, and the GNOME platform's launcher appends only the
+    # platform's. libspelling ships inside this snap (see the part below), so
+    # name the directory explicitly rather than depend on that inference.
+    # Both triplets are listed because the same manifest builds amd64 and
+    # arm64; the loader ignores a path that does not exist.
+    environment:
+      LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 
 parts:
+  # The app links libspelling directly, and the GNOME 46 platform snap does
+  # not ship it: a full walk of that snap finds no libspelling at all, so the
+  # binary's DT_NEEDED on libspelling-1.so.1 cannot be resolved and the app
+  # fails to start. Bring the library into the snap.
+  #
+  # Only the library, though. apt pulls 122 packages behind libspelling-1-1,
+  # GTK, gtksourceview, pango and the icon themes among them — a second copy
+  # of the stack the platform already provides. So this filter is an allowlist
+  # of the three files that are actually missing: libspelling itself and the
+  # two ICU libraries it needs (libicuuc, libicudata), which the platform also
+  # lacks.
+  #
+  # It has to be its own part: the app part passes CRAFT_PART_INSTALL to
+  # assemble-install-root.sh, and that script starts by removing its --dest.
+  libspelling:
+    plugin: nil
+    stage-packages:
+      - libspelling-1-1
+    prime:
+      - usr/lib/*/libspelling-1.so.*
+      - usr/lib/*/libicuuc.so.*
+      - usr/lib/*/libicudata.so.*
+
   swifty-notes:
     plugin: nil
     source: .
