@@ -94,6 +94,22 @@ version="$(resolve_release_version "$version")"
 output="${output:-$REPO_ROOT/packaging/out/appimage}"
 workdir="${workdir:-$output/work}"
 
+# Absolute from here on. linuxdeploy is invoked from inside the work directory
+# — appimagetool takes `$LDAI_OUTPUT` as a bare basename and writes the .zsync
+# beside it in the working directory — so a relative `--output` would leave
+# every path built from it pointing somewhere that no longer exists after the
+# `cd`. The release workflow passes relative paths, which is how this surfaced.
+absolute_path() {
+    local path="$1"
+    case "$path" in
+        /*) printf '%s\n' "$path" ;;
+        *) printf '%s\n' "$PWD/$path" ;;
+    esac
+}
+install_root="$(absolute_path "$install_root")"
+output="$(absolute_path "$output")"
+workdir="$(absolute_path "$workdir")"
+
 case "$arch" in
     x86_64)
         linuxdeploy_sha256="$LINUXDEPLOY_SHA256_x86_64"
