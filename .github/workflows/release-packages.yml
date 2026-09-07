@@ -192,91 +192,19 @@ jobs:
           path: ${{ steps.deb-artifact.outputs.path }}
 
   build-appimage:
-    name: Build AppImage (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
+    name: Build AppImage
+    # Reuses appimage.yml so the orchestrated release produces both
+    # AppImages under the same Run, consuming the install root
+    # `prepare-install-roots` already built. appimage.yml stays
+    # `workflow_dispatch`-triggerable, which is the only way to exercise the
+    # AppImage path without drafting a release.
     needs:
       - resolve-version
       - prepare-install-roots
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x86_64
-            runner: ubuntu-24.04
-          - arch: aarch64
-            runner: ubuntu-24.04-arm
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v5
-
-      # The install root arrives prebuilt, so nothing is compiled here — but
-      # linuxdeploy still has to *find* the libraries it bundles, and a bare
-      # runner has no GTK at all. Without these it stops at
-      # `Could not find dependency: libadwaita-1.so.0`. The `-dev` packages
-      # rather than the runtime ones so the names match every other job in
-      # this workflow and do not have to be guessed per Ubuntu release.
-      #
-      # `librsvg2-common` and `webp-pixbuf-loader` are the GdkPixbuf loaders
-      # the app actually reaches for — SVG in the preview, WebP images — and
-      # the GTK plugin can only bundle loaders the host has installed.
-      #
-      # `zsync` provides zsyncmake, which appimagetool needs to write the
-      # .zsync delta file; without it the AppImage is built but silently
-      # unpublishable as an update source. `desktop-file-utils` is what
-      # linuxdeploy validates the desktop entry with.
-      - name: Install packaging dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            appstream \
-            desktop-file-utils \
-            libadwaita-1-dev \
-            libcurl4-openssl-dev \
-            libgtk-4-dev \
-            libgtksourceview-5-dev \
-            librsvg2-common \
-            libspelling-1-dev \
-            webp-pixbuf-loader \
-            zsync
-
-      - name: Download /usr install root
-        uses: actions/download-artifact@v8
-        with:
-          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz
-          path: packaging/out/install-root-archive
-
-      - name: Extract /usr install root
-        run: |
-          rm -rf packaging/out/install-root-usr
-          mkdir -p packaging/out/install-root-usr
-          tar -C packaging/out/install-root-usr -xzf \
-            "packaging/out/install-root-archive/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux-${{ matrix.arch }}-install-root.tar.gz"
-
-      - name: Build AppImage
-        run: |
-          packaging/release/build-appimage.sh \
-            --install-root packaging/out/install-root-usr \
-            --version "${{ needs.resolve-version.outputs.version }}" \
-            --arch "${{ matrix.arch }}" \
-            --repo-slug "${{ github.repository }}" \
-            --output packaging/out/appimage
-
-      - name: Verify the AppImage
-        run: |
-          packaging/release/verify-appimage.sh \
-            --appimage "packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage" \
-            --appdir packaging/out/appimage/work/AppDir \
-            --repo-slug "${{ github.repository }}" \
-            --arch "${{ matrix.arch }}"
-
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage
-          path: |
-            packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage
-            packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage.zsync
+    uses: ./.github/workflows/appimage.yml
+    with:
+      version: ${{ needs.resolve-version.outputs.version }}
+      install-root-artifact-prefix: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux
 
   build-rpm:
     name: Build RPM package (${{ matrix.arch }})

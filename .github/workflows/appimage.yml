@@ -1,0 +1,163 @@
+name: AppImage
+
+# Builds the Swifty Notes AppImage for both architectures and uploads each
+# with its `.zsync` delta file.
+#
+# Two trigger paths, for the same reason release-macos.yml has two:
+#
+# * `workflow_call` — invoked from release-packages.yml so the orchestrated
+#   release produces the AppImages alongside every other package under one
+#   Run. It passes the `/usr` install-root artifact that `prepare-install-roots`
+#   already built, so nothing is compiled twice.
+#
+# * `workflow_dispatch` — a one-off build with no install-root artifact to
+#   hand, which the job then assembles itself. This is the only way to
+#   exercise the AppImage path without drafting a release, and it is worth
+#   having: the two bugs this job shipped with were both invisible locally
+#   (relative paths breaking after a `cd`, and a bare runner having no GTK for
+#   linuxdeploy to find).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Optional release version override. Defaults to the VERSION file in the repository.
+        required: false
+        default: ""
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: Optional release version override. Defaults to the VERSION file in the repository.
+        required: false
+        default: ""
+        type: string
+      install-root-artifact-prefix:
+        description: >-
+          Name prefix of the /usr install-root artifacts to consume, without the
+          architecture suffix. Empty means assemble the install root in-job.
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-version:
+    name: Resolve release version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/release/version.sh
+          version="$(resolve_release_version '${{ inputs.version }}')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build-appimage:
+    name: Build AppImage (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    needs: resolve-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      # linuxdeploy bundles libraries it finds on the *build host*, so the GTK
+      # stack has to be installed here even when the install root arrives
+      # prebuilt and nothing is compiled. Without it the build stops at
+      # `Could not find dependency: libadwaita-1.so.0`.
+      #
+      # `librsvg2-common` and `webp-pixbuf-loader` are GdkPixbuf loaders: the
+      # GTK plugin can only bundle loaders the host has, and those two are the
+      # ones this app reaches for — SVG in the preview, WebP images. The SVG
+      # one fails in the direction nothing else notices, which is why
+      # verify-appimage.sh looks for it by name.
+      #
+      # `zsync` provides zsyncmake, which appimagetool needs for the `.zsync`
+      # delta file; without it the AppImage builds but is silently unusable as
+      # an update source. `desktop-file-utils` is what linuxdeploy validates
+      # the desktop entry with.
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            appstream \
+            desktop-file-utils \
+            gettext \
+            libadwaita-1-dev \
+            libcurl4-openssl-dev \
+            libgtk-4-dev \
+            libgtksourceview-5-dev \
+            librsvg2-common \
+            libspelling-1-dev \
+            webp-pixbuf-loader \
+            zsync
+
+      - name: Download /usr install root
+        if: inputs.install-root-artifact-prefix != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.install-root-artifact-prefix }}-${{ matrix.arch }}-install-root.tar.gz
+          path: packaging/out/install-root-archive
+
+      - name: Extract /usr install root
+        if: inputs.install-root-artifact-prefix != ''
+        run: |
+          rm -rf packaging/out/install-root-usr
+          mkdir -p packaging/out/install-root-usr
+          tar -C packaging/out/install-root-usr -xzf \
+            "packaging/out/install-root-archive/${{ inputs.install-root-artifact-prefix }}-${{ matrix.arch }}-install-root.tar.gz"
+
+      # Only on a standalone dispatch, where there is no artifact to reuse.
+      - name: Assemble /usr install root
+        if: inputs.install-root-artifact-prefix == ''
+        run: |
+          bash scripts/build-locales.sh
+          packaging/release/assemble-install-root.sh \
+            --version "${{ needs.resolve-version.outputs.version }}" \
+            --repo-slug "${{ github.repository }}" \
+            --repo-ref "${{ github.sha }}" \
+            --dest packaging/out/install-root-usr \
+            --prefix /usr
+
+      - name: Build AppImage
+        run: |
+          packaging/release/build-appimage.sh \
+            --install-root packaging/out/install-root-usr \
+            --version "${{ needs.resolve-version.outputs.version }}" \
+            --arch "${{ matrix.arch }}" \
+            --repo-slug "${{ github.repository }}" \
+            --output packaging/out/appimage
+
+      - name: Verify the AppImage
+        run: |
+          packaging/release/verify-appimage.sh \
+            --appimage "packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage" \
+            --appdir packaging/out/appimage/work/AppDir \
+            --repo-slug "${{ github.repository }}" \
+            --arch "${{ matrix.arch }}"
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage
+          path: |
+            packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage
+            packaging/out/appimage/swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-${{ matrix.arch }}.AppImage.zsync
