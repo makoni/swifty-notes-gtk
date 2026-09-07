@@ -11,6 +11,9 @@ struct MainWindowUpdatesTests {
         forceUpdateAvailable: Bool = false,
         isSandboxedInstall: Bool = false,
         directoryOpener: @escaping (URL) throws -> Void = { _ in },
+        appImageBundlePath: String? = nil,
+        appImageUpdaterLocator: @escaping () -> String? = { nil },
+        appImageUpdateRunner: @escaping (String, [String]) throws -> Void = { _, _ in },
     ) throws -> MainWindow {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let app = Application(id: appID)
@@ -27,6 +30,9 @@ struct MainWindowUpdatesTests {
             forceUpdateAvailable: forceUpdateAvailable,
             isSandboxedInstall: isSandboxedInstall,
             directoryOpener: directoryOpener,
+            appImageBundlePath: appImageBundlePath,
+            appImageUpdaterLocator: appImageUpdaterLocator,
+            appImageUpdateRunner: appImageUpdateRunner,
         )
     }
 
@@ -183,5 +189,114 @@ struct MainWindowUpdatesTests {
         #expect(window.updateBanner.isVisible)
         #expect(window.pendingUpdateReleaseURL == releaseURL)
     }
+
+    private static let releaseURL = URL(
+        string: "https://github.com/makoni/swifty-notes-gtk/releases/tag/v9.9.9",
+    )!
+
+    // MARK: - The AppImage update path
+
+    /// An AppImage publishes a `.zsync` delta beside it, so an updater can
+    /// swap the bundle in place. That beats a download page, and it is the
+    /// whole reason this branch exists.
+    @Test("On an AppImage with an updater installed, Update runs the updater") @MainActor
+    func onAnAppImageWithAnUpdaterInstalledUpdateRunsTheUpdater() throws {
+        var opened: [URL] = []
+        var invocations: [(String, [String])] = []
+        let window = try Self.makeWindow(
+            appID: "me.spaceinbox.swiftynotes.tests.appimage-update-runs",
+            directoryOpener: { opened.append($0) },
+            appImageBundlePath: "/apps/swifty.AppImage",
+            appImageUpdaterLocator: { "/usr/bin/appimageupdatetool" },
+            appImageUpdateRunner: { executable, arguments in invocations.append((executable, arguments)) },
+        )
+        window.present()
+        window.handleUpdateCheckResult(
+            .updateAvailable(version: "9.9.9", releaseURL: Self.releaseURL),
+            manual: false,
+        )
+
+        window.applyPendingUpdate()
+
+        #expect(invocations.count == 1)
+        #expect(invocations.first?.0 == "/usr/bin/appimageupdatetool")
+        #expect(invocations.first?.1 == ["--remove-old", "/apps/swifty.AppImage"])
+        #expect(opened.isEmpty, "the release page is the fallback, not an extra")
+    }
+
+    /// AppImageUpdate is installed by default nowhere, so this is the common
+    /// AppImage case and it has to behave exactly as it did before.
+    @Test("On an AppImage with no updater, Update opens the release page") @MainActor
+    func onAnAppImageWithNoUpdaterUpdateOpensTheReleasePage() throws {
+        var opened: [URL] = []
+        var invocations = 0
+        let window = try Self.makeWindow(
+            appID: "me.spaceinbox.swiftynotes.tests.appimage-update-no-tool",
+            directoryOpener: { opened.append($0) },
+            appImageBundlePath: "/apps/swifty.AppImage",
+            appImageUpdaterLocator: { nil },
+            appImageUpdateRunner: { _, _ in invocations += 1 },
+        )
+        window.present()
+        window.handleUpdateCheckResult(
+            .updateAvailable(version: "9.9.9", releaseURL: Self.releaseURL),
+            manual: false,
+        )
+
+        window.applyPendingUpdate()
+
+        #expect(invocations == 0)
+        #expect(opened.count == 1)
+    }
+
+    /// A deb, rpm, Flatpak or Snap install has no bundle to swap, and must not
+    /// be handed to an updater even where one happens to be on PATH.
+    @Test("Off an AppImage, Update opens the release page even with an updater present") @MainActor
+    func offAnAppImageUpdateOpensTheReleasePageEvenWithAnUpdaterPresent() throws {
+        var opened: [URL] = []
+        var invocations = 0
+        let window = try Self.makeWindow(
+            appID: "me.spaceinbox.swiftynotes.tests.appimage-update-not-appimage",
+            directoryOpener: { opened.append($0) },
+            appImageBundlePath: nil,
+            appImageUpdaterLocator: { "/usr/bin/appimageupdatetool" },
+            appImageUpdateRunner: { _, _ in invocations += 1 },
+        )
+        window.present()
+        window.handleUpdateCheckResult(
+            .updateAvailable(version: "9.9.9", releaseURL: Self.releaseURL),
+            manual: false,
+        )
+
+        window.applyPendingUpdate()
+
+        #expect(invocations == 0)
+        #expect(opened.count == 1)
+    }
+
+    /// A failing updater must say so. Reporting success on a non-zero exit
+    /// would tell the user to restart into the version they already have.
+    @Test("A failing updater does not fall back to the release page") @MainActor
+    func failingUpdaterDoesNotFallBackToTheReleasePage() throws {
+        struct Refused: Error {}
+        var opened: [URL] = []
+        let window = try Self.makeWindow(
+            appID: "me.spaceinbox.swiftynotes.tests.appimage-update-fails",
+            directoryOpener: { opened.append($0) },
+            appImageBundlePath: "/apps/swifty.AppImage",
+            appImageUpdaterLocator: { "/usr/bin/appimageupdatetool" },
+            appImageUpdateRunner: { _, _ in throw Refused() },
+        )
+        window.present()
+        window.handleUpdateCheckResult(
+            .updateAvailable(version: "9.9.9", releaseURL: Self.releaseURL),
+            manual: false,
+        )
+
+        window.applyPendingUpdate()
+
+        #expect(opened.isEmpty, "a failed update is reported, not retried as a download page")
+    }
+
 }
 #endif

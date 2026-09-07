@@ -137,6 +137,14 @@ final class MainWindow {
     var autosaveDelay: Duration
     let openExternalDocumentHandler: (URL) throws -> Void
     let directoryOpener: (URL) throws -> Void
+    /// Path of the running AppImage, or `nil` on every other install kind.
+    let appImageBundlePath: String?
+    /// Where to find an AppImage updater. Injected so a test can decide
+    /// whether one is installed without depending on the host.
+    let appImageUpdaterLocator: () -> String?
+    /// Runs the updater. Injected for the same reason, and because the real
+    /// one rewrites the file the process is running from.
+    let appImageUpdateRunner: (String, [String]) throws -> Void
     let deferredUIActionScheduler: (@escaping @MainActor () -> Void) -> Void
 
     lazy var renameAction = SimpleAction(name: "rename-note") { [weak self] in
@@ -298,6 +306,9 @@ final class MainWindow {
         openExternalDocumentHandler: @escaping (URL) throws -> Void = { _ in },
         onLanguageChanged: @escaping () -> Void = {},
         directoryOpener: @escaping (URL) throws -> Void = MainWindow.openDirectoryInSystemFileManager,
+        appImageBundlePath: String? = AppImageInstall.bundlePath,
+        appImageUpdaterLocator: @escaping () -> String? = { AppImageInstall.updaterExecutable() },
+        appImageUpdateRunner: @escaping (String, [String]) throws -> Void = MainWindow.runAppImageUpdater,
         deferredUIActionScheduler: @escaping (@escaping @MainActor () -> Void) -> Void = { action in
             MainContext.idle { action() }
         },
@@ -316,6 +327,9 @@ final class MainWindow {
         self.openExternalDocumentHandler = openExternalDocumentHandler
         self.onLanguageChanged = onLanguageChanged
         self.directoryOpener = directoryOpener
+        self.appImageBundlePath = appImageBundlePath
+        self.appImageUpdaterLocator = appImageUpdaterLocator
+        self.appImageUpdateRunner = appImageUpdateRunner
         self.deferredUIActionScheduler = deferredUIActionScheduler
 
         window = ApplicationWindow(application: application)
@@ -434,7 +448,7 @@ final class MainWindow {
         }
 
         updateBanner.onUpdate { [weak self] in
-            self?.openPendingUpdateReleasePage()
+            self?.applyPendingUpdate()
         }
 
         editorContent.append(trashedNoteBanner)
@@ -916,6 +930,14 @@ final class MainWindow {
         }
     }
 
+    struct AppImageUpdateFailure: LocalizedError {
+        let message: String
+
+        var errorDescription: String? {
+            message
+        }
+    }
+
     /// Tells GTK's icon theme to look inside the package's bundled
     /// `Resources/icons/` tree, so widgets that resolve an icon by name
     /// (most visibly `AdwAboutDialog`'s `appIcon`) can find our shipped
@@ -975,6 +997,25 @@ final class MainWindow {
             try AppLauncher.launchDefault(forURI: uri)
         } catch let error as GLibError {
             throw DirectoryOpenFailure(message: error.message)
+        }
+    }
+
+    /// Hands the bundle to the updater and waits for it.
+    ///
+    /// Waiting matters: the toast that follows tells the user to restart, and
+    /// saying that before the download finished would be a lie. A non-zero
+    /// exit is surfaced rather than swallowed, because "the updater refused"
+    /// and "the update is ready" look identical otherwise.
+    nonisolated static func runAppImageUpdater(_ executable: String, _ arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw AppImageUpdateFailure(
+                message: "\(URL(fileURLWithPath: executable).lastPathComponent) exited with status \(process.terminationStatus)",
+            )
         }
     }
 

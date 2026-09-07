@@ -348,6 +348,9 @@ msgstr "Impossible de mettre à jour l’index des notes"
 msgid "Could not update settings"
 msgstr "Impossible de mettre à jour les préférences"
 
+msgid "Could not update: %@"
+msgstr "Impossible de mettre à jour : %@"
+
 msgid "Create"
 msgstr "Créer"
 
@@ -1100,6 +1103,9 @@ msgstr "Type d’image non pris en charge pour %@."
 
 msgid "Update"
 msgstr "Mettre à jour"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "Mise à jour téléchargée. Redémarrez Swifty Notes pour l’utiliser."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "Utilisez / pour créer des dossiers imbriqués en une fois, par exemple Travail/Brouillons."

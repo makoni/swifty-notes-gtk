@@ -348,6 +348,9 @@ msgstr "Não foi possível atualizar o índice de notas"
 msgid "Could not update settings"
 msgstr "Não foi possível atualizar as configurações"
 
+msgid "Could not update: %@"
+msgstr "Não foi possível atualizar: %@"
+
 msgid "Create"
 msgstr "Criar"
 
@@ -1100,6 +1103,9 @@ msgstr "Tipo de imagem não suportado para %@."
 
 msgid "Update"
 msgstr "Atualizar"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "Atualização baixada. Reinicie o Swifty Notes para usá-la."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "Use / para criar pastas aninhadas de uma só vez, por exemplo Trabalho/Rascunhos."

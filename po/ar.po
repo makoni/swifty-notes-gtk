@@ -376,6 +376,9 @@ msgstr "تعذّر تحديث فهرس الملاحظات"
 msgid "Could not update settings"
 msgstr "تعذّر تحديث الإعدادات"
 
+msgid "Could not update: %@"
+msgstr "تعذّر التحديث: %@"
+
 msgid "Create"
 msgstr "إنشاء"
 
@@ -1140,6 +1143,9 @@ msgstr "نوع الصورة غير مدعوم لـ %@."
 
 msgid "Update"
 msgstr "تحديث"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "نُزّل التحديث. أعد تشغيل Swifty Notes لاستخدامه."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "استخدم / لإنشاء مجلدات متداخلة دفعة واحدة، مثل العمل/المسودات."

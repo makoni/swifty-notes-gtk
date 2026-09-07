@@ -341,6 +341,9 @@ msgstr "無法更新筆記索引"
 msgid "Could not update settings"
 msgstr "無法更新設定"
 
+msgid "Could not update: %@"
+msgstr "無法更新：%@"
+
 msgid "Create"
 msgstr "建立"
 
@@ -1090,6 +1093,9 @@ msgstr "不支援 %@ 的圖片格式。"
 
 msgid "Update"
 msgstr "更新"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "更新已下載。重新啟動 Swifty Notes 後生效。"
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "用 / 可以一次建立多層資料夾，例如 工作/草稿。"

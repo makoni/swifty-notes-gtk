@@ -151,13 +151,30 @@ symlink, set `FUSERMOUNT_PROG=fusermount3`, or run the AppImage with
 
 `AppSandbox.isSandboxed` matches Flatpak and Snap only, which is correct for
 AppImage: there is no store to keep the app current, so "Check for Updates…"
-stays in the menu and does its own thing — exactly as on a deb or rpm install.
+stays in the menu.
 
-Separately, the AppImage carries `gh-releases-zsync|…` update information and
-a `.zsync` file, so AppImage-aware updaters can fetch a delta of the next
-release. The two halves have to agree: zsyncmake writes the AppImage's exact
-basename into the `.zsync` URL header, so the file must never be renamed after
-the build. `verify-appimage.sh` checks both.
+The AppImage carries `gh-releases-zsync|…` update information and a `.zsync`
+file, so an updater can fetch only the changed blocks of the next release and
+swap the bundle in place. The two halves have to agree: zsyncmake writes the
+AppImage's exact basename into the `.zsync` URL header, so the file must never
+be renamed after the build. `verify-appimage.sh` checks both.
+
+The app uses that. When the update banner's button is pressed and all of
+
+- `APPIMAGE` names a readable file — i.e. this really is a running AppImage,
+  not a process that merely inherited the variable from one, and
+- `appimageupdatetool` or `AppImageUpdate` is on `$PATH`
+
+hold, the button hands the bundle to that updater (`--remove-old`, so old
+copies do not pile up) and the toast afterwards says to restart, because the
+running process still has the superseded bundle mounted. Anything else — no
+updater installed, which is the common case, or any other install kind —
+opens the release page exactly as before.
+
+Rewriting a running executable is deliberately left to the tool built for it
+rather than reimplemented here. `AppImageInstall` is only the detection half,
+and it is a separate type from `AppSandbox` on purpose: that one answers "is
+this process confined", and the answer for an AppImage is no.
 
 ## Layout notes
 
