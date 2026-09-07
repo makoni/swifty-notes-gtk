@@ -348,6 +348,9 @@ msgstr "Kan de notitie-index niet bijwerken"
 msgid "Could not update settings"
 msgstr "Kan de instellingen niet bijwerken"
 
+msgid "Could not update: %@"
+msgstr "Bijwerken is mislukt: %@"
+
 msgid "Create"
 msgstr "Aanmaken"
 
@@ -1100,6 +1103,9 @@ msgstr "Niet-ondersteund afbeeldingstype voor %@."
 
 msgid "Update"
 msgstr "Bijwerken"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "Update gedownload. Herstart Swifty Notes om hem te gebruiken."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "Gebruik / om in één keer geneste mappen te maken, bijvoorbeeld Werk/Concepten."

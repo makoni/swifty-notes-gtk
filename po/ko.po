@@ -341,6 +341,9 @@ msgstr "노트 색인을 업데이트하지 못했습니다"
 msgid "Could not update settings"
 msgstr "설정을 업데이트하지 못했습니다"
 
+msgid "Could not update: %@"
+msgstr "업데이트하지 못했습니다: %@"
+
 msgid "Create"
 msgstr "만들기"
 
@@ -1090,6 +1093,9 @@ msgstr "%@의 이미지 형식은 지원하지 않습니다."
 
 msgid "Update"
 msgstr "업데이트"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "업데이트를 내려받았습니다. 사용하려면 Swifty Notes를 다시 시작하세요."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "/를 쓰면 하위 폴더를 한 번에 만들 수 있습니다. 예: 업무/초안."

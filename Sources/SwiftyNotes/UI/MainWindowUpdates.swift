@@ -91,6 +91,35 @@ extension MainWindow {
         rebuildOverflowMenu()
     }
 
+    /// What the banner's Update button does.
+    ///
+    /// An AppImage can update itself in place: the release publishes a
+    /// `.zsync` delta beside each bundle and embeds the update information
+    /// that points at it, so an updater fetches only the changed blocks and
+    /// swaps the file. That is a better answer than a download page — but only
+    /// when an updater is actually installed, which is not the default
+    /// anywhere. Everything else, and an AppImage without one, opens the
+    /// release page exactly as before.
+    func applyPendingUpdate() {
+        guard let bundlePath = appImageBundlePath,
+              let updater = appImageUpdaterLocator()
+        else {
+            openPendingUpdateReleasePage()
+            return
+        }
+        do {
+            try appImageUpdateRunner(updater, AppImageInstall.updateArguments(bundlePath: bundlePath))
+            // The running process still has the old bundle mounted, so the new
+            // version cannot take effect until it is started again. Saying so
+            // is the difference between "nothing happened" and "done".
+            toastOverlay.addToast(Toast(title: "Update downloaded. Restart Swifty Notes to use it.".localized))
+        } catch {
+            toastOverlay.addToast(Toast(
+                title: String(format: "Could not update: %@".localized, error.localizedDescription),
+            ))
+        }
+    }
+
     func openPendingUpdateReleasePage() {
         guard let url = pendingUpdateReleaseURL else { return }
         do {

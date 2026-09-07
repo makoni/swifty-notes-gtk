@@ -191,6 +191,21 @@ jobs:
           name: ${{ steps.deb-artifact.outputs.name }}
           path: ${{ steps.deb-artifact.outputs.path }}
 
+  build-appimage:
+    name: Build AppImage
+    # Reuses appimage.yml so the orchestrated release produces both
+    # AppImages under the same Run, consuming the install root
+    # `prepare-install-roots` already built. appimage.yml stays
+    # `workflow_dispatch`-triggerable, which is the only way to exercise the
+    # AppImage path without drafting a release.
+    needs:
+      - resolve-version
+      - prepare-install-roots
+    uses: ./.github/workflows/appimage.yml
+    with:
+      version: ${{ needs.resolve-version.outputs.version }}
+      install-root-artifact-prefix: swifty-notes-gtk-${{ needs.resolve-version.outputs.version }}-linux
+
   build-rpm:
     name: Build RPM package (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
@@ -421,6 +436,7 @@ jobs:
       - prepare-install-roots
       - build-deb
       - build-rpm
+      - build-appimage
       - build-flatpak
       - build-snap
       - build-macos

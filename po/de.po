@@ -348,6 +348,9 @@ msgstr "Notizindex konnte nicht aktualisiert werden"
 msgid "Could not update settings"
 msgstr "Einstellungen konnten nicht aktualisiert werden"
 
+msgid "Could not update: %@"
+msgstr "Aktualisierung fehlgeschlagen: %@"
+
 msgid "Create"
 msgstr "Erstellen"
 
@@ -1100,6 +1103,9 @@ msgstr "Nicht unterstützter Bildtyp für %@."
 
 msgid "Update"
 msgstr "Aktualisieren"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "Aktualisierung heruntergeladen. Starten Sie Swifty Notes neu, um sie zu verwenden."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "Mit / lassen sich verschachtelte Ordner in einem Schritt anlegen, z. B. Arbeit/Entwürfe."

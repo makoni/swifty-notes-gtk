@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-09-06 00:55+0700\n"
+"POT-Creation-Date: 2026-09-07 13:21+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -341,6 +341,9 @@ msgid "Could not update notes index"
 msgstr ""
 
 msgid "Could not update settings"
+msgstr ""
+
+msgid "Could not update: %@"
 msgstr ""
 
 msgid "Create"
@@ -1106,6 +1109,9 @@ msgid "Unsupported image type for %@."
 msgstr ""
 
 msgid "Update"
+msgstr ""
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
 msgstr ""
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."

@@ -348,6 +348,9 @@ msgstr "לא ניתן לעדכן את מפתח הפתקים"
 msgid "Could not update settings"
 msgstr "לא ניתן לעדכן את ההגדרות"
 
+msgid "Could not update: %@"
+msgstr "לא ניתן לעדכן: %@"
+
 msgid "Create"
 msgstr "יצירה"
 
@@ -1100,6 +1103,9 @@ msgstr "סוג התמונה של %@ אינו נתמך."
 
 msgid "Update"
 msgstr "עדכון"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "העדכון הורד. יש להפעיל את Swifty Notes מחדש כדי להשתמש בו."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "אפשר להשתמש ב־/ כדי ליצור תיקיות מקוננות בבת אחת, למשל עבודה/טיוטות."

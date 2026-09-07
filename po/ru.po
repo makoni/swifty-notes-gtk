@@ -357,6 +357,9 @@ msgstr "Не удалось обновить индекс заметок"
 msgid "Could not update settings"
 msgstr "Не удалось обновить настройки"
 
+msgid "Could not update: %@"
+msgstr "Не удалось обновить: %@"
+
 msgid "Create"
 msgstr "Создать"
 
@@ -1112,6 +1115,9 @@ msgstr "Неподдерживаемый тип изображения для %@
 
 msgid "Update"
 msgstr "Обновить"
+
+msgid "Update downloaded. Restart Swifty Notes to use it."
+msgstr "Обновление загружено. Перезапустите Swifty Notes, чтобы им воспользоваться."
 
 msgid "Use / to create nested folders in one step, e.g. Work/Drafts."
 msgstr "Используйте / для создания вложенных папок за один шаг, например, Работа/Черновики."
