@@ -175,3 +175,12 @@ the build. `verify-appimage.sh` checks both.
   looks like missing images and missing fonts rather than a packaging mistake.
 - The Swift runtime needs no bundling: `assemble-install-root.sh` builds with
   `--static-swift-stdlib`.
+- **The build host needs the GTK stack installed even though nothing is
+  compiled here.** linuxdeploy copies libraries it finds on the system, so a
+  runner with only `zsync` and `desktop-file-utils` stops at
+  `Could not find dependency: libadwaita-1.so.0`. The same goes for GdkPixbuf
+  loaders: the GTK plugin can only bundle loaders the host has, so
+  `librsvg2-common` and `webp-pixbuf-loader` are build-host dependencies of
+  SVG previews and WebP images respectively. That one fails quietly — the
+  bundle builds, starts, and passes every other check with SVG previews simply
+  gone — which is why `verify-appimage.sh` looks for the loader by name.
