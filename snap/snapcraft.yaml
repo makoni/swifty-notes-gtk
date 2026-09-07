@@ -43,6 +43,11 @@ parts:
       - binutils
       - curl
       - desktop-file-utils
+      # msgfmt, for the translated desktop entry and AppStream metainfo that
+      # scripts/render-metadata.sh renders during assemble-install-root.sh.
+      # Launchpad installs nothing but what is listed here, so a tool that
+      # happens to sit on the GitHub runners has to be named explicitly.
+      - gettext
       - git
       - gnupg2
       - libc6-dev
