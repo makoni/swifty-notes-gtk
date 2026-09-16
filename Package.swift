@@ -72,8 +72,8 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            // Pinned to the 1.6.0 tag, which is the release that carries what
-            // this app needs from it:
+            // Pinned to the 1.7.0 tag. What this app needs from the library
+            // arrived in 1.6.0 and is still the floor:
             //   * Window.isActive — routes app-level accelerators to the
             //     focused external document window.
             //   * The localization API — gettext setup, runtime language
@@ -87,11 +87,14 @@ let package = Package(
             //     currentMessagesLocale()/setMessagesLocale(_:) — catalogue
             //     discovery and the process locale, both of which used to be
             //     local copies.
+            // 1.7.0 itself adds GtkSpinner, which this app does not use, and
+            // fixes two test crashes on Swift 6.4; it is taken to stay on the
+            // current release rather than for anything needed here.
             // Still pinned by revision rather than by version: the Flatpak
             // manifest needs a commit for its git source either way, and a
             // bump should follow validating a newer upstream rather than
             // SemVer auto-resolution.
-            revision: "c79a5c2220508cc2a42842214d19f25384c28cd2"
+            revision: "681a71d764f082606272c196477587ca1e1efbd3"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",
