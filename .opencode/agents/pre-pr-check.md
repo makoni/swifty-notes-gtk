@@ -42,7 +42,9 @@ respect `#if os(macOS)` / `#if !os(macOS)` guards?
 ### 2. Tests pass
 
 ```bash
-swift test
+swift test --no-parallel
+# Without a display, run it the way CI does:
+xvfb-run -a dbus-run-session -- swift test --no-parallel
 ```
 
 Caveats:
@@ -54,9 +56,16 @@ Caveats:
 - If you have a targeted suspicion, run a filter:
   `swift test --filter <name>` runs a single suite quickly.
 
-CI on GitHub Actions runs the same `swift test` on a clean
-Ubuntu 26.04 runner with no libglycin teardown crash. If the suite
-passes locally (modulo libglycin), it'll pass on CI.
+- GLib `CRITICAL` lines don't fail tests. Count them
+  (`grep -c CRITICAL`) and compare with the same run on `master`;
+  a new one is a FAIL.
+
+CI on GitHub Actions does NOT run the whole suite: it builds debug and
+release on `ubuntu-24.04` (x86_64 + arm64), runs the suites listed in
+the `--filter` of `.github/workflows/ci.yml` plus
+`MarkdownPreviewWidgetTests`, and runs the UI smoke tests in a separate
+job. A local full run is therefore the broader check — and a new test
+suite must be added to that filter or CI never runs it (WARN).
 
 ### 3. No leftover debug code
 
@@ -67,8 +76,10 @@ grep -rn "fatalError(" Sources/ | grep -v "// Intentional"
 grep -rn "@_unsafe" Sources/
 ```
 
-Each `print(` in production code is a flag (use `debugLog` —
-which compiles out in release).
+Each `print(` in production code is a flag. There is no general
+logger that compiles out in release (`MacOSClickWorkaround.debugLog`
+is a runtime-gated click tracer for one workaround, not a logging
+API), so debug output should be removed, not rerouted.
 `fatalError` should be reserved for genuinely unreachable cases
 and noted in a comment.
 TODO / FIXME without an issue number is a code smell, but allowed
@@ -124,6 +135,7 @@ roughly: `Adwaita`, `CSpelling`, `Foundation`. Anything new
 ### 8. Commit hygiene
 
 ```bash
+git status --short
 git log --oneline origin/master..HEAD
 git diff --stat origin/master..HEAD
 ```

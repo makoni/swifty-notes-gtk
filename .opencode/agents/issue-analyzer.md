@@ -41,15 +41,17 @@ production code.
      - Pure-logic in `Services/` → `Tests/SwiftyNotesTests/`
        (e.g. `MarkdownSearchEngineTests.swift`).
      - GTK widget contract → `Tests/SwiftyNotesWidgetTests/`
-       (each test starts with `Application.register()`).
+       (each test registers a GTK `Application` first,
+       `try app.register()`).
      - MainWindow integration → `Tests/SwiftyNotesTests/` with
        the `MainWindow*Tests.swift` naming convention.
      - macOS-port-specific → `Tests/SwiftyNotesTests/macOS/`
        (XCTest, not Swift Testing).
    - Use Swift Testing (`@Test`, `#expect`, `Issue.record`) for
      new test files unless mirroring an XCTest file.
-   - Use the project's backtick-named convention:
-     `func \`the bar collapses when …\`() throws { ... }`.
+   - Use the project's naming: a sentence as the display name and a
+     camelCase function,
+     `@Test("The bar collapses when …") @MainActor func theBarCollapsesWhen…() throws`.
 
 5. **Produce a fix plan**: one-line root-cause statement + two
    to four bullet steps to take. No code, no diff snippets.
@@ -62,8 +64,9 @@ production code.
   scope creep.
 - The failing test should be runnable via:
   ```bash
-  swift test --filter "<test name>"
+  swift test --filter "<test name>" --no-parallel
   ```
+  (Without a display: `xvfb-run -a dbus-run-session -- swift test …`.)
   Verify with that command. If `swift test` reports
   `Program crashed: ... in libglycin-2` *after* a pass line, it's
   the known local-Ubuntu issue, not your test's fault. Trust the

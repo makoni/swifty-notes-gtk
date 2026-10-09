@@ -66,10 +66,12 @@ After cosmetic-vs-substantive judgement, also run:
 ### 1. The fix actually compiles + tests pass.
 ```bash
 swift build
-swift test
+swift test --no-parallel
 ```
+(Without a display: `xvfb-run -a dbus-run-session -- swift test --no-parallel`.)
 Remember the libglycin teardown crash is local-only — check the
-pass line.
+pass line. Changes may still be uncommitted: review the working tree
+with `git status --short` and `git diff origin/master` too.
 
 ### 2. The original failing test still exists and now passes.
 ```bash
@@ -78,7 +80,7 @@ git log --oneline --grep='regression\|fix:' origin/master..HEAD
 Find the test file from the diff. Confirm:
 - It's still in the diff (someone didn't quietly delete it to
   unblock).
-- It passes (run it directly: `swift test --filter "<name>"`).
+- It passes (run it directly: `swift test --filter "<name>" --no-parallel`).
 
 ### 3. The diff doesn't grow scope.
 ```bash

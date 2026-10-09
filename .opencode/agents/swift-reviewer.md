@@ -19,6 +19,9 @@ You do not modify code.
    `git diff --name-only origin/master...HEAD`
    (the project's base branch is `master`).
 2. Read the diff: `git diff origin/master...HEAD`.
+   Changes may still be uncommitted: also look at `git status --short`
+   and `git diff origin/master` (working tree vs. master), and read
+   untracked files, so nothing in progress is missed.
 3. For each changed file, read the entire file (context matters —
    you can't review a hunk in isolation).
 4. Write findings in the format below.
@@ -33,6 +36,13 @@ You do not modify code.
   GObject signal handlers. Note: `SignalConnection` holds
   `weak var source: GObjectRef?`, so the closure auto-disconnects
   when the source dies; this is the intended pattern, don't flag it.
+- swift-adwaita wrappers are NOT retained by their GObject: a wrapper
+  lives only as long as Swift references it, even while the widget
+  stays on screen. So `[weak x]` on a wrapper that only lives in the
+  widget tree (a local in a builder function) is already `nil` when
+  the signal fires and the handler silently does nothing. And a
+  closure registered on a signal of `x` that captures `x` strongly is
+  a cycle (GObject → closure → wrapper → GObject) that never frees.
 - Strong reference cycles between Swift wrappers and GTK widgets.
   Common bug: a controller holds a reference to a bar AND wires
   callbacks back into itself via `[self]` not `[weak self]` —
@@ -91,11 +101,18 @@ You do not modify code.
   / write files directly.
 - Keyboard shortcuts split: global (cross-window, app-menu surface)
   go into `SwiftyNotesLauncher.installOutlineActions` as
-  `SimpleAction` + `installAccelerator`. Per-window go into
-  `MainWindow.wireKeyboardShortcuts`.
-- Tests use Swift Testing (`@Test`, `#expect`, `Issue.record`)
-  for new test files. XCTest is only in `Tests/SwiftyNotesTests/macOS/`
+  `SimpleAction` + `installAccelerator`. Per-window ones are
+  `window.addKeyboardShortcut(...)` calls in `MainWindow.wireSignals()`.
+- Tests use Swift Testing (`@Test("Sentence describing the behavior")`
+  with a camelCase function name, `#expect`, `Issue.record`) for new
+  test files. XCTest is only in `Tests/SwiftyNotesTests/macOS/`
   mirrors.
+- swift-adwaita signal APIs must be used with the handler shape the
+  library declares. Signals that return a value in C return it from
+  the Swift handler too (since swift-adwaita's signal-marshalling fix,
+  e.g. `onClosePage` returns `Bool`, `onCreateTab` returns the new
+  `TabPage`) — check the library's signature in `../swift-adwaita`
+  rather than assuming `Void`.
 
 ### Comments / documentation
 

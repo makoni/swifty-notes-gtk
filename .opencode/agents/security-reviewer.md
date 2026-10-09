@@ -21,8 +21,9 @@ The PR touches:
 - Network — HTTP requests, image loaders, the GitHub update
   checker.
 - Shell-out / subprocess execution.
-- IPC between processes — GApplication actions, command-line
-  arguments coming in via `open` / `--open-file`, `--cli`.
+- IPC between processes — GApplication actions, files opened via
+  the desktop `open` path, and the `swiftynotes cli …` subcommands
+  (`Sources/SwiftyNotes/CLI/NotesCLI.swift`).
 - Logging / telemetry.
 - File-system permissions / extended attributes / symlinks.
 - Markdown rendering of untrusted content (link handling, image
@@ -59,8 +60,10 @@ no tokens.
   containing `../../etc/passwd` writing through. Use
   `URL.appendingPathComponent` with a sanitized name; check
   whether `FolderNameValidation` is being applied.
-- File operations using `FileManager` outside `notesDirectoryURL`
-  or `trashDirectoryURL` — likely a bug.
+- File operations using `FileManager` outside the notes directory
+  (`notesDirectoryURL`; default `NotesRepository.fallbackNotesDirectory()`
+  under `$XDG_DATA_HOME`), `trashDirectoryURL`, or the state file under
+  `$XDG_STATE_HOME` (`WorkspaceStateStore`) — likely a bug.
 - Symlinks followed without check — `URL.resolvingSymlinksInPath`
   can be a footgun if it crosses the notes-directory boundary.
 - Writes through `try? data.write(to:)` without atomic / locked
@@ -83,8 +86,10 @@ no tokens.
   to `github.com/makoni/swifty-notes-gtk` releases endpoint.
 
 ### IPC / command line / launch
-- `--open-file`, `--cli` — these accept paths from the CLI. Check
-  whether they expand `~`, follow symlinks, allow arbitrary write.
+- `swiftynotes cli` accepts paths and content from the command line
+  (`--notes-dir`, `--content-file`, `--folder`, `--to`, `--stdin`).
+  Check whether they expand `~`, follow symlinks, escape the notes
+  directory, or allow arbitrary writes.
 - GApplication action handlers — any action that takes a string
   parameter and forwards it to a file path needs validation.
 - URL launchers — anything that opens a URL on click must vet the
@@ -92,10 +97,11 @@ no tokens.
   follow that pattern.
 
 ### Sandbox / Flatpak
-- New file-system access outside `~/.local/share/swiftynotes`
-  (or wherever the Flatpak portal permits). New filesystem
-  permissions in `flatpak/me.spaceinbox.swiftynotes.yml` is a
-  red flag.
+- New file-system access outside the app's data/state directories
+  (or wherever the Flatpak portal permits). New `finish-args` in the
+  manifest template `flatpak/me.spaceinbox.swiftynotes.yml.in` (the
+  `.yml` is generated and gitignored) are a red flag; the same goes for
+  new plugs in `snap/`.
 - New uses of `org.freedesktop.portal.*` — confirm the manifest
   allows it.
 - Direct host-path access (`--filesystem=host`) — never.

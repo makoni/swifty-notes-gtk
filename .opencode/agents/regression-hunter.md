@@ -17,6 +17,8 @@ usually a symptom of a pattern that repeats in the codebase.
 
 1. Read the fix diff: `git diff origin/master...HEAD` (base branch
    is `master`).
+   Changes may still be uncommitted: also check `git status --short`
+   and `git diff origin/master`, and read untracked files.
 2. Identify the "bug signature" — what specifically was wrong:
    - What pattern caused the problem?
    - Which APIs were used incorrectly?
@@ -93,7 +95,10 @@ grep -rn "Task {" Sources/SwiftyNotes/
 grep -rn "\.onClicked\|\.onChanged\|\.onActivate\b" Sources/SwiftyNotes/
 ```
 Each closure that captures `self` should be `[weak self]` unless
-the lifetime is obviously bounded.
+the lifetime is obviously bounded. But a `[weak x]` capture of a
+swift-adwaita wrapper is only safe if something in Swift keeps that
+wrapper alive — GObject does not retain wrappers, so a wrapper that
+only lives in the widget tree is already `nil` when the signal fires.
 
 **Bug:** Mutation of the buffer while a controller has cached
 matches → stale state. Recent example: editor search controller

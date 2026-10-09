@@ -19,15 +19,20 @@ regressions, not just create the appearance of coverage.
 1. Find test files in the diff:
    `git diff --name-only origin/master...HEAD | grep -i tests`
    (base branch is `master`).
+   Changes may still be uncommitted: also check `git status --short`
+   and `git diff origin/master`, and read untracked files.
 2. For each test, read both the test and the code it exercises.
 3. Run the tests and verify they pass. Project commands:
    ```bash
-   # Full suite (slow on first build — ~30 s).
-   swift test
+   # Full suite. --no-parallel is required: tests share GTK state.
+   swift test --no-parallel
+
+   # No display available (e.g. over SSH)? Run it the way CI does:
+   xvfb-run -a dbus-run-session -- swift test --no-parallel
 
    # A single suite or test by name.
-   swift test --filter SuiteName
-   swift test --filter "specific test phrase"
+   swift test --filter SuiteName --no-parallel
+   swift test --filter "specific test phrase" --no-parallel
    ```
 4. **Note about local crashes**: `swift test` will sometimes SIGSEGV
    inside `libglycin-2` *after* the test suite has reported pass.
@@ -41,8 +46,14 @@ regressions, not just create the appearance of coverage.
 
 - `Tests/SwiftyNotesTests/` — Swift Testing, mixes unit + integration.
 - `Tests/SwiftyNotesWidgetTests/` — Swift Testing, headless GTK
-  widget tests. Each test starts with `Application.register()` and
-  builds a real GTK widget tree. Linux-only via `#if !os(macOS)`.
+  widget tests. Each test registers a GTK `Application` first
+  (`try app.register()`) and builds a real GTK widget tree.
+  Linux-only via `#if !os(macOS)`.
+- CI runs a fixed list of suites (see the `--filter` in
+  `.github/workflows/ci.yml`) plus `MarkdownPreviewWidgetTests`, and the
+  UI smoke tests in a separate job. A new suite that is not in that
+  list does not run in CI — flag it and name the workflow line to add
+  it to.
 - `Tests/SwiftyNotesTests/macOS/` — XCTest mirrors for the macOS
   port where the Swift Testing harness on GTK doesn't fly.
 
@@ -76,6 +87,9 @@ regressions, not just create the appearance of coverage.
   are async.
 - Timer / sleep / wait-for-condition — flag.
 - Reading from disk / network / random — flag.
+- GLib `CRITICAL` / `WARNING` lines in the test output don't fail the
+  test. A test that passes while logging an assertion failure is
+  hiding a bug — flag it.
 
 ### Coverage gaps
 
@@ -125,9 +139,11 @@ regressions, not just create the appearance of coverage.
 
 ### Naming
 
-- Backtick names with a sentence are the project's style:
-  `func \`typing a query selects the first match\`() throws { ... }`.
-  New tests should follow this; flag if you see camelCase.
+- The project's style is a sentence as the display name plus a
+  camelCase function:
+  `@Test("Typing a query selects the first match") @MainActor`
+  `func typingAQuerySelectsTheFirstMatch() throws { ... }`.
+  Flag a new test without a display name.
 
 ## Reporting format
 

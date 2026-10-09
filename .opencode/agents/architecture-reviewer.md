@@ -17,6 +17,9 @@ you look at how the change fits into the system.
 
 1. Get the diff: `git diff origin/master...HEAD` (the project's base
    branch is `master`).
+   Changes may still be uncommitted: also look at `git status --short`
+   and `git diff origin/master` (working tree vs. master), and read
+   untracked files, so nothing in progress is missed.
 2. For each new or substantially changed type, ask the questions below.
 3. Use grep/glob to find similar code in the repo — duplication is often
    invisible from the local context.
@@ -46,25 +49,35 @@ First-party modules:
   pattern that Swift can't invoke directly). New C helpers go here.
 
 External dependencies (not "our modules" architecturally):
-- **`../swift-adwaita`** (pinned commit in `Package.swift`) — our
-  Swift wrapper for GTK4 / libadwaita / GtkSourceView / libspelling.
-  Bumped deliberately, not via SemVer.
+- **`swift-adwaita`** — our Swift wrapper for GTK4 / libadwaita /
+  GtkSourceView. `Package.swift` resolves it by SemVer (`from:` the
+  release named there, currently 1.7.0); Flatpak builds use the
+  vendored copy in `flatpak-deps/`, and a local checkout can override
+  it (`../swift-adwaita` during library work). Raising the floor is a
+  deliberate change: read the library's release notes for breaking
+  API changes (e.g. signal handlers that now return a value).
 - **`swift-markdown`** — Apple's CommonMark library.
 
 Tests:
 - `Tests/SwiftyNotesTests/` — unit + integration via Swift Testing
   (`@Test`, `#expect`). Some tests are guarded by `#if !os(macOS)`
-  when they touch headless GTK.
-- `Tests/SwiftyNotesWidgetTests/` — widget tests (require a GTK app
-  registration in `setUp`). Linux-only via `#if !os(macOS)`.
+  when they touch headless GTK. `UISmokeTests` runs the app
+  black-box under headless Weston + AT-SPI.
+- `Tests/SwiftyNotesWidgetTests/` — widget tests (each registers a
+  GTK `Application` first, e.g. `try app.register()`). Linux-only via
+  `#if !os(macOS)`.
 - `Tests/SwiftyNotesTests/macOS/` — XCTest mirrors for the macOS
   port where Swift Testing on GTK isn't viable.
 
 Platforms:
-- **Linux (Ubuntu 26.04)** is primary. CI runs the full test suite
-  on Ubuntu. GTK4, libadwaita, GtkSourceView 5, libspelling.
+- **Linux** is primary (developed on Ubuntu 26.04). CI builds debug
+  and release on `ubuntu-24.04` (x86_64 and arm64), runs a fixed list
+  of core suites plus the MarkdownPreview widget tests under
+  `xvfb-run -a dbus-run-session`, and runs the UI smoke tests in a
+  separate job. GTK4, libadwaita, GtkSourceView 5, libspelling.
 - **macOS** is a compatibility port. Uses the same GTK stack via
-  Homebrew. Tests run as XCTest mirrors.
+  Homebrew. CI builds the app and the test bundle there; XCTest
+  mirrors run locally.
 
 ## What to look for
 
@@ -104,9 +117,9 @@ Platforms:
 - New "scroll to a widget" logic when `OutlineNavigation` already
   has `scrollEditor` / `scrollPreview` / `smoothScroll`.
 - New "preview block index → row index" computation when
-  `MarkdownPreview.blockToRowIndex` already maps this.
-- New keyboard shortcut wiring in `MainWindow.wireKeyboardShortcuts`
-  for a global action — global shortcuts belong in
+  `PreviewSearchController.blockToRowIndex` already maps this.
+- New keyboard shortcut wiring in `MainWindow.wireSignals()`
+  (`window.addKeyboardShortcut`) for a global action — global shortcuts belong in
   `SwiftyNotesLauncher.installOutlineActions` as a `SimpleAction`
   with `installAccelerator`.
 
