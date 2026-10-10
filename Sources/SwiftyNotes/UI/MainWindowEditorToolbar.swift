@@ -30,6 +30,15 @@ extension MainWindow {
         editor.applyFormatting(action)
     }
 
+    /// Keyboard-accelerator entry point for the formatting actions (see
+    /// `SwiftyNotesLauncher.installFormattingActions`). Same path as the
+    /// toolbar, except it does nothing while only the preview is showing:
+    /// the edit would land in text the user cannot see.
+    func performFormattingShortcut(_ action: MarkdownFormattingAction) {
+        guard state.viewMode != .preview else { return }
+        applyEditorFormatting(action)
+    }
+
     func presentTableSizePicker() {
         guard let button = editorFormattingToolbar.buttons[.table] else { return }
         let picker = ensureTableSizePicker()

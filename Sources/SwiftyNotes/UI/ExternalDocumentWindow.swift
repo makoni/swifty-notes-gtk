@@ -906,8 +906,22 @@ private extension ExternalDocumentWindow {
         }
         editor.applyFormatting(action)
     }
+}
 
-    private func presentTableSizePicker() {
+@MainActor
+extension ExternalDocumentWindow {
+    /// Keyboard-accelerator entry point for the formatting actions; see
+    /// `MainWindow.performFormattingShortcut(_:)` for why preview mode is
+    /// excluded.
+    func performFormattingShortcut(_ action: MarkdownFormattingAction) {
+        guard viewMode != .preview else { return }
+        applyEditorFormatting(action)
+    }
+}
+
+@MainActor
+private extension ExternalDocumentWindow {
+    func presentTableSizePicker() {
         guard let button = editorFormattingToolbar.buttons[.table] else { return }
         let picker = ensureTableSizePicker()
         picker.popover.present(from: button)
@@ -1248,6 +1262,10 @@ private extension ExternalDocumentWindow {
 
         func debugSetEditorText(_ text: String) {
             editor.buffer.text = text
+        }
+
+        func debugSelectEditorRange(_ range: Range<Int>) {
+            editor.select(range: range)
         }
 
         func debugPollForExternalChanges() {

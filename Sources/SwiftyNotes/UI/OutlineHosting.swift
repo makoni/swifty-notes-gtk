@@ -2,14 +2,16 @@ import Adwaita
 import Foundation
 
 /// The surface the launcher's app-level accelerators (F9, Ctrl+G,
-/// Ctrl+F, Ctrl+H) route through — both window types implement all
-/// three entry points, so `AppController.activeShortcutHost` can
-/// dispatch without caring which kind of window is focused.
+/// Ctrl+F, Ctrl+H and the formatting keys) route through — both window
+/// types implement all four entry points, so
+/// `AppController.activeShortcutHost` can dispatch without caring which
+/// kind of window is focused.
 @MainActor
 protocol GlobalShortcutHost: AnyObject {
     func toggleOutlineVisibility()
     func openCommandPalette()
     func openFindBar(mode: FindReplaceBar.Mode)
+    func performFormattingShortcut(_ action: MarkdownFormattingAction)
 }
 
 /// Window-agnostic outline behaviour shared by ``MainWindow`` and

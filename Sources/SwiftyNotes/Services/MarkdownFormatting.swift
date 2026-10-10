@@ -104,6 +104,44 @@ enum MarkdownFormattingAction: CaseIterable, Hashable {
             nil
         }
     }
+
+    /// Name of the GApplication action (`app.<name>`) that applies this
+    /// formatting, so a keyboard accelerator can reach it from any window.
+    var shortcutActionName: String {
+        switch self {
+        case .heading: "format-heading"
+        case .bold: "format-bold"
+        case .italic: "format-italic"
+        case .code: "format-code"
+        case .link: "format-link"
+        case .quote: "format-quote"
+        case .bulletList: "format-bullet-list"
+        case .numberedList: "format-numbered-list"
+        case .taskList: "format-task-list"
+        case .table: "format-table"
+        }
+    }
+
+    /// GTK accelerator for this action, or `nil` when it has none. Bold,
+    /// italic and link follow GNOME Text Editor, code follows GitHub, and
+    /// quote follows Typora. Every key is a letter on purpose: GTK matches
+    /// a `<Shift>` accelerator against the shifted keyval, so
+    /// `<Primary><Shift>8` would never fire — the press arrives as
+    /// `asterisk` on a US layout — while a letter's shifted keyval is just
+    /// its upper case on any layout. Heading, task list and table stay
+    /// toolbar-only for now.
+    var accelerator: String? {
+        switch self {
+        case .bold: "<Primary>b"
+        case .italic: "<Primary>i"
+        case .link: "<Primary>k"
+        case .code: "<Primary>e"
+        case .quote: "<Primary><Shift>q"
+        case .bulletList: "<Primary><Shift>l"
+        case .numberedList: "<Primary><Shift>o"
+        case .heading, .taskList, .table: nil
+        }
+    }
 }
 
 struct MarkdownFormattingEdit: Equatable {
