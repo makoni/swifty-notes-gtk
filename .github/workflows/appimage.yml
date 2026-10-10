@@ -79,6 +79,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Check the Swift toolchain
+        run: sh scripts/check-swift-version.sh
+
       # linuxdeploy bundles libraries it finds on the *build host*, so the GTK
       # stack has to be installed here even when the install root arrives
       # prebuilt and nothing is compiled. Without it the build stops at

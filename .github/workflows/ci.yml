@@ -38,6 +38,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Check the Swift toolchain
+        run: sh scripts/check-swift-version.sh
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -152,6 +155,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+
+      - name: Check the Swift toolchain
+        run: sh scripts/check-swift-version.sh
 
       - name: Install smoke test dependencies
         run: |

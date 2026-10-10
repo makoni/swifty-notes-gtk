@@ -132,8 +132,8 @@ parts:
         PKG_CONFIG_PATH \
         PYTHONPATH
 
-      swift_branch='swift-6.2.2-release'
-      swift_version='swift-6.2.2-RELEASE'
+      swift_branch='swift-6.4.0-release'
+      swift_version='swift-6.4.0-RELEASE'
       swift_platform='ubuntu24.04'
       swift_signing_key='52BB7E3DE28A71BE22EC05FFEF80A866B47A981F'
 
