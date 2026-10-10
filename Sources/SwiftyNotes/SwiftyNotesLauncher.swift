@@ -277,6 +277,7 @@ public enum SwiftyNotesLauncher {
         let appController = AppController(launchOptions: launchOptions)
         installQuitAction(on: app)
         installOutlineActions(on: app, controller: appController)
+        installFormattingActions(on: app, controller: appController)
 
         app.onActivate {
             appController.activate(app: app)
@@ -364,6 +365,24 @@ public enum SwiftyNotesLauncher {
         }
         app.addAction(findReplace)
         installAccelerator("<Primary>h", forAction: "app.find-replace", on: app)
+    }
+
+    /// Registers one `app.format-…` action per formatting action and binds
+    /// the accelerators from ``MarkdownFormattingAction/accelerator``.
+    /// Application-level for the same reason as the outline actions: they
+    /// route to `activeShortcutHost`, so the main window and a focused
+    /// standalone document window both answer them.
+    @MainActor
+    static func installFormattingActions(on app: Application, controller: AppController) {
+        for formatting in MarkdownFormattingAction.allCases {
+            let action = SimpleAction(name: formatting.shortcutActionName) { [weak controller] in
+                controller?.activeShortcutHost?.performFormattingShortcut(formatting)
+            }
+            app.addAction(action)
+            if let accelerator = formatting.accelerator {
+                installAccelerator(accelerator, forAction: "app.\(formatting.shortcutActionName)", on: app)
+            }
+        }
     }
 
     @MainActor
