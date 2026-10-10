@@ -36,7 +36,7 @@ On macOS the release workflow produces a Developer-ID-signed, notarized, stapled
 
 ## Requirements
 
-- Swift 6.2+ toolchain
+- Swift 6.3+ toolchain
 - Linux (GTK 4, libadwaita, GtkSourceView 5, libspelling) **or** macOS 13+ on Apple Silicon
 
 ### Linux
