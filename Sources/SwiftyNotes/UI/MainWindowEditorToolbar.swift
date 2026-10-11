@@ -6,17 +6,17 @@ extension MainWindow {
     func configureViewModeToggleContent() {
         setToggleContent(
             editorModeToggle,
-            label: "Editor".localized,
+            label: EditorViewMode.editor.displayName,
             iconName: "document-edit-symbolic",
         )
         setToggleContent(
             splitModeToggle,
-            label: "Split".localized,
+            label: EditorViewMode.split.displayName,
             iconName: "view-dual-symbolic",
         )
         setToggleContent(
             previewModeToggle,
-            label: localizedWithContext("view mode", "Preview"),
+            label: EditorViewMode.preview.displayName,
             iconName: "text-x-generic-symbolic",
         )
     }

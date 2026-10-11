@@ -391,12 +391,28 @@ import Foundation
             activeSettingsWindow?.displayedNotesDirectoryPath
         }
 
+        var debugSettingsLocalizedChrome: [String: String]? {
+            activeSettingsWindow?.debugLocalizedChrome
+        }
+
         var debugSettingsWindowSnapshot: SettingsWindow.Snapshot? {
             activeSettingsWindow?.snapshot
         }
 
         var debugSettingsWindowDefaultHeight: Int? {
             activeSettingsWindow?.debugDefaultHeight
+        }
+
+        var debugSettingsSelectedExternalViewMode: EditorViewMode? {
+            activeSettingsWindow?.debugSelectedExternalViewMode
+        }
+
+        var debugSettingsExternalViewModeOptions: [String]? {
+            activeSettingsWindow?.debugExternalViewModeOptions
+        }
+
+        var debugSettingsEditorGroupRowTitles: [String]? {
+            activeSettingsWindow?.debugEditorGroupRowTitles
         }
 
         var debugEditorWrapsLines: Bool {
@@ -437,6 +453,10 @@ import Foundation
 
         func debugSettingsSetIndentStyle(_ value: EditorIndentStyle) {
             activeSettingsWindow?.debugSetIndentStyle(value)
+        }
+
+        func debugSettingsSetExternalViewMode(_ value: EditorViewMode) {
+            activeSettingsWindow?.debugSetExternalViewMode(value)
         }
 
         func debugSettingsSetAutosaveDelaySeconds(_ value: Int) {

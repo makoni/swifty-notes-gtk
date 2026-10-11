@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Dutch\n"
@@ -787,6 +787,9 @@ msgstr "Notitiemap openen"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "Open of maak een notitie voordat je afbeeldingen sleept of plakt."
 
+msgid "Opened files start in"
+msgstr "Geopende bestanden starten in"
+
 msgid "Outline"
 msgstr "Overzicht"
 
@@ -1049,6 +1052,9 @@ msgstr "De gekozen bestemming is geen map."
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "De gekozen map staat op een alleen-lezen bestandssysteem en kan geen notities bewaren."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "De weergave waarin een Markdown-bestand start dat via de bestandsbeheerder is geopend. Notities in de bibliotheek houden hun eigen weergave."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "Er is niet genoeg schijfruimte om je notities naar die map te verplaatsen."

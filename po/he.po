@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Hebrew\n"
@@ -787,6 +787,9 @@ msgstr "פתיחת תיקיית הפתקים"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "יש לפתוח או ליצור פתק לפני גרירת תמונות או הדבקתן."
 
+msgid "Opened files start in"
+msgstr "קבצים שנפתחו מתחילים בתצוגת"
+
 msgid "Outline"
 msgstr "מתאר"
 
@@ -1049,6 +1052,9 @@ msgstr "היעד שנבחר אינו תיקייה."
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "התיקייה שנבחרה נמצאת במערכת קבצים לקריאה בלבד ואינה יכולה לאחסן פתקים."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "התצוגה שבה נפתח קובץ Markdown ממנהל הקבצים. פתקים בספרייה שומרים על התצוגה שלהם."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "אין מספיק מקום בכונן כדי להעביר את הפתקים לתיקייה הזאת."

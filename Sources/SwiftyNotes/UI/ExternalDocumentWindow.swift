@@ -180,8 +180,11 @@ final class ExternalDocumentWindow {
     // Internal getter for the find/replace routing; setting must go
     // through the view-mode transition (see `applyViewMode`) so the
     // pane reparenting, toggle state, and scroll-spy rebind stay in
-    // sync — hence private(set).
-    private(set) var viewMode: EditorViewMode = .split
+    // sync — hence private(set). The initial value comes from
+    // ``AppSettings/externalDocumentViewMode`` (assigned in `init` before
+    // `buildUI` runs its first `applyViewMode`); changing the preference
+    // later never switches windows that are already open.
+    private(set) var viewMode: EditorViewMode
     private var preferredPreviewWidth = WorkspaceState.defaultPreviewWidth
     private var editorFormattingButtons: [MarkdownFormattingAction: Button] {
         editorFormattingToolbar.buttons
@@ -224,6 +227,9 @@ final class ExternalDocumentWindow {
         self.importIntoLibrary = importIntoLibrary
         self.fileURL = loadedDocument.url
         fileSnapshot = loadedDocument.snapshot
+        // Start in the preferred mode before `buildUI` runs its first
+        // `applyViewMode` so toggles and panes match from the first frame.
+        viewMode = appSettings.externalDocumentViewMode
 
         window = ApplicationWindow(application: application)
         window.iconName = AppIdentity.identifier
@@ -504,9 +510,9 @@ private extension ExternalDocumentWindow {
     func configureToolbarAccessibility() {
         saveButton.setAccessibleLabel("Save File".localized)
         menuButton.setAccessibleLabel("Document Menu".localized)
-        editorModeToggle.setAccessibleLabel("Editor".localized)
-        splitModeToggle.setAccessibleLabel("Split".localized)
-        previewModeToggle.setAccessibleLabel(localizedWithContext("view mode", "Preview"))
+        editorModeToggle.setAccessibleLabel(EditorViewMode.editor.displayName)
+        splitModeToggle.setAccessibleLabel(EditorViewMode.split.displayName)
+        previewModeToggle.setAccessibleLabel(EditorViewMode.preview.displayName)
         updateViewModeToggleState()
     }
 
@@ -884,17 +890,17 @@ private extension ExternalDocumentWindow {
     func configureViewModeToggleContent() {
         setToggleContent(
             editorModeToggle,
-            label: "Editor".localized,
+            label: EditorViewMode.editor.displayName,
             iconName: "document-edit-symbolic",
         )
         setToggleContent(
             splitModeToggle,
-            label: "Split".localized,
+            label: EditorViewMode.split.displayName,
             iconName: "view-dual-symbolic",
         )
         setToggleContent(
             previewModeToggle,
-            label: localizedWithContext("view mode", "Preview"),
+            label: EditorViewMode.preview.displayName,
             iconName: "text-x-generic-symbolic",
         )
     }

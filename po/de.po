@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-04 16:30+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-04 16:30+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: German\n"
@@ -787,6 +787,9 @@ msgstr "Notizordner öffnen"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "Vor dem Ablegen oder Einfügen von Bildern eine Notiz öffnen oder anlegen."
 
+msgid "Opened files start in"
+msgstr "Geöffnete Dateien starten in"
+
 msgid "Outline"
 msgstr "Gliederung"
 
@@ -1049,6 +1052,9 @@ msgstr "Das gewählte Ziel ist kein Ordner."
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "Der gewählte Ordner liegt auf einem schreibgeschützten Dateisystem und kann keine Notizen speichern."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "Die Ansicht, in der eine Markdown-Datei startet, wenn sie aus dem Dateimanager geöffnet wird. Notizen in der Bibliothek behalten ihre eigene Ansicht."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "Es ist nicht genug Speicherplatz vorhanden, um die Notizen in diesen Ordner zu verschieben."

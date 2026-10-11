@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Traditional Chinese\n"
@@ -778,6 +778,9 @@ msgstr "開啟筆記資料夾"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "請先開啟或新增筆記，再拖放或貼上圖片。"
 
+msgid "Opened files start in"
+msgstr "開啟檔案的初始檢視"
+
 msgid "Outline"
 msgstr "大綱"
 
@@ -1039,6 +1042,9 @@ msgstr "選擇的目標不是資料夾。"
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "選擇的資料夾位於唯讀的檔案系統上，無法存放筆記。"
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "從檔案管理程式開啟的 Markdown 檔案所使用的檢視。筆記庫中的筆記保留各自的檢視。"
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "磁碟空間不足，無法把筆記移到該資料夾。"

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Arabic\n"
@@ -823,6 +823,9 @@ msgstr "فتح مجلد الملاحظات"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "افتح ملاحظة أو أنشئ واحدة قبل إفلات الصور أو لصقها."
 
+msgid "Opened files start in"
+msgstr "تبدأ الملفات المفتوحة في"
+
 msgid "Outline"
 msgstr "المخطط"
 
@@ -1089,6 +1092,9 @@ msgstr "الوجهة المختارة ليست مجلدًا."
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "المجلد المختار على نظام ملفات للقراءة فقط ولا يمكنه تخزين الملاحظات."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "العرض الذي يبدأ به ملف Markdown عند فتحه من مدير الملفات. تبقى ملاحظات المكتبة على عرضها."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "لا توجد مساحة كافية على القرص لنقل ملاحظاتك إلى ذلك المجلد."

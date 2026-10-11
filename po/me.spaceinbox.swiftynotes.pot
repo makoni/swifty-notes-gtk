@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-09-07 20:43+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -785,6 +785,9 @@ msgstr ""
 msgid "Open or create a note before dropping or pasting images."
 msgstr ""
 
+msgid "Opened files start in"
+msgstr ""
+
 msgid "Outline"
 msgstr ""
 
@@ -1051,6 +1054,11 @@ msgstr ""
 
 msgid ""
 "The selected folder is on a read-only filesystem and cannot store notes."
+msgstr ""
+
+msgid ""
+"The view a Markdown file opened from the file manager starts in. Notes in "
+"the library keep their own."
 msgstr ""
 
 msgid "There is not enough disk space to move your notes to that folder."
