@@ -31,6 +31,8 @@ final class SettingsWindow {
     private let fontSizeRow = SpinRow(title: "", min: 10, max: 32, step: 1)
     private let tabWidthRow = SpinRow(title: "", min: 1, max: 8, step: 1)
     private let indentStyleRow = ComboRow(title: "")
+    private let externalViewModeRow = ComboRow(title: "")
+    private let externalViewModeOptions = StringList([])
     private let autosaveDelayRow = SpinRow(title: "", min: 1, max: 60, step: 1)
     private let appearanceRow = ComboRow(title: "")
     private let languageRow = ComboRow(title: "")
@@ -191,6 +193,11 @@ final class SettingsWindow {
         }
         editorGroup.add(indentStyleRow)
 
+        externalViewModeRow.onNotify(.selected) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        editorGroup.add(externalViewModeRow)
+
         renderEmojiRow.onNotify(.active) { [weak self] in
             self?.handleInlinePreferenceChange()
         }
@@ -311,6 +318,10 @@ final class SettingsWindow {
         indentStyleRow.title = "Indent style".localized
         indentStyleRow.subtitle = "Choose whether Tab inserts spaces or hard tabs.".localized
         indentStyleRow.setModel(StringList(EditorIndentStyle.allCases.map(\.displayName)))
+        externalViewModeRow.title = "Opened files start in".localized
+        externalViewModeRow.subtitle = "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own.".localized
+        externalViewModeOptions.replaceAll(EditorViewMode.allCases.map(\.displayName))
+        externalViewModeRow.setModel(externalViewModeOptions)
 
         previewGroup.title = localizedWithContext("settings group", "Preview")
         previewGroup.description = "Control how rendered Markdown appears in the preview.".localized
@@ -441,6 +452,7 @@ final class SettingsWindow {
         fontSizeRow.value = Double(currentSettings.editorFontSize)
         tabWidthRow.value = Double(currentSettings.editorTabWidth)
         indentStyleRow.selected = EditorIndentStyle.allCases.firstIndex(of: currentSettings.editorIndentStyle) ?? 0
+        externalViewModeRow.selected = EditorViewMode.allCases.firstIndex(of: currentSettings.externalDocumentViewMode) ?? 0
         autosaveDelayRow.value = Double(currentSettings.autosaveDelaySeconds)
         appearanceRow.selected = AppearanceMode.allCases.firstIndex(of: currentSettings.appearanceMode) ?? 0
         spellCheckEnabledRow.active = currentSettings.spellCheckEnabled
@@ -502,6 +514,9 @@ final class SettingsWindow {
         let outlineDensity = OutlineDensity.allCases[
             min(max(outlineDensityRow.selected, 0), OutlineDensity.allCases.count - 1),
         ]
+        let externalViewMode = EditorViewMode.allCases[
+            min(max(externalViewModeRow.selected, 0), EditorViewMode.allCases.count - 1),
+        ]
         let updatedSettings = AppSettings(
             customNotesDirectoryPath: currentSettings.customNotesDirectoryPath,
             wrapsEditorLines: wrapLinesRow.active,
@@ -519,6 +534,7 @@ final class SettingsWindow {
             outlineDragHandles: outlineDragHandlesRow.active,
             outlineBreadcrumbVisible: outlineBreadcrumbRow.active,
             renderEmojiShortcodes: renderEmojiRow.active,
+            externalDocumentViewMode: externalViewMode,
         )
 
         do {
@@ -584,6 +600,7 @@ final class SettingsWindow {
                 "spellCheckGroup": spellCheckGroup.title,
                 "outlineGroup": outlineGroup.title,
                 "outlineDensityRow": outlineDensityRow.title,
+                "externalViewModeRow": externalViewModeRow.title,
             ]
         }
 
@@ -618,6 +635,32 @@ final class SettingsWindow {
         func debugSetIndentStyle(_ value: EditorIndentStyle) {
             indentStyleRow.selected = EditorIndentStyle.allCases.firstIndex(of: value) ?? 0
             handleInlinePreferenceChange()
+        }
+
+        func debugSetExternalViewMode(_ value: EditorViewMode) {
+            externalViewModeRow.selected = EditorViewMode.allCases.firstIndex(of: value) ?? 0
+            handleInlinePreferenceChange()
+        }
+
+        var debugSelectedExternalViewMode: EditorViewMode {
+            EditorViewMode.allCases[min(max(externalViewModeRow.selected, 0), EditorViewMode.allCases.count - 1)]
+        }
+
+        var debugExternalViewModeOptions: [String] {
+            externalViewModeOptions.allStrings
+        }
+
+        var debugEditorGroupRowTitles: [String] {
+            var titles: [String] = []
+            var stack: [Widget] = [editorGroup]
+            while let widget = stack.popLast() {
+                if let row = widget.tryCast(ActionRow.self) {
+                    titles.append(row.title)
+                } else {
+                    stack.append(contentsOf: widget.children())
+                }
+            }
+            return titles
         }
 
         func debugSetAutosaveDelaySeconds(_ value: Int) {

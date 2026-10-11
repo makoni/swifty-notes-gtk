@@ -63,6 +63,22 @@ public enum EditorViewMode: String, Codable, CaseIterable, Sendable {
     var isPreviewVisible: Bool {
         self != .editor
     }
+
+    /// The name the mode is offered under in pickers.
+    ///
+    /// The calls mirror ``MainWindow/configureViewModeToggleContent()``'s, so
+    /// the settings rows and the toolbar toggles share one translation for
+    /// each mode rather than two.
+    public var displayName: String {
+        switch self {
+        case .editor:
+            "Editor".localized
+        case .split:
+            "Split".localized
+        case .preview:
+            localizedWithContext("view mode", "Preview")
+        }
+    }
 }
 
 public struct WorkspaceState: Codable, Equatable, Sendable {

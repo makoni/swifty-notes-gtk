@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -787,6 +787,9 @@ msgstr "Abrir a pasta de notas"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "Abra ou crie uma nota antes de arrastar ou colar imagens."
 
+msgid "Opened files start in"
+msgstr "Arquivos abertos iniciam em"
+
 msgid "Outline"
 msgstr "Estrutura"
 
@@ -1049,6 +1052,9 @@ msgstr "O destino escolhido não é uma pasta."
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "A pasta escolhida está em um sistema de arquivos somente leitura e não pode guardar notas."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "A visão em que um arquivo Markdown inicia quando aberto pelo gerenciador de arquivos. As notas na biblioteca mantêm a própria visão."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "Não há espaço em disco suficiente para mover as suas notas para essa pasta."

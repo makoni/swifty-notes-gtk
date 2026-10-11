@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:14+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -798,6 +798,9 @@ msgstr "Открыть папку заметок"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "Откройте или создайте заметку перед перетаскиванием или вставкой изображений."
 
+msgid "Opened files start in"
+msgstr "Вид открытых файлов"
+
 msgid "Outline"
 msgstr "Структура"
 
@@ -1061,6 +1064,9 @@ msgstr "Выбранное назначение не является папко
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "Выбранная папка находится на файловой системе, доступной только для чтения, и не может хранить заметки."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "Вид, в котором открывается Markdown-файл из файлового менеджера. Заметки в библиотеке сохраняют свой вид."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "На диске недостаточно места для перемещения заметок в эту папку."

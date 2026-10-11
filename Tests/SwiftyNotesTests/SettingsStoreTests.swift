@@ -95,6 +95,41 @@ struct SettingsStoreTests {
         #expect(loaded.renderEmojiShortcodes == false)
     }
 
+    @Test("External document view mode defaults to split")
+    func externalDocumentViewModeDefaultsToSplit() {
+        #expect(AppSettings().externalDocumentViewMode == .split)
+        #expect(AppSettings.default.externalDocumentViewMode == .split)
+    }
+
+    @Test("External document view mode survives a settings round-trip")
+    func externalDocumentViewModeSurvivesASettingsRoundTrip() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let store = AppSettingsStore(
+            settingsFileURL: temp.appendingPathComponent("settings.json", isDirectory: false),
+        )
+
+        try store.save(AppSettings(externalDocumentViewMode: .preview))
+
+        let loaded = try store.load()
+        #expect(loaded.externalDocumentViewMode == .preview)
+    }
+
+    @Test("Settings saved before the external view mode existed open files in split")
+    func settingsSavedBeforeTheExternalViewModeExistedOpenFilesInSplit() throws {
+        let payload = """
+        {
+          "customNotesDirectoryPath": "/tmp/notes",
+          "outlineDensity": "compact"
+        }
+        """
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(payload.utf8))
+
+        #expect(settings.outlineDensity == .compact)
+        #expect(settings.externalDocumentViewMode == .split)
+    }
+
     @Test("App settings store round trips trash retention")
     func appSettingsStoreRoundTripsTrashRetention() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

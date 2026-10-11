@@ -91,6 +91,11 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// source text on disk is never changed, and code spans / code blocks
     /// are left literal. Defaults to `true`.
     public var renderEmojiShortcodes: Bool
+    /// View mode a Markdown document opened from outside the library
+    /// (file manager, another application) starts in. Defaults to
+    /// ``EditorViewMode.split``, the behaviour before this preference
+    /// existed.
+    public var externalDocumentViewMode: EditorViewMode
 
     public init(
         customNotesDirectoryPath: String? = nil,
@@ -109,6 +114,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         outlineDragHandles: Bool = true,
         outlineBreadcrumbVisible: Bool = true,
         renderEmojiShortcodes: Bool = true,
+        externalDocumentViewMode: EditorViewMode = .split,
     ) {
         self.customNotesDirectoryPath = customNotesDirectoryPath?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -129,6 +135,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.outlineDragHandles = outlineDragHandles
         self.outlineBreadcrumbVisible = outlineBreadcrumbVisible
         self.renderEmojiShortcodes = renderEmojiShortcodes
+        self.externalDocumentViewMode = externalDocumentViewMode
     }
 
     public static let `default` = AppSettings()
@@ -168,6 +175,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 outlineDragHandles: outlineDragHandles,
                 outlineBreadcrumbVisible: outlineBreadcrumbVisible,
                 renderEmojiShortcodes: renderEmojiShortcodes,
+                externalDocumentViewMode: externalDocumentViewMode,
             )
         }
         return AppSettings(
@@ -187,6 +195,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineDragHandles: outlineDragHandles,
             outlineBreadcrumbVisible: outlineBreadcrumbVisible,
             renderEmojiShortcodes: renderEmojiShortcodes,
+            externalDocumentViewMode: externalDocumentViewMode,
         )
     }
 
@@ -237,6 +246,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineDragHandles: outlineDragHandles,
             outlineBreadcrumbVisible: outlineBreadcrumbVisible,
             renderEmojiShortcodes: renderEmojiShortcodes,
+            externalDocumentViewMode: externalDocumentViewMode,
         )
     }
 
@@ -257,6 +267,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case outlineDragHandles
         case outlineBreadcrumbVisible
         case renderEmojiShortcodes
+        case externalDocumentViewMode
     }
 
     public init(from decoder: any Decoder) throws {
@@ -278,6 +289,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineDragHandles: container.decodeIfPresent(Bool.self, forKey: .outlineDragHandles) ?? true,
             outlineBreadcrumbVisible: container.decodeIfPresent(Bool.self, forKey: .outlineBreadcrumbVisible) ?? true,
             renderEmojiShortcodes: container.decodeIfPresent(Bool.self, forKey: .renderEmojiShortcodes) ?? true,
+            externalDocumentViewMode: container.decodeIfPresent(EditorViewMode.self, forKey: .externalDocumentViewMode) ?? .split,
         )
     }
 

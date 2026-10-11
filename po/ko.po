@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-09-05 12:40+0700\n"
+"POT-Creation-Date: 2026-10-11 17:33+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Korean\n"
@@ -778,6 +778,9 @@ msgstr "노트 폴더 열기"
 msgid "Open or create a note before dropping or pasting images."
 msgstr "이미지를 끌어 놓거나 붙여 넣기 전에 노트를 열거나 만드세요."
 
+msgid "Opened files start in"
+msgstr "열린 파일의 시작 보기"
+
 msgid "Outline"
 msgstr "개요"
 
@@ -1039,6 +1042,9 @@ msgstr "선택한 대상이 폴더가 아닙니다."
 
 msgid "The selected folder is on a read-only filesystem and cannot store notes."
 msgstr "선택한 폴더는 읽기 전용 파일 시스템에 있어 노트를 저장할 수 없습니다."
+
+msgid "The view a Markdown file opened from the file manager starts in. Notes in the library keep their own."
+msgstr "파일 관리자로 연 Markdown 파일의 시작 보기입니다. 라이브러리의 노트는 각각의 보기를 유지합니다."
 
 msgid "There is not enough disk space to move your notes to that folder."
 msgstr "그 폴더로 노트를 옮길 디스크 공간이 부족합니다."

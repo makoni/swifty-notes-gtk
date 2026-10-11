@@ -603,9 +603,9 @@ extension MainWindow {
         saveNoteButton.setAccessibleLabel("Save Note".localized)
         deleteNoteButton.setAccessibleLabel("Delete Note".localized)
         menuButton.setAccessibleLabel("Main Menu".localized)
-        editorModeToggle.setAccessibleLabel("Editor".localized)
-        splitModeToggle.setAccessibleLabel("Split".localized)
-        previewModeToggle.setAccessibleLabel(localizedWithContext("view mode", "Preview"))
+        editorModeToggle.setAccessibleLabel(EditorViewMode.editor.displayName)
+        splitModeToggle.setAccessibleLabel(EditorViewMode.split.displayName)
+        previewModeToggle.setAccessibleLabel(EditorViewMode.preview.displayName)
         updateViewModeToggleState()
     }
 
