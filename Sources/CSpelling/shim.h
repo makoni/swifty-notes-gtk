@@ -150,6 +150,7 @@ swifty_notes_spelling_for_each_language(SwiftyNotesSpellingLanguageCallback call
     if (provider == NULL) {
         return;
     }
+#if (SPELLING_MAJOR_VERSION > 0) || (SPELLING_MINOR_VERSION >= 4)
     GListModel *model = spelling_provider_list_languages(provider);
     if (model == NULL) {
         return;
@@ -165,6 +166,25 @@ swifty_notes_spelling_for_each_language(SwiftyNotesSpellingLanguageCallback call
         }
     }
     g_object_unref(model);
+#else
+    // libspelling 0.2 returns a GPtrArray (transfer container) whose free
+    // func is g_object_unref, so the elements are borrowed here and one
+    // g_ptr_array_unref releases everything. Reading it as a GListModel
+    // fired CRITICALs and unref'd a non-object, corrupting memory.
+    GPtrArray *languages = spelling_provider_list_languages(provider);
+    if (languages == NULL) {
+        return;
+    }
+    for (guint i = 0; i < languages->len; i++) {
+        SwiftyNotesSpellingLanguageItem *language = g_ptr_array_index(languages, i);
+        if (language != NULL) {
+            callback(swifty_notes_spelling_lang_get_code(language),
+                     swifty_notes_spelling_lang_get_name(language),
+                     user_data);
+        }
+    }
+    g_ptr_array_unref(languages);
+#endif
 }
 
 // ---------------------------------------------------------------------------
