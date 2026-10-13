@@ -80,27 +80,17 @@ struct MarkdownEditor {
         let returnControllerPointer = returnKeyController.opaquePointer
         let returnTextViewPointer = UnsafeMutablePointer<GtkTextView>(view.opaquePointer)
         returnKeyController.onKeyPressed { [scopedBuffer = buffer] keyval, _, modifiers in
-            // The Return key in both its locations on the main row and the
-            // numpad.
-            guard keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter else { return false }
-            // Let the input method claim Return first: it commits a CJK
-            // composition and we must not also insert a newline (the
-            // GtkSourceView pattern).
-            let currentEvent = gtk_event_controller_get_current_event(returnControllerPointer)
-            if gtk_text_view_im_context_filter_keypress(returnTextViewPointer, currentEvent) != 0 {
-                return true
-            }
-            // Decide between Return and Shift+Return. Mask out the lock bits
-            // (Caps Lock = 1 << 1, plus the X11 NumLock slot 1 << 4 that GTK4
-            // does not populate); any remaining modifier bit — Control, Alt,
-            // Super, Meta, a mouse button — means this is not our key, so let
-            // GTK's default newline (and auto-indent) run.
-            let masked = modifiers.rawValue & ~((UInt32(1) << 1) | (UInt32(1) << 4))
-            let shiftBit = UInt32(1) << 0
-            if (masked & ~shiftBit) != 0 {
-                return false
-            }
-            return MarkdownEditor.handleReturn(buffer: scopedBuffer, softBreak: (masked & shiftBit) != 0)
+            MarkdownEditor.handleReturnKey(
+                keyval: keyval,
+                modifiers: modifiers.rawValue,
+                buffer: scopedBuffer,
+                inputMethodConsumes: {
+                    gtk_text_view_im_context_filter_keypress(
+                        returnTextViewPointer,
+                        gtk_event_controller_get_current_event(returnControllerPointer),
+                    ) != 0
+                },
+            )
         }
         view.addController(returnKeyController)
         applySettings(.default)
