@@ -65,6 +65,17 @@ import Foundation
             editor.select(range: range)
         }
 
+        /// Drives ``handleReturn`` the way the editor's Return key handler
+        /// would, so the continuation behaviour is testable without a real
+        /// key event. Returns whether the line was a continuable one.
+        func debugPressReturn(softBreak: Bool = false) -> Bool {
+            editor.handleReturn(softBreak: softBreak)
+        }
+
+        var debugEditorCaret: Int {
+            editor.selectedRange().lowerBound
+        }
+
         func debugEmitEditorFormattingButtonClicked(_ action: MarkdownFormattingAction) {
             // Same reasoning as the toolbar helpers above: drive the
             // formatting toolbar's action dispatcher directly instead
