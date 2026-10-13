@@ -72,7 +72,7 @@ let package = Package(
             bundledPath: "flatpak-deps/swift-adwaita",
             overridePath: localSwiftAdwaitaPath,
             remoteURL: "https://github.com/makoni/swift-adwaita.git",
-            // Pinned to the 2.0.0 tag. What this app needs from the library
+            // Pinned to the 2.0.2 tag. What this app needs from the library
             // arrived in 1.6.0 and is still the floor:
             //   * Window.isActive — routes app-level accelerators to the
             //     focused external document window.
@@ -98,11 +98,15 @@ let package = Package(
             // raises the toolchain floor to Swift 6.3: Xcode 26 and the
             // Flatpak SDK extension ship 6.3, while the snap and the Linux CI
             // jobs build with the version in .swift-version (6.4).
+            // 2.0.2 stops Window()/ApplicationWindow(application:) stealing
+            // GTK's toplevel reference: on 2.0.0 a released window was freed
+            // while GTK still listed it, and the next text-direction walk
+            // (LanguageSwitchingTests after MainWindowActionsTests) crashed.
             // Still pinned by revision rather than by version: the Flatpak
             // manifest needs a commit for its git source either way, and a
             // bump should follow validating a newer upstream rather than
             // SemVer auto-resolution.
-            revision: "68c9f5b97148c6d409abea7467fdbf04e9c09b8b"
+            revision: "c6b8a4ca5d89a47239b955c0174bf1849fb999ad"
         ),
         sourceDependency(
             bundledPath: "flatpak-deps/swift-markdown",
