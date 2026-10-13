@@ -44,6 +44,8 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
+          # xdotool drives a real X11 key press (Ctrl+Shift+U hex entry) for the
+          # input-method composition test, which runs under the xvfb-run X11 session.
           sudo apt-get install -y \
             at-spi2-core \
             dbus \
@@ -55,6 +57,7 @@ jobs:
             libspelling-1-dev \
             locales \
             webp-pixbuf-loader \
+            xdotool \
             xvfb
 
       - name: Generate a locale

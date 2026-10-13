@@ -65,6 +65,12 @@ import Foundation
             editor.select(range: range)
         }
 
+        /// Moves keyboard focus to the editor's text view so a black-box key
+        /// event (see the xdotool input-method test) lands in the buffer.
+        func debugFocusEditor() {
+            editor.focus()
+        }
+
         /// Drives ``handleReturn`` the way the editor's Return key handler
         /// would, so the continuation behaviour is testable without a real
         /// key event. Returns whether the line was a continuable one.
