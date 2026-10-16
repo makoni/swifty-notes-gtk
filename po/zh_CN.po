@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Simplified Chinese\n"
@@ -583,6 +583,9 @@ msgstr "库"
 msgid "Light"
 msgstr "浅色"
 
+msgid "Line spacing"
+msgstr "行间距"
+
 msgid "Link"
 msgstr "链接"
 
@@ -796,6 +799,12 @@ msgstr "指定应用主题，或跟随系统。"
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "路径“%@”超出文件系统 %d 字节的上限。"
 
+msgid "Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr "正常大小的百分比。在预览上按住 Ctrl 滚动滚轮同样可以更改。"
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr "预览中行间正常间距的百分比。"
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "回收站中的笔记在经过这段时间后永久删除。"
 
@@ -819,6 +828,9 @@ msgstr "将选中的行变为任务列表"
 
 msgid "Preview only"
 msgstr "仅预览"
+
+msgid "Preview zoom"
+msgstr "预览缩放"
 
 msgid "Previous Match"
 msgstr "上一个匹配项"

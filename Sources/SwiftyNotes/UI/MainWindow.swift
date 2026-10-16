@@ -261,6 +261,11 @@ final class MainWindow {
     /// interface language, so the launcher can pass the change on to any
     /// open standalone document windows — which this window does not own.
     var onLanguageChanged: () -> Void = {}
+    /// Called at the end of a successful ``updateAppSettings`` with the
+    /// settings that were just persisted and applied, so the launcher can
+    /// fan the preview typography out to any open standalone document
+    /// windows — which this window does not own.
+    var appSettingsDidChange: ((AppSettings) -> Void)?
     var noteContextMenu: Popover?
     var noteContextMenuRequestID: UInt = 0
     var noteContextHandlers: [String: @MainActor () -> Void] = [:]
@@ -346,6 +351,17 @@ final class MainWindow {
         preview.attach(to: window)
         preview.taskCheckboxToggleHandler = { [weak self] taskIndex in
             self?.handleTaskCheckboxToggle(at: taskIndex)
+        }
+        // A Ctrl+scroll zoom saves through the same path as the settings
+        // window: the new percent persists, `updateAppSettings` applies it
+        // to this window's preview and fires `appSettingsDidChange`, and
+        // the launcher's callback fans the typography out to every open
+        // external-document window. It survives a restart.
+        preview.previewZoomChangeHandler = { [weak self] newZoom in
+            guard let self else { return }
+            var settings = self.appSettings
+            settings.previewZoomPercent = newZoom
+            _ = try? self.updateAppSettings(settings)
         }
         configureActionsAndMenu()
         wireSignals()

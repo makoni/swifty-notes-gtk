@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Korean\n"
@@ -583,6 +583,9 @@ msgstr "라이브러리"
 msgid "Light"
 msgstr "밝음"
 
+msgid "Line spacing"
+msgstr "줄 간격"
+
 msgid "Link"
 msgstr "링크"
 
@@ -796,6 +799,12 @@ msgstr "앱 테마를 지정하거나 시스템을 따릅니다."
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "경로 “%@”이(가) 파일 시스템 한도인 %d바이트를 넘습니다."
 
+msgid "Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr "일반 크기의 백분율입니다. 미리 보기에서 Ctrl+스크롤 휠로도 변경할 수 있습니다."
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr "미리 보기의 줄 사이 일반 간격의 백분율입니다."
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "휴지통의 노트를 이만큼 시간이 지나면 영구히 삭제합니다."
 
@@ -819,6 +828,9 @@ msgstr "선택한 줄을 할 일 목록으로 만듭니다"
 
 msgid "Preview only"
 msgstr "미리 보기만"
+
+msgid "Preview zoom"
+msgstr "미리 보기 확대/축소"
 
 msgid "Previous Match"
 msgstr "이전 일치 항목"

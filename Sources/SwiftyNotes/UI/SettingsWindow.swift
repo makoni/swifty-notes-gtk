@@ -44,6 +44,8 @@ final class SettingsWindow {
     private let outlineDragHandlesRow = SwitchRow(title: "")
     private let outlineBreadcrumbRow = SwitchRow(title: "")
     private let renderEmojiRow = SwitchRow(title: "")
+    private let previewZoomRow = SpinRow(title: "", min: 50, max: 200, step: 10)
+    private let lineSpacingRow = SpinRow(title: "", min: 80, max: 200, step: 10)
     private let storageGroup = PreferencesGroup(title: "")
     private let editorGroup = PreferencesGroup(title: "")
     private let previewGroup = PreferencesGroup(title: "")
@@ -203,6 +205,20 @@ final class SettingsWindow {
         }
         previewGroup.add(renderEmojiRow)
 
+        previewZoomRow.digits = 0
+        previewZoomRow.numeric = true
+        previewZoomRow.onNotify(.value) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        previewGroup.add(previewZoomRow)
+
+        lineSpacingRow.digits = 0
+        lineSpacingRow.numeric = true
+        lineSpacingRow.onNotify(.value) { [weak self] in
+            self?.handleInlinePreferenceChange()
+        }
+        previewGroup.add(lineSpacingRow)
+
         autosaveDelayRow.digits = 0
         autosaveDelayRow.numeric = true
         autosaveDelayRow.onNotify(.value) { [weak self] in
@@ -327,6 +343,10 @@ final class SettingsWindow {
         previewGroup.description = "Control how rendered Markdown appears in the preview.".localized
         renderEmojiRow.title = "Render emoji shortcodes".localized
         renderEmojiRow.subtitle = "Show :shortcode: aliases (e.g. :rocket:) as emoji. Source text and code are unchanged.".localized
+        previewZoomRow.title = "Preview zoom".localized
+        previewZoomRow.subtitle = "Percent of the normal size. Ctrl+scroll over the preview changes it too.".localized
+        lineSpacingRow.title = "Line spacing".localized
+        lineSpacingRow.subtitle = "Percent of the normal spacing between lines in the preview.".localized
 
         savingGroup.title = "Saving".localized
         savingGroup.description = "Autosave runs after the last edit using the configured delay.".localized
@@ -467,6 +487,8 @@ final class SettingsWindow {
         outlineDragHandlesRow.active = currentSettings.outlineDragHandles
         outlineBreadcrumbRow.active = currentSettings.outlineBreadcrumbVisible
         renderEmojiRow.active = currentSettings.renderEmojiShortcodes
+        previewZoomRow.value = Double(currentSettings.previewZoomPercent)
+        lineSpacingRow.value = Double(currentSettings.previewLineSpacingPercent)
         if !spellCheckLanguages.isEmpty {
             // Index 0 represents the "follow system locale" option (no
             // explicit language). Subsequent indices map onto entries in
@@ -535,6 +557,8 @@ final class SettingsWindow {
             outlineBreadcrumbVisible: outlineBreadcrumbRow.active,
             renderEmojiShortcodes: renderEmojiRow.active,
             externalDocumentViewMode: externalViewMode,
+            previewZoomPercent: Int(previewZoomRow.value.rounded()),
+            previewLineSpacingPercent: Int(lineSpacingRow.value.rounded()),
         )
 
         do {
@@ -598,6 +622,10 @@ final class SettingsWindow {
                 "languageRow": languageRow.title,
                 "languageSubtitle": languageRow.subtitle ?? "",
                 "spellCheckGroup": spellCheckGroup.title,
+                "previewZoomRow": previewZoomRow.title,
+                "previewZoomSubtitle": previewZoomRow.subtitle ?? "",
+                "lineSpacingRow": lineSpacingRow.title,
+                "lineSpacingSubtitle": lineSpacingRow.subtitle ?? "",
                 "outlineGroup": outlineGroup.title,
                 "outlineDensityRow": outlineDensityRow.title,
                 "externalViewModeRow": externalViewModeRow.title,
@@ -627,6 +655,24 @@ final class SettingsWindow {
             handleInlinePreferenceChange()
         }
 
+        func debugSetPreviewZoom(_ value: Int) {
+            previewZoomRow.value = Double(value)
+            handleInlinePreferenceChange()
+        }
+
+        func debugSetLineSpacing(_ value: Int) {
+            lineSpacingRow.value = Double(value)
+            handleInlinePreferenceChange()
+        }
+
+        var debugPreviewZoomValue: Int {
+            Int(previewZoomRow.value.rounded())
+        }
+
+        var debugLineSpacingValue: Int {
+            Int(lineSpacingRow.value.rounded())
+        }
+
         func debugSetTabWidth(_ value: Int) {
             tabWidthRow.value = Double(value)
             handleInlinePreferenceChange()
@@ -653,6 +699,19 @@ final class SettingsWindow {
         var debugEditorGroupRowTitles: [String] {
             var titles: [String] = []
             var stack: [Widget] = [editorGroup]
+            while let widget = stack.popLast() {
+                if let row = widget.tryCast(ActionRow.self) {
+                    titles.append(row.title)
+                } else {
+                    stack.append(contentsOf: widget.children())
+                }
+            }
+            return titles
+        }
+
+        var debugPreviewGroupRowTitles: [String] {
+            var titles: [String] = []
+            var stack: [Widget] = [previewGroup]
             while let widget = stack.popLast() {
                 if let row = widget.tryCast(ActionRow.self) {
                     titles.append(row.title)

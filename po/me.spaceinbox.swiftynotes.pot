@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -588,6 +588,9 @@ msgstr ""
 msgid "Light"
 msgstr ""
 
+msgid "Line spacing"
+msgstr ""
+
 msgid "Link"
 msgstr ""
 
@@ -803,6 +806,13 @@ msgstr ""
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr ""
 
+msgid ""
+"Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr ""
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr ""
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr ""
 
@@ -825,6 +835,9 @@ msgid "Prefix the selected lines as a task list"
 msgstr ""
 
 msgid "Preview only"
+msgstr ""
+
+msgid "Preview zoom"
 msgstr ""
 
 msgid "Previous Match"

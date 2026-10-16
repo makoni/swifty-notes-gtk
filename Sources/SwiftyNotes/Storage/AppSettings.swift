@@ -54,6 +54,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public static let defaultEditorFontSize = 14
     public static let defaultEditorTabWidth = 4
     public static let defaultAutosaveDelaySeconds = 2
+    public static let defaultPreviewZoomPercent = 100
+    public static let defaultPreviewLineSpacingPercent = 100
 
     public var customNotesDirectoryPath: String?
     public var wrapsEditorLines: Bool
@@ -96,6 +98,14 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// ``EditorViewMode.split``, the behaviour before this preference
     /// existed.
     public var externalDocumentViewMode: EditorViewMode
+    /// Percent of the normal font size applied across the whole rendered
+    /// preview (paragraphs, headings, code, tables). Defaults to 100 %,
+    /// the look before zoom was a preference.
+    public var previewZoomPercent: Int
+    /// Percent of the normal line spacing for prose (paragraph, blockquote
+    /// and list labels) in the preview. Code blocks and tables keep their
+    /// own spacing. Defaults to 100 %, today's 1.24 / 1.14 line heights.
+    public var previewLineSpacingPercent: Int
 
     public init(
         customNotesDirectoryPath: String? = nil,
@@ -115,6 +125,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
         outlineBreadcrumbVisible: Bool = true,
         renderEmojiShortcodes: Bool = true,
         externalDocumentViewMode: EditorViewMode = .split,
+        previewZoomPercent: Int = AppSettings.defaultPreviewZoomPercent,
+        previewLineSpacingPercent: Int = AppSettings.defaultPreviewLineSpacingPercent,
     ) {
         self.customNotesDirectoryPath = customNotesDirectoryPath?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -136,6 +148,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
         self.outlineBreadcrumbVisible = outlineBreadcrumbVisible
         self.renderEmojiShortcodes = renderEmojiShortcodes
         self.externalDocumentViewMode = externalDocumentViewMode
+        self.previewZoomPercent = Self.clampedPreviewZoomPercent(previewZoomPercent)
+        self.previewLineSpacingPercent = Self.clampedPreviewLineSpacingPercent(previewLineSpacingPercent)
     }
 
     public static let `default` = AppSettings()
@@ -176,6 +190,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
                 outlineBreadcrumbVisible: outlineBreadcrumbVisible,
                 renderEmojiShortcodes: renderEmojiShortcodes,
                 externalDocumentViewMode: externalDocumentViewMode,
+                previewZoomPercent: previewZoomPercent,
+                previewLineSpacingPercent: previewLineSpacingPercent,
             )
         }
         return AppSettings(
@@ -196,6 +212,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineBreadcrumbVisible: outlineBreadcrumbVisible,
             renderEmojiShortcodes: renderEmojiShortcodes,
             externalDocumentViewMode: externalDocumentViewMode,
+            previewZoomPercent: previewZoomPercent,
+            previewLineSpacingPercent: previewLineSpacingPercent,
         )
     }
 
@@ -247,6 +265,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineBreadcrumbVisible: outlineBreadcrumbVisible,
             renderEmojiShortcodes: renderEmojiShortcodes,
             externalDocumentViewMode: externalDocumentViewMode,
+            previewZoomPercent: previewZoomPercent,
+            previewLineSpacingPercent: previewLineSpacingPercent,
         )
     }
 
@@ -268,6 +288,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
         case outlineBreadcrumbVisible
         case renderEmojiShortcodes
         case externalDocumentViewMode
+        case previewZoomPercent
+        case previewLineSpacingPercent
     }
 
     public init(from decoder: any Decoder) throws {
@@ -290,6 +312,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
             outlineBreadcrumbVisible: container.decodeIfPresent(Bool.self, forKey: .outlineBreadcrumbVisible) ?? true,
             renderEmojiShortcodes: container.decodeIfPresent(Bool.self, forKey: .renderEmojiShortcodes) ?? true,
             externalDocumentViewMode: container.decodeIfPresent(EditorViewMode.self, forKey: .externalDocumentViewMode) ?? .split,
+            previewZoomPercent: container.decodeIfPresent(Int.self, forKey: .previewZoomPercent)
+                ?? Self.defaultPreviewZoomPercent,
+            previewLineSpacingPercent: container.decodeIfPresent(Int.self, forKey: .previewLineSpacingPercent)
+                ?? Self.defaultPreviewLineSpacingPercent,
         )
     }
 
@@ -323,6 +349,14 @@ public struct AppSettings: Codable, Equatable, Sendable {
 
     private static func clampedAutosaveDelaySeconds(_ value: Int) -> Int {
         min(max(value, 1), 60)
+    }
+
+    private static func clampedPreviewZoomPercent(_ value: Int) -> Int {
+        min(max(value, 50), 200)
+    }
+
+    private static func clampedPreviewLineSpacingPercent(_ value: Int) -> Int {
+        min(max(value, 80), 200)
     }
 }
 

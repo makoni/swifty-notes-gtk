@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -592,6 +592,9 @@ msgstr "Biblioteca"
 msgid "Light"
 msgstr "Claro"
 
+msgid "Line spacing"
+msgstr "Espaçamento entre linhas"
+
 msgid "Link"
 msgstr "Link"
 
@@ -805,6 +808,12 @@ msgstr "Defina o tema do aplicativo ou siga o sistema."
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "O caminho “%@” excede o limite de %d bytes do sistema de arquivos."
 
+msgid "Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr "Porcentagem do tamanho normal. Ctrl+rolagem sobre a visualização também a altera."
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr "Porcentagem do espaçamento normal entre as linhas na visualização."
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "Excluir permanentemente as notas na lixeira depois desse tempo."
 
@@ -828,6 +837,9 @@ msgstr "Transformar as linhas selecionadas em uma lista de tarefas"
 
 msgid "Preview only"
 msgstr "Somente visualização"
+
+msgid "Preview zoom"
+msgstr "Zoom da visualização"
 
 msgid "Previous Match"
 msgstr "Ocorrência anterior"
