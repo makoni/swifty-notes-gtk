@@ -95,6 +95,60 @@ struct SettingsStoreTests {
         #expect(loaded.renderEmojiShortcodes == false)
     }
 
+    @Test("Preview typography preferences default to one hundred percent")
+    func previewTypographyPreferencesDefaultToOneHundredPercent() {
+        #expect(AppSettings().previewZoomPercent == 100)
+        #expect(AppSettings().previewLineSpacingPercent == 100)
+        #expect(AppSettings.default.previewZoomPercent == 100)
+        #expect(AppSettings.default.previewLineSpacingPercent == 100)
+    }
+
+    @Test("App settings decode older payload with preview typography defaults")
+    func appSettingsDecodeOlderPayloadWithPreviewTypographyDefaults() throws {
+        let payload = """
+        {
+          "customNotesDirectoryPath": "/tmp/notes"
+        }
+        """
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(payload.utf8))
+
+        #expect(settings.previewZoomPercent == 100)
+        #expect(settings.previewLineSpacingPercent == 100)
+    }
+
+    @Test("Preview typography preferences survive a settings round-trip")
+    func previewTypographyPreferencesSurviveASettingsRoundTrip() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let store = AppSettingsStore(
+            settingsFileURL: temp.appendingPathComponent("settings.json", isDirectory: false),
+        )
+
+        try store.save(AppSettings(
+            previewZoomPercent: 150,
+            previewLineSpacingPercent: 130,
+        ))
+
+        let loaded = try store.load()
+        #expect(loaded.previewZoomPercent == 150)
+        #expect(loaded.previewLineSpacingPercent == 130)
+    }
+
+    @Test("Out-of-range preview zoom values clamp to the 50 to 200 range")
+    func outOfRangePreviewZoomValuesClampToTheSupportedRange() {
+        #expect(AppSettings(previewZoomPercent: 30).previewZoomPercent == 50)
+        #expect(AppSettings(previewZoomPercent: 100).previewZoomPercent == 100)
+        #expect(AppSettings(previewZoomPercent: 250).previewZoomPercent == 200)
+    }
+
+    @Test("Out-of-range line spacing values clamp to the 80 to 200 range")
+    func outOfRangeLineSpacingValuesClampToTheSupportedRange() {
+        #expect(AppSettings(previewLineSpacingPercent: 50).previewLineSpacingPercent == 80)
+        #expect(AppSettings(previewLineSpacingPercent: 100).previewLineSpacingPercent == 100)
+        #expect(AppSettings(previewLineSpacingPercent: 300).previewLineSpacingPercent == 200)
+    }
+
     @Test("External document view mode defaults to split")
     func externalDocumentViewModeDefaultsToSplit() {
         #expect(AppSettings().externalDocumentViewMode == .split)

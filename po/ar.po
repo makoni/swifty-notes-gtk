@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Arabic\n"
@@ -628,6 +628,9 @@ msgstr "المكتبة"
 msgid "Light"
 msgstr "فاتح"
 
+msgid "Line spacing"
+msgstr "تباعد الأسطر"
+
 msgid "Link"
 msgstr "رابط"
 
@@ -841,6 +844,12 @@ msgstr "حدّد سمة التطبيق أو اتبع النظام."
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "المسار «%@» يتجاوز حدّ نظام الملفات البالغ %d بايت."
 
+msgid "Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr "النسبة المئوية من الحجم الطبيعي. يمكن تغييرها أيضاً بالتمرير مع Ctrl فوق المعاينة."
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr "النسبة المئوية من التباعد الطبيعي بين الأسطر في المعاينة."
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "احذف ملاحظات المهملات نهائيًا بعد مرور هذه المدة."
 
@@ -864,6 +873,9 @@ msgstr "تحويل الأسطر المحددة إلى قائمة مهام"
 
 msgid "Preview only"
 msgstr "المعاينة فقط"
+
+msgid "Preview zoom"
+msgstr "تقريب المعاينة"
 
 msgid "Previous Match"
 msgstr "المطابقة السابقة"

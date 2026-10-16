@@ -109,6 +109,16 @@ final class AppController {
             self?.releaseMainWindow()
         }
         mainWindow = window
+        // The main window persists app settings; the standalone document
+        // windows belong to the launcher, so it receives the saved settings
+        // and fans the preview typography out to every open external window
+        // itself.
+        window.appSettingsDidChange = { [weak self] settings in
+            guard let self else { return }
+            for externalWindow in self.externalDocumentWindows.values {
+                externalWindow.applyPreviewTypography(settings)
+            }
+        }
         if allowsWindowPresentation {
             window.present()
         }
@@ -182,6 +192,27 @@ final class AppController {
         externalWindow.window.onDestroy { [weak self, weak externalWindow] in
             guard let self, let externalWindow else { return }
             externalDocumentWindows.removeValue(forKey: ObjectIdentifier(externalWindow))
+        }
+        // A Ctrl+scroll zoom here is an app-wide preference, so persist it
+        // like the main window does and let every open preview see the new
+        // step — this window's own preview included.
+        externalWindow.preview.previewZoomChangeHandler = { [weak self] newZoom in
+            guard let self else { return }
+            if let mainWindow = self.mainWindow {
+                var settings = mainWindow.appSettings
+                settings.previewZoomPercent = newZoom
+                _ = try? mainWindow.updateAppSettings(settings)
+                return
+            }
+            // No main window (file-open launch): the settings store is the
+            // source of truth — persist the new zoom there and restyle
+            // every open external window.
+            var settings = self.currentAppSettings()
+            settings.previewZoomPercent = newZoom
+            try? self.appSettingsStore.save(settings)
+            for window in self.externalDocumentWindows.values {
+                window.applyPreviewTypography(settings)
+            }
         }
         externalDocumentWindows[ObjectIdentifier(externalWindow)] = externalWindow
         if allowsWindowPresentation {
@@ -457,6 +488,16 @@ public enum SwiftyNotesLauncher {
             mainWindow != nil
         }
 
+        var debugMainWindow: MainWindow? {
+            mainWindow
+        }
+
+        func debugExternalDocumentWindow(for fileURL: URL) -> ExternalDocumentWindow? {
+            let standardizedURL = fileURL.standardizedFileURL
+            return externalDocumentWindows.values
+                .first(where: { $0.fileURL == standardizedURL })
+        }
+
         var debugExternalDocumentFileURLs: [URL] {
             externalDocumentWindows.values
                 .map(\.fileURL)
@@ -464,10 +505,7 @@ public enum SwiftyNotesLauncher {
         }
 
         func debugExternalWindowIdentifier(for fileURL: URL) -> ObjectIdentifier? {
-            let standardizedURL = fileURL.standardizedFileURL
-            return externalDocumentWindows.values
-                .first(where: { $0.fileURL == standardizedURL })
-                .map(ObjectIdentifier.init)
+            debugExternalDocumentWindow(for: fileURL).map(ObjectIdentifier.init)
         }
     }
 #endif

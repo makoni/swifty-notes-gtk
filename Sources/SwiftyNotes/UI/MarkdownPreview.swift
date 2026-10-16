@@ -1,4 +1,5 @@
 import Adwaita
+import CAdwaita
 import CSpelling
 import Foundation
 
@@ -175,10 +176,11 @@ final class MarkdownPreview {
         margin-bottom: 2px;
     }
 
-    .preview-paragraph-label,
-    .preview-blockquote-label {
-        line-height: 1.24;
-    }
+    /* Prose line-heights (paragraph, blockquote, compact and task list
+       labels/markers) live in the static PreviewTypography stylesheet
+       (PreviewTypography.installGlobalStylesheet) — each preview selects
+       its line-spacing step with a preview-spacing-* class — so they
+       must not be pinned here either. */
 
     .preview-nested-list-row {
         margin-top: 2px;
@@ -204,16 +206,6 @@ final class MarkdownPreview {
         padding-top: 0;
         padding-bottom: 0;
         min-height: 0;
-    }
-
-    .preview-compact-list-label,
-    .preview-compact-list-marker {
-        line-height: 1.14;
-    }
-
-    .preview-task-list-label,
-    .preview-task-list-marker {
-        line-height: 1.14;
     }
 
     .preview-image-link {
@@ -360,6 +352,7 @@ final class MarkdownPreview {
         PreviewRemoteImageLoader.shared.loadImage(url, completion: completion)
     }) {
         _ = Self.previewCSS
+        PreviewTypography.installGlobalStylesheet()
         self.remoteImageLoader = remoteImageLoader
         container = Box(orientation: .vertical, spacing: 20)
         container.setMargins(20)
@@ -378,6 +371,39 @@ final class MarkdownPreview {
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
         retranslateAccessibility()
         rootScroll.overlayScrolling = false
+
+        // Ctrl+scroll zoom (and the static typography stylesheet) target
+        // the whole rendered preview through this CSS class on the root.
+        rootScroll.addCSSClass(PreviewTypography.rootCSSClass)
+
+        // The factory typography step: every preview renders at the
+        // default 100 % zoom / 100 % line spacing until the owning
+        // window's ``applyTypography`` swaps in the persisted step. The
+        // classes keep the shipped line heights even for previews no
+        // window has applied settings to yet.
+        let factoryTypography = PreviewTypography.cssClasses(zoomPercent: 100, lineSpacingPercent: 100)
+        appliedTypography = factoryTypography
+        rootScroll.addCSSClass(factoryTypography.zoom)
+        rootScroll.addCSSClass(factoryTypography.spacing)
+
+        // The zoom gesture needs the raw modifier state of the event, which
+        // the scroll signal does not hand over — so, like the Return-key
+        // controller in MarkdownEditor, read it from the controller's
+        // current event. Capture phase, before the ScrolledWindow scrolls.
+        let zoomScrollController = EventControllerScroll(
+            flags: GtkEventControllerScrollFlags(
+                rawValue: GtkEventControllerScrollFlags.vertical.rawValue
+                    | GtkEventControllerScrollFlags.discrete.rawValue,
+            ),
+        )
+        zoomScrollController.propagationPhase = .capture
+        let zoomScrollControllerPointer = zoomScrollController.opaquePointer
+        zoomScrollController.onScroll { [weak self] _, deltaY in
+            guard let self else { return false }
+            let state = gtk_event_controller_get_current_event_state(zoomScrollControllerPointer)
+            return self.handlePreviewZoomScroll(deltaY: deltaY, modifiers: state.rawValue)
+        }
+        rootScroll.addController(zoomScrollController)
 
         // GtkWidget does not expose `width` as a GObject property, so
         // `notify::width` (the basis for swift-adwaita's onSizeAllocate)
@@ -2033,6 +2059,66 @@ final class MarkdownPreview {
     /// expected to hand it off to `TaskListToggle.toggle(in:atTaskIndex:)`,
     /// persist the rewritten markdown, and re-render the preview.
     var taskCheckboxToggleHandler: ((Int) -> Void)?
+
+    /// Called with the new zoom percent when a Ctrl+scroll gesture over this
+    /// preview zoomed. The owner persists it through the normal settings
+    /// path, which fans the new typography back out to every preview.
+    var previewZoomChangeHandler: ((Int) -> Void)?
+
+    /// The typography step classes currently on the root; ``applyTypography``
+    /// removes them before adding the new step's, so the root always carries
+    /// exactly one zoom and one line-spacing class.
+    private var appliedTypography: (zoom: String, spacing: String)?
+
+    /// The zoom this preview is currently rendered at. Updated by
+    /// ``applyTypography``, which the Ctrl+scroll path needs to take its
+    /// next step from.
+    private(set) var previewZoomPercent = AppSettings.defaultPreviewZoomPercent
+
+    /// Runs one Ctrl+scroll zoom step over this preview, exactly like the
+    /// scroll controller's handler does. Returns true when the gesture was
+    /// consumed as a zoom (the event must not scroll the view). With no
+    /// ``previewZoomChangeHandler`` installed there is nobody to handle the
+    /// gesture, so false is returned and the event scrolls as usual — a
+    /// preview never swallows input it does not act on.
+    @discardableResult
+    func handlePreviewZoomScroll(deltaY: Double, modifiers: UInt32) -> Bool {
+        guard previewZoomChangeHandler != nil else { return false }
+        guard let newZoom = PreviewTypography.zoomAfterScroll(
+            current: previewZoomPercent,
+            deltaY: deltaY,
+            modifiers: modifiers,
+        ) else {
+            return false
+        }
+        previewZoomChangeHandler?(newZoom)
+        return true
+    }
+
+    /// Applies the app-wide preview typography to this preview by swapping
+    /// the `preview-zoom-*` / `preview-spacing-*` CSS classes on the root
+    /// for the step the preferences select. The static stylesheet (see
+    /// ``PreviewTypography/installGlobalStylesheet()``) carries one rule
+    /// per step, so restyling is a plain GTK class swap: GTK invalidates
+    /// the preview's CSS subtree and the next frame re-resolves every
+    /// already-rendered label, code view and table at the new sizes. No
+    /// provider reload, no markdown re-render — and the code views keep
+    /// their scroll positions.
+    func applyTypography(zoomPercent: Int, lineSpacingPercent: Int) {
+        previewZoomPercent = PreviewTypography.snappedZoomPercent(zoomPercent)
+        let classes = PreviewTypography.cssClasses(
+            zoomPercent: zoomPercent,
+            lineSpacingPercent: lineSpacingPercent,
+        )
+        if let applied = appliedTypography {
+            rootScroll.removeCSSClass(applied.zoom)
+            rootScroll.removeCSSClass(applied.spacing)
+        }
+        rootScroll.addCSSClass(classes.zoom)
+        rootScroll.addCSSClass(classes.spacing)
+        appliedTypography = classes
+        rootScroll.queueResize()
+    }
 
     private func displayMarker(for marker: String, depth: Int) -> String {
         switch marker {

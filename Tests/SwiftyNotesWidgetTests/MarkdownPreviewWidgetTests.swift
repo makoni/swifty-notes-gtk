@@ -1232,6 +1232,511 @@ struct MarkdownPreviewWidgetTests {
         #expect(initialIdentity != advancedIdentity)
     }
 
+    // MARK: Preview zoom and line spacing
+
+    @Test("Preview zoom scales every rendered block type by the same ratio") @MainActor
+    func previewZoomScalesEveryRenderedBlockTypeByTheSameRatio() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.preview-zoom-ratio")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        let window = ApplicationWindow(application: app)
+        window.setDefaultSize(width: 800, height: 760)
+        window.setContent(preview.rootScroll)
+        preview.attach(to: window)
+        // Heading is NOT followed by a paragraph, so it stays a standalone
+        // `.title-1` label (the merged richTextRun path uses Pango relative
+        // sizes instead of the title class). Paragraph is NOT followed by a
+        // paragraph either, so it is a plain `preview-paragraph-label`.
+        preview.render(blocks: [
+            .heading(level: 1, text: .plain("Heading One")),
+            .codeBlock(code: "let alpha = 1\nlet beta = 2\n", language: "swift"),
+            .paragraph(.plain("A paragraph of body text, long enough to be a block the zoom must reach.")),
+            .table(
+                headers: [
+                    RenderedText(markup: "Name", plainText: "Name"),
+                    RenderedText(markup: "Value", plainText: "Value"),
+                ],
+                rows: [[
+                    RenderedText(markup: "Alpha", plainText: "Alpha"),
+                    RenderedText(markup: "One", plainText: "One"),
+                ]],
+                alignments: [.leading, .leading],
+            ),
+        ])
+        window.present()
+        pumpMainContext(for: .milliseconds(120))
+
+        defer {
+            window.close()
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+            pumpMainContext(for: .milliseconds(20))
+        }
+
+        guard
+            let paragraph = firstLabel(withCSSClass: "preview-paragraph-label", in: preview.container),
+            let heading = firstLabel(withCSSClass: "title-1", in: preview.container),
+            let code = firstSourceView(in: preview.container),
+            let table = firstLabel(withCSSClass: "preview-table-body", in: preview.container)
+        else {
+            throw TestFixtureError.missingBlockWidget
+        }
+
+        // Heights for paragraph/heading/code; WIDTH for the table. The
+        // table body is a wrapping monospace label whose natural height
+        // carries per-line constants that make the 100→150 % height ratio
+        // land below 1.3 on CI (1.266× measured) even though every glyph
+        // scales; its natural width is a run of 12 monospace cells and
+        // scales at exactly the zoom in both CI and development.
+        func heights(atZoom zoom: Int, previous: Int?) throws -> (paragraph: Int, heading: Int, code: Int, table: Int) {
+            preview.applyTypography(zoomPercent: zoom, lineSpacingPercent: 100)
+            if let previous {
+                pumpUntilChanged(
+                    { measuredNaturalSize(of: paragraph, orientation: .vertical) },
+                    from: previous,
+                )
+            } else {
+                pumpMainContext(for: .milliseconds(80))
+            }
+            return (
+                measuredNaturalSize(of: paragraph, orientation: .vertical),
+                measuredNaturalSize(of: heading, orientation: .vertical),
+                measuredNaturalSize(of: code, orientation: .vertical),
+                measuredNaturalSize(of: table, orientation: .horizontal),
+            )
+        }
+
+        let base = try heights(atZoom: 100, previous: nil)
+        let scaled = try heights(atZoom: 150, previous: base.paragraph)
+
+        // Paragraph/code/table scale at exactly the zoom in both CI and
+        // development. The heading's 100 % size is theme-relative on
+        // libadwaita ≥ 1.7 (181 % of the environment font), so its ratio is
+        // 30 pt / (1.81 × environment font) — exactly 1.5× on libadwaita
+        // 1.5, where the 100 % pin is absolute 20 pt, and 1.5× for an
+        // ~11 pt environment font. Realistic environment fonts (9–13 pt)
+        // keep the heading in the wider 1.2–1.9 band.
+        func checkRatio(_ name: String, base: Int, scaled: Int, low: Double, high: Double) {
+            #expect(base > 0, "\(name): expected a positive 100 % size, got \(base)")
+            guard base > 0 else { return }
+            let ratio = Double(scaled) / Double(base)
+            #expect(
+                ratio >= low && ratio <= high,
+                "\(name): 150 % size \(scaled) is \(String(format: "%.3f", ratio))× the 100 % size \(base); expected \(low)–\(high)×",
+            )
+        }
+
+        checkRatio("paragraph", base: base.paragraph, scaled: scaled.paragraph, low: 1.3, high: 1.7)
+        checkRatio("heading", base: base.heading, scaled: scaled.heading, low: 1.2, high: 1.9)
+        checkRatio("code", base: base.code, scaled: scaled.code, low: 1.3, high: 1.7)
+        checkRatio("table", base: base.table, scaled: scaled.table, low: 1.3, high: 1.7)
+    }
+
+    @Test("Preview table columns stay aligned when zoomed") @MainActor
+    func previewTableColumnsStayAlignedWhenZoomed() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.preview-table-zoom-alignment")
+        try app.register()
+
+        let headerA = "Name", headerB = "Value"
+        let rowA = "Alpha", rowB = "One"
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        let window = ApplicationWindow(application: app)
+        window.setDefaultSize(width: 800, height: 760)
+        window.setContent(preview.rootScroll)
+        preview.attach(to: window)
+        preview.render(blocks: [
+            .table(
+                headers: [
+                    RenderedText(markup: headerA, plainText: headerA),
+                    RenderedText(markup: headerB, plainText: headerB),
+                ],
+                rows: [[
+                    RenderedText(markup: rowA, plainText: rowA),
+                    RenderedText(markup: rowB, plainText: rowB),
+                ]],
+                alignments: [.leading, .leading],
+            ),
+        ])
+        window.present()
+        pumpMainContext(for: .milliseconds(120))
+
+        defer {
+            window.close()
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+            pumpMainContext(for: .milliseconds(20))
+        }
+
+        guard let tableLabel = firstLabel(withCSSClass: "preview-table-body", in: preview.container) else {
+            Issue.record("Expected table body label")
+            return
+        }
+
+        // Mirror the renderer's field geometry (MarkdownPreview.tableLayout):
+        // column two's field starts after column one's width plus the
+        // two-space joiner. The line geometry itself is read from the
+        // label's REAL Pango layout — each line's start index, not an
+        // assumed stride — so the assertion always indexes the layout
+        // Pango actually laid out.
+        let columnTwoFieldStart = max(headerA.count, rowA.count) + 2
+        let expectedLineCount = 3 // header, divider, one row
+
+        func columnTwoStarts() -> [Int] {
+            let layout = gtk_label_get_layout(tableLabel.opaquePointer)
+            guard Int(pango_layout_get_line_count(layout)) == expectedLineCount else {
+                return []
+            }
+            var starts: [Int] = []
+            for line in 0..<expectedLineCount {
+                guard let pangoLine = pango_layout_get_line(layout, Int32(line)) else {
+                    return []
+                }
+                let lineStart = Int(pango_layout_line_get_start_index(pangoLine))
+                var position = PangoRectangle()
+                pango_layout_index_to_pos(layout, Int32(lineStart + columnTwoFieldStart), &position)
+                starts.append(Int(position.x))
+            }
+            return starts
+        }
+
+        let atHundred = columnTwoStarts()
+        #expect(atHundred.count == expectedLineCount, "expected \(expectedLineCount) table lines, Pango laid out \(atHundred.count)")
+
+        let baselineHeight = measuredNaturalSize(of: tableLabel, orientation: .vertical)
+        preview.applyTypography(zoomPercent: 150, lineSpacingPercent: 100)
+        pumpUntilChanged(
+            { measuredNaturalSize(of: tableLabel, orientation: .vertical) },
+            from: baselineHeight,
+        )
+
+        // The header (line 0) and the body row (line 2) are the lines that
+        // actually carry a second column, and in a monospace run they must
+        // share one column-two x. The divider (line 1) is a run of `─`
+        // glyphs whose advance width the host font decides — narrower than
+        // the monospace cell on CI as well as on the development machine —
+        // so it is only held to SCALE with the zoom, like every other line:
+        // x at 150 % ≈ 1.5 × x at 100 %.
+        let atOneFifty = columnTwoStarts()
+        #expect(atOneFifty.count == expectedLineCount, "expected \(expectedLineCount) table lines at 150 %, Pango laid out \(atOneFifty.count)")
+        guard atHundred.count == expectedLineCount, atOneFifty.count == expectedLineCount else {
+            return
+        }
+
+        #expect(
+            atOneFifty[0] == atOneFifty[2],
+            "column two starts at different x positions on the header (\(atOneFifty[0])) and body (\(atOneFifty[2])) lines when zoomed",
+        )
+        for line in 0..<expectedLineCount where atHundred[line] > 0 {
+            let ratio = Double(atOneFifty[line]) / Double(atHundred[line])
+            #expect(
+                ratio >= 1.3 && ratio <= 1.7,
+                "table line \(line) column-two x scaled \(String(format: "%.3f", ratio))× (from \(atHundred[line]) to \(atOneFifty[line])); expected 1.3–1.7×",
+            )
+        }
+    }
+
+    @Test("Preview line spacing scales prose height but not code height") @MainActor
+    func previewLineSpacingScalesProseHeightButNotCodeHeight() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.preview-line-spacing")
+        try app.register()
+
+        let paragraphText = "This paragraph is intentionally long so that it wraps across several lines at the measurement width, which is what turns the line-spacing preference into a measurable height change on the wrapped prose."
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        let window = ApplicationWindow(application: app)
+        window.setDefaultSize(width: 800, height: 760)
+        window.setContent(preview.rootScroll)
+        preview.attach(to: window)
+        preview.render(blocks: [
+            .paragraph(.plain(paragraphText)),
+            .codeBlock(code: "let alpha = 1\nlet beta = 2\n", language: "swift"),
+        ])
+        window.present()
+        pumpMainContext(for: .milliseconds(120))
+
+        defer {
+            window.close()
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+            pumpMainContext(for: .milliseconds(20))
+        }
+
+        // Zoom stays at 100 % so the font and the code font are constant; only
+        // the prose line-height changes. The wrapped prose gets taller, the
+        // code block keeps its height.
+        guard
+            let paragraph = firstLabel(withCSSClass: "preview-paragraph-label", in: preview.container),
+            let code = firstSourceView(in: preview.container)
+        else {
+            throw TestFixtureError.missingBlockWidget
+        }
+
+        let measureWidth = 260
+        func heights(atLineSpacing spacing: Int, previous: Int?) throws -> (prose: Int, code: Int) {
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: spacing)
+            if let previous {
+                pumpUntilChanged(
+                    { measuredNaturalSize(of: paragraph, orientation: .vertical, forSize: measureWidth) },
+                    from: previous,
+                )
+            } else {
+                pumpMainContext(for: .milliseconds(80))
+            }
+            return (
+                measuredNaturalSize(of: paragraph, orientation: .vertical, forSize: measureWidth),
+                measuredNaturalSize(of: code, orientation: .vertical),
+            )
+        }
+
+        let base = try heights(atLineSpacing: 100, previous: nil)
+        let scaled = try heights(atLineSpacing: 150, previous: base.prose)
+
+        #expect(base.prose > 0, "expected a positive 100 % prose height, got \(base.prose)")
+        #expect(base.code > 0, "expected a positive code block height, got \(base.code)")
+        // The prose line-height multiplier is 1.24 → 1.86 (exactly 1.5×)
+        // and is set by the preview's own stylesheet, so it is
+        // theme-independent: the wrapped prose height must land in 1.3–1.7×.
+        let proseRatio = Double(scaled.prose) / Double(base.prose)
+        #expect(
+            proseRatio >= 1.3 && proseRatio <= 1.7,
+            "line spacing 150 % prose height \(scaled.prose) is \(String(format: "%.3f", proseRatio))× the 100 % height \(base.prose); expected 1.3–1.7×",
+        )
+        #expect(
+            scaled.code == base.code,
+            "code block height changed from \(base.code) to \(scaled.code) with line spacing; code must keep its spacing",
+        )
+    }
+
+    @Test("Preview line spacing scales the flat non-task list label") @MainActor
+    func previewLineSpacingScalesTheFlatNonTaskListLabel() throws {
+        // An ordinary (no checkbox) depth-0 list collapses into one Label
+        // that holds every item, so its natural height is exactly what the
+        // line-spacing preference must scale — the flat-list analogue of the
+        // wrapped-prose paragraph test above.
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.preview-line-spacing-flat-list")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        let window = ApplicationWindow(application: app)
+        window.setDefaultSize(width: 800, height: 760)
+        window.setContent(preview.rootScroll)
+        preview.attach(to: window)
+        preview.render(blocks: [
+            .listItem(text: .plain("First item"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Second item"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Third item"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Fourth item"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Fifth item"), depth: 0, marker: "-"),
+            .listItem(text: .plain("Sixth item"), depth: 0, marker: "-"),
+        ])
+        window.present()
+        pumpMainContext(for: .milliseconds(120))
+
+        defer {
+            window.close()
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+            pumpMainContext(for: .milliseconds(20))
+        }
+
+        // Zoom stays at 100 % so the font is constant; only the label's
+        // line-height changes. The short items do not wrap, so the label
+        // keeps six lines and its height scales purely with the line-height.
+        guard let listLabel = firstLabel(withCSSClass: "preview-flat-list-label", in: preview.container) else {
+            throw TestFixtureError.missingBlockWidget
+        }
+
+        func height(atLineSpacing spacing: Int, previous: Int?) throws -> Int {
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: spacing)
+            if let previous {
+                pumpUntilChanged(
+                    { measuredNaturalSize(of: listLabel, orientation: .vertical) },
+                    from: previous,
+                )
+            } else {
+                pumpMainContext(for: .milliseconds(80))
+            }
+            return measuredNaturalSize(of: listLabel, orientation: .vertical)
+        }
+
+        let base = try height(atLineSpacing: 100, previous: nil)
+        let scaled = try height(atLineSpacing: 150, previous: base)
+
+        #expect(base > 0, "expected a positive 100 % flat list label height, got \(base)")
+        // The flat list label's line-height goes 1.00 → 1.50 (exactly 1.5×),
+        // set by the preview's own stylesheet, so it is theme-independent:
+        // the label height must land in 1.3–1.7×.
+        let ratio = Double(scaled) / Double(base)
+        #expect(
+            ratio >= 1.3 && ratio <= 1.7,
+            "line spacing 150 % flat list label height \(scaled) is \(String(format: "%.3f", ratio))× the 100 % height \(base); expected 1.3–1.7×",
+        )
+    }
+
+    @Test("Preview line spacing scales the table body label") @MainActor
+    func previewLineSpacingScalesTheTableBodyLabel() throws {
+        // A table renders as ONE monospaced label inside its card wrapper,
+        // so its natural height is exactly what the line-spacing preference
+        // must scale — the table analogue of the flat-list test above. Six
+        // short rows keep every line from wrapping, so the height scales
+        // purely with the line-height.
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.preview-line-spacing-table")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        let window = ApplicationWindow(application: app)
+        window.setDefaultSize(width: 800, height: 760)
+        window.setContent(preview.rootScroll)
+        preview.attach(to: window)
+        preview.render(blocks: [
+            .table(
+                headers: [
+                    RenderedText(markup: "Name", plainText: "Name"),
+                    RenderedText(markup: "Value", plainText: "Value"),
+                ],
+                rows: [
+                    [
+                        RenderedText(markup: "Alpha", plainText: "Alpha"),
+                        RenderedText(markup: "One", plainText: "One"),
+                    ],
+                    [
+                        RenderedText(markup: "Beta", plainText: "Beta"),
+                        RenderedText(markup: "Two", plainText: "Two"),
+                    ],
+                    [
+                        RenderedText(markup: "Gamma", plainText: "Gamma"),
+                        RenderedText(markup: "Three", plainText: "Three"),
+                    ],
+                    [
+                        RenderedText(markup: "Delta", plainText: "Delta"),
+                        RenderedText(markup: "Four", plainText: "Four"),
+                    ],
+                    [
+                        RenderedText(markup: "Epsilon", plainText: "Epsilon"),
+                        RenderedText(markup: "Five", plainText: "Five"),
+                    ],
+                    [
+                        RenderedText(markup: "Zeta", plainText: "Zeta"),
+                        RenderedText(markup: "Six", plainText: "Six"),
+                    ],
+                ],
+                alignments: [.leading, .leading],
+            ),
+        ])
+        window.present()
+        pumpMainContext(for: .milliseconds(120))
+
+        defer {
+            window.close()
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+            pumpMainContext(for: .milliseconds(20))
+        }
+
+        // Zoom stays at 100 % so the font is constant; only the label's
+        // line-height changes. The header, the divider and the six rows do
+        // not wrap, so the label keeps its lines and its height scales
+        // purely with the line-height.
+        guard let tableLabel = firstLabel(withCSSClass: "preview-table-body", in: preview.container) else {
+            throw TestFixtureError.missingBlockWidget
+        }
+
+        func height(atLineSpacing spacing: Int, previous: Int?) throws -> Int {
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: spacing)
+            if let previous {
+                pumpUntilChanged(
+                    { measuredNaturalSize(of: tableLabel, orientation: .vertical) },
+                    from: previous,
+                )
+            } else {
+                pumpMainContext(for: .milliseconds(80))
+            }
+            return measuredNaturalSize(of: tableLabel, orientation: .vertical)
+        }
+
+        let base = try height(atLineSpacing: 100, previous: nil)
+        let scaled = try height(atLineSpacing: 150, previous: base)
+
+        #expect(base > 0, "expected a positive 100 % table body height, got \(base)")
+        // The table body's line-height goes 1.00 → 1.50 (exactly 1.5×), set
+        // by the preview's own stylesheet, so it is theme-independent: the
+        // label height must land in 1.3–1.7×.
+        let ratio = Double(scaled) / Double(base)
+        #expect(
+            ratio >= 1.3 && ratio <= 1.7,
+            "line spacing 150 % table body height \(scaled) is \(String(format: "%.3f", ratio))× the 100 % height \(base); expected 1.3–1.7×",
+        )
+    }
+
+    @Test("Preview typography restyles the rendered preview on every repeated class swap") @MainActor
+    func previewTypographyRestylesTheRenderedPreviewOnEveryRepeatedClassSwap() throws {
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.preview-typography-swaps")
+        try app.register()
+
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        let window = ApplicationWindow(application: app)
+        window.setDefaultSize(width: 800, height: 760)
+        window.setContent(preview.rootScroll)
+        preview.attach(to: window)
+        preview.render(blocks: [
+            .paragraph(.plain("A paragraph of body text, long enough to wrap across several lines at the measurement width, which is what turns a typography step into a measurable height change.")),
+        ])
+        window.present()
+        pumpMainContext(for: .milliseconds(120))
+
+        defer {
+            window.close()
+            preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+            pumpMainContext(for: .milliseconds(20))
+        }
+
+        guard let paragraph = firstLabel(withCSSClass: "preview-paragraph-label", in: preview.container) else {
+            Issue.record("Expected paragraph label")
+            return
+        }
+        func paragraphHeight() -> Int {
+            measuredNaturalSize(of: paragraph, orientation: .vertical)
+        }
+
+        // The factory step is already on the root: the first measurement is
+        // the 100 % step, not an unstyled default.
+        #expect(preview.rootScroll.hasCSSClass("preview-zoom-100"))
+        #expect(preview.rootScroll.hasCSSClass("preview-spacing-100"))
+
+        // 100 → 150 → 120 → 200 → 100: every step of the swap sequence
+        // must restyle the ALREADY-rendered label, not just the first one.
+        let hundred = paragraphHeight()
+
+        preview.applyTypography(zoomPercent: 150, lineSpacingPercent: 100)
+        pumpUntilChanged(paragraphHeight, from: hundred)
+        let at150 = paragraphHeight()
+
+        preview.applyTypography(zoomPercent: 120, lineSpacingPercent: 100)
+        pumpUntilChanged(paragraphHeight, from: at150)
+        let at120 = paragraphHeight()
+
+        preview.applyTypography(zoomPercent: 200, lineSpacingPercent: 100)
+        pumpUntilChanged(paragraphHeight, from: at120)
+        let at200 = paragraphHeight()
+
+        preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+        pumpUntilChanged(paragraphHeight, from: at200)
+        let backToHundred = paragraphHeight()
+
+        #expect(hundred > 0, "expected a positive 100 % paragraph height, got \(hundred)")
+        #expect(
+            at150 > hundred && at120 > hundred,
+            "150 % height \(at150) / 120 % height \(at120) should both exceed the 100 % height \(hundred)",
+        )
+        #expect(
+            at150 > at120,
+            "150 % height \(at150) should exceed the 120 % height \(at120)",
+        )
+        #expect(
+            at200 > at150,
+            "200 % height \(at200) should be the largest, got \(at200) vs 150 % \(at150)",
+        )
+        #expect(
+            backToHundred == hundred,
+            "back at 100 % the paragraph height \(backToHundred) should equal the first measurement \(hundred)",
+        )
+    }
+
     @MainActor
     private func firstPicture(in widget: Widget) -> Picture? {
         if let picture = widget.tryCast(Picture.self) {
@@ -1271,6 +1776,19 @@ struct MarkdownPreviewWidgetTests {
         return nil
     }
 
+
+    @MainActor
+    private func firstLabel(withCSSClass cssClass: String, in widget: Widget) -> Label? {
+        if let label = widget.tryCast(Label.self), label.hasCSSClass(cssClass) {
+            return label
+        }
+        for child in widget.children() {
+            if let label = firstLabel(withCSSClass: cssClass, in: child) {
+                return label
+            }
+        }
+        return nil
+    }
 
     @MainActor
     private func firstHBox(in widget: Widget) -> Box? {
@@ -1400,6 +1918,32 @@ struct MarkdownPreviewWidgetTests {
         MainContext.pump(for: duration)
     }
 
+    /// Pumps the main context until `measurement` differs from `previous`, or
+    /// until `timeout` elapses, whichever comes first.
+    ///
+    /// GTK applies CSS style changes to a realized widget in the frame
+    /// clock's layout phase, so a fixed delay only works while the frame
+    /// clock ticks. Pumping until the value moves waits for the style to
+    /// land regardless, and gives up (so the assertion that follows fails
+    /// loudly) if the environment never applies it.
+    @MainActor
+    private func pumpUntilChanged(
+        _ measurement: () -> Int,
+        from previous: Int,
+        timeout: Duration = .milliseconds(500),
+    ) {
+        guard measurement() == previous else { return }
+        let step = Duration.milliseconds(20)
+        var elapsed: Duration = .zero
+        while elapsed < timeout {
+            pumpMainContext(for: step)
+            elapsed += step
+            if measurement() != previous {
+                return
+            }
+        }
+    }
+
     @MainActor
     private func waitForPaintable(
         _ picture: Picture?,
@@ -1436,9 +1980,11 @@ struct MarkdownPreviewWidgetTests {
         MainContext.drainPending()
         return picturePaintableIdentity(picture) != initialIdentity
     }
+
 }
 
 private enum TestFixtureError: Error {
     case invalidBase64
+    case missingBlockWidget
 }
 #endif

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Dutch\n"
@@ -592,6 +592,9 @@ msgstr "Bibliotheek"
 msgid "Light"
 msgstr "Licht"
 
+msgid "Line spacing"
+msgstr "Regelafstand"
+
 msgid "Link"
 msgstr "Koppeling"
 
@@ -805,6 +808,12 @@ msgstr "Stel het thema van de app in of volg het systeem."
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "Pad ‘%@’ overschrijdt de limiet van het bestandssysteem van %d bytes."
 
+msgid "Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr "Percentage van de normale grootte. Ook verandert het met Ctrl+scrollwieltje over het voorbeeld."
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr "Percentage van de normale regelafstand in het voorbeeld."
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "Verwijder notities in de prullenbak definitief nadat deze tijd is verstreken."
 
@@ -828,6 +837,9 @@ msgstr "De geselecteerde regels als takenlijst opmaken"
 
 msgid "Preview only"
 msgstr "Alleen voorbeeld"
+
+msgid "Preview zoom"
+msgstr "Voorbeeld-vergrooting"
 
 msgid "Previous Match"
 msgstr "Vorig resultaat"

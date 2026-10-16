@@ -11,11 +11,13 @@ extension MainWindow {
 
         if targetDirectory != currentDirectory {
             _ = try changeNotesDirectory(to: targetDirectory, targetSettings: normalizedSettings)
+            appSettingsDidChange?(appSettings)
             return appSettings
         }
 
         try appSettingsStore.save(normalizedSettings)
         applyRuntimeSettings(normalizedSettings)
+        appSettingsDidChange?(appSettings)
         return appSettings
     }
 
@@ -35,6 +37,12 @@ extension MainWindow {
         )
 
         applyOutlineTweaks(settings)
+        // Before the language early-return on purpose: a language switch
+        // must not drop the preview back to the default typography.
+        preview.applyTypography(
+            zoomPercent: settings.previewZoomPercent,
+            lineSpacingPercent: settings.previewLineSpacingPercent,
+        )
 
         if languageChanged {
             // Deferred to the next main-loop turn, and that is load-bearing.

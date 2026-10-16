@@ -396,6 +396,14 @@ import Foundation
             _ = try updateAppSettings(settings)
         }
 
+        /// Emits one Ctrl+scroll zoom step over the preview exactly like the
+        /// preview's scroll controller does, so the end-to-end path
+        /// (gesture → settings save → fan-out) is testable without a wheel.
+        @discardableResult
+        func debugPreviewZoomScroll(deltaY: Double, modifiers: UInt32) -> Bool {
+            preview.handlePreviewZoomScroll(deltaY: deltaY, modifiers: modifiers)
+        }
+
         var debugHasAboutDialog: Bool {
             activeAboutDialog != nil
         }
@@ -462,6 +470,26 @@ import Foundation
 
         func debugSettingsSetFontSize(_ value: Int) {
             activeSettingsWindow?.debugSetFontSize(value)
+        }
+
+        func debugSettingsSetPreviewZoom(_ value: Int) {
+            activeSettingsWindow?.debugSetPreviewZoom(value)
+        }
+
+        func debugSettingsSetLineSpacing(_ value: Int) {
+            activeSettingsWindow?.debugSetLineSpacing(value)
+        }
+
+        var debugSettingsPreviewGroupRowTitles: [String]? {
+            activeSettingsWindow?.debugPreviewGroupRowTitles
+        }
+
+        var debugSettingsPreviewZoomValue: Int? {
+            activeSettingsWindow?.debugPreviewZoomValue
+        }
+
+        var debugSettingsLineSpacingValue: Int? {
+            activeSettingsWindow?.debugLineSpacingValue
         }
 
         func debugSettingsSetTabWidth(_ value: Int) {

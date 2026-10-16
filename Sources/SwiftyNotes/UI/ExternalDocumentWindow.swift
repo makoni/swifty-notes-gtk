@@ -592,6 +592,18 @@ extension ExternalDocumentWindow {
         refreshPreview()
     }
 
+    /// Applies only the preview typography from `settings` — the live
+    /// fan-out target for app-wide zoom / line-spacing changes. The
+    /// other runtime settings are deliberately untouched: a typography
+    /// change must not restyle an open document window's editor font,
+    /// theme, outline tweaks or autosave delay.
+    func applyPreviewTypography(_ settings: AppSettings) {
+        preview.applyTypography(
+            zoomPercent: settings.previewZoomPercent,
+            lineSpacingPercent: settings.previewLineSpacingPercent,
+        )
+    }
+
     // Internal (not fileprivate like most window plumbing): mirrors
     // MainWindow.applyRuntimeSettings so a future settings fan-out can
     // push live changes into open standalone windows, and tests can
@@ -599,6 +611,7 @@ extension ExternalDocumentWindow {
     func applyRuntimeSettings(_ settings: AppSettings, shouldRefreshPreview: Bool = true) {
         editor.applySettings(settings)
         renderEmojiShortcodes = settings.renderEmojiShortcodes
+        applyPreviewTypography(settings)
         outlineSidebar.applyTweaks(
             density: settings.outlineDensity,
             treeLines: settings.outlineTreeLines,

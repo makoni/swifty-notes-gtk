@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-11 17:33+0700\n"
+"POT-Creation-Date: 2026-10-14 07:39+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -603,6 +603,9 @@ msgstr "Библиотека"
 msgid "Light"
 msgstr "Светлая"
 
+msgid "Line spacing"
+msgstr "Межстрочный интервал"
+
 msgid "Link"
 msgstr "Ссылка"
 
@@ -816,6 +819,12 @@ msgstr "Переопределять тему приложения или сле
 msgid "Path \"%@\" exceeds the file system limit of %d bytes."
 msgstr "Путь «%@» превышает ограничение файловой системы в %d байт."
 
+msgid "Percent of the normal size. Ctrl+scroll over the preview changes it too."
+msgstr "Процент от обычного размера. Также меняется при прокрутке с Ctrl над предпросмотром."
+
+msgid "Percent of the normal spacing between lines in the preview."
+msgstr "Процент от обычного интервала между строками в предпросмотре."
+
 msgid "Permanently delete trashed notes after this much time has passed."
 msgstr "Навсегда удалять заметки из корзины по истечении этого времени."
 
@@ -839,6 +848,9 @@ msgstr "Оформить выделенные строки как список �
 
 msgid "Preview only"
 msgstr "Только предварительный просмотр"
+
+msgid "Preview zoom"
+msgstr "Масштаб предпросмотра"
 
 msgid "Previous Match"
 msgstr "Предыдущее совпадение"
