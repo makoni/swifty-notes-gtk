@@ -1,0 +1,4 @@
+module CRaTeXBridge [system] {
+    header "include/ratex_bridge.h"
+    export *
+}

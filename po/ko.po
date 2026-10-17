@@ -571,6 +571,9 @@ msgstr "제목으로 이동…"
 msgid "Jump-to-heading results"
 msgstr "제목 이동 결과"
 
+msgid "KaTeX fonts"
+msgstr "KaTeX 글꼴"
+
 msgid "Language"
 msgstr "언어"
 

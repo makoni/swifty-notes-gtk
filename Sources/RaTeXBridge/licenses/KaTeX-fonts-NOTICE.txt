@@ -1,0 +1,24 @@
+KaTeX fonts — attribution and license notice
+============================================
+
+Swifty Notes draws formulas with the KaTeX mathematical fonts (the KaTeX_*
+font faces: KaTeX_Main, KaTeX_Math, KaTeX_AMS, KaTeX_Caligraphic,
+KaTeX_Fraktur, KaTeX_SansSerif, KaTeX_Script, KaTeX_Typewriter and the
+KaTeX_Size1–4 faces). They come unmodified from the KaTeX project
+(https://github.com/KaTeX/KaTeX) by way of the RaTeX engine's
+ratex-katex-fonts crate, and are compiled into the application binary.
+
+These fonts are NOT covered by the Swifty Notes MIT license or by RaTeX's MIT
+license. They are licensed under the SIL Open Font License, Version 1.1. The
+notice in each font file reads:
+
+  Copyright (c) 2009-2010, Design Science, Inc. (<www.mathjax.org>)
+  Copyright (c) 2014-2018 Khan Academy (<www.khanacademy.org>),
+  with Reserved Font Name KaTeX_Main.   [each face names itself here]
+
+  This Font Software is licensed under the SIL Open Font License, Version 1.1.
+  This license available with a FAQ at:
+  http://scripts.sil.org/OFL
+
+The complete text of the SIL Open Font License, Version 1.1 is in
+KaTeX-fonts-OFL-1.1.txt next to this file.

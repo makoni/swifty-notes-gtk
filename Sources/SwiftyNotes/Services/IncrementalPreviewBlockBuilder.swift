@@ -199,6 +199,9 @@ struct IncrementalPreviewBlockBuilder {
         switch (block, kind) {
         case (.heading, .heading),
              (.paragraph, .paragraph),
+             // A display math span in its own paragraph segment renders
+             // as a `.math` block.
+             (.math, .paragraph),
              (.blockquote, .blockquote),
              (.thematicBreak, .thematicBreak):
             true

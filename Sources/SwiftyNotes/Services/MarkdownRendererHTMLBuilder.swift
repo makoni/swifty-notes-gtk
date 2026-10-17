@@ -32,6 +32,9 @@ final class HTMLPreviewDocumentBuilder {
 
     private var listItemMetadata: [ListItemMeta] = []
     private var listItemMetadataCursor = 0
+    /// Math spans cut out of the source before parsing; the placeholders
+    /// survive the HTML pass and are restored by ``restoringMathSpans``.
+    private var mathSpans: [MathSpan] = []
 
     init(darkAppearance: Bool, renderEmojiShortcodes: Bool = true) {
         self.darkAppearance = darkAppearance
@@ -39,17 +42,26 @@ final class HTMLPreviewDocumentBuilder {
     }
 
     func render(markdown: String) -> [RenderedBlock] {
-        listItemMetadata = collectListItemMetadata(from: markdown)
+        // Math must be cut out before any Markdown processing: CommonMark
+        // mangles TeX (`$x^*$` emphasis, `\{` → `{`, `\\` → `\`). The
+        // extracted source keeps its line structure, so the line-based
+        // scanners below (task lists, list metadata) still line up.
+        let extraction = MathSpanExtractor.extract(from: markdown)
+        let source = extraction.markdown
+        mathSpans = extraction.spans
+        listItemMetadata = collectListItemMetadata(from: source)
         listItemMetadataCursor = 0
-        let html = HTMLFormatter.format(markdown)
+        let html = HTMLFormatter.format(source)
         let nodes = HTMLSubsetParser().parse(html)
         let rendered = assigningTaskIndices(
-            in: restoringImageMetadata(
-                in: restoringTaskListMarkers(in: blocks(from: nodes, listDepth: 0), markdown: markdown),
-                markdown: markdown,
+            in: restoringMathSpans(
+                in: restoringImageMetadata(
+                    in: restoringTaskListMarkers(in: blocks(from: nodes, listDepth: 0), markdown: source),
+                    markdown: source,
+                ),
             ),
         )
-        if rendered.isEmpty, markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if rendered.isEmpty, source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return [.paragraph(.plain("Nothing to preview yet.".localized))]
         }
         return rendered
@@ -794,6 +806,91 @@ final class HTMLPreviewDocumentBuilder {
         }
 
         return restored
+    }
+
+    /// Puts the extracted math back where the text landed.
+    ///
+    /// - A paragraph whose plain text is *exactly* one display span's
+    ///   placeholder becomes a `.math` block.
+    /// - Every other placeholder is restored inline: `$tex$` in
+    ///   `plainText` (search, outline and copy see the source), and one
+    ///   U+FFFC in `markup` that the preview draws the formula over, with
+    ///   the span listed in `mathSpans` in the same order. Display
+    ///   placeholders that ended up inline (e.g. `a $$b$$ c`) keep
+    ///   `isDisplay == true`.
+    /// - Table cells keep the TeX source (`$tex$`) in their markup: the
+    ///   table lays its columns out in monospace characters, which a drawn
+    ///   formula would break.
+    private func restoringMathSpans(in blocks: [RenderedBlock]) -> [RenderedBlock] {
+        guard !mathSpans.isEmpty else { return blocks }
+        return blocks.map { restoreMathSpans(in: $0) }
+    }
+
+    private func restoreMathSpans(in block: RenderedBlock) -> RenderedBlock {
+        switch block {
+        case let .paragraph(text):
+            if let span = displayMathSpan(for: text) {
+                return .math(tex: span.tex)
+            }
+            return .paragraph(restoredMathText(text))
+        case let .heading(level, text):
+            return .heading(level: level, text: restoredMathText(text))
+        case let .blockquote(text):
+            return .blockquote(restoredMathText(text))
+        case let .listItem(text, depth, marker, loose, taskIndex):
+            return .listItem(
+                text: restoredMathText(text),
+                depth: depth,
+                marker: marker,
+                loose: loose,
+                taskIndex: taskIndex,
+            )
+        case let .table(headers, rows, alignments):
+            return .table(
+                headers: headers.map { restoredMathText($0, drawsFormulas: false) },
+                rows: rows.map { row in row.map { restoredMathText($0, drawsFormulas: false) } },
+                alignments: alignments,
+            )
+        case .math, .codeBlock, .thematicBreak, .image, .imageGroup:
+            return block
+        }
+    }
+
+    private func displayMathSpan(for text: RenderedText) -> MathSpan? {
+        let trimmed = text.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        for (index, span) in mathSpans.enumerated() where span.isDisplay {
+            if trimmed == MathSpanExtractor.placeholder(for: index) {
+                return span
+            }
+        }
+        return nil
+    }
+
+    private func restoredMathText(_ text: RenderedText) -> RenderedText {
+        restoredMathText(text, drawsFormulas: true)
+    }
+
+    private func restoredMathText(_ text: RenderedText, drawsFormulas: Bool) -> RenderedText {
+        guard !mathSpans.isEmpty else { return text }
+        var found: [MathSpan] = []
+
+        func replacePlaceholders(in string: String, collecting: Bool = false, replacement: (MathSpan) -> String) -> String {
+            MathSpanExtractor.replacingPlaceholders(in: string) { index in
+                guard index < mathSpans.count else { return nil }
+                let span = mathSpans[index]
+                if collecting { found.append(span) }
+                return replacement(span)
+            }
+        }
+
+        let plainText = replacePlaceholders(in: text.plainText, collecting: drawsFormulas) { span in
+            "$\(span.tex)$"
+        }
+        let markup = replacePlaceholders(in: text.markup) { span in
+            drawsFormulas ? String(MathSpanExtractor.formulaMarker) : "$\(pangoEscape(span.tex))$"
+        }
+        return RenderedText(markup: markup, plainText: plainText, mathSpans: found)
     }
 
     func markdownImages(from markdown: String) -> [MarkdownImageMetadata] {

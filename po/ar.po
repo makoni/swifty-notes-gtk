@@ -616,6 +616,9 @@ msgstr "الانتقال إلى عنوان…"
 msgid "Jump-to-heading results"
 msgstr "نتائج الانتقال إلى عنوان"
 
+msgid "KaTeX fonts"
+msgstr "خطوط KaTeX"
+
 msgid "Language"
 msgstr "اللغة"
 

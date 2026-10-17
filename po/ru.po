@@ -591,6 +591,9 @@ msgstr "Перейти к заголовку…"
 msgid "Jump-to-heading results"
 msgstr "Результаты перехода к заголовку"
 
+msgid "KaTeX fonts"
+msgstr "Шрифты KaTeX"
+
 msgid "Language"
 msgstr "Язык"
 

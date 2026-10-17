@@ -12,13 +12,26 @@ import Foundation
 /// `no-spell-check` context class on its own (and on some installs the
 /// grammar isn't bundled at all).
 enum MarkdownNoSpellRanges {
-    /// Returns ranges measured in **Swift String Character offsets**
-    /// (not UTF-8 bytes). The caller maps them onto `GtkTextBuffer`
-    /// offsets through `applyTag(startOffset:endOffset:)`, which
-    /// expects character offsets matching `String.count`.
+    /// Returns ranges measured in **Unicode scalars** (code points), the
+    /// unit `GtkTextBuffer` offsets count in — not `String` characters,
+    /// which differ after an emoji with a modifier, a flag or a decomposed
+    /// accent.
     static func ranges(in text: String) -> [Range<Int>] {
-        var ranges = scanFencedBlocks(in: text)
-        ranges.append(contentsOf: scanInlineSpans(in: text, excluding: ranges))
+        // The scanners below count characters; convert their ranges.
+        var scalarOffsetOfCharacter: [Int] = []
+        scalarOffsetOfCharacter.reserveCapacity(text.count + 1)
+        var scalarOffset = 0
+        for character in text {
+            scalarOffsetOfCharacter.append(scalarOffset)
+            scalarOffset += character.unicodeScalars.count
+        }
+        scalarOffsetOfCharacter.append(scalarOffset)
+        func scalarRange(_ range: Range<Int>) -> Range<Int> {
+            scalarOffsetOfCharacter[range.lowerBound]..<scalarOffsetOfCharacter[range.upperBound]
+        }
+        let fenced = scanFencedBlocks(in: text)
+        var ranges = (fenced + scanInlineSpans(in: text, excluding: fenced)).map(scalarRange)
+        ranges.append(contentsOf: MathSpanExtractor.sourceRanges(in: text))
         ranges.sort { $0.lowerBound < $1.lowerBound }
         return ranges
     }

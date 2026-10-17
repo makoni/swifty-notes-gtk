@@ -23,10 +23,15 @@ public struct MarkdownRenderer: Sendable {
 public struct RenderedText: Sendable, Equatable {
     public let markup: String
     public let plainText: String
+    /// Inline math spans found in this text, in order (display spans that
+    /// ended up inline keep `isDisplay == true`). Empty for text without
+    /// math.
+    public let mathSpans: [MathSpan]
 
-    public init(markup: String, plainText: String) {
+    public init(markup: String, plainText: String, mathSpans: [MathSpan] = []) {
         self.markup = markup
         self.plainText = plainText
+        self.mathSpans = mathSpans
     }
 
     public static func plain(_ text: String) -> Self {
@@ -71,6 +76,7 @@ public enum RenderedBlockStyle: Sendable, Equatable {
     case thematicBreak
     case table
     case image
+    case math
 }
 
 /// Visual treatment for rendered images. Reflects the markdown author's
@@ -90,6 +96,7 @@ public enum ImageBlockStyle: Sendable, Equatable {
 public enum RenderedBlock: Sendable, Equatable {
     case heading(level: Int, text: RenderedText)
     case paragraph(RenderedText)
+    case math(tex: String)
     case codeBlock(code: String, language: String?)
     case blockquote(RenderedText)
     case listItem(text: RenderedText, depth: Int, marker: String, loose: Bool = false, taskIndex: Int? = nil)
@@ -104,6 +111,8 @@ public enum RenderedBlock: Sendable, Equatable {
             .heading(level: level)
         case .paragraph:
             .paragraph
+        case .math:
+            .math
         case let .codeBlock(_, language):
             .codeBlock(language: language)
         case .blockquote:
@@ -129,6 +138,8 @@ public enum RenderedBlock: Sendable, Equatable {
              let .paragraph(text),
              let .blockquote(text):
             return text.plainText
+        case let .math(tex):
+            return tex
         case let .codeBlock(code, language):
             if let language, !language.isEmpty {
                 return "\(language)\n\(code)"

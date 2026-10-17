@@ -36,6 +36,7 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 
 ## Build and test commands
 
+- Build the math engine first (Rust; once, and after changing `Sources/RaTeXBridge`): `scripts/build-ratex-bridge.sh`
 - Build the app: `swift build`
 - Run the full test suite: `swift test --no-parallel`
 - Run a single Swift Testing case: `swift test --filter 'mainWindowPresentRendersPreviewForInitiallySelectedNote' --no-parallel`

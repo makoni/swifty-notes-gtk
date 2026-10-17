@@ -38,6 +38,7 @@ enum MarkdownShowcaseSeed {
     | Toolbar | Quick formatting without memorizing syntax |
     | Split view | Write and review side by side |
     | CLI | Automate the same file-backed notes |
+    | Math | TeX formulas between `$` and `$$` |
 
     ## Links
 
@@ -54,9 +55,24 @@ enum MarkdownShowcaseSeed {
     print("Swifty Notes: \\(modes.joined(separator: " / "))")
     ```
 
+    ## Math
+
+    Write TeX between dollar signs and it renders in place: the area of a circle is $A = \\pi r^2$, Euler's identity reads $e^{i\\pi} + 1 = 0$, and water is $\\ce{H2O}$.
+
+    $$
+    \\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}
+    $$
+
+    $$
+    \\begin{aligned}
+    (a+b)^2 &= a^2 + 2ab + b^2 \\\\
+    \\sum_{k=1}^{n} k &= \\frac{n(n+1)}{2}
+    \\end{aligned}
+    $$
+
     ## Mixed Content
 
-    You can combine text, lists, tables, code blocks, and media in one note to build clean project docs or product-ready release collateral.
+    You can combine text, lists, tables, code blocks, formulas, and media in one note to build clean project docs or product-ready release collateral.
     """
 
     static func imageData() throws -> Data {

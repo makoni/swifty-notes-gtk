@@ -580,6 +580,9 @@ msgstr "קפיצה לכותרת…"
 msgid "Jump-to-heading results"
 msgstr "תוצאות הקפיצה לכותרת"
 
+msgid "KaTeX fonts"
+msgstr "גופני KaTeX"
+
 msgid "Language"
 msgstr "שפה"
 

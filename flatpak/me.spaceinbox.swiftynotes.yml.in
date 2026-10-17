@@ -4,6 +4,8 @@ runtime-version: "50"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.swift6
+  # Builds the math engine (RaTeX, Rust) that the app links statically.
+  - org.freedesktop.Sdk.Extension.rust-stable
 command: swiftynotes
 
 finish-args:
@@ -13,7 +15,9 @@ finish-args:
   - --device=dri
 
 build-options:
-  append-path: /usr/lib/sdk/swift6/bin
+  # One colon-separated string: flatpak-builder reads append-path as a
+  # single string, not a list.
+  append-path: /usr/lib/sdk/swift6/bin:/usr/lib/sdk/rust-stable/bin
   prepend-ld-library-path: /usr/lib/sdk/swift6/lib
 
 modules:
@@ -105,9 +109,21 @@ modules:
 
   - name: swifty-notes
     buildsystem: simple
+    build-options:
+      env:
+        # The crates come from ratex-cargo-sources.json (the build has no
+        # network); its cargo config sits in this module's cargo/ directory.
+        CARGO_HOME: /run/build/swifty-notes/cargo
+        RATEX_BRIDGE_OFFLINE: "1"
     sources:
       - type: dir
         path: @SOURCE_PATH@
+        skip:
+          # A host build of the math engine (Rust artefacts for the host).
+          - build
+      # Regenerate with scripts/generate-flatpak-cargo-sources.py after
+      # changing Sources/RaTeXBridge/Cargo.lock.
+      - @SOURCE_PATH@/flatpak/ratex-cargo-sources.json
       - type: git
         url: https://github.com/makoni/swift-adwaita.git
         commit: c6b8a4ca5d89a47239b955c0174bf1849fb999ad

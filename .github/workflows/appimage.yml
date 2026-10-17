@@ -113,6 +113,14 @@ jobs:
             webp-pixbuf-loader \
             zsync
 
+      # Only needed to assemble on a standalone dispatch: the math engine is
+      # Rust, and noble's default rustc is too old (see ci.yml).
+      - name: Install Rust
+        if: inputs.install-root-artifact-prefix == ''
+        run: |
+          sudo apt-get install -y rustc-1.91 cargo-1.91
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+
       - name: Download /usr install root
         if: inputs.install-root-artifact-prefix != ''
         uses: actions/download-artifact@v8
