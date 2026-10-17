@@ -12,6 +12,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ffi::{c_char, c_int, c_void, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use ab_glyph::{Font, FontRef};
@@ -23,7 +24,8 @@ use ratex_layout::{
 use ratex_parser::{parse, ParseNode};
 use ratex_types::color::Color;
 use ratex_types::math_style::MathStyle;
-use ratex_types::DisplayList;
+use ratex_types::path_command::PathCommand;
+use ratex_types::{DisplayItem, DisplayList};
 
 /// Longest TeX source the bridge accepts. Some constructs (`\ce` in
 /// particular) parse in quadratic time, so the app caps formulas well below
@@ -35,12 +37,30 @@ const MAX_TEX_BYTES: usize = 8 * 1024;
 /// units or cairo surfaces downstream.
 const MAX_BOX_PX: f64 = 16_384.0;
 
+/// Most memory, in estimated bytes, one formula may keep. Stretchy
+/// constructs (`\overbrace`, `\xrightarrow`) are drawn as long paths, tens
+/// of kilobytes each, so a short formula could otherwise hold megabytes.
+const MAX_FORMULA_BYTES: usize = 512 * 1024;
+
+/// Most memory, in estimated bytes, all live formulas together may keep by
+/// default; past it new formulas are refused until some are freed.
+const DEFAULT_LIVE_BYTES_LIMIT: usize = 192 * 1024 * 1024;
+
+static LIVE_BYTES: AtomicUsize = AtomicUsize::new(0);
+static LIVE_BYTES_LIMIT: AtomicUsize = AtomicUsize::new(DEFAULT_LIVE_BYTES_LIMIT);
+
 // ---------------------------------------------------------------------------
 // Thread-local last error
 // ---------------------------------------------------------------------------
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
+    /// Whether the last error was the memory limit, which may pass later.
+    static LAST_ERROR_IS_TRANSIENT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+fn set_last_error_transient(transient: bool) {
+    let _ = LAST_ERROR_IS_TRANSIENT.try_with(|cell| cell.set(transient));
 }
 
 fn set_last_error(message: &str) {
@@ -56,6 +76,7 @@ fn set_last_error(message: &str) {
 }
 
 fn clear_last_error() {
+    set_last_error_transient(false);
     let _ = LAST_ERROR.try_with(|cell| {
         if let Ok(mut slot) = cell.try_borrow_mut() {
             *slot = None;
@@ -104,7 +125,34 @@ pub struct Formula {
     width: f64,
     height: f64,
     depth: f64,
-    cached: Mutex<Option<(Color, DisplayList)>>,
+    cached: Mutex<Option<(Color, Arc<DisplayList>)>>,
+    /// The bytes this formula holds of the live total (zero until counted).
+    cost: usize,
+}
+
+impl Drop for Formula {
+    fn drop(&mut self) {
+        LIVE_BYTES.fetch_sub(self.cost, Ordering::Relaxed);
+    }
+}
+
+/// Estimated heap bytes of a display list; paths dominate.
+fn display_list_bytes(list: &DisplayList) -> usize {
+    let mut bytes = std::mem::size_of::<DisplayList>() + list.items.capacity() * std::mem::size_of::<DisplayItem>();
+    for item in &list.items {
+        match item {
+            DisplayItem::GlyphPath { font, .. } => bytes += font.capacity(),
+            DisplayItem::Path { commands, .. } => bytes += commands.capacity() * std::mem::size_of::<PathCommand>(),
+            _ => {}
+        }
+    }
+    bytes
+}
+
+/// Estimated bytes a formula keeps: its display list, which the colour
+/// cache may hold twice while a new colour is laid out, plus the parse tree.
+fn formula_cost(tex: &str, list: &DisplayList) -> usize {
+    2 * display_list_bytes(list) + 64 * tex.len() + 4096
 }
 
 impl Formula {
@@ -115,15 +163,15 @@ impl Formula {
         Ok(to_display_list(&tree))
     }
 
-    fn display_list(&self, color: Color) -> Result<DisplayList, String> {
+    fn display_list(&self, color: Color) -> Result<Arc<DisplayList>, String> {
         let mut cached = self.cached.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some((cached_color, list)) = cached.as_ref() {
             if *cached_color == color {
-                return Ok(list.clone());
+                return Ok(Arc::clone(list));
             }
         }
-        let list = self.layout(color)?;
-        *cached = Some((color, list.clone()));
+        let list = Arc::new(self.layout(color)?);
+        *cached = Some((color, Arc::clone(&list)));
         Ok(list)
     }
 }
@@ -180,6 +228,10 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
     if !font_px.is_finite() || !(1.0..=1024.0).contains(&font_px) {
         return Err(format!("font size {font_px} is outside 1…1024 px"));
     }
+    if LIVE_BYTES.load(Ordering::Relaxed) >= LIVE_BYTES_LIMIT.load(Ordering::Relaxed) {
+        set_last_error_transient(true);
+        return Err("formula memory limit reached".to_string());
+    }
     let nodes = parse(tex).map_err(|error| format!("parse error: {error}"))?;
     let mut formula = Formula {
         nodes,
@@ -190,6 +242,7 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
         height: 0.0,
         depth: 0.0,
         cached: Mutex::new(None),
+        cost: 0,
     };
     let list = formula.layout(Color::BLACK)?;
     let width = list.width * font_px;
@@ -199,10 +252,23 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
     if !sane(width) || !sane(height) || !sane(depth) || depth > height {
         return Err(format!("formula box {width}×{height} px is out of range"));
     }
+    let cost = formula_cost(tex, &list);
+    if cost > MAX_FORMULA_BYTES {
+        return Err(format!("formula needs about {} KiB, more than {} KiB", cost / 1024, MAX_FORMULA_BYTES / 1024));
+    }
+    let limit = LIVE_BYTES_LIMIT.load(Ordering::Relaxed);
+    if LIVE_BYTES
+        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |live| live.checked_add(cost).filter(|total| *total <= limit))
+        .is_err()
+    {
+        set_last_error_transient(true);
+        return Err("formula memory limit reached".to_string());
+    }
+    formula.cost = cost;
     formula.width = width;
     formula.height = height;
     formula.depth = depth;
-    *formula.cached.get_mut().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some((Color::BLACK, list));
+    *formula.cached.get_mut().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some((Color::BLACK, Arc::new(list)));
     Ok(formula)
 }
 
@@ -220,6 +286,8 @@ extern "C" {
     fn FcFontMatch(config: *mut c_void, pattern: *mut c_void, result: *mut c_int) -> *mut c_void;
     fn FcPatternGetString(pattern: *const c_void, object: *const c_char, n: c_int, value: *mut *mut u8) -> c_int;
     fn FcPatternGetInteger(pattern: *const c_void, object: *const c_char, n: c_int, value: *mut c_int) -> c_int;
+    fn FcPatternGetCharSet(pattern: *const c_void, object: *const c_char, n: c_int, value: *mut *mut c_void) -> c_int;
+    fn FcCharSetHasChar(charset: *const c_void, ucs4: u32) -> c_int;
     fn FcPatternDestroy(pattern: *mut c_void);
 }
 
@@ -250,18 +318,24 @@ fn text_fallback_font_spec() -> Option<String> {
         }
         let mut file: *mut u8 = std::ptr::null_mut();
         let mut index: c_int = 0;
+        let mut charset: *mut c_void = std::ptr::null_mut();
         let has_file = FcPatternGetString(matched, c"file".as_ptr(), 0, &mut file) == FC_RESULT_MATCH && !file.is_null();
-        let path = has_file.then(|| std::ffi::CStr::from_ptr(file.cast()).to_string_lossy().into_owned());
+        // The charset belongs to the pattern: check it before destroying that.
+        let has_glyphs = FcPatternGetCharSet(matched, c"charset".as_ptr(), 0, &mut charset) == FC_RESULT_MATCH
+            && !charset.is_null()
+            && FcCharSetHasChar(charset, u32::from('ж')) != 0
+            && FcCharSetHasChar(charset, u32::from('α')) != 0;
+        // RaTeX splits its spec at the last `#`, so a path holding one (or
+        // one that is not UTF-8) cannot be passed on.
+        let path = (has_file && has_glyphs)
+            .then(|| std::ffi::CStr::from_ptr(file.cast()).to_str().ok().map(str::to_owned))
+            .flatten()
+            .filter(|path| !path.contains('#'));
         if FcPatternGetInteger(matched, c"index".as_ptr(), 0, &mut index) != FC_RESULT_MATCH {
             index = 0;
         }
         FcPatternDestroy(matched);
         let path = path?;
-        let data = std::fs::read(&path).ok()?;
-        let font = FontRef::try_from_slice_and_index(&data, u32::try_from(index).ok()?).ok()?;
-        if font.glyph_id('ж').0 == 0 || font.glyph_id('α').0 == 0 {
-            return None;
-        }
         Some(if index == 0 { path } else { format!("{path}#{index}") })
     }
 }
@@ -409,6 +483,25 @@ pub unsafe extern "C" fn ratex_bridge_free(formula: *mut Formula) {
             drop(Box::from_raw(formula));
         }
     });
+}
+
+/// Estimated bytes all live formulas keep.
+#[no_mangle]
+pub extern "C" fn ratex_bridge_live_bytes() -> usize {
+    LIVE_BYTES.load(Ordering::Relaxed)
+}
+
+/// Sets the limit on `ratex_bridge_live_bytes()` and returns the old one.
+#[no_mangle]
+pub extern "C" fn ratex_bridge_set_live_bytes_limit(limit: usize) -> usize {
+    LIVE_BYTES_LIMIT.swap(limit, Ordering::Relaxed)
+}
+
+/// Whether the last error on the calling thread was the memory limit, which
+/// the same formula may pass once other formulas are freed.
+#[no_mangle]
+pub extern "C" fn ratex_bridge_last_error_is_transient() -> c_int {
+    catch_unwind(|| c_int::from(LAST_ERROR_IS_TRANSIENT.try_with(std::cell::Cell::get).unwrap_or(false))).unwrap_or(0)
 }
 
 #[no_mangle]

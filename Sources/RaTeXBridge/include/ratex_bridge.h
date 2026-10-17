@@ -25,7 +25,9 @@ typedef struct ratex_bridge_formula ratex_bridge_formula;
  * and limits set at full size), 0 the inline text style.
  *
  * Returns NULL when the TeX does not parse, is longer than the bridge's input
- * limit, or lays out to a box that is not finite or is unreasonably large.
+ * limit, lays out to a box that is not finite or is unreasonably large, would
+ * keep too much memory, or when the live formulas together already keep
+ * their limit (see ratex_bridge_set_live_bytes_limit).
  * Characters the KaTeX fonts lack (Cyrillic, CJK, …) are measured with the
  * same system font the renderer draws them with.
  */
@@ -50,6 +52,22 @@ int ratex_bridge_draw(ratex_bridge_formula *formula, void *cr, double red, doubl
 
 /* Frees a formula. NULL is ignored. */
 void ratex_bridge_free(ratex_bridge_formula *formula);
+
+/* Estimated bytes all live (not yet freed) formulas keep. */
+size_t ratex_bridge_live_bytes(void);
+
+/*
+ * Sets how many estimated bytes all live formulas may keep together (192 MiB
+ * by default); past it ratex_bridge_parse refuses new formulas until some
+ * are freed. Returns the previous limit.
+ */
+size_t ratex_bridge_set_live_bytes_limit(size_t limit);
+
+/*
+ * Whether the last error on the calling thread was the memory limit above:
+ * the same formula may parse once others are freed. 1 or 0.
+ */
+int ratex_bridge_last_error_is_transient(void);
 
 /*
  * The last error on the calling thread, or NULL. Valid until the next bridge

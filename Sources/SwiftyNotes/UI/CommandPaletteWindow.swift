@@ -310,7 +310,7 @@ final class CommandPaletteWindow {
             // `label.markup` parses the Pango `<span>` highlight;
             // `label.text` would strip it back to literal angle
             // brackets. Same fix the outline rows use.
-            leafLabel.markup = Self.highlightedMarkup(heading.text, query: query)
+            leafLabel.markup = pangoHighlightedMarkup(heading.text, query: query)
         }
         leafLabel.ellipsize = .end
         leafLabel.hexpand = true
@@ -392,18 +392,6 @@ final class CommandPaletteWindow {
         _ = dialog.close()
     }
 
-    /// Same Pango entity escape + yellow highlight as the outline rows.
-    private static func highlightedMarkup(_ text: String, query: String) -> String {
-        let lowerText = text.lowercased()
-        let lowerQuery = query.lowercased()
-        guard let range = lowerText.range(of: lowerQuery) else {
-            return pangoEscape(text)
-        }
-        let pre = String(text[..<range.lowerBound])
-        let hit = String(text[range])
-        let post = String(text[range.upperBound...])
-        return "\(pangoEscape(pre))<span background=\"#f5c211\" foreground=\"#1e1e1e\">\(pangoEscape(hit))</span>\(pangoEscape(post))"
-    }
 
 }
 

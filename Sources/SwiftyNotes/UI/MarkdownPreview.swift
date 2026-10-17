@@ -599,7 +599,7 @@ final class MarkdownPreview {
         postponedMathPassScheduled = true
         rootScroll.addTickCallback { [weak self] in
             guard let self else { return false }
-            let stillPostponed = MathRenderer.withParseBudget(.milliseconds(100)) {
+            let stillPostponed = MathRenderer.withParseBudget(Self.followUpParseBudget) {
                 PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
             }
             reapplySearchHighlights()
@@ -608,6 +608,25 @@ final class MarkdownPreview {
             }
             return stillPostponed
         }
+    }
+
+    /// What a pass after the render — a postponed one, a font refresh —
+    /// may spend parsing per frame; it always finishes at least one formula.
+    private static let followUpParseBudget: Duration = .milliseconds(16)
+
+    /// When the parse budget the row binds of this frame share runs out;
+    /// the first bind of a frame starts it.
+    private func bindParseDeadline() -> ContinuousClock.Instant {
+        if let deadline = currentBindParseDeadline {
+            return deadline
+        }
+        let deadline = ContinuousClock.now + .milliseconds(50)
+        currentBindParseDeadline = deadline
+        rootScroll.addTickCallback { [weak self] in
+            self?.currentBindParseDeadline = nil
+            return false
+        }
+        return deadline
     }
 
     private func renderWithinParseBudget(blocks: [RenderedBlock], baseDirectory: URL?) {
@@ -796,6 +815,11 @@ final class MarkdownPreview {
                 recordSpansForSingleBlockLabel(blockIndex: index, plainText: text.plainText)
             case let .table(headers, tableRows, alignments):
                 recordTableSpans(blockIndex: index, headers: headers, rows: tableRows, alignments: alignments)
+            case let .math(tex):
+                // Search sees the bare TeX; the label's plain text spells the
+                // formula `$$tex$$` (its source when it does not draw), and a
+                // hit inside a drawn formula highlights all of it.
+                recordSpansForSingleBlockLabel(blockIndex: index, plainText: tex, offset: 2)
             default:
                 break
             }
@@ -830,10 +854,10 @@ final class MarkdownPreview {
     /// single Label with one block's plain text starting at offset
     /// 0. Covers `heading`, `paragraph`, and `blockquote` blocks
     /// that didn't get coalesced into a multi-block run.
-    private func recordSpansForSingleBlockLabel(blockIndex: Int, plainText: String) {
+    private func recordSpansForSingleBlockLabel(blockIndex: Int, plainText: String, offset: Int = 0) {
         blockTextSpans[blockIndex] = BlockTextSpan(
             labelPointer: nil,
-            plainTextOffset: 0,
+            plainTextOffset: offset,
             plainTextLength: plainText.count,
         )
     }
@@ -981,6 +1005,14 @@ final class MarkdownPreview {
             // nested-task lists return a Box and don't get
             // per-block spans (Phase A intentionally skips them).
             return widget.tryCast(Label.self)?.opaquePointer
+        case .math:
+            // ScrolledWindow → Viewport → Label.
+            var current: Widget? = widget.tryCast(ScrolledWindow.self)?.child
+            while let candidate = current {
+                if let label = candidate.tryCast(Label.self) { return label.opaquePointer }
+                current = candidate.firstChild
+            }
+            return nil
         default:
             return nil
         }
@@ -1316,6 +1348,9 @@ final class MarkdownPreview {
         debugMarkupRebuildBlankReads.append(label.markup.isEmpty)
         #endif
         label.markup = markup
+        // Setting the markup resets the accessible label to the text, which
+        // spells each formula as U+FFFC.
+        PreviewMath.restoreAccessibleLabel(of: label)
     }
 
     private func shouldUseVirtualizedRows(_ rows: [PreviewRow]) -> Bool {
@@ -1357,8 +1392,9 @@ final class MarkdownPreview {
                 isLast: position == virtualizedRows.count - 1,
             )
             listItem.child = widget
-            // Every bind builds a fresh widget; formulas come from the cache.
-            MathRenderer.withParseBudget(.milliseconds(100)) {
+            // Every bind builds a fresh widget; formulas come from the cache,
+            // and the binds of one frame share one parse budget.
+            MathRenderer.withParseBudget(max(.zero, bindParseDeadline() - .now)) {
                 installMath(in: widget, for: row)
             }
             schedulePostponedMathPass()
@@ -2224,6 +2260,7 @@ final class MarkdownPreview {
     private var appliedTypography: (zoom: String, spacing: String)?
     private var mathFontRefreshScheduled = false
     private var postponedMathPassScheduled = false
+    private var currentBindParseDeadline: ContinuousClock.Instant?
     private var mathFontRefreshTicks = 0
 
     /// The zoom this preview is currently rendered at. Updated by
@@ -2279,7 +2316,7 @@ final class MarkdownPreview {
         // out again at once (the text follows when GTK restyles on the next
         // frame), then checks against the restyled fonts.
         if previewZoomPercent != previousZoomPercent {
-            MathRenderer.withParseBudget {
+            MathRenderer.withParseBudget(.milliseconds(100)) {
                 PreviewMath.rescale(
                     under: rootScroll.child ?? container,
                     by: Double(previewZoomPercent) / Double(previousZoomPercent)
@@ -2301,10 +2338,11 @@ final class MarkdownPreview {
         rootScroll.addTickCallback { [weak self] in
             guard let self else { return false }
             mathFontRefreshTicks += 1
-            let refreshed = MathRenderer.withParseBudget {
+            let refreshed = MathRenderer.withParseBudget(Self.followUpParseBudget) {
                 PreviewMath.refreshFontSizes(under: rootScroll.child ?? container)
             }
             if refreshed {
+                schedulePostponedMathPass()
                 reapplySearchHighlights()
             }
             guard mathFontRefreshTicks > 10 else { return true }

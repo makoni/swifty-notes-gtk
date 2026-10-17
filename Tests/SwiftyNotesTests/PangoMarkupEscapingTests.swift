@@ -31,6 +31,17 @@ struct PangoMarkupEscapingTests {
         }
     }
 
+    @Test("Filter highlights survive text that lowercasing makes longer")
+    func filterHighlightsSurviveTextThatLowercasingMakesLonger() {
+        // "İ" lowercases to two code points, so ranges found in the
+        // lowercased text used to run past the end of the original.
+        let markup = pangoHighlightedMarkup("İİİİİİ x", query: "x")
+        #expect(markup == "İİİİİİ <span background=\"#f5c211\" foreground=\"#1e1e1e\">x</span>")
+        #expect(pangoHighlightedMarkup("Area <b>", query: "AREA").hasPrefix("<span background=\"#f5c211\" foreground=\"#1e1e1e\">Area</span>"))
+        #expect(parses(pangoHighlightedMarkup(tricky, query: "a")))
+        #expect(pangoHighlightedMarkup("a<b", query: "") == "a&lt;b")
+    }
+
     private func parses(_ markup: String) -> Bool {
         var error: UnsafeMutablePointer<GError>?
         let ok = pango_parse_markup(markup, -1, 0, nil, nil, nil, &error) != 0

@@ -110,7 +110,11 @@ public enum MathRenderer {
             return nil
         }
         let formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
-        store(formula, for: key)
+        // A formula refused only because the formulas alive now hold the
+        // engine's memory limit may draw once they are gone; not cached.
+        if formula != nil || ratex_bridge_last_error_is_transient() == 0 {
+            store(formula, for: key)
+        }
         return formula
     }
 
@@ -123,7 +127,12 @@ public enum MathRenderer {
     /// the process has a single thread, so call this first thing at launch.
     /// An explicit `RATEX_UNICODE_FONT` wins. (The chosen font is an ordinary
     /// text font, so loading it on the first such formula is cheap.)
+    /// macOS is left to the engine: Pango does not use fontconfig there, and
+    /// the engine finds Arial Unicode by itself.
     nonisolated public static func configureTextFallbackFont() {
+        #if os(macOS)
+        return
+        #endif
         guard getenv("RATEX_UNICODE_FONT") == nil, let spec = ratex_bridge_text_fallback_font() else { return }
         setenv("RATEX_UNICODE_FONT", spec, 0)
     }

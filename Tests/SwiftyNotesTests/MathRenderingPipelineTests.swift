@@ -195,6 +195,40 @@ struct MathRenderingPipelineTests {
         #expect(text.plainText == "$x$")
     }
 
+    @Test("Display math quoted over several lines keeps the quote")
+    func displayMathQuotedOverSeveralLinesKeepsTheQuote() {
+        let blocks = blocks(for: "> before\n> $$\n> x^2 + y^2\n> $$\n> after")
+        #expect(MathSpanExtractor.extract(from: "> $$\n> x^2 + y^2\n> $$").spans
+            == [MathSpan(tex: "x^2 + y^2", isDisplay: true)])
+        let quotes = blocks.compactMap { block -> RenderedText? in
+            if case let .blockquote(text) = block { return text }
+            return nil
+        }
+        #expect(quotes.count == blocks.count, "nothing leaks out of the quote: \(blocks)")
+        let quoted = quotes.map(\.plainText).joined(separator: "\n")
+        #expect(quoted.contains("$x^2 + y^2$"))
+        #expect(quoted.contains("after"))
+        #expect(!quoted.contains(">"))
+    }
+
+    @Test("Inline math wrapped inside a nested quote")
+    func inlineMathWrappedInsideANestedQuote() {
+        let extraction = MathSpanExtractor.extract(from: "> > a $x +\n> > y$ b")
+        #expect(extraction.spans == [MathSpan(tex: "x + y", isDisplay: false)])
+        #expect(extraction.markdown == "> > a \(MathSpanExtractor.placeholder(for: 0))\n> >  b")
+    }
+
+    @Test("A link in a table cell keeps its dollars in the URL")
+    func aLinkInATableCellKeepsItsDollarsInTheURL() {
+        let blocks = blocks(for: "| A |\n| --- |\n| [a](x/$q\" foo=\"z$) and $y$ |")
+        guard blocks.count == 1, case let .table(_, rows, _) = blocks[0], let cell = rows.first?.first else {
+            Issue.record("expected one table, got \(blocks)")
+            return
+        }
+        #expect(!cell.markup.contains("foo=\"z"))
+        #expect(cell.plainText.hasSuffix("and $y$"))
+    }
+
     @Test("Math in a table cell")
     func mathInATableCell() {
         let blocks = blocks(for: "| A |\n| --- |\n| $x$ |")
@@ -210,6 +244,17 @@ struct MathRenderingPipelineTests {
         #expect(rows[0].map(\.markup) == ["$x$"])
         let cellsHaveNoFormulas = rows[0].allSatisfy { $0.mathSpans.isEmpty }
         #expect(cellsHaveNoFormulas)
+    }
+
+    @Test("TeX in a table cell is escaped for the markup")
+    func texInATableCellIsEscapedForTheMarkup() {
+        let blocks = blocks(for: "| A |\n| --- |\n| $a<b \\& c$ |")
+        guard blocks.count == 1, case let .table(_, rows, _) = blocks[0], let cell = rows.first?.first else {
+            Issue.record("expected one table, got \(blocks)")
+            return
+        }
+        #expect(cell.markup == "$a&lt;b \\&amp; c$")
+        #expect(cell.plainText == "$a<b \\& c$")
     }
 
     @Test("Characters that combine across several code points before a formula do not break it")
@@ -339,6 +384,7 @@ struct MathRenderingPipelineTests {
         // The blank line inside `$$ … $$` disqualifies it as display math, so
         // the dollars are literal and the text falls through as two ordinary
         // paragraphs.
+        #expect(blocks.count == 2)
         for block in blocks {
             guard case let .paragraph(text) = block else {
                 Issue.record("expected paragraphs, got \(blocks)")
@@ -368,5 +414,79 @@ struct MathRenderingPipelineTests {
             return
         }
         #expect(text.plainText == "Привет $x$ мир 🎉")
+    }
+    @Test("Dollars in a link destination stay in the URL")
+    func dollarsInALinkDestinationStayInTheURL() {
+        let url = "https://graph.microsoft.com/v1.0/me/messages?$select=subject&$top=5"
+        let blocks = blocks(for: "[Graph](\(url)) where $x^2$ grows")
+        guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+            Issue.record("expected one paragraph, got \(blocks)")
+            return
+        }
+        #expect(text.markup.contains("href=\"\(pangoEscapeAttribute(url))\""))
+        #expect(text.plainText == "Graph where $x^2$ grows")
+        #expect(text.mathSpans == [MathSpan(tex: "x^2", isDisplay: false)])
+        #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
+    }
+
+    @Test("A bare URL with dollars is not math")
+    func aBareURLWithDollarsIsNotMath() {
+        let url = "https://example.com/api?$select=a&$top=5"
+        let blocks = blocks(for: "See \(url) and $y$")
+        guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+            Issue.record("expected one paragraph, got \(blocks)")
+            return
+        }
+        #expect(text.plainText == "See \(url) and $y$")
+        #expect(text.mathSpans == [MathSpan(tex: "y", isDisplay: false)])
+    }
+
+    @Test("Dollars in a raw HTML attribute are not math")
+    func dollarsInARawHTMLAttributeAreNotMath() {
+        let extraction = MathSpanExtractor.extract(from: "<a title=\"$a$ and $b$\">x</a> then $c$")
+        #expect(extraction.spans == [MathSpan(tex: "c", isDisplay: false)])
+        #expect(extraction.markdown.hasPrefix("<a title=\"$a$ and $b$\">x</a> then "))
+    }
+
+    @Test("Prose with a less-than sign keeps its math")
+    func proseWithALessThanSignKeepsItsMath() {
+        let extraction = MathSpanExtractor.extract(from: "if x <y, $z$ > 1")
+        #expect(extraction.spans == [MathSpan(tex: "z", isDisplay: false)])
+    }
+
+    @Test("Math in image alt text comes back as source")
+    func mathInImageAltTextComesBackAsSource() {
+        let blocks = blocks(for: "![Area $A=r^2$](pic.png \"Title $t$\")")
+        guard blocks.count == 1, case let .image(alt, source, title, _) = blocks[0] else {
+            Issue.record("expected one image, got \(blocks)")
+            return
+        }
+        #expect(alt == "Area $A=r^2$")
+        #expect(source == "pic.png")
+        #expect(title == "Title $t$")
+    }
+
+    @Test("A placeholder inside a reference link's href comes back as source")
+    func aPlaceholderInsideAReferenceLinkHrefComesBackAsSource() {
+        let blocks = blocks(for: "[docs][ref] and $x$\n\n[ref]: /search?q=$a$b$")
+        guard let first = blocks.first, case let .paragraph(text) = first else {
+            Issue.record("expected a paragraph, got \(blocks)")
+            return
+        }
+        #expect(!text.markup.unicodeScalars.contains { (0xE000...0xE019).contains($0.value) })
+        #expect(text.markup.contains("href=\"/search?q=$a$b$\""))
+        #expect(text.mathSpans == [MathSpan(tex: "x", isDisplay: false)])
+        #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
+    }
+
+    @Test("An entity for the formula marker does not become a formula")
+    func anEntityForTheFormulaMarkerDoesNotBecomeAFormula() {
+        let blocks = blocks(for: "a &#xFFFC; b $x$")
+        guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+            Issue.record("expected one paragraph, got \(blocks)")
+            return
+        }
+        #expect(text.mathSpans == [MathSpan(tex: "x", isDisplay: false)])
+        #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
     }
 }

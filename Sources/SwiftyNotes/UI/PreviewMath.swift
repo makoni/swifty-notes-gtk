@@ -71,12 +71,20 @@ enum PreviewMath {
             layOut(label, state: state)
             stillPostponed = stillPostponed || state.hasPostponedFormulas
         }
+        if !stillPostponed {
+            mayHavePostponedFormulas = false
+        }
         return stillPostponed
     }
+
+    /// Set whenever a formula is postponed, cleared by a pass that leaves
+    /// none postponed, so that most row binds skip walking the tree.
+    private static var mayHavePostponedFormulas = false
 
     /// Whether any label under `root` shows formulas postponed by the parse
     /// budget.
     static func hasPostponedFormulas(under root: Widget) -> Bool {
+        guard mayHavePostponedFormulas else { return false }
         var found = false
         forEachMathLabel(under: root) { _, state in
             found = found || state.hasPostponedFormulas
@@ -136,6 +144,13 @@ enum PreviewMath {
         return state.labelOffset(forPlainOffset: offset, isRangeEnd: isRangeEnd)
     }
 
+    /// Spells the formulas of `label` out again in its accessible label,
+    /// which GTK resets to the label's text whenever the markup changes.
+    static func restoreAccessibleLabel(of label: Label) {
+        guard let state = state(of: label) else { return }
+        label.setAccessibleLabel(state.accessibleText(labelText: label.text))
+    }
+
     /// The label's text with each drawn formula spelled as its TeX source,
     /// limited to `selection` when given — what copying that selection puts
     /// on the clipboard. `selection` counts code points, as GTK's selection
@@ -182,13 +197,22 @@ enum PreviewMath {
         state.hasPostponedFormulas = false
         for (index, span) in state.spans.enumerated() {
             let pixels = (index < sizes.count ? sizes[index] : state.baseFontPixels) * formulaScale
-            formulas.append(
-                MathRenderer.formula(tex: span.tex, isDisplay: span.isDisplay && state.isDisplayBlock, pixelSize: pixels)
-            )
+            let isDisplay = span.isDisplay && state.isDisplayBlock
+            // Keep what the label already drew: the cache may have dropped
+            // it while a long postponed pass went on.
+            if index < state.formulas.count, let drawn = state.formulas[index], drawn.tex == span.tex,
+               drawn.isDisplay == isDisplay, abs(drawn.pixelSize - pixels) < 0.125
+            {
+                formulas.append(drawn)
+                continue
+            }
+            formulas.append(MathRenderer.formula(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels))
             if MathRenderer.lastLookupWasPostponed {
                 state.hasPostponedFormulas = true
+                mayHavePostponedFormulas = true
             }
         }
+        state.formulas = formulas
         let markup = markupReplacingFailedFormulas(
             in: state.originalMarkup,
             spans: state.spans,
@@ -509,6 +533,8 @@ final class MathLabelState {
     var spans: [MathSpan] = []
     var fallbackSpans: [MathSpan] = []
     var entries: [Entry] = []
+    /// The formulas last laid out, by span (nil: source shown).
+    var formulas: [MathFormula?] = []
     var baseFontPixels = 0.0
     var isDisplayBlock = false
     var hasPostponedFormulas = false
@@ -564,7 +590,7 @@ final class MathLabelState {
         sourceText(labelText: labelText)
     }
 
-    /// See ``PreviewMath/labelOffset(forPlainOffset:in:)``. The plain text
+    /// See ``PreviewMath/labelOffset(forPlainOffset:in:isRangeEnd:)``. The plain text
     /// spells every formula `$tex$` (drawn or not), while the label text
     /// has one character for a drawn formula and the same `$tex$` for one
     /// that fell back to source.

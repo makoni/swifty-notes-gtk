@@ -68,6 +68,11 @@ struct MathRendererTests {
         #expect(MathRenderer.formula(tex: "", isDisplay: false, pixelSize: 20) == nil)
     }
 
+    @Test("Unusable pixel sizes yield no formula", arguments: [0, -1, 0.5, 5000, .nan, .infinity])
+    func unusablePixelSizesYieldNoFormula(pixelSize: Double) {
+        #expect(MathRenderer.formula(tex: "x", isDisplay: false, pixelSize: pixelSize) == nil)
+    }
+
     @Test("Absurdly large or non-finite boxes are rejected")
     func absurdlyLargeOrNonFiniteBoxesAreRejected() {
         let hostile = [
@@ -178,6 +183,39 @@ struct MathRendererTests {
         }
         // Not remembered as a failure: the next pass parses it.
         #expect(MathRenderer.formula(tex: "new", isDisplay: false, pixelSize: 20) != nil)
+    }
+
+    @Test("A formula that would keep too much memory is refused")
+    func formulaKeepingTooMuchMemoryIsRefused() {
+        // Each stretchy brace is a long path: ~2 KB of TeX, megabytes drawn.
+        let tex = String(repeating: "\\overbrace{x}", count: 150)
+        #expect(MathRenderer.formula(tex: tex, isDisplay: false, pixelSize: 20) == nil)
+        #expect(MathRenderer.lastError?.contains("KiB") == true, "\(MathRenderer.lastError ?? "")")
+        // A few braces are fine.
+        #expect(MathRenderer.formula(tex: String(repeating: "\\overbrace{x}", count: 5), isDisplay: false, pixelSize: 20) != nil)
+    }
+
+    @Test("Live formulas count against the engine's memory until freed")
+    func liveFormulasCountAgainstTheEnginesMemoryUntilFreed() throws {
+        let before = ratex_bridge_live_bytes()
+        let tex = "\\overbrace{a+b}^{n}"
+        let handle = try #require(tex.withCString { ratex_bridge_parse($0, strlen($0), 0, 20) })
+        let held = ratex_bridge_live_bytes() - before
+        #expect(held > 1000)
+        ratex_bridge_free(handle)
+        #expect(ratex_bridge_live_bytes() == before)
+    }
+
+    @Test("Formulas refused at the memory limit are tried again later")
+    func formulasRefusedAtTheMemoryLimitAreTriedAgainLater() {
+        let previous = ratex_bridge_set_live_bytes_limit(0)
+        #expect(MathRenderer.formula(tex: "m_1", isDisplay: false, pixelSize: 20) == nil)
+        #expect(ratex_bridge_last_error_is_transient() == 1)
+        ratex_bridge_set_live_bytes_limit(previous)
+        #expect(MathRenderer.formula(tex: "m_1", isDisplay: false, pixelSize: 20) != nil)
+        // A real parse error is not transient.
+        #expect(MathRenderer.formula(tex: "\\frac{", isDisplay: false, pixelSize: 20) == nil)
+        #expect(ratex_bridge_last_error_is_transient() == 0)
     }
 
     @Test("A serif fallback font with Cyrillic and Greek is found for text in formulas")

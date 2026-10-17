@@ -1,9 +1,22 @@
 #if !os(macOS)
 import Adwaita
 import CAdwaita
+import CSpelling
 import Foundation
 @testable import SwiftyNotes
 import Testing
+
+/// The accessible label GTK itself holds for `label` when it differs from
+/// `expected`, or nil. swift-adwaita's `accessibleLabel` is its own stored
+/// copy, which GTK's resets never touch.
+@MainActor
+private func gtkAccessibleLabelMismatch(of label: Label, expected: String) -> String? {
+    guard let mismatch = swifty_notes_accessible_label_mismatch(UnsafeMutableRawPointer(label.widgetPointer), expected) else {
+        return nil
+    }
+    defer { g_free(mismatch) }
+    return String(cString: mismatch)
+}
 
 /// Formulas drawn inside the preview's labels (``PreviewMath``).
 struct MathPreviewWidgetTests {
@@ -111,7 +124,20 @@ struct MathPreviewWidgetTests {
     func screenReadersGetTheTexSource() throws {
         let fixture = try Fixture(suffix: "a11y", markdown: "Energy $E = mc^2$ here.")
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
-        #expect(label.accessibleLabel == "Energy $E = mc^2$ here.")
+        #expect(gtkAccessibleLabelMismatch(of: label, expected: "Energy $E = mc^2$ here.") == nil)
+    }
+
+    @Test("Search highlights keep the TeX in the accessible label") @MainActor
+    func searchHighlightsKeepTheTexInTheAccessibleLabel() throws {
+        let fixture = try Fixture(suffix: "a11y-search", markdown: "Energy $E = mc^2$ here.")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "here", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["here"])
+        #expect(gtkAccessibleLabelMismatch(of: label, expected: "Energy $E = mc^2$ here.") == nil)
+        preview.clearSearchHighlights()
+        #expect(gtkAccessibleLabelMismatch(of: label, expected: "Energy $E = mc^2$ here.") == nil)
     }
 
     @Test("Zooming the preview lays the formulas out at the new size") @MainActor
@@ -169,7 +195,12 @@ struct MathPreviewWidgetTests {
         let before = attributeCount(on: label)
         defer { preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100) }
         preview.applyTypography(zoomPercent: 150, lineSpacingPercent: 100)
+        // The immediate rescale already put them back…
+        #expect(attributeCount(on: label) == before, "highlight attributes survive the immediate rescale")
+        // …and so does the refresh once GTK has restyled the label.
+        let zoomed = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
         MainContext.pump(for: .milliseconds(200))
+        #expect(try #require(PreviewMath.debugFormulas(on: label).first).pixelSize >= zoomed * 0.95)
         #expect(attributeCount(on: label) == before, "highlight attributes survive the relayout")
         #expect(PreviewMath.debugShapeAttributeCount(on: label) == 1)
     }
@@ -243,8 +274,71 @@ struct MathPreviewWidgetTests {
         fixture.render(markdown)
         MainContext.pump(for: .milliseconds(200))
         #expect(fixture.preview.rootScroll.child?.tryCast(ListView.self) != nil, "expected the virtualized list")
-        let drawn = fixture.labels().flatMap { PreviewMath.debugFormulas(on: $0) }
-        #expect(!drawn.isEmpty)
+        pumpUntil(timeout: .milliseconds(800)) {
+            fixture.labels().contains { !PreviewMath.debugFormulas(on: $0).isEmpty }
+        }
+        // Every shown row draws its own formula, not a recycled row's.
+        var checked = 0
+        for label in fixture.labels() {
+            // A label may hold a heading and its row ("Section 3\n\nRow 3 with ￼.").
+            let numbers = label.text.components(separatedBy: "Row ").dropFirst().compactMap { $0.split(separator: " ").first }
+            guard !numbers.isEmpty else { continue }
+            #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == numbers.map { "x_{\($0)}" }, "\(label.text)")
+            checked += 1
+        }
+        #expect(checked > 0)
+    }
+
+    @Test("Editing a display formula rebuilds its row with the new formula") @MainActor
+    func editingADisplayFormulaRebuildsItsRow() throws {
+        let fixture = try Fixture(suffix: "edit-display", markdown: "Intro.\n\n$$\na\n$$")
+        #expect(fixture.labels(withCSSClass: "preview-math-label").flatMap { PreviewMath.debugFormulas(on: $0).map(\.tex) } == ["a"])
+        fixture.render("Intro.\n\n$$\nb\n$$")
+        #expect(fixture.labels(withCSSClass: "preview-math-label").flatMap { PreviewMath.debugFormulas(on: $0).map(\.tex) } == ["b"])
+    }
+
+    @Test("A new row with a formula after a code block draws it") @MainActor
+    func aNewRowWithAFormulaAfterACodeBlockDrawsIt() throws {
+        let fixture = try Fixture(suffix: "append-row", markdown: "Intro.\n\n```\ncode\n```")
+        fixture.render("Intro.\n\n```\ncode\n```\n\nNew $y$ row.")
+        let label = try #require(fixture.labels().first { $0.text.hasPrefix("New ") })
+        #expect(label.text == "New \u{FFFC} row.")
+        #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["y"])
+    }
+
+    @Test("Display math inside a sentence is set inline and copies as written") @MainActor
+    func displayMathInsideASentenceIsSetInline() throws {
+        let fixture = try Fixture(suffix: "display-inline", markdown: "a $$\\frac{1}{2}$$ c")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let formula = try #require(PreviewMath.debugFormulas(on: label).first)
+        #expect(!formula.isDisplay)
+        gtk_label_select_region(label.opaquePointer, 0, -1)
+        gtk_widget_activate_action_variant(label.widgetPointer, "clipboard.copy", nil)
+        #expect(readClipboardText(gtk_widget_get_clipboard(label.widgetPointer))?.contains("$$\\frac{1}{2}$$") == true)
+    }
+
+    @Test("A search hit inside a display formula highlights it") @MainActor
+    func aSearchHitInsideADisplayFormulaHighlightsIt() throws {
+        let fixture = try Fixture(suffix: "search-display", markdown: "Intro.\n\n$$\n\\alpha + \\beta\n$$")
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "beta", options: .init())
+        #expect(matches.count == 1)
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["\u{FFFC}"])
+    }
+
+    @Test("Changing a heading's level resizes its formula") @MainActor
+    func changingAHeadingsLevelResizesItsFormula() throws {
+        let fixture = try Fixture(suffix: "heading-level", markdown: "# Title $x$\n\nBody.")
+        let label = try #require(fixture.labels().first { $0.text.hasPrefix("Title") })
+        let large = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
+        fixture.render("### Title $x$\n\nBody.")
+        let resized = try #require(fixture.labels().first { $0.text.hasPrefix("Title") })
+        pumpUntil(timeout: .milliseconds(800)) {
+            (PreviewMath.debugFormulas(on: resized).first?.pixelSize ?? large) < large * 0.9
+        }
+        let small = try #require(PreviewMath.debugFormulas(on: resized).first).pixelSize
+        #expect(small < large * 0.9, "\(large) → \(small)")
     }
 
     @Test("A note shown as one label draws its formulas, sized per segment") @MainActor
@@ -299,6 +393,10 @@ struct MathPreviewWidgetTests {
                 result += labels(in: child)
             }
             return result
+        }
+
+        func labels(withCSSClass cssClass: String) -> [Label] {
+            labels().filter { $0.hasCSSClass(cssClass) }
         }
 
         func firstLabel(withCSSClass cssClass: String) -> Label? {

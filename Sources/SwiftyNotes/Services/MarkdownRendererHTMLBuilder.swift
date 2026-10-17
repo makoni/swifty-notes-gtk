@@ -851,20 +851,46 @@ final class HTMLPreviewDocumentBuilder {
                 rows: rows.map { row in row.map { restoredMathText($0, drawsFormulas: false) } },
                 alignments: alignments,
             )
-        case .math, .codeBlock, .thematicBreak, .image, .imageGroup:
+        case let .image(alt, source, title, style):
+            return .image(
+                alt: restoredMathSource(alt),
+                source: source.map(restoredMathSource),
+                title: title.map(restoredMathSource),
+                style: style,
+            )
+        case let .imageGroup(items, style):
+            return .imageGroup(
+                items: items.map { item in
+                    RenderedImageItem(
+                        alt: restoredMathSource(item.alt),
+                        source: item.source.map(restoredMathSource),
+                        title: item.title.map(restoredMathSource),
+                        linkDestination: item.linkDestination.map(restoredMathSource),
+                    )
+                },
+                style: style,
+            )
+        case .math, .codeBlock, .thematicBreak:
             return block
+        }
+    }
+
+    /// `text` with every placeholder put back as its `$tex$` source, for
+    /// places that show no formulas (image alt text, titles, URLs).
+    private func restoredMathSource(_ text: String) -> String {
+        MathSpanExtractor.replacingPlaceholders(in: text) { index in
+            index < mathSpans.count ? "$\(mathSpans[index].tex)$" : nil
         }
     }
 
     private func displayMathSpan(for text: RenderedText) -> MathSpan? {
         let trimmed = text.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        for (index, span) in mathSpans.enumerated() where span.isDisplay {
-            if trimmed == MathSpanExtractor.placeholder(for: index) {
-                return span
-            }
-        }
-        return nil
+        let occurrences = MathSpanExtractor.spanIndices(in: trimmed)
+        guard occurrences.count == 1, let only = occurrences.first,
+              only.range == 0..<trimmed.unicodeScalars.count,
+              only.index < mathSpans.count, mathSpans[only.index].isDisplay
+        else { return nil }
+        return mathSpans[only.index]
     }
 
     private func restoredMathText(_ text: RenderedText) -> RenderedText {
@@ -875,20 +901,30 @@ final class HTMLPreviewDocumentBuilder {
         guard !mathSpans.isEmpty else { return text }
         var found: [MathSpan] = []
 
-        func replacePlaceholders(in string: String, collecting: Bool = false, replacement: (MathSpan) -> String) -> String {
+        func replacePlaceholders(in string: String, replacement: (MathSpan) -> String) -> String {
             MathSpanExtractor.replacingPlaceholders(in: string) { index in
-                guard index < mathSpans.count else { return nil }
-                let span = mathSpans[index]
-                if collecting { found.append(span) }
-                return replacement(span)
+                index < mathSpans.count ? replacement(mathSpans[index]) : nil
             }
         }
 
-        let plainText = replacePlaceholders(in: text.plainText, collecting: drawsFormulas) { span in
+        let plainText = replacePlaceholders(in: text.plainText) { span in
             "$\(span.tex)$"
         }
-        let markup = replacePlaceholders(in: text.markup) { span in
-            drawsFormulas ? String(MathSpanExtractor.formulaMarker) : "$\(pangoEscape(span.tex))$"
+        // A placeholder inside a tag (a link's href) is put back as source;
+        // only those in the text get a marker, so the markers and
+        // `mathSpans` stay in step.
+        // The source had its U+FFFC replaced, but an entity (`&#xFFFC;`)
+        // decodes to one; only a formula may own a marker.
+        let markerFree = String(String.UnicodeScalarView(text.markup.unicodeScalars.map {
+            $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
+        }))
+        let markup = MathSpanExtractor.replacingPlaceholders(inMarkup: markerFree) { index, insideTag in
+            guard index < mathSpans.count else { return nil }
+            let span = mathSpans[index]
+            if insideTag { return "$\(pangoEscapeAttribute(span.tex))$" }
+            guard drawsFormulas else { return "$\(pangoEscape(span.tex))$" }
+            found.append(span)
+            return String(MathSpanExtractor.formulaMarker)
         }
         return RenderedText(markup: markup, plainText: plainText, mathSpans: found)
     }

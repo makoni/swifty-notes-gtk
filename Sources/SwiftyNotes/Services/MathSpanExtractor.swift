@@ -95,9 +95,13 @@ enum MathSpanExtractor {
         // structure and positions are unchanged).
         let scalars = markdown.unicodeScalars.map(sanitized)
         let lines = lineBounds(scalars)
+        let blankLines = lines.filter { isBlankLine(scalars: scalars, line: $0) }
         var spans: [LocatedSpan] = []
         var output: [Unicode.Scalar] = []
-        var inList = false
+        /// The column list item content starts at, while in a list.
+        var listContentIndent: Int?
+        /// The indent of the indented code block being copied, if any.
+        var codeIndent: Int?
         var previousLineWasBlank = true
         var freeStart: Int?
         var freeEnd: Int?
@@ -107,7 +111,7 @@ enum MathSpanExtractor {
             guard let start = freeStart, let end = freeEnd else { return }
             freeStart = nil
             freeEnd = nil
-            scanFreeText(scalars: scalars, range: start..<end, lines: lines, spans: &spans, output: &output)
+            scanFreeText(scalars: scalars, range: start..<end, blankLines: blankLines, spans: &spans, output: &output)
         }
 
         for line in lines {
@@ -127,8 +131,20 @@ enum MathSpanExtractor {
             }
 
             let isBlank = isBlankLine(scalars: scalars, line: line)
+            let width = leadingWidth(scalars: scalars, line: line)
 
-            if let open = fenceOpenInfo(scalars: scalars, line: line, inList: inList) {
+            // Inside an indented code block: blank lines and lines indented
+            // as far stay code.
+            if let indent = codeIndent {
+                if isBlank || width >= indent {
+                    output.append(contentsOf: scalars[line.start..<line.end])
+                    previousLineWasBlank = isBlank
+                    continue
+                }
+                codeIndent = nil
+            }
+
+            if let open = fenceOpenInfo(scalars: scalars, line: line, inList: listContentIndent != nil) {
                 flushFreeText()
                 fence = FenceState(
                     char: open.char, length: open.length, isMath: open.isMath,
@@ -138,9 +154,14 @@ enum MathSpanExtractor {
                 continue
             }
 
-            if !isBlank, leadingWidth(scalars: scalars, line: line) >= 4, !inList, previousLineWasBlank {
+            // Indented code: four columns past the list item's content (or
+            // the margin), after a blank line — it cannot interrupt a
+            // paragraph.
+            let requiredIndent = (listContentIndent ?? 0) + 4
+            if !isBlank, width >= requiredIndent, previousLineWasBlank {
                 flushFreeText()
                 output.append(contentsOf: scalars[line.start..<line.end])
+                codeIndent = requiredIndent
                 previousLineWasBlank = false
                 continue
             }
@@ -149,12 +170,14 @@ enum MathSpanExtractor {
             // spanning across them).
             if freeStart == nil { freeStart = line.start }
             freeEnd = line.end
+            let previousLineWasBlankBefore = previousLineWasBlank
             previousLineWasBlank = isBlank
             if isBlank { continue }
-            if parseListMarker(scalars: scalars, line: line) {
-                inList = true
-            } else if leadingWidth(scalars: scalars, line: line) < 4 {
-                inList = false
+            if let indent = listItemContentIndent(scalars: scalars, line: line, inList: listContentIndent != nil) {
+                listContentIndent = indent
+            } else if let indent = listContentIndent, width < indent, previousLineWasBlankBefore {
+                // Back at the margin after a blank line: the list is over.
+                listContentIndent = nil
             }
         }
         flushFreeText()
@@ -251,12 +274,34 @@ enum MathSpanExtractor {
         return String(result)
     }
 
+    /// Like ``replacingPlaceholders(in:with:)`` for Pango markup: the
+    /// replacement also learns whether the placeholder sits inside a tag
+    /// (`<a href="…">`) rather than in the text. Text in markup has its `<`
+    /// and `>` escaped, so every literal `<` opens a tag.
+    static func replacingPlaceholders(inMarkup markup: String, with replacement: (_ index: Int, _ insideTag: Bool) -> String?) -> String {
+        let occurrences = spanIndices(in: markup)
+        guard !occurrences.isEmpty else { return markup }
+        let scalars = Array(markup.unicodeScalars)
+        var insideTag = false
+        var scanned = 0
+        var next = 0
+        return replacingPlaceholders(in: markup) { index in
+            let start = occurrences[next].range.lowerBound
+            next += 1
+            for scalar in scalars[scanned..<start] {
+                if scalar == "<" { insideTag = true } else if scalar == ">" { insideTag = false }
+            }
+            scanned = start
+            return replacement(index, insideTag)
+        }
+    }
+
     // MARK: - Free-text scan (comments, autolinks, code spans, math)
 
     private static func scanFreeText(
         scalars: [Unicode.Scalar],
         range: Range<Int>,
-        lines: [LineBounds],
+        blankLines: [LineBounds],
         spans: inout [LocatedSpan],
         output: inout [Unicode.Scalar],
     ) {
@@ -280,8 +325,9 @@ enum MathSpanExtractor {
                 }
                 if isCommentStart(scalars: scalars, after: i + 1, end: end) {
                     if let close = findCommentClose(scalars: scalars, from: i + 4, end: end) {
-                        output.append(contentsOf: scalars[i...(close + 3)])
-                        i = close + 4
+                        // `close` is the first scalar of `-->`.
+                        output.append(contentsOf: scalars[i...(close + 2)])
+                        i = close + 3
                         continue
                     }
                     // Unclosed comment: swallow the rest of this free-text stretch.
@@ -289,11 +335,34 @@ enum MathSpanExtractor {
                     i = end
                     continue
                 }
+                // A raw HTML tag: `$` in its attributes is not math.
+                if let gt = htmlTagEnd(scalars: scalars, after: i + 1, end: end) {
+                    output.append(contentsOf: scalars[i...gt])
+                    i = gt + 1
+                    continue
+                }
+            }
+
+            // A bare URL, which GFM turns into a link up to the next space.
+            if let urlEnd = bareURLEnd(scalars: scalars, at: i, range: range) {
+                output.append(contentsOf: scalars[i..<urlEnd])
+                i = urlEnd
+                continue
+            }
+
+            // A link or image destination, `](url "title")`: URLs such as
+            // OData's `?$select=a&$top=5` carry dollars that are not math.
+            if s.value == 0x5D, i + 1 < end, scalars[i + 1].value == 0x28,
+               let close = linkDestinationEnd(scalars: scalars, from: i + 2, end: end)
+            {
+                output.append(contentsOf: scalars[i...close])
+                i = close + 1
+                continue
             }
 
             if s.value == 0x60 { // backtick
                 let run = backtickRunLength(scalars: scalars, from: i, end: end)
-                if let close = findCodeSpanClose(scalars: scalars, from: i + run, end: end, length: run, lines: lines) {
+                if let close = findCodeSpanClose(scalars: scalars, from: i + run, end: end, length: run, blankLines: blankLines) {
                     output.append(contentsOf: scalars[i...(close + run - 1)])
                     i = close + run
                     continue
@@ -307,14 +376,15 @@ enum MathSpanExtractor {
             if s.value == 0x24 { // `$`
                 if i + 1 < end, scalars[i + 1].value == 0x24 {
                     // Display attempt.
-                    if let close = findDisplayClose(scalars: scalars, from: i + 2, end: end, lines: lines) {
-                        let tex = trimmedTeX(scalars: scalars, range: (i + 2)..<close)
+                    if let close = findDisplayClose(scalars: scalars, from: i + 2, end: end, blankLines: blankLines) {
+                        let content = strippingQuoteMarkers(scalars: scalars, range: (i + 2)..<close, openedAt: i, freeStart: range.lowerBound)
+                        let tex = trimmedTeX(content.scalars)
                         if tex.isEmpty {
                             output.append(s)
                             i += 1
                         } else {
                             spans.append(LocatedSpan(span: MathSpan(tex: tex, isDisplay: true), source: i..<(close + 2)))
-                            appendPlaceholder(&output, index: spans.count - 1, newlines: newlineCount(scalars: scalars, range: i..<(close + 2)))
+                            appendPlaceholder(&output, index: spans.count - 1, lineBreaks: content.lineBreaks)
                             i = close + 2
                         }
                         continue
@@ -325,11 +395,12 @@ enum MathSpanExtractor {
                 }
                 // Inline attempt.
                 if i + 1 < end, !isWhitespaceScalar(scalars[i + 1]) {
-                    if let close = findInlineClose(scalars: scalars, from: i + 1, end: end, lines: lines) {
-                        let tex = string(from: scalars[(i + 1)..<close])
+                    if let close = findInlineClose(scalars: scalars, from: i + 1, end: end, blankLines: blankLines) {
+                        let content = strippingQuoteMarkers(scalars: scalars, range: (i + 1)..<close, openedAt: i, freeStart: range.lowerBound)
+                        let tex = string(from: content.scalars)
                             .replacingOccurrences(of: "\n", with: " ")
                         spans.append(LocatedSpan(span: MathSpan(tex: tex, isDisplay: false), source: i..<(close + 1)))
-                        appendPlaceholder(&output, index: spans.count - 1, newlines: newlineCount(scalars: scalars, range: i..<close))
+                        appendPlaceholder(&output, index: spans.count - 1, lineBreaks: content.lineBreaks)
                         i = close + 1
                         continue
                     }
@@ -346,22 +417,31 @@ enum MathSpanExtractor {
 
     // MARK: - Delimiter search
 
-    private static func findDisplayClose(scalars: [Unicode.Scalar], from: Int, end: Int, lines: [LineBounds]) -> Int? {
+    private static func findDisplayClose(scalars: [Unicode.Scalar], from: Int, end: Int, blankLines: [LineBounds]) -> Int? {
         var j = from
         while j + 1 < end {
+            // `\$` is a dollar inside the TeX, never the closing delimiter.
+            if scalars[j].value == 0x5C {
+                j += 2
+                continue
+            }
             if scalars[j].value == 0x24, scalars[j + 1].value == 0x24 {
                 // Once a blank line is crossed, every later candidate is
                 // equally invalid — stop.
-                return containsBlankLine(scalars: scalars, lines: lines, range: from..<j) ? nil : j
+                return containsBlankLine(blankLines, range: from..<j) ? nil : j
             }
             j += 1
         }
         return nil
     }
 
-    private static func findInlineClose(scalars: [Unicode.Scalar], from: Int, end: Int, lines: [LineBounds]) -> Int? {
+    private static func findInlineClose(scalars: [Unicode.Scalar], from: Int, end: Int, blankLines: [LineBounds]) -> Int? {
         var j = from
         while j < end {
+            if scalars[j].value == 0x5C {
+                j += 2
+                continue
+            }
             if scalars[j].value == 0x24 {
                 let prevIsSpace = isWhitespaceScalar(scalars[j - 1])
                 let after: UInt32? = j + 1 < end ? scalars[j + 1].value : nil
@@ -370,7 +450,7 @@ enum MathSpanExtractor {
                 if prevIsSpace || afterIsDigit {
                     return nil
                 }
-                return containsBlankLine(scalars: scalars, lines: lines, range: from..<j) ? nil : j
+                return containsBlankLine(blankLines, range: from..<j) ? nil : j
             }
             j += 1
         }
@@ -384,7 +464,7 @@ enum MathSpanExtractor {
     }
 
     private static func findCodeSpanClose(
-        scalars: [Unicode.Scalar], from: Int, end: Int, length: Int, lines: [LineBounds],
+        scalars: [Unicode.Scalar], from: Int, end: Int, length: Int, blankLines: [LineBounds],
     ) -> Int? {
         var j = from
         while j < end {
@@ -394,7 +474,7 @@ enum MathSpanExtractor {
                 if k - j == length {
                     // A code span never spans a blank line (approximation of
                     // the CommonMark rule that it stays inside one paragraph).
-                    return containsBlankLine(scalars: scalars, lines: lines, range: from..<j) ? nil : j
+                    return containsBlankLine(blankLines, range: from..<j) ? nil : j
                 }
                 j = k
                 continue
@@ -479,7 +559,7 @@ enum MathSpanExtractor {
                 spans.append(LocatedSpan(span: MathSpan(tex: tex, isDisplay: true), source: state.blockStart..<blockEnd))
                 appendPlaceholder(
                     &output, index: spans.count - 1,
-                    newlines: newlineCount(scalars: scalars, range: state.blockStart..<blockEnd),
+                    lineBreaks: Array(repeating: [], count: newlineCount(scalars: scalars, range: state.blockStart..<blockEnd)),
                 )
             }
         } else {
@@ -535,11 +615,67 @@ enum MathSpanExtractor {
     }
 
     private static func trimmedTeX(scalars: [Unicode.Scalar], range: Range<Int>) -> String {
-        var lo = range.lowerBound
-        var hi = range.upperBound
-        while lo < hi, isWhitespaceScalar(scalars[lo]) { lo += 1 }
-        while hi > lo, isWhitespaceScalar(scalars[hi - 1]) { hi -= 1 }
-        return string(from: scalars[lo..<hi])
+        trimmedTeX(scalars[range])
+    }
+
+    private static func trimmedTeX(_ scalars: some Collection<Unicode.Scalar>) -> String {
+        let content = Array(scalars)
+        var lo = 0
+        var hi = content.count
+        while lo < hi, isWhitespaceScalar(content[lo]) { lo += 1 }
+        while hi > lo, isWhitespaceScalar(content[hi - 1]) { hi -= 1 }
+        return string(from: content[lo..<hi])
+    }
+
+    /// The scalars of a span's content in `range` without the blockquote
+    /// markers (`>`) that start its continuation lines — as many as the line
+    /// where the span opened (at `openedAt`) has — and, for each line break,
+    /// the markers removed after it. A formula quoted over several lines
+    /// would otherwise draw the `>`s, and the line breaks the placeholder
+    /// keeps need the markers back to stay inside the quote.
+    private static func strippingQuoteMarkers(
+        scalars: [Unicode.Scalar], range: Range<Int>, openedAt: Int, freeStart: Int,
+    ) -> (scalars: [Unicode.Scalar], lineBreaks: [ArraySlice<Unicode.Scalar>]) {
+        var lineStart = openedAt
+        while lineStart > freeStart, scalars[lineStart - 1] != "\n" { lineStart -= 1 }
+        let depth = quoteMarkers(scalars: scalars, from: lineStart, end: openedAt, maxDepth: .max).depth
+
+        var content: [Unicode.Scalar] = []
+        var lineBreaks: [ArraySlice<Unicode.Scalar>] = []
+        var j = range.lowerBound
+        while j < range.upperBound {
+            content.append(scalars[j])
+            if scalars[j] == "\n" {
+                let prefixEnd = depth > 0
+                    ? quoteMarkers(scalars: scalars, from: j + 1, end: range.upperBound, maxDepth: depth).end
+                    : j + 1
+                lineBreaks.append(scalars[(j + 1)..<prefixEnd])
+                j = prefixEnd
+                continue
+            }
+            j += 1
+        }
+        return (content, lineBreaks)
+    }
+
+    /// Up to `maxDepth` blockquote markers (up to three spaces, `>`, an
+    /// optional space) starting at `start`: how many there are and where
+    /// they end.
+    private static func quoteMarkers(scalars: [Unicode.Scalar], from start: Int, end: Int, maxDepth: Int) -> (depth: Int, end: Int) {
+        var depth = 0
+        var markersEnd = start
+        var j = start
+        while depth < maxDepth {
+            var k = j
+            while k < end, k - j < 3, scalars[k] == " " { k += 1 }
+            guard k < end, scalars[k] == ">" else { break }
+            k += 1
+            if k < end, scalars[k] == " " || scalars[k] == "\t" { k += 1 }
+            depth += 1
+            markersEnd = k
+            j = k
+        }
+        return (depth, markersEnd)
     }
 
     private static func string(from scalars: some Sequence<Unicode.Scalar>) -> String {
@@ -555,11 +691,16 @@ enum MathSpanExtractor {
         return true
     }
 
-    private static func containsBlankLine(scalars: [Unicode.Scalar], lines: [LineBounds], range: Range<Int>) -> Bool {
-        for line in lines where line.start >= range.lowerBound && line.contentEnd <= range.upperBound {
-            if isBlankLine(scalars: scalars, line: line) { return true }
+    /// Whether one of `blankLines` (in document order) lies wholly inside
+    /// `range`: a binary search, as every delimiter candidate asks.
+    private static func containsBlankLine(_ blankLines: [LineBounds], range: Range<Int>) -> Bool {
+        var low = 0
+        var high = blankLines.count
+        while low < high {
+            let middle = (low + high) / 2
+            if blankLines[middle].start < range.lowerBound { low = middle + 1 } else { high = middle }
         }
-        return false
+        return low < blankLines.count && blankLines[low].contentEnd <= range.upperBound
     }
 
     private static func leadingWidth(scalars: [Unicode.Scalar], line: LineBounds) -> Int {
@@ -578,26 +719,35 @@ enum MathSpanExtractor {
 
     /// Bullet/ordered list marker at ≤3 leading spaces (the same shape the
     /// renderer's list scanner accepts).
-    private static func parseListMarker(scalars: [Unicode.Scalar], line: LineBounds) -> Bool {
+    /// The column a list item's content starts at, when `line` opens one
+    /// (`- `, `* `, `+ `, `1. `, `1) `); nested items count while `inList`.
+    private static func listItemContentIndent(scalars: [Unicode.Scalar], line: LineBounds, inList: Bool) -> Int? {
         var i = line.start
         var spaces = 0
         while i < line.contentEnd, scalars[i].value == 0x20 {
             i += 1
             spaces += 1
         }
-        guard spaces <= 3, i < line.contentEnd else { return false }
+        guard spaces <= 3 || inList, i < line.contentEnd else { return nil }
         let c = scalars[i].value
+        var markerEnd: Int
         if c == 0x2D || c == 0x2A || c == 0x2B { // - * +
-            let next = i + 1
-            return next < line.contentEnd && scalars[next].value == 0x20
+            markerEnd = i + 1
+        } else {
+            var j = i
+            while j < line.contentEnd, (0x30...0x39).contains(scalars[j].value) { j += 1 }
+            guard j > i, j - i <= 9, j < line.contentEnd else { return nil }
+            let punct = scalars[j].value
+            guard punct == 0x2E || punct == 0x29 else { return nil }
+            markerEnd = j + 1
         }
-        var j = i
-        while j < line.contentEnd, (0x30...0x39).contains(scalars[j].value) { j += 1 }
-        guard j > i, j < line.contentEnd else { return false }
-        let punct = scalars[j].value
-        guard punct == 0x2E || punct == 0x29 else { return false }
-        let afterPunct = j + 1
-        return afterPunct < line.contentEnd && scalars[afterPunct].value == 0x20
+        guard markerEnd < line.contentEnd, scalars[markerEnd].value == 0x20 else { return nil }
+        var gap = 0
+        while markerEnd + gap < line.contentEnd, scalars[markerEnd + gap].value == 0x20 { gap += 1 }
+        // One to four spaces set the content column; more mean the content
+        // is indented code one space after the marker.
+        let markerWidth = markerEnd - line.start
+        return markerWidth + (gap <= 4 ? gap : 1)
     }
 
     private static func isWhitespaceScalar(_ s: Unicode.Scalar) -> Bool {
@@ -617,8 +767,85 @@ enum MathSpanExtractor {
         return count
     }
 
-    private static func appendPlaceholder(_ output: inout [Unicode.Scalar], index: Int, newlines: Int) {
+    /// The `>` closing a raw HTML tag that starts after `<` at `start`
+    /// (`<a href=…>`, `</a>`, `<br/>`), on the same line, or nil. The tag
+    /// name must be ASCII and end at a space, `/` or `>`, so prose such as
+    /// `x <y, $z$ > 1` is not taken for a tag.
+    private static func htmlTagEnd(scalars: [Unicode.Scalar], after start: Int, end: Int) -> Int? {
+        var j = start
+        if j < end, scalars[j] == "/" { j += 1 }
+        guard j < end, scalars[j].isASCII, scalars[j].properties.isAlphabetic else { return nil }
+        while j < end, scalars[j].isASCII, scalars[j].properties.isAlphabetic || scalars[j].properties.numericType != nil || scalars[j] == "-" {
+            j += 1
+        }
+        guard j < end, [" ", "\t", "/", ">"].contains(scalars[j]) else { return nil }
+        while j < end {
+            switch scalars[j] {
+            case ">": return j
+            case "\n", "<": return nil
+            default: j += 1
+            }
+        }
+        return nil
+    }
+
+    /// The end of a bare `http://`, `https://` or `www.` URL starting at
+    /// `start` (at a word boundary), which runs to the next whitespace or
+    /// `<`; nil when no URL starts there.
+    private static func bareURLEnd(scalars: [Unicode.Scalar], at start: Int, range: Range<Int>) -> Int? {
+        let first = scalars[start]
+        guard first == "h" || first == "w" else { return nil }
+        if start > range.lowerBound {
+            let previous = scalars[start - 1].properties
+            if previous.isAlphabetic || previous.numericType != nil { return nil }
+        }
+        func matches(_ prefix: String) -> Bool {
+            let p = Array(prefix.unicodeScalars)
+            guard start + p.count <= range.upperBound else { return false }
+            for k in p.indices where scalars[start + k] != p[k] { return false }
+            return true
+        }
+        guard matches("http://") || matches("https://") || matches("www.") else { return nil }
+        var j = start
+        while j < range.upperBound, !scalars[j].properties.isWhitespace, scalars[j] != "<" {
+            j += 1
+        }
+        return j
+    }
+
+    /// The `)` closing a link destination whose content starts at `start`
+    /// (just after `](`): parentheses nest, a backslash escapes, and the
+    /// destination stays on one line.
+    private static func linkDestinationEnd(scalars: [Unicode.Scalar], from start: Int, end: Int) -> Int? {
+        var depth = 0
+        var j = start
+        while j < end {
+            switch scalars[j] {
+            case "\\":
+                j += 2
+                continue
+            case "(":
+                depth += 1
+            case ")":
+                if depth == 0 { return j }
+                depth -= 1
+            case "\n":
+                return nil
+            default:
+                break
+            }
+            j += 1
+        }
+        return nil
+    }
+
+    /// The placeholder, then the span's line breaks (each followed by the
+    /// quote markers its line had), so the line structure stays intact.
+    private static func appendPlaceholder(_ output: inout [Unicode.Scalar], index: Int, lineBreaks: [ArraySlice<Unicode.Scalar>]) {
         output.append(contentsOf: placeholder(for: index).unicodeScalars)
-        for _ in 0..<newlines { output.append("\n") }
+        for markers in lineBreaks {
+            output.append("\n")
+            output.append(contentsOf: markers)
+        }
     }
 }

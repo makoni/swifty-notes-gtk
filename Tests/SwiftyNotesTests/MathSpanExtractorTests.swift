@@ -165,4 +165,91 @@ struct MathSpanExtractorTests {
             }
         }
     }
+    // MARK: - Each inline delimiter rule on its own
+
+    @Test("A closing dollar after a space does not close")
+    func aClosingDollarAfterASpaceDoesNotClose() {
+        #expect(extract("$a $b").spans.isEmpty)
+    }
+
+    @Test("A closing dollar before a digit does not close")
+    func aClosingDollarBeforeADigitDoesNotClose() {
+        #expect(extract("$a$1").spans.isEmpty)
+    }
+
+    @Test("A dollar before a space does not open")
+    func aDollarBeforeASpaceDoesNotOpen() {
+        #expect(extract("$ a$").spans.isEmpty)
+    }
+
+    @Test("An escaped dollar does not open")
+    func anEscapedDollarDoesNotOpen() {
+        let result = extract("\\$x$")
+        #expect(result.spans.isEmpty)
+        #expect(result.markdown == "\\$x$")
+    }
+
+    @Test("An escaped dollar inside TeX does not close")
+    func anEscapedDollarInsideTexDoesNotClose() {
+        #expect(extract("$a\\$b$").spans == [MathSpan(tex: "a\\$b", isDisplay: false)])
+        #expect(extract("$$\\$100 \\times 2$$").spans == [MathSpan(tex: "\\$100 \\times 2", isDisplay: true)])
+    }
+
+    // MARK: - Verbatim regions
+
+    @Test("Verbatim regions keep their dollars", arguments: [
+        "$a\n\nb$",
+        "`a\n\n$b$` c`",
+        "<https://example.com/$a$>",
+        "<!-- $a$ -->",
+        "~~~\n$a$\n~~~",
+        "````\n$a$\n```\n$b$\n````",
+        "- item\n\n      code $a$",
+        "1. item\n\n       code $a$",
+        "    $a$",
+        "    code\n    $a$",
+        "text\n\n    code\n\n    $a$",
+    ])
+    func verbatimRegionsKeepTheirDollars(markdown: String) {
+        let result = extract(markdown)
+        #expect(result.spans.filter { $0.tex == "a" }.isEmpty, "\(markdown)")
+    }
+
+    @Test("A comment at the very end, or right before math")
+    func aCommentAtTheVeryEndOrRightBeforeMath() {
+        #expect(extract("text <!-- $a$ -->").markdown == "text <!-- $a$ -->")
+        #expect(extract("<!-- c -->$x$").spans == [MathSpan(tex: "x", isDisplay: false)])
+    }
+
+    @Test("Random Markdown-ish text never crashes and keeps its lines")
+    func randomMarkdownIshTextNeverCrashesAndKeepsItsLines() {
+        // A fixed linear congruential sequence, so a failure reproduces.
+        var state: UInt64 = 0x5EED
+        func next(_ bound: Int) -> Int {
+            state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            return Int((state >> 33) % UInt64(bound))
+        }
+        let pieces = ["$", "$$", "\\", "`", "```", "~~~", "<", ">", "<!--", "-->", "](", ")", "(", "[", "]",
+                      "\n", "\n\n", " ", "    ", "> ", "- ", "a", "x^2", "http://", "www.", "<a ", "&", "\u{FFFC}", "\u{E000}"]
+        for _ in 0..<3000 {
+            let markdown = (0..<next(24)).map { _ in pieces[next(pieces.count)] }.joined()
+            let result = extract(markdown)
+            #expect(MathSpanExtractor.sourceRanges(in: markdown).count == result.spans.count, "\(markdown.debugDescription)")
+        }
+    }
+
+    @Test("Indented text in a list item is a paragraph, not code")
+    func indentedTextInAListItemIsAParagraphNotCode() {
+        #expect(extract("- item\n\n    more $a$").spans == [MathSpan(tex: "a", isDisplay: false)])
+        #expect(extract("- item\n  - nested\n\n      more $a$").spans == [MathSpan(tex: "a", isDisplay: false)])
+        // A paragraph back at the margin ends the code block.
+        #expect(extract("    code\n\nafter $a$").spans == [MathSpan(tex: "a", isDisplay: false)])
+    }
+
+    @Test("A fence indented four spaces is code, not a fence")
+    func aFenceIndentedFourSpacesIsCodeNotAFence() {
+        let result = extract("    ```math\n    x\n    ```")
+        #expect(result.spans.isEmpty)
+        #expect(result.markdown == "    ```math\n    x\n    ```")
+    }
 }
