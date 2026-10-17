@@ -99,6 +99,10 @@ repo_root="$(release_repo_root)"
 version="$(resolve_release_version "$version")"
 cd "$repo_root"
 
+# The math engine is Rust and links into the app; build it first.
+math_bridge_prefix="${repo_root}/build/ratex-bridge"
+bash scripts/build-ratex-bridge.sh
+
 swift build -c release --static-swift-stdlib
 build_dir="$(swift build -c release --static-swift-stdlib --show-bin-path)"
 binary_path="${build_dir}/swiftynotes"
@@ -148,6 +152,8 @@ cp -R "$resources_dir" "${dest}${libexec_dir}/"
 install -Dm644 "$generated_desktop" "${dest}${applications_dir}/me.spaceinbox.swiftynotes.desktop"
 install -Dm644 data/me.spaceinbox.swiftynotes.svg "${dest}${icon_dir}/me.spaceinbox.swiftynotes.svg"
 install -Dm644 LICENSE "${dest}${license_dir}/LICENSE"
+mkdir -p "${dest}${license_dir}/ratex"
+install -m644 "${math_bridge_prefix}"/share/licenses/* "${dest}${license_dir}/ratex/"
 
 cat > "${dest}${bin_dir}/swiftynotes" <<EOF
 #!/bin/sh

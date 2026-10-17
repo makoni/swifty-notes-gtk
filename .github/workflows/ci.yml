@@ -58,7 +58,9 @@ jobs:
             locales \
             webp-pixbuf-loader \
             xdotool \
-            xvfb
+            xvfb \
+            rustc-1.91 \
+            cargo-1.91
 
       - name: Generate a locale
         # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
@@ -69,6 +71,29 @@ jobs:
 
       - name: Compile locale files
         run: bash scripts/build-locales.sh
+
+      # The math engine (RaTeX) is Rust. Ubuntu 24.04's default rustc is 1.75,
+      # older than its dependencies accept (1.88); noble-updates ships
+      # versioned toolchains, which install under /usr/lib/rust-<version>.
+      - name: Cache the math engine build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            build/ratex-bridge/target
+          key: ratex-${{ matrix.arch }}-rust-1.91-${{ hashFiles('Sources/RaTeXBridge/Cargo.lock', 'Sources/RaTeXBridge/Cargo.toml', 'Sources/RaTeXBridge/src/**') }}
+
+      - name: Build the math engine
+        run: |
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+          PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
+
+      # The Flatpak build has no network and takes the crates from this file;
+      # a Cargo.lock change without regenerating it would only fail at release.
+      - name: Check the Flatpak crate list matches Cargo.lock
+        run: |
+          python3 scripts/generate-flatpak-cargo-sources.py
+          git diff --exit-code flatpak/ratex-cargo-sources.json
 
       - name: Build project
         run: swift build
@@ -85,16 +110,31 @@ jobs:
       - name: Run core test suites
         run: |
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|PreviewTypographyTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|MathRendererTests|MathRenderingPipelineTests|MathSpanExtractorTests|NoteModelAndRendererTests|PreviewTypographyTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
 
       - name: Run MarkdownPreview widget tests
         run: |
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'MarkdownPreviewWidgetTests' --no-parallel"
+            "swift test --filter 'MarkdownPreviewWidgetTests|MathPreviewWidgetTests' --no-parallel"
 
   build-macos:
-    name: Build on macOS
-    runs-on: macos-26
+    name: Build on macOS (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # What release-macos.yml ships with: macOS 26 and Xcode 26.4.1
+          # (Swift 6.3). The default Xcode there is 26.2 (Swift 6.2).
+          - name: macOS 26, Xcode 26.4.1
+            runner: macos-26
+            xcode: /Applications/Xcode_26.4.1.app
+          # The Xcode 27 image (macOS 27, Swift 6.4), as a compile check
+          # only: release builds stay on macOS 26, because Homebrew bottles on
+          # macOS 27 are built for 27 and the app would no longer start on 26.
+          - name: macOS 27, Xcode 27
+            runner: xcode-27
+            xcode: ""
     # Verifies the package compiles against the Homebrew GTK4 / libadwaita /
     # libspelling stack on Apple Silicon. Tests are NOT run in CI: GitHub-
     # hosted macOS runners are headless (no WindowServer session), and the
@@ -108,10 +148,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      # macos-26's default Xcode is 26.2 (Swift 6.2). Pick 26.4.1 to match
-      # the swift-tools-version in Package.swift and what local devs use.
-      - name: Select Xcode 26.4.1 (Swift 6.3)
-        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
+      - name: Select Xcode
+        if: matrix.xcode != ''
+        run: sudo xcode-select -s "${{ matrix.xcode }}"
 
       - name: Install GTK + libspelling stack via Homebrew
         run: brew install libadwaita gettext gtksourceview5 libspelling pkgconf
@@ -121,6 +160,12 @@ jobs:
 
       - name: Swift version
         run: swift --version
+
+      # The image ships rustup with a current stable toolchain.
+      - name: Build the math engine
+        run: |
+          cargo --version
+          bash scripts/build-ratex-bridge.sh
 
       - name: Build
         run: swift build
@@ -175,13 +220,18 @@ jobs:
             libspelling-1-dev \
             locales \
             python3-pyatspi \
-            weston
+            weston \
+            rustc-1.91 \
+            cargo-1.91
 
       - name: Generate a locale
         # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
         # locale, so the interface-language tests need some real locale to
         # exist — any one will do; it need not be the language selected.
         run: sudo locale-gen en_US.UTF-8
+
+      - name: Build the math engine
+        run: PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
 
       - name: Run Wayland smoke tests
         run: |
