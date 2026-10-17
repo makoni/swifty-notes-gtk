@@ -262,6 +262,9 @@ final class AppController {
 public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
+        // Sets an environment variable, so it has to run before anything
+        // starts a thread.
+        MathRenderer.configureTextFallbackFont()
         ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded()
         let catalogueReachable = initializeLocalization(language: storedInterfaceLanguage())
         MainContext.silenceSpuriousScrollbarWarnings()

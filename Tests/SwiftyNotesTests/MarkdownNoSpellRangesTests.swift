@@ -76,4 +76,26 @@ struct MarkdownNoSpellRangesTests {
         let ranges = MarkdownNoSpellRanges.ranges(in: text)
         #expect(ranges.count == 2)
     }
+
+    @Test("Leaves TeX in math spans to the formula, not the spell checker")
+    func leavesTexInMathSpansAlone() {
+        let text = "Café: $\\frac{a}{b}$ and\n$$\n\\mathbb{R}\n$$\nend"
+        let ranges = MarkdownNoSpellRanges.ranges(in: text)
+        let scalars = Array(text.unicodeScalars)
+        let covered = ranges.map { range in
+            String(String.UnicodeScalarView(scalars[range]))
+        }
+        #expect(covered.contains("$\\frac{a}{b}$"))
+        #expect(covered.contains("$$\n\\mathbb{R}\n$$"))
+        #expect(!covered.contains { $0.contains("Café") || $0.contains("end") })
+    }
+
+    @Test("Ranges count code points, as GtkTextBuffer offsets do")
+    func rangesCountCodePoints() {
+        // 👍🏽 is one character but two code points.
+        let text = "Hi 👍🏽 `code` and $x$"
+        let ranges = MarkdownNoSpellRanges.ranges(in: text)
+        let scalars = Array(text.unicodeScalars)
+        #expect(ranges.map { String(String.UnicodeScalarView(scalars[$0])) } == ["`code`", "$x$"])
+    }
 }

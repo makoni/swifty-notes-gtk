@@ -13,6 +13,7 @@ enum SwiftyNotesOverviewSeed {
     - Native editor, preview, and window chrome
     - Three focused working modes: `Editor`, `Split`, and `Preview`
     - Formatting toolbar for headings, emphasis, links, lists, quotes, and task items
+    - LaTeX math: $e^{i\\pi} + 1 = 0$ inline with `$…$`, display formulas with `$$…$$`
     - Folder tree with drag-and-drop, nested subfolders, rename, and recursive delete
     - Autosave, search, sorting, and workspace restore
     - CLI access to the same notes directory for scripts and AI agents

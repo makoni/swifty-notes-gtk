@@ -571,6 +571,9 @@ msgstr "見出しへ移動…"
 msgid "Jump-to-heading results"
 msgstr "見出しへの移動の候補"
 
+msgid "KaTeX fonts"
+msgstr "KaTeX フォント"
+
 msgid "Language"
 msgstr "言語"
 

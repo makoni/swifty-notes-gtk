@@ -580,6 +580,9 @@ msgstr "Zu Überschrift springen …"
 msgid "Jump-to-heading results"
 msgstr "Ergebnisse für den Sprung zu Überschriften"
 
+msgid "KaTeX fonts"
+msgstr "KaTeX-Schriften"
+
 msgid "Language"
 msgstr "Sprache"
 

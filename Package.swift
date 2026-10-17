@@ -42,6 +42,30 @@ func sourceDependency(
     return .package(url: remoteURL, from: minimumVersion)
 }
 
+// The RaTeX math engine is Rust, built outside SwiftPM by
+// scripts/build-ratex-bridge.sh into build/ratex-bridge/ — run that script
+// before the first `swift build` (and after changing Sources/RaTeXBridge).
+// Without it the link fails with "cannot find -lratex_bridge".
+//
+// The system libraries the static library needs are listed here rather
+// than read from the build: SwiftPM caches this manifest by its contents,
+// so anything it read from build/ would go stale. The build script reads
+// these lists back and fails if cargo asks for anything else.
+let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
+#if os(macOS)
+let mathBridgeSystemLibraries = [
+    "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lintl", "-lcairo-gobject", "-lcairo", "-lfontconfig",
+    "-liconv", "-framework", "CoreFoundation",
+]
+#else
+let mathBridgeSystemLibraries = [
+    "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lcairo-gobject", "-lcairo", "-lfontconfig",
+    "-lgcc_s", "-lutil", "-lrt", "-lpthread", "-lm", "-ldl",
+]
+#endif
+let mathBridgeLinkerFlags = ["-L\(packageDirectory)/build/ratex-bridge/lib", "-lratex_bridge"]
+    + mathBridgeSystemLibraries
+
 let package = Package(
     name: "swifty-notes-gtk",
     platforms: [
@@ -120,6 +144,7 @@ let package = Package(
         )
     ],
     targets: [
+        .systemLibrary(name: "CRaTeXBridge", path: "Sources/RaTeXBridge"),
         .systemLibrary(
             name: "CSpelling",
             pkgConfig: "libspelling-1",
@@ -133,6 +158,7 @@ let package = Package(
                 .product(name: "Adwaita", package: "swift-adwaita"),
                 .product(name: "Markdown", package: "swift-markdown"),
                 "CSpelling",
+                "CRaTeXBridge",
             ],
             resources: [
                 // The `locale/` directory is inside the target so SwiftPM
@@ -153,7 +179,8 @@ let package = Package(
                 // and GTK's icon-theme lookup expects the standard
                 // `<theme>/<size>/<context>/<name>.<ext>` layout.
                 .copy("AppIcons")
-            ]
+            ],
+            linkerSettings: [.unsafeFlags(mathBridgeLinkerFlags)]
         ),
         .executableTarget(
             // Target name (and `path:`) must not case-collide with the

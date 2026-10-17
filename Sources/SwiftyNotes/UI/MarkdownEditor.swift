@@ -103,7 +103,8 @@ struct MarkdownEditor {
     ) {
         guard let tagPointer else { return }
         let text = buffer.text
-        let totalLength = text.count
+        // GtkTextBuffer offsets count code points.
+        let totalLength = text.unicodeScalars.count
         guard totalLength > 0 else { return }
         swifty_notes_spelling_remove_no_spell_tag(
             bufferPointer,

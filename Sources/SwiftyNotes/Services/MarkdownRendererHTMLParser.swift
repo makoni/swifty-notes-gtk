@@ -177,13 +177,28 @@ final class HTMLNode {
     }
 }
 
+/// Escapes text for Pango markup, one code point at a time: string
+/// replacement matches whole characters, so `&` or `<` followed by a
+/// combining mark (`<` + U+0338 is how "≮" decomposes) would slip through
+/// and break the markup.
 func pangoEscape(_ text: String) -> String {
-    text
-        .replacingOccurrences(of: "&", with: "&amp;")
-        .replacingOccurrences(of: "<", with: "&lt;")
-        .replacingOccurrences(of: ">", with: "&gt;")
+    escapedForMarkup(text, quotes: false)
 }
 
 func pangoEscapeAttribute(_ text: String) -> String {
-    pangoEscape(text).replacingOccurrences(of: "\"", with: "&quot;")
+    escapedForMarkup(text, quotes: true)
+}
+
+private func escapedForMarkup(_ text: String, quotes: Bool) -> String {
+    var result = String.UnicodeScalarView()
+    for scalar in text.unicodeScalars {
+        switch scalar {
+        case "&": result.append(contentsOf: "&amp;".unicodeScalars)
+        case "<": result.append(contentsOf: "&lt;".unicodeScalars)
+        case ">": result.append(contentsOf: "&gt;".unicodeScalars)
+        case "\"" where quotes: result.append(contentsOf: "&quot;".unicodeScalars)
+        default: result.append(scalar)
+        }
+    }
+    return String(result)
 }

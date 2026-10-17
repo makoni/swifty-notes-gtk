@@ -108,4 +108,13 @@ struct MarkdownOutlineExtractorTests {
             Heading(id: "deep", level: 6, text: "Deep", blockIndex: 0, line: 1),
         ])
     }
+
+    @Test("A hash or underline inside display math is not a heading")
+    func hashOrUnderlineInsideDisplayMathIsNotAHeading() {
+        let markdown = "$$\n# x\n---\n$$\n\n## Real\n"
+        let blocks = MarkdownRenderer().blocks(for: markdown, darkAppearance: false)
+        let headings = MarkdownOutlineExtractor.extract(markdown: markdown, blocks: blocks)
+        #expect(headings.map(\.text) == ["Real"])
+        #expect(headings.map(\.line) == [6])
+    }
 }

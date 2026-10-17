@@ -614,6 +614,28 @@ extension MainWindow {
         about.comments = "A native GTK markdown notes app written in Swift using swift-adwaita.".localized
         about.supportUrl = "https://github.com/makoni/swifty-notes-gtk"
         about.addLink("Source Code".localized, url: "https://github.com/makoni/swifty-notes-gtk")
+        // The math engine and what it embeds (KaTeX's metrics and fonts,
+        // mhchem's chemistry tables); full texts ship in the package's
+        // licenses/ratex directory.
+        about.addLegalSection("RaTeX", copyright: "© erweixin", licenseType: GTK_LICENSE_MIT_X11, license: nil)
+        about.addLegalSection(
+            "KaTeX",
+            copyright: "© 2013–2020 Khan Academy and other contributors",
+            licenseType: GTK_LICENSE_MIT_X11,
+            license: nil
+        )
+        about.addLegalSection(
+            "KaTeX fonts".localized,
+            copyright: "© 2009–2010 Design Science, Inc.\n© 2014–2018 Khan Academy",
+            licenseType: GTK_LICENSE_CUSTOM,
+            license: "SIL Open Font License, Version 1.1 — <a href=\"https://openfontlicense.org\">openfontlicense.org</a>"
+        )
+        about.addLegalSection(
+            "mhchem",
+            copyright: "© 2011–2015 The MathJax Consortium\n© 2015–2018 Martin Hensel",
+            licenseType: GTK_LICENSE_APACHE_2_0,
+            license: nil
+        )
         about.onClosed { [weak self, weak about] in
             guard let self, let about, activeAboutDialog === about else { return }
             activeAboutDialog = nil
