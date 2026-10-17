@@ -60,10 +60,16 @@ printf '%s\n' "$native_libs" > "$PREFIX/native-static-libs"
 # Package.swift itself, so there is one copy of it; the C runtime itself
 # (-lc, -lSystem) is always linked.
 case "$(uname -s)" in
-    Darwin) branch='/^#if os\(macOS\)/,/^#else/p' ;;
+    # Parentheses are literal in a basic regular expression.
+    Darwin) branch='/^#if os(macOS)/,/^#else/p' ;;
     *) branch='/^#else/,/^#endif/p' ;;
 esac
-allowed="-lc -lSystem $(sed -n "$branch" "$APP_ROOT/Package.swift" | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ')"
+listed="$(sed -n "$branch" "$APP_ROOT/Package.swift" | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ' || true)"
+if [ -z "$listed" ]; then
+    echo "build-ratex-bridge.sh: could not read mathBridgeSystemLibraries for this platform from Package.swift" >&2
+    exit 1
+fi
+allowed="-lc -lSystem $listed"
 missing=""
 for flag in $native_libs; do
     case " $allowed " in
