@@ -99,15 +99,15 @@ final class BreadcrumbStrip {
     static func buildMarkup(docTitle: String, section: String?, leaf: String?) -> String {
         var pieces: [String] = []
         if !docTitle.isEmpty {
-            pieces.append("<span alpha=\"60%\">\(PangoMarkup.escape(docTitle))</span>")
+            pieces.append("<span alpha=\"60%\">\(pangoEscape(docTitle))</span>")
         }
         if let section, !section.isEmpty {
             let renderedSection: String
             if let leaf, !leaf.isEmpty {
-                renderedSection = "<span alpha=\"60%\">\(PangoMarkup.escape(section))</span>"
+                renderedSection = "<span alpha=\"60%\">\(pangoEscape(section))</span>"
             } else {
                 // No leaf — the section is the current focus, render full-weight.
-                renderedSection = "<span weight=\"500\">\(PangoMarkup.escape(section))</span>"
+                renderedSection = "<span weight=\"500\">\(pangoEscape(section))</span>"
             }
             if !pieces.isEmpty {
                 pieces.append(separator)
@@ -118,7 +118,7 @@ final class BreadcrumbStrip {
             if !pieces.isEmpty {
                 pieces.append(separator)
             }
-            pieces.append("<span weight=\"500\">\(PangoMarkup.escape(leaf))</span>")
+            pieces.append("<span weight=\"500\">\(pangoEscape(leaf))</span>")
         }
         return pieces.joined(separator: " ")
     }

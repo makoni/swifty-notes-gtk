@@ -431,16 +431,14 @@ struct OutlineSidebar {
         let lowerText = text.lowercased()
         let lowerQuery = query.lowercased()
         guard let range = lowerText.range(of: lowerQuery) else {
-            return PangoMarkup.escape(text)
+            return pangoEscape(text)
         }
         let pre = String(text[..<range.lowerBound])
         let hit = String(text[range])
         let post = String(text[range.upperBound...])
-        return "\(PangoMarkup.escape(pre))<span background=\"#f5c211\" foreground=\"#1e1e1e\">\(PangoMarkup.escape(hit))</span>\(PangoMarkup.escape(post))"
+        return "\(pangoEscape(pre))<span background=\"#f5c211\" foreground=\"#1e1e1e\">\(pangoEscape(hit))</span>\(pangoEscape(post))"
     }
 
-    /// Pango entity escape — same five entities the swift-adwaita
-    /// preview's HTML builder uses (see ``MarkdownRendererHTMLBuilder``).
     // MARK: — Internal handler hook
 
     /// Wired by `MainWindow.wireSignals` so chevron clicks can call
