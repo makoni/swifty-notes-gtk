@@ -58,7 +58,7 @@ printf '%s\n' "$native_libs" > "$PREFIX/native-static-libs"
 # build's output reliably). Fail here, with the fix spelled out, if cargo now
 # needs one that list lacks. The list for this platform is read out of
 # Package.swift itself, so there is one copy of it; the C runtime itself
-# (-lc, -lSystem) is always linked.
+# (-lc, -lm, -lSystem) is always linked.
 case "$(uname -s)" in
     # Parentheses are literal in a basic regular expression.
     Darwin) branch='/^#if os(macOS)/,/^#else/p' ;;
@@ -69,7 +69,7 @@ if [ -z "$listed" ]; then
     echo "build-ratex-bridge.sh: could not read mathBridgeSystemLibraries for this platform from Package.swift" >&2
     exit 1
 fi
-allowed="-lc -lSystem $listed"
+allowed="-lc -lm -lSystem $listed"
 missing=""
 for flag in $native_libs; do
     case " $allowed " in
