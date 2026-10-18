@@ -178,6 +178,13 @@ jobs:
       # team" mismatch with the temp keychain becomes annoying to
       # diagnose. The script-based two-stage approach is what GIMP /
       # Inkscape / krita-macos all do for the same reason.
+      # The math engine (RaTeX) is Rust; the image ships rustup with a
+      # current stable toolchain. The app links the static library it builds.
+      - name: Build the math engine
+        run: |
+          cargo --version
+          bash scripts/build-ratex-bridge.sh
+
       - name: Build Release .app
         env:
           VERSION: ${{ needs.resolve-version.outputs.version }}

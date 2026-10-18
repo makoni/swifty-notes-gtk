@@ -15,6 +15,14 @@ familiar sidebar / editor / preview window comes up.
 brew install libadwaita gtksourceview5 libspelling pkgconf
 ```
 
+Plus Rust ([rustup](https://rustup.rs)) for the math engine. Build it once
+from the repository root before the first Xcode build, and again after
+changing `Sources/RaTeXBridge`:
+
+```bash
+scripts/build-ratex-bridge.sh
+```
+
 Pulls `gtk4`, `glib`, `cairo`, `pango`, `gdk-pixbuf`, `harfbuzz`,
 `librsvg`, `enchant`, and ~30 transitive deps (~1.5–2 GB).
 

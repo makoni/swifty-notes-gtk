@@ -286,6 +286,7 @@ final class CommandPaletteWindow {
     private func makeRow(for heading: Heading, query: String) -> ListBoxRow {
         let row = ListBoxRow()
         row.addCSSClass("sn-pal-row")
+        row.setAccessibleLabel(MathInlineText.readable(heading.text))
 
         let pill = Label(String(format: "H%d".localized, heading.level))
         pill.addCSSClass("sn-pal-pill")
@@ -295,7 +296,12 @@ final class CommandPaletteWindow {
         let parentLabel = Label("")
         parentLabel.addCSSClass(.dimLabel)
         if let parent = parentText[heading.id], heading.level >= 3 {
-            parentLabel.text = "\(parent) ›"
+            // The chevron after the heading's (perhaps shortened) text.
+            let math = MathInlineText.markup(for: parent)
+            TitleMath.show(markup: math.markup + " ›", spans: math.spans, in: parentLabel)
+            // A heading can be very long, and a label drawing a formula
+            // is drawn whole for it.
+            parentLabel.ellipsize = .end
             parentLabel.visible = true
         } else {
             parentLabel.visible = false
@@ -303,15 +309,7 @@ final class CommandPaletteWindow {
         parentLabel.marginEnd = 4
 
         let leafLabel = Label("")
-        if query.isEmpty {
-            leafLabel.useMarkup = false
-            leafLabel.text = heading.text
-        } else {
-            // `label.markup` parses the Pango `<span>` highlight;
-            // `label.text` would strip it back to literal angle
-            // brackets. Same fix the outline rows use.
-            leafLabel.markup = Self.highlightedMarkup(heading.text, query: query)
-        }
+        TitleMath.show(heading.text, in: leafLabel, highlighting: query)
         leafLabel.ellipsize = .end
         leafLabel.hexpand = true
         leafLabel.xalign = 0
@@ -392,19 +390,6 @@ final class CommandPaletteWindow {
         _ = dialog.close()
     }
 
-    /// Same Pango entity escape + yellow highlight as the outline rows.
-    private static func highlightedMarkup(_ text: String, query: String) -> String {
-        let lowerText = text.lowercased()
-        let lowerQuery = query.lowercased()
-        guard let range = lowerText.range(of: lowerQuery) else {
-            return PangoMarkup.escape(text)
-        }
-        let pre = String(text[..<range.lowerBound])
-        let hit = String(text[range])
-        let post = String(text[range.upperBound...])
-        return "\(PangoMarkup.escape(pre))<span background=\"#f5c211\" foreground=\"#1e1e1e\">\(PangoMarkup.escape(hit))</span>\(PangoMarkup.escape(post))"
-    }
-
 }
 
 #if DEBUG
@@ -415,6 +400,11 @@ final class CommandPaletteWindow {
 
         var debugHighlightIndex: Int {
             highlightIndex
+        }
+
+        /// The list of rows (tests look at their labels).
+        var debugList: Widget {
+            list
         }
 
         func debugSetQuery(_ q: String) {
@@ -434,6 +424,10 @@ final class CommandPaletteWindow {
         /// exactly what `GtkSearchEntry` does when the user presses Escape with
         /// focus on the entry.  Used by unit tests to verify the Escape close path
         /// without simulating real keyboard events.
+        func debugClose() {
+            _ = dialog.close()
+        }
+
         func debugEmitStopSearch() {
             searchEntry.emitStopSearch()
         }

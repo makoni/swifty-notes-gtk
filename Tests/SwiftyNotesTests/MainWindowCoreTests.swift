@@ -38,6 +38,59 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("Body"))
     }
 
+    @Test("The trash banner shows a note's title as text, not markup") @MainActor
+    func theTrashBannerShowsANotesTitleAsText() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let repository = NotesRepository(notesDirectory: temp)
+        let note = try repository.createNote(initialContent: "# A & B <draft>\n\nBody")
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.trashbanner")
+        try app.register()
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+        window.debugLoadInitialNotes()
+        window.previewTrashedNote(note)
+        // As markup the title would not parse, and the banner's label would
+        // keep showing nothing.
+        var titleLabels: [Label] = []
+        var stack: [Widget] = [window.trashedNoteBanner]
+        while let widget = stack.popLast() {
+            if let label = widget.tryCast(Label.self), label.text.contains("A & B <draft>") { titleLabels.append(label) }
+            stack.append(contentsOf: widget.children())
+        }
+        let titleLabel = try #require(titleLabels.first)
+        #expect(!titleLabel.useMarkup)
+    }
+
+    @Test("A note holding a NUL opens in the editor instead of an empty buffer") @MainActor
+    func aNoteHoldingANULOpensInTheEditor() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "# Kept\n\nBefore\u{0}After")
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.nulnote")
+        try app.register()
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+        window.debugLoadInitialNotes()
+        window.debugSelectDisplayedNote(at: 0)
+        // GTK refuses text with a NUL, which left the editor empty: the next
+        // keystroke would have saved that over the note.
+        #expect(window.debugEditorText == "# Kept\n\nBefore\u{FFFD}After")
+    }
+
     @Test("Main window typing burst defers markdown rebuild until pending preview flush") @MainActor
     func mainWindowTypingBurstDefersMarkdownRebuildUntilPendingPreviewFlush() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

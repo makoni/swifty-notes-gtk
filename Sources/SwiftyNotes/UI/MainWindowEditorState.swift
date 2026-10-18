@@ -8,7 +8,7 @@ extension MainWindow {
         refreshSidebar()
         persistWorkspaceState()
         toastOverlay.dismissAll()
-        toastOverlay.showToast(sortMode.sortingMessage)
+        toastOverlay.showPlainToast(sortMode.sortingMessage)
     }
 
     func focusSearch() {
@@ -30,7 +30,8 @@ extension MainWindow {
         let saveState = editor.buffer.modified ? "Unsaved changes".localized : "Saved".localized
         let wordLabel = String(format: nlocalized("%d word", "%d words", count: UInt(wordCount)), wordCount)
         let separator = " • "
-        headerTitle.subtitle = selected.title + separator + saveState + separator + wordLabel
+        // A window subtitle cannot draw formulas; they read as plain text.
+        headerTitle.subtitle = MathInlineText.readable(selected.title) + separator + saveState + separator + wordLabel
     }
 
     func saveSelectedNoteNow() {
@@ -93,13 +94,13 @@ extension MainWindow {
         refreshPreview()
         updateHeaderSubtitle()
         if announceSuccess {
-            toastOverlay.showToast("Note saved".localized)
+            toastOverlay.showPlainToast("Note saved".localized)
         }
         applyDeferredExternalReloadIfPossible()
     }
 
     func handleSaveFailure(_ error: Error) {
-        toastOverlay.showToast(String(format: "Could not save note: %@".localized, error.localizedDescription))
+        toastOverlay.showPlainToast(String(format: "Could not save note: %@".localized, error.localizedDescription))
         updateHeaderSubtitle()
     }
 
@@ -148,7 +149,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note renamed".localized)
+            toastOverlay.showPlainToast("Note renamed".localized)
         } catch {
             presentError(
                 heading: "Could not rename note".localized,

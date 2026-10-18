@@ -43,7 +43,10 @@ enum MarkdownOutlineExtractor {
     /// swift-markdown. Falls back to `1` if the parser didn't attach a
     /// range (defensive — every CommonMark heading has one in practice).
     private static func headingLines(in markdown: String) -> [Int] {
-        let document = Document(parsing: markdown)
+        // Parse the source with its math cut out (line numbers unchanged), as
+        // the renderer does: a `#` line or setext underline inside `$$…$$` is
+        // TeX, not a heading.
+        let document = Document(parsing: MathSpanExtractor.extract(from: markdown).markdown)
         var lines: [Int] = []
         for child in document.children {
             collectHeadingLines(from: child, into: &lines)

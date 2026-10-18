@@ -65,7 +65,10 @@ jobs:
             libgtksourceview-5-dev \
             libspelling-1-dev \
             locales \
-            xvfb
+            xdotool \
+            xvfb \
+            rustc-1.91 \
+            cargo-1.91
 
       - name: Generate a locale
         # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
@@ -74,11 +77,17 @@ jobs:
         # will do; it need not be the language selected.
         run: sudo locale-gen en_US.UTF-8
 
+      # The math engine (RaTeX) is Rust; see ci.yml for why 1.91.
+      - name: Build the math engine
+        run: |
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+          PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
+
       - name: Verify project
         run: |
           swift build
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|MarkdownNoSpellRangesTests|MathRendererTests|MathRenderingPipelineTests|MathInlineTextTests|MathSpanExtractorTests|NoteModelAndRendererTests|PangoMarkupEscapingTests|ParseBudgetPeriodTests|PreviewPaneLayoutTests|PreviewTypographyTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
 
   prepare-install-roots:
     name: Prepare install root (${{ matrix.arch }})
@@ -113,7 +122,15 @@ jobs:
             libcurl4-openssl-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
-            libspelling-1-dev
+            libspelling-1-dev \
+            rustc-1.91 \
+            cargo-1.91
+
+      # The math engine (RaTeX) is Rust; see ci.yml for why 1.91.
+      - name: Build the math engine
+        run: |
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+          PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
 
       - name: Verify project
         run: |

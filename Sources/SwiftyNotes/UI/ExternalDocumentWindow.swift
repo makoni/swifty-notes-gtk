@@ -126,7 +126,7 @@ final class ExternalDocumentWindow {
         keyCaptureWindow: window,
         viewMode: { [weak self] in self?.viewMode ?? .split },
         presentToast: { [weak self] message in
-            self?.toastOverlay.addToast(Toast(title: message))
+            self?.toastOverlay.addToast(Toast.plain(message))
         },
     )
 
@@ -171,9 +171,17 @@ final class ExternalDocumentWindow {
             self?.syncPreviewScroll()
         },
     )
-    private var previewAnimationID: SourceID?
-    private var isPreviewPaneAttached = false
-    private var isRestoringPreviewPaneLayout = false
+    private lazy var previewPaneDivider = PreviewPaneDivider(
+        pane: editorPreviewPane,
+        previewContent: previewPaneContent,
+        host: .init(
+            estimatedRoomWidth: { [weak self] in self?.estimatedPreviewContainerWidth ?? 0 },
+            isSplit: { [weak self] in self?.viewMode == .split },
+            preferredPreviewWidth: { [weak self] in self?.preferredPreviewWidth ?? WorkspaceState.defaultPreviewWidth },
+            setPreferredPreviewWidth: { [weak self] in self?.preferredPreviewWidth = $0 },
+            editorWidthChanged: { [weak self] in self?.updateEditorFormattingToolbarLayout(forWidth: $0) },
+        ),
+    )
     private var suppressEditorChange = false
     private var suppressViewModeToggleChange = false
     private var hasPresented = false
@@ -336,9 +344,9 @@ private extension ExternalDocumentWindow {
         outlineSplitView.sidebarPosition = .end
         outlineSplitView.enableShowGesture = false
         outlineSplitView.enableHideGesture = false
-        outlineSplitView.minSidebarWidth = 220
-        outlineSplitView.maxSidebarWidth = 320
-        outlineSplitView.sidebarWidthFraction = 0.18
+        outlineSplitView.minSidebarWidth = Double(PaneLayout.minimumOutlineWidth)
+        outlineSplitView.maxSidebarWidth = Double(PaneLayout.maximumOutlineWidth)
+        outlineSplitView.sidebarWidthFraction = PaneLayout.outlineWidthFraction
         outlineSplitView.sidebar = outlineSidebar.root
         outlineSplitView.content = contentHost
         outlineSplitView.showSidebar = false
@@ -386,9 +394,8 @@ private extension ExternalDocumentWindow {
             self?.refreshPreview()
         }
 
-        editorPreviewPane.onPositionChanged { [weak self] in
-            self?.handlePreviewPaneMoved()
-        }
+        // Places the divider and remembers the width the user drags to.
+        _ = previewPaneDivider
 
         editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in
             self?.updateEditorFormattingToolbarLayout(forWidth: width)
@@ -772,129 +779,54 @@ private extension ExternalDocumentWindow {
 
     func showPreviewPane(animated: Bool) {
         showEditorContent()
-        attachPreviewPane()
-        if animated, canAnimatePreviewPane {
-            let totalWidth = currentPreviewContainerWidth
-            let targetPosition = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
-            editorPreviewPane.position = totalWidth
-            animatePreviewPane(to: targetPosition)
-            return
-        }
-        restorePreviewPaneLayout()
+        previewPaneDivider.show(animated: animated)
     }
 
     func hidePreviewPane(animated: Bool) {
         showEditorContent()
-        guard isPreviewPaneAttached else { return }
-        guard animated, canAnimatePreviewPane else {
-            detachPreviewPane()
-            return
-        }
-        animatePreviewPane(to: currentPreviewContainerWidth)
+        previewPaneDivider.hide(animated: animated)
     }
 
     func restorePreviewPaneLayout() {
-        guard viewMode == .split else { return }
-        let totalWidth = currentPreviewContainerWidth
-        isRestoringPreviewPaneLayout = true
-        editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
-        refreshEditorFormattingToolbarLayout()
-        MainContext.idle { [weak self] in
-            self?.isRestoringPreviewPaneLayout = false
-        }
-    }
-
-    func attachPreviewPane() {
-        guard !isPreviewPaneAttached else { return }
-        editorPreviewPane.endChild = previewPaneContent
-        isPreviewPaneAttached = true
+        previewPaneDivider.restore()
     }
 
     func detachPreviewPane() {
-        guard isPreviewPaneAttached else { return }
-        stopPreviewAnimation()
-        editorPreviewPane.endChild = nil
-        isPreviewPaneAttached = false
-    }
-
-    func animatePreviewPane(to targetPosition: Int) {
-        stopPreviewAnimation()
-        let startPosition = editorPreviewPane.position
-        guard startPosition != targetPosition else {
-            isRestoringPreviewPaneLayout = false
-            if viewMode != .split {
-                schedulePreviewDetachIfNeeded()
-            }
-            return
-        }
-
-        isRestoringPreviewPaneLayout = true
-        let startedAt = Date()
-        let duration = Double(MainWindow.previewAnimationDuration) / 1000
-        previewAnimationID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
-            guard let self else { return false }
-            let elapsed = Date().timeIntervalSince(startedAt)
-            let progress = min(max(elapsed / duration, 0), 1)
-            let easedProgress = 1 - pow(1 - progress, 3)
-            let position = Double(startPosition) + (Double(targetPosition - startPosition) * easedProgress)
-            editorPreviewPane.position = Int(position.rounded())
-            if progress < 1 {
-                return true
-            }
-
-            previewAnimationID = nil
-            isRestoringPreviewPaneLayout = false
-            if viewMode != .split {
-                schedulePreviewDetachIfNeeded()
-            }
-            return false
-        }
-    }
-
-    func schedulePreviewDetachIfNeeded() {
-        MainContext.delay(for: .milliseconds(1)) { [weak self] in
-            guard let self, viewMode != .split else { return }
-            detachPreviewPane()
-        }
+        previewPaneDivider.detach()
     }
 
     func stopPreviewAnimation() {
-        if let previewAnimationID {
-            MainContext.cancel(sourceId: previewAnimationID)
-            self.previewAnimationID = nil
-        }
+        previewPaneDivider.stopAnimation()
     }
 
+    private var isPreviewPaneAttached: Bool {
+        previewPaneDivider.isPreviewAttached
+    }
+
+    /// The room the editor and preview share (see
+    /// ``PreviewPaneDivider/roomWidth``).
     var currentPreviewContainerWidth: Int {
-        max(
+        previewPaneDivider.roomWidth
+    }
+
+    /// That room estimated from the window: the window less the Outline
+    /// beside it.
+    var estimatedPreviewContainerWidth: Int {
+        let outlineWidth = currentOutlineWidth
+        return max(
             editorPreviewPane.width,
             contentHost.width,
-            window.width,
-            window.defaultWidth,
+            window.width - outlineWidth,
+            window.defaultWidth - outlineWidth,
         )
     }
 
-    var canAnimatePreviewPane: Bool {
-        editorPreviewPane.parent != nil && editorPreviewPane.width > 0 && editorPreviewPane.height > 0
-    }
-
-    func resolvedVisiblePreviewPosition(totalWidth: Int) -> Int {
-        preview.rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
-        let previewWidth = MainWindow.resolvedPreviewWidth(
-            storedWidth: preferredPreviewWidth,
-            availableWidth: totalWidth,
-        )
-        return max(totalWidth - previewWidth, MainWindow.minimumEditorWidth)
-    }
-
-    func handlePreviewPaneMoved() {
-        guard viewMode == .split, isPreviewPaneAttached, !isRestoringPreviewPaneLayout else { return }
-        let totalWidth = max(editorPreviewPane.width, contentHost.width, window.width, window.defaultWidth)
-        guard totalWidth >= MainWindow.minimumPreviewWidth + MainWindow.minimumEditorWidth else { return }
-        let previewWidth = totalWidth - editorPreviewPane.position
-        guard previewWidth >= MainWindow.minimumPreviewWidth else { return }
-        preferredPreviewWidth = previewWidth
-        updateEditorFormattingToolbarLayout(forWidth: editorPreviewPane.position)
+    /// The Outline's width while shown — as allocated, or as the split view
+    /// will size it before the first allocation.
+    var currentOutlineWidth: Int {
+        guard outlineSplitView.showSidebar else { return 0 }
+        if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
+        return PaneLayout.outlineWidth(forWindowWidth: max(window.width, window.defaultWidth))
     }
 }
 
@@ -981,12 +913,7 @@ private extension ExternalDocumentWindow {
 
     private func resolvedEditorFormattingToolbarWidth() -> Int {
         if viewMode == .split {
-            let totalWidth = currentPreviewContainerWidth
-            let previewWidth = MainWindow.resolvedPreviewWidth(
-                storedWidth: preferredPreviewWidth,
-                availableWidth: totalWidth,
-            )
-            return max(totalWidth - previewWidth, MainWindow.minimumEditorWidth)
+            return previewPaneDivider.editorWidth(forRoom: currentPreviewContainerWidth)
         }
 
         let allocatedWidth = max(
@@ -1032,7 +959,7 @@ private extension ExternalDocumentWindow {
             refreshPreview()
             updateHeaderSubtitle()
             if let successMessage {
-                toastOverlay.showToast(successMessage)
+                toastOverlay.showPlainToast(successMessage)
             }
             applyDeferredExternalReloadIfPossible()
             return true
@@ -1043,7 +970,7 @@ private extension ExternalDocumentWindow {
     }
 
     func handleSaveFailure(_ error: Error) {
-        toastOverlay.showToast(String(format: "Could not save file: %@".localized, error.localizedDescription))
+        toastOverlay.showPlainToast(String(format: "Could not save file: %@".localized, error.localizedDescription))
         updateHeaderSubtitle()
     }
 
@@ -1091,7 +1018,7 @@ private extension ExternalDocumentWindow {
 
         do {
             let importedNote = try importIntoLibrary(fileURL)
-            toastOverlay.showToast(String(format: "Imported %@ into library".localized, importedNote.title))
+            toastOverlay.showPlainToast(String(format: "Imported %@ into library".localized, MathInlineText.readable(importedNote.title)))
         } catch {
             presentError(
                 heading: "Could not import file into library".localized,
@@ -1115,7 +1042,7 @@ private extension ExternalDocumentWindow {
         if editor.buffer.modified, !forceDiscardingUnsavedChanges {
             if !externalReloadDeferred {
                 externalReloadDeferred = true
-                toastOverlay.showToast(
+                toastOverlay.showPlainToast(
                     "File changed on disk. Save or reload to sync.".localized,
                     button: "Reload".localized,
                 ) { [weak self] in
@@ -1129,7 +1056,7 @@ private extension ExternalDocumentWindow {
             let document = try ExternalMarkdownDocumentStore.load(from: fileURL)
             loadDocument(document)
             if announce {
-                toastOverlay.showToast("File reloaded from disk".localized)
+                toastOverlay.showPlainToast("File reloaded from disk".localized)
             }
         } catch {
             presentError(
@@ -1168,7 +1095,7 @@ private extension ExternalDocumentWindow {
                 deferredExternalSnapshot = latestSnapshot
                 if !externalReloadDeferred {
                     externalReloadDeferred = true
-                    toastOverlay.showToast(
+                    toastOverlay.showPlainToast(
                         "File changed on disk. Save or reload to sync.".localized,
                         button: "Reload".localized,
                     ) { [weak self] in
@@ -1180,7 +1107,7 @@ private extension ExternalDocumentWindow {
 
             reloadFromDisk(announce: true, forceDiscardingUnsavedChanges: true)
         } catch {
-            toastOverlay.showToast("Could not inspect markdown file".localized)
+            toastOverlay.showPlainToast("Could not inspect markdown file".localized)
         }
     }
 
@@ -1203,6 +1130,16 @@ private extension ExternalDocumentWindow {
     extension ExternalDocumentWindow {
         var debugViewMode: EditorViewMode {
             viewMode
+        }
+
+        /// The preview width the window remembers for Split mode.
+        var debugPreferredPreviewWidth: Int {
+            preferredPreviewWidth
+        }
+
+        /// The room the divider measures (see ``PreviewPaneDivider/roomWidth``).
+        var debugPreviewRoomWidth: Int {
+            currentPreviewContainerWidth
         }
 
         /// Routes through the real transition (`setViewMode`) so tests

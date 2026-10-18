@@ -225,7 +225,7 @@ extension MainWindow {
     func copyNoteID(_ note: Note) {
         lastCopiedNoteID = note.stableID
         window.clipboard.setText(note.stableID)
-        toastOverlay.showToast("Copied note ID".localized)
+        toastOverlay.showPlainToast("Copied note ID".localized)
     }
 
     func installEditorImageDropTarget() {
@@ -390,7 +390,7 @@ extension MainWindow {
 
         refreshDirectorySnapshot()
         editor.buffer.insertAtCursor(snippets.joined(separator: "\n"))
-        toastOverlay.showToast(nlocalized("Image added to note", "Images added to note", count: UInt(sourceURLs.count)))
+        toastOverlay.showPlainToast(nlocalized("Image added to note", "Images added to note", count: UInt(sourceURLs.count)))
     }
 
     /// Saves clipboard image bytes into the active note's `assets/`
@@ -416,7 +416,7 @@ extension MainWindow {
         )
         refreshDirectorySnapshot()
         editor.buffer.insertAtCursor("![](\(relativePath))")
-        toastOverlay.showToast("Image pasted into note".localized)
+        toastOverlay.showPlainToast("Image pasted into note".localized)
     }
 
     func importNote() {
@@ -451,7 +451,7 @@ extension MainWindow {
                 refreshDirectorySnapshot()
                 renderSelection()
                 persistWorkspaceState()
-                toastOverlay.showToast(String(format: "Imported %@".localized, note.title))
+                toastOverlay.showPlainToast(String(format: "Imported %@".localized, MathInlineText.readable(note.title)))
             } catch {
                 presentError(
                     heading: "Could not import note".localized,
@@ -543,7 +543,7 @@ extension MainWindow {
                 to: destinationURL,
                 assetsCollision: assetsCollision,
             )
-            toastOverlay.showToast(exportSuccessMessage(for: note, outcome: outcome))
+            toastOverlay.showPlainToast(exportSuccessMessage(for: note, outcome: outcome))
         } catch let error as NoteExportError {
             switch error {
             case .assetsDestinationExists:
@@ -559,10 +559,10 @@ extension MainWindow {
 
     private func exportSuccessMessage(for note: Note, outcome: NoteExportOutcome) -> String {
         guard outcome.assetsCopied > 0 else {
-            return String(format: "Exported %@".localized, note.title)
+            return String(format: "Exported %@".localized, MathInlineText.readable(note.title))
         }
         let suffix = nlocalized("asset", "assets", count: UInt(outcome.assetsCopied))
-        return String(format: "Exported %@ with %d %@".localized, note.title, outcome.assetsCopied, suffix)
+        return String(format: "Exported %@ with %d %@".localized, MathInlineText.readable(note.title), outcome.assetsCopied, suffix)
     }
 
     private func presentAssetsCollisionConfirmation(for note: Note, destination: URL) {
@@ -614,6 +614,28 @@ extension MainWindow {
         about.comments = "A native GTK markdown notes app written in Swift using swift-adwaita.".localized
         about.supportUrl = "https://github.com/makoni/swifty-notes-gtk"
         about.addLink("Source Code".localized, url: "https://github.com/makoni/swifty-notes-gtk")
+        // The math engine and what it embeds (KaTeX's metrics and fonts,
+        // mhchem's chemistry tables); full texts ship in the package's
+        // licenses/ratex directory.
+        about.addLegalSection("RaTeX", copyright: "© erweixin", licenseType: GTK_LICENSE_MIT_X11, license: nil)
+        about.addLegalSection(
+            "KaTeX",
+            copyright: "© 2013–2020 Khan Academy and other contributors",
+            licenseType: GTK_LICENSE_MIT_X11,
+            license: nil
+        )
+        about.addLegalSection(
+            "KaTeX fonts".localized,
+            copyright: "© 2009–2010 Design Science, Inc.\n© 2014–2018 Khan Academy",
+            licenseType: GTK_LICENSE_CUSTOM,
+            license: "SIL Open Font License, Version 1.1 — <a href=\"https://openfontlicense.org\">openfontlicense.org</a>"
+        )
+        about.addLegalSection(
+            "mhchem",
+            copyright: "© 2011–2015 The MathJax Consortium\n© 2015–2018 Martin Hensel",
+            licenseType: GTK_LICENSE_APACHE_2_0,
+            license: nil
+        )
         about.onClosed { [weak self, weak about] in
             guard let self, let about, activeAboutDialog === about else { return }
             activeAboutDialog = nil
@@ -720,7 +742,7 @@ extension MainWindow {
             renderSelection()
             persistWorkspaceState()
             startExternalChangeMonitor()
-            toastOverlay.showToast("Notes folder updated".localized)
+            toastOverlay.showPlainToast("Notes folder updated".localized)
             return targetDirectory
         } catch {
             startExternalChangeMonitor()
@@ -739,7 +761,7 @@ extension MainWindow {
         if editor.buffer.modified, !forceDiscardingUnsavedChanges {
             if !externalReloadDeferred {
                 externalReloadDeferred = true
-                toastOverlay.showToast(
+                toastOverlay.showPlainToast(
                     "Notes changed on disk. Save or reload to sync.".localized,
                     button: "Reload".localized,
                 ) { [weak self] in
@@ -759,7 +781,7 @@ extension MainWindow {
             renderSelection()
             persistWorkspaceState()
             if announce {
-                toastOverlay.showToast("Notes reloaded from disk".localized)
+                toastOverlay.showPlainToast("Notes reloaded from disk".localized)
             }
         } catch {
             presentError(
@@ -798,7 +820,7 @@ extension MainWindow {
                 deferredExternalSnapshot = latestSnapshot
                 if !externalReloadDeferred {
                     externalReloadDeferred = true
-                    toastOverlay.showToast(
+                    toastOverlay.showPlainToast(
                         "Notes changed on disk. Save or reload to sync.".localized,
                         button: "Reload".localized,
                     ) { [weak self] in
@@ -810,7 +832,7 @@ extension MainWindow {
 
             reloadFromDisk(announce: true, forceDiscardingUnsavedChanges: true)
         } catch {
-            toastOverlay.showToast("Could not inspect notes directory".localized)
+            toastOverlay.showPlainToast("Could not inspect notes directory".localized)
         }
     }
 
@@ -825,7 +847,7 @@ extension MainWindow {
             deferredExternalSnapshot = nil
             externalReloadDeferred = false
         } catch {
-            toastOverlay.showToast("Could not update notes index".localized)
+            toastOverlay.showPlainToast("Could not update notes index".localized)
         }
     }
 
@@ -835,7 +857,7 @@ extension MainWindow {
         do {
             try stateStore.save(state.persistedState(windowWidth: width, windowHeight: height))
         } catch {
-            toastOverlay.showToast("Could not store workspace state".localized)
+            toastOverlay.showPlainToast("Could not store workspace state".localized)
         }
     }
 

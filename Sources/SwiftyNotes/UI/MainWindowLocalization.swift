@@ -40,7 +40,7 @@ extension MainWindow {
            let trashedNote = state.trashedNotes.first(where: { $0.id == previewedTrashedNoteID }) {
             trashedNoteBanner.title = String(
                 format: "“%@” is in the Trash".localized,
-                trashedNote.title,
+                MathInlineText.readable(trashedNote.title),
             )
         }
         updateBanner.retranslate()

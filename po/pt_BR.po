@@ -580,6 +580,9 @@ msgstr "Ir para o título…"
 msgid "Jump-to-heading results"
 msgstr "Resultados de “Ir para o título”"
 
+msgid "KaTeX fonts"
+msgstr "Fontes do KaTeX"
+
 msgid "Language"
 msgstr "Idioma"
 

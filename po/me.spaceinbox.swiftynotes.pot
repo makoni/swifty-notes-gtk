@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-17 21:28+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -574,6 +574,9 @@ msgid "Jump to heading…"
 msgstr ""
 
 msgid "Jump-to-heading results"
+msgstr ""
+
+msgid "KaTeX fonts"
 msgstr ""
 
 msgid "Language"

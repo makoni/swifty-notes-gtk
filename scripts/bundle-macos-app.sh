@@ -190,6 +190,17 @@ LOCALE_DEST="$RESOURCES_DIR/locale"
 mkdir -p "$LOCALE_DEST"
 rsync -aL --delete "$PROJECT_ROOT/Sources/SwiftyNotes/locale/" "$LOCALE_DEST/"
 
+# Licence notices for the math engine linked into the binary (RaTeX, KaTeX
+# and its fonts, mhchem, and every Rust crate), produced by
+# scripts/build-ratex-bridge.sh next to the library it built.
+MATH_LICENSES="$PROJECT_ROOT/build/ratex-bridge/share/licenses"
+if [ ! -d "$MATH_LICENSES" ]; then
+    echo "error: $MATH_LICENSES is missing — run scripts/build-ratex-bridge.sh first" >&2
+    exit 1
+fi
+mkdir -p "$RESOURCES_DIR/licenses/ratex"
+rsync -a --delete "$MATH_LICENSES/" "$RESOURCES_DIR/licenses/ratex/"
+
 # -- 5. Icon themes ------------------------------------------------------------
 #
 # The app references Adwaita symbolic icons by name (e.g. `list-add-symbolic`).

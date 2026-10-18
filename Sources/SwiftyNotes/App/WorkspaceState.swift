@@ -161,6 +161,12 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         self.recentOutlineJumps = recentOutlineJumps
     }
 
+    /// The Outline's width in versions that counted it in the preview's
+    /// room — frozen, whatever the layout does now.
+    private static func legacyOutlineWidth(forWindowWidth windowWidth: Int) -> Int {
+        min(max(Int(Double(windowWidth) * 0.18), 220), 320)
+    }
+
     private static func deduplicatedFolderPaths(_ paths: [String]) -> [String] {
         var seen: Set<String> = []
         var result: [String] = []
@@ -193,6 +199,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         case isOutlineVisible
         case collapsedOutlineSections
         case recentOutlineJumps
+        case previewWidthExcludesOutline
     }
 
     public init(from decoder: any Decoder) throws {
@@ -219,6 +226,25 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         isOutlineVisible = try container.decodeIfPresent(Bool.self, forKey: .isOutlineVisible) ?? true
         collapsedOutlineSections = try container.decodeIfPresent([String: [String]].self, forKey: .collapsedOutlineSections) ?? [:]
         recentOutlineJumps = try container.decodeIfPresent([String: [String]].self, forKey: .recentOutlineJumps) ?? [:]
+        // Saved by earlier versions, a dragged preview width counted the
+        // Outline beside it (its room was the window less the notes sidebar
+        // only), so with the Outline shown it is too wide by the Outline's
+        // width then. The defaults were never measured, so they stay. (A
+        // file an older version saves again lacks the marker and loses the
+        // width once more, down to the minimum at worst.)
+        // A file without the Outline's key predates the Outline: nothing to
+        // take off.
+        let excludesOutline = try container.decodeIfPresent(Bool.self, forKey: .previewWidthExcludesOutline) ?? false
+        let outlineWasShown = try container.decodeIfPresent(Bool.self, forKey: .isOutlineVisible) == true
+        if !excludesOutline, outlineWasShown,
+           previewWidth != Self.defaultPreviewWidth, previewWidth != Self.legacyDefaultPreviewWidth
+        {
+            // Clamped first: the file may hold anything, and an Int near its
+            // minimum would overflow.
+            let saved = max(previewWidth, PaneLayout.minimumPreviewWidth)
+            let outlineWidth = Self.legacyOutlineWidth(forWindowWidth: max(windowWidth, 0))
+            previewWidth = max(saved - outlineWidth, PaneLayout.minimumPreviewWidth)
+        }
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -243,5 +269,6 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         let stableCollapsed = collapsedOutlineSections.mapValues { $0.sorted() }
         try container.encode(stableCollapsed, forKey: .collapsedOutlineSections)
         try container.encode(recentOutlineJumps, forKey: .recentOutlineJumps)
+        try container.encode(true, forKey: .previewWidthExcludesOutline)
     }
 }

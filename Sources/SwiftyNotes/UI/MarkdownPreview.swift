@@ -2,6 +2,7 @@ import Adwaita
 import CAdwaita
 import CSpelling
 import Foundation
+import MathEngine
 
 @MainActor
 final class MarkdownPreview {
@@ -45,6 +46,32 @@ final class MarkdownPreview {
         case table(headers: [RenderedText], rows: [[RenderedText]], alignments: [RenderedTableAlignment])
         case image(alt: String, source: String?, title: String?, style: ImageBlockStyle)
         case imageGroup(items: [RenderedImageItem], style: ImageBlockStyle)
+        /// A display formula on its own line.
+        case math(tex: String)
+
+        /// The row's inline formulas, in the order their U+FFFC markers
+        /// appear in the row's labels.
+        var mathSpans: [MathSpan] {
+            switch self {
+            case let .heading(_, text):
+                text.mathSpans
+            case let .paragraphRun(texts), let .blockquoteRun(texts):
+                texts.flatMap(\.mathSpans)
+            case let .richTextRun(segments):
+                segments.flatMap { segment -> [MathSpan] in
+                    switch segment {
+                    case let .heading(_, text), let .paragraph(text):
+                        text.mathSpans
+                    }
+                }
+            case let .list(items):
+                items.flatMap(\.text.mathSpans)
+            case let .math(tex):
+                [MathSpan(tex: tex, isDisplay: true)]
+            case .codeBlock, .thematicBreak, .table, .image, .imageGroup:
+                []
+            }
+        }
 
         var supportsVirtualization: Bool {
             switch self {
@@ -70,7 +97,7 @@ final class MarkdownPreview {
                 true
             case let .list(items):
                 items.allSatisfy { $0.taskIndex == nil }
-            case .codeBlock, .table, .image, .imageGroup:
+            case .codeBlock, .table, .image, .imageGroup, .math:
                 false
             }
         }
@@ -103,6 +130,8 @@ final class MarkdownPreview {
                 lhsAlt == rhsAlt && lhsSource == rhsSource && lhsTitle == rhsTitle && lhsStyle == rhsStyle
             case let (.imageGroup(lhsItems, lhsStyle), .imageGroup(rhsItems, rhsStyle)):
                 lhsItems == rhsItems && lhsStyle == rhsStyle
+            case let (.math(lhsTeX), .math(rhsTeX)):
+                lhsTeX == rhsTeX
             default:
                 false
             }
@@ -368,7 +397,24 @@ final class MarkdownPreview {
         #else
         rootScroll.kineticScrolling = true
         #endif
-        rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
+        rootScroll.minContentWidth = PaneLayout.minimumPreviewWidth
+        DesktopFontSettings.shared.observe(owner: self) { [weak self] in
+            self?.scheduleMathFontRefresh()
+        }
+        // The formula budget depends on the window's scale — the surface's
+        // own, which also follows fractional changes (125% → 200%) that the
+        // integer scale-factor misses — and on the window's size.
+        rootScroll.onNotify(.custom("scale-factor")) { [weak self] in
+            self?.scheduleMathFontRefresh()
+        }
+        rootScroll.onRealize { [weak self] in
+            self?.observeSurfaceScale()
+        }
+        for adjustment in [rootScroll.verticalAdjustment, rootScroll.horizontalAdjustment] {
+            SignalHelper.onNotify(adjustment, property: .custom("page-size")) { [weak self] in
+                self?.scheduleMathFontRefresh()
+            }
+        }
         retranslateAccessibility()
         rootScroll.overlayScrolling = false
 
@@ -543,6 +589,22 @@ final class MarkdownPreview {
         self.window = window
     }
 
+    /// The window surface whose scale the preview follows (see the
+    /// formula budget in ``PreviewMath``).
+    private var observedSurface: UnsafeMutableRawPointer?
+
+    private func observeSurfaceScale() {
+        guard let native = gtk_widget_get_native(rootScroll.widgetPointer),
+              let surface = gtk_native_get_surface(native)
+        else { return }
+        let pointer = UnsafeMutableRawPointer(surface)
+        guard pointer != observedSurface else { return }
+        observedSurface = pointer
+        SignalHelper.onNotify(GObjectRef(borrowing: pointer), property: .custom("scale")) { [weak self] in
+            self?.scheduleMathFontRefresh()
+        }
+    }
+
     /// Re-applies the preview's own accessible label.
     ///
     /// Set once during construction, so a language change reaches it only if
@@ -553,6 +615,64 @@ final class MarkdownPreview {
     }
 
     func render(blocks: [RenderedBlock], baseDirectory: URL? = nil) {
+        MathRenderer.withParseBudget {
+            renderWithinParseBudget(blocks: blocks, baseDirectory: baseDirectory)
+        }
+        schedulePostponedMathPass()
+        // New labels are allocated on the next frames; formulas laid out
+        // before that go by an estimated width.
+        scheduleMathFontRefresh()
+    }
+
+    /// When a pass ran out of parse budget, its remaining formulas show their
+    /// source; lay them out over the next frames, one budget per frame, until
+    /// none is left.
+    private func schedulePostponedMathPass() {
+        let root = rootScroll.child ?? container
+        guard !postponedMathPassScheduled, PreviewMath.hasPostponedFormulas(under: root) else { return }
+        postponedMathPassScheduled = true
+        var resumeAt = ContinuousClock.now
+        rootScroll.addTickCallback { [weak self] in
+            guard let self else { return false }
+            // A pass that ran past its budget (one heavy formula, forced)
+            // leaves as long again to the UI before the next.
+            let started = ContinuousClock.now
+            guard started >= resumeAt else { return true }
+            let stillPostponed = MathRenderer.withParseBudget(Self.followUpParseBudget, guaranteeingProgress: true) {
+                PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
+            }
+            let spent = ContinuousClock.now - started
+            resumeAt = FrameCatchUp.next(after: started, spent: spent, budget: Self.followUpParseBudget)
+            reapplySearchHighlights()
+            if !stillPostponed {
+                postponedMathPassScheduled = false
+            }
+            return stillPostponed
+        }
+    }
+
+    /// What a pass after the render — a postponed one, a font refresh —
+    /// may spend parsing per frame; it always finishes at least one formula.
+    private static let followUpParseBudget: Duration = .milliseconds(16)
+
+    /// When the parse budget the row binds of this frame share runs out;
+    /// the first bind of a frame starts it.
+    private func bindParseDeadline() -> ContinuousClock.Instant {
+        // A deadline well past is stale: the frame clock that clears it may
+        // not be ticking (an unmapped preview).
+        if let deadline = currentBindParseDeadline, ContinuousClock.now < deadline + .milliseconds(100) {
+            return deadline
+        }
+        let deadline = ContinuousClock.now + .milliseconds(50)
+        currentBindParseDeadline = deadline
+        rootScroll.addTickCallback { [weak self] in
+            self?.currentBindParseDeadline = nil
+            return false
+        }
+        return deadline
+    }
+
+    private func renderWithinParseBudget(blocks: [RenderedBlock], baseDirectory: URL?) {
         let standardizedBaseDirectory = baseDirectory?.standardizedFileURL
         self.baseDirectory = standardizedBaseDirectory
         lastRenderedBlocks = blocks
@@ -614,12 +734,16 @@ final class MarkdownPreview {
             return
         }
         if targetRenderMode == .customText {
-            container.append(makeCustomTextDocument(rows: rows))
+            let label = makeCustomTextDocument(rows: rows)
+            container.append(label)
+            installMath(in: label, spans: rows.flatMap(\.mathSpans))
             return
         }
 
         for row in rows {
-            container.append(makeWidget(for: row))
+            let widget = makeWidget(for: row)
+            container.append(widget)
+            installMath(in: widget, for: row)
         }
         attachWidgetPointersToBlockSpans()
     }
@@ -685,7 +809,10 @@ final class MarkdownPreview {
                 var segments: [RichTextSegment] = [.heading(level: level, text: text)]
                 var coalescedBlockIndices: [Int] = [index]
                 index += 1
-                while index < blocks.count, case let .paragraph(pText) = blocks[index] {
+                // Text with formulas keeps a label of its own.
+                while PreviewMath.mayShareLabel(text), index < blocks.count, case let .paragraph(pText) = blocks[index],
+                      PreviewMath.mayShareLabel(pText)
+                {
                     segments.append(.paragraph(text: pText))
                     blockToRowIndex[index] = runStartRow
                     coalescedBlockIndices.append(index)
@@ -734,6 +861,11 @@ final class MarkdownPreview {
                 recordSpansForSingleBlockLabel(blockIndex: index, plainText: text.plainText)
             case let .table(headers, tableRows, alignments):
                 recordTableSpans(blockIndex: index, headers: headers, rows: tableRows, alignments: alignments)
+            case let .math(tex):
+                // Search sees the bare TeX; the label's plain text spells the
+                // formula `$$tex$$` (its source when it does not draw), and a
+                // hit inside a drawn formula highlights all of it.
+                recordSpansForSingleBlockLabel(blockIndex: index, plainText: tex, offset: 2)
             default:
                 break
             }
@@ -768,10 +900,10 @@ final class MarkdownPreview {
     /// single Label with one block's plain text starting at offset
     /// 0. Covers `heading`, `paragraph`, and `blockquote` blocks
     /// that didn't get coalesced into a multi-block run.
-    private func recordSpansForSingleBlockLabel(blockIndex: Int, plainText: String) {
+    private func recordSpansForSingleBlockLabel(blockIndex: Int, plainText: String, offset: Int = 0) {
         blockTextSpans[blockIndex] = BlockTextSpan(
             labelPointer: nil,
-            plainTextOffset: 0,
+            plainTextOffset: offset,
             plainTextLength: plainText.count,
         )
     }
@@ -919,6 +1051,14 @@ final class MarkdownPreview {
             // nested-task lists return a Box and don't get
             // per-block spans (Phase A intentionally skips them).
             return widget.tryCast(Label.self)?.opaquePointer
+        case .math:
+            // ScrolledWindow → Viewport → Label.
+            var current: Widget? = widget.tryCast(ScrolledWindow.self)?.child
+            while let candidate = current {
+                if let label = candidate.tryCast(Label.self) { return label.opaquePointer }
+                current = candidate.firstChild
+            }
+            return nil
         default:
             return nil
         }
@@ -980,6 +1120,11 @@ final class MarkdownPreview {
     /// reverts it to a same-string `set_markup` no-op records `false`
     /// here. Reset at the start of every non-memoized apply pass.
     private(set) var debugMarkupRebuildBlankReads: [Bool] = []
+
+    /// Whether the formula font refresh is still checking frames.
+    var debugMathFontRefreshPending: Bool {
+        mathFontRefreshScheduled
+    }
     #endif
 
     /// Apply yellow-background Pango attributes over the rendered
@@ -1190,12 +1335,16 @@ final class MarkdownPreview {
         let attributes = TextAttributes()
 
         for hit in hits {
+            // Hit offsets count formulas as their `$tex$` source; the label
+            // draws each formula as one character.
+            let charStart = PreviewMath.labelOffset(forPlainOffset: hit.charStart, in: labelPointer, isRangeEnd: false)
+            let charEnd = PreviewMath.labelOffset(forPlainOffset: hit.charEnd, in: labelPointer, isRangeEnd: true)
             // Re-validate every resolved range against the live label text
             // so any residual offset drift degrades to "no highlight"
             // rather than an out-of-bounds index crash.
-            guard hit.charStart >= 0, hit.charEnd <= totalChars, hit.charStart < hit.charEnd else { continue }
-            let startIndex = plainText.index(plainText.startIndex, offsetBy: hit.charStart)
-            let endIndex = plainText.index(plainText.startIndex, offsetBy: hit.charEnd)
+            guard charStart >= 0, charEnd <= totalChars, charStart < charEnd else { continue }
+            let startIndex = plainText.index(plainText.startIndex, offsetBy: charStart)
+            let endIndex = plainText.index(plainText.startIndex, offsetBy: charEnd)
             let range = startIndex..<endIndex
             debugAppliedHighlights.append((text: String(plainText[range]), isActive: hit.isActive))
 
@@ -1212,6 +1361,7 @@ final class MarkdownPreview {
         // reliably invalidate the cached PangoLayout — replacing an existing
         // highlight overlay leaves the OLD highlight painted even though the
         // attribute list is correct.
+        PreviewMath.appendShapes(of: labelPointer, to: attributes)
         forceMarkupLayoutRebuild(label)
         label.attributes = attributes
     }
@@ -1224,7 +1374,14 @@ final class MarkdownPreview {
     /// ``clearSearchHighlights()``.
     private func clearLabelOverlay(_ labelPointer: OpaquePointer) {
         let label = Label(borrowing: UnsafeMutableRawPointer(labelPointer))
-        label.attributes = nil
+        // A label that draws formulas keeps their shapes.
+        if PreviewMath.drawsFormulas(labelPointer) {
+            let formulaShapes = TextAttributes()
+            PreviewMath.appendShapes(of: labelPointer, to: formulaShapes)
+            label.attributes = formulaShapes
+        } else {
+            label.attributes = nil
+        }
         forceMarkupLayoutRebuild(label)
     }
 
@@ -1242,6 +1399,18 @@ final class MarkdownPreview {
         debugMarkupRebuildBlankReads.append(label.markup.isEmpty)
         #endif
         label.markup = markup
+        // Setting the markup resets the accessible label to the text, which
+        // spells each formula as U+FFFC.
+        PreviewMath.restoreAccessibleLabel(of: label)
+    }
+
+    private func forgetHighlightedLabels(under widget: Widget) {
+        if let label = widget.tryCast(Label.self) {
+            highlightedLabelPointers.remove(label.opaquePointer)
+        }
+        for child in widget.children() {
+            forgetHighlightedLabels(under: child)
+        }
     }
 
     private func shouldUseVirtualizedRows(_ rows: [PreviewRow]) -> Bool {
@@ -1256,7 +1425,9 @@ final class MarkdownPreview {
         let forcedByEnvironment = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_FORCE_CUSTOM_TEXT_PREVIEW"]
             .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
         let forced = debugForceCustomTextLayout || forcedByEnvironment
-        let wantsCustomTextLayout = forced || rows.count >= 160
+        // A note with formulas keeps a label per block: here the label
+        // would be the whole note (see PreviewMath.drawnFormulaBudget).
+        let wantsCustomTextLayout = forced || (rows.count >= 160 && rows.allSatisfy { $0.mathSpans.isEmpty })
         return wantsCustomTextLayout && rows.allSatisfy(\.supportsCustomTextLayout)
     }
 
@@ -1276,11 +1447,22 @@ final class MarkdownPreview {
                 listItem.child = nil
                 return
             }
-            listItem.child = makeVirtualizedRowWidget(
-                for: virtualizedRows[position],
+            let row = virtualizedRows[position]
+            let widget = makeVirtualizedRowWidget(
+                for: row,
                 isFirst: position == 0,
                 isLast: position == virtualizedRows.count - 1,
             )
+            listItem.child = widget
+            // Every bind builds a fresh widget; formulas come from the cache,
+            // and the binds of one frame share one parse budget.
+            MathRenderer.withParseBudget(max(.zero, bindParseDeadline() - .now)) {
+                installMath(in: widget, for: row)
+            }
+            schedulePostponedMathPass()
+            if !row.mathSpans.isEmpty {
+                scheduleMathFontRefresh()
+            }
         }
         factory.onUnbind { listItem in
             listItem.child = nil
@@ -1313,10 +1495,13 @@ final class MarkdownPreview {
     private func updateCustomTextDocument(rows: [PreviewRow]) {
         guard let label = customTextLabel else {
             clear()
-            container.append(makeCustomTextDocument(rows: rows))
+            let label = makeCustomTextDocument(rows: rows)
+            container.append(label)
+            installMath(in: label, spans: rows.flatMap(\.mathSpans))
             return
         }
         label.markup = customTextMarkup(for: rows)
+        PreviewMath.install(on: label, spans: rows.flatMap(\.mathSpans))
     }
 
     private func updateVirtualizedRows(to newRows: [PreviewRow]) {
@@ -1355,8 +1540,18 @@ final class MarkdownPreview {
 
         for index in diff.oldChangedRange.reversed() {
             let child = existingChildren[index]
+            // The search overlay must not reach the labels about to be
+            // freed (a later re-apply — zoom, a font change — would).
+            forgetHighlightedLabels(under: child)
             child.visible = false
             container.remove(child)
+        }
+        if !diff.oldChangedRange.isEmpty {
+            // As in clear(): the matches were for the old rows; the next
+            // apply from the search controller starts afresh.
+            lastAppliedMatches = []
+            lastAppliedActiveIndex = nil
+            lastAppliedNonEmpty = false
         }
 
         let retainedChildren = container.children()
@@ -1368,7 +1563,11 @@ final class MarkdownPreview {
         for row in newRows[diff.newChangedRange] {
             let widget = makeWidget(for: row)
             container.insertChildAfter(widget, sibling: sibling)
+            installMath(in: widget, for: row)
             sibling = widget
+        }
+        if newRows[diff.newChangedRange].contains(where: { !$0.mathSpans.isEmpty }) {
+            scheduleMathFontRefresh()
         }
     }
 
@@ -1380,12 +1579,17 @@ final class MarkdownPreview {
     ) -> Bool {
         guard oldRows.count == newRows.count else { return false }
         for offset in oldRows.indices {
-            guard updateWidgetInPlace(
-                existingChildren[startIndex + offset],
-                from: oldRows[offset],
-                to: newRows[offset],
-            ) else {
+            let widget = existingChildren[startIndex + offset]
+            guard updateWidgetInPlace(widget, from: oldRows[offset], to: newRows[offset]) else {
                 return false
+            }
+            // The new markup may carry formulas (or drop them); the old
+            // shapes point at stale offsets either way.
+            if !newRows[offset].mathSpans.isEmpty || !oldRows[offset].mathSpans.isEmpty {
+                installMath(in: widget, spans: newRows[offset].mathSpans)
+                // A heading whose level changed gets its new font only on
+                // GTK's next style pass; check the formula sizes then.
+                scheduleMathFontRefresh()
             }
         }
         return true
@@ -1444,8 +1648,9 @@ final class MarkdownPreview {
         case let .paragraph(text):
             var texts = [text]
             index += 1
-            while index < blocks.count {
-                guard case let .paragraph(nextText) = blocks[index] else { break }
+            // Text with formulas keeps a label of its own.
+            while PreviewMath.mayShareLabel(text), index < blocks.count {
+                guard case let .paragraph(nextText) = blocks[index], PreviewMath.mayShareLabel(nextText) else { break }
                 texts.append(nextText)
                 index += 1
             }
@@ -1453,8 +1658,8 @@ final class MarkdownPreview {
         case let .blockquote(text):
             var texts = [text]
             index += 1
-            while index < blocks.count {
-                guard case let .blockquote(nextText) = blocks[index] else { break }
+            while PreviewMath.mayShareLabel(text), index < blocks.count {
+                guard case let .blockquote(nextText) = blocks[index], PreviewMath.mayShareLabel(nextText) else { break }
                 texts.append(nextText)
                 index += 1
             }
@@ -1470,6 +1675,8 @@ final class MarkdownPreview {
             .heading(level: level, text: text)
         case let .paragraph(text):
             .paragraphRun([text])
+        case let .math(tex):
+            .math(tex: tex)
         case let .codeBlock(code, language):
             .codeBlock(code: code, language: language)
         case let .blockquote(text):
@@ -1509,7 +1716,70 @@ final class MarkdownPreview {
             makeImageBlock(alt: alt, source: source, title: title, style: style)
         case let .imageGroup(items, style):
             makeImageGroup(items, style: style)
+        case let .math(tex):
+            makeMathBlock(tex: tex)
         }
+    }
+
+    /// A display formula: one centred label holding a single formula marker,
+    /// in a horizontal scroller so a formula wider than the preview scrolls
+    /// instead of widening the page.
+    private func makeMathBlock(tex: String) -> Widget {
+        let label = makeMarkupLabel(String(MathSpanExtractor.formulaMarker))
+        label.selectable = true
+        label.wrap = false
+        label.xalign = 0.5
+        label.halign = .center
+        label.addCSSClass("preview-math-label")
+        PreviewMath.markAsDisplayBlock(label)
+        let scroller = ScrolledWindow()
+        scroller.setPolicy(horizontal: GTK_POLICY_AUTOMATIC, vertical: GTK_POLICY_NEVER)
+        scroller.propagateNaturalHeight = true
+        scroller.hexpand = true
+        scroller.addCSSClass("preview-math-block")
+        scroller.child = label
+        return scroller
+    }
+
+    /// Draws the formulas of a freshly built or updated row. Must run once
+    /// the widget is in the preview, so its labels see the preview's font.
+    private func installMath(in widget: Widget, for row: PreviewRow) {
+        let spans = row.mathSpans
+        guard !spans.isEmpty else { return }
+        installMath(in: widget, spans: spans)
+    }
+
+    /// Hands each label under `widget` its share of `spans`, in tree order
+    /// (which is markup order for every row type).
+    private func installMath(in widget: Widget, spans: [MathSpan]) {
+        var remaining = spans[...]
+        func visit(_ widget: Widget) {
+            if let label = widget.tryCast(Label.self) {
+                let markers = label.markup.unicodeScalars.reduce(0) {
+                    $0 + ($1 == MathSpanExtractor.formulaMarker ? 1 : 0)
+                }
+                guard markers > 0 else {
+                    // An edit may have removed the label's formulas; drop
+                    // the shapes that pointed at them.
+                    PreviewMath.install(on: label, spans: [])
+                    return
+                }
+                guard markers <= remaining.count,
+                      PreviewMath.install(on: label, spans: Array(remaining.prefix(markers)))
+                else {
+                    // Out of step with the row's formulas: hand none of the
+                    // rest to later labels, which would draw the wrong ones.
+                    remaining = []
+                    return
+                }
+                remaining = remaining.dropFirst(markers)
+                return
+            }
+            for child in widget.children() {
+                visit(child)
+            }
+        }
+        visit(widget)
     }
 
     private func clear() {
@@ -1869,7 +2139,7 @@ final class MarkdownPreview {
             return customTextMarkup(forListItems: items) + separator
         case .thematicBreak:
             return "<span alpha=\"45%\">────────────────</span>\(separator)"
-        case .codeBlock, .table, .image, .imageGroup:
+        case .codeBlock, .table, .image, .imageGroup, .math:
             return separator
         }
     }
@@ -2069,6 +2339,10 @@ final class MarkdownPreview {
     /// removes them before adding the new step's, so the root always carries
     /// exactly one zoom and one line-spacing class.
     private var appliedTypography: (zoom: String, spacing: String)?
+    private var mathFontRefreshScheduled = false
+    private var postponedMathPassScheduled = false
+    private var currentBindParseDeadline: ContinuousClock.Instant?
+    private var mathFontRefreshTicks = 0
 
     /// The zoom this preview is currently rendered at. Updated by
     /// ``applyTypography``, which the Ctrl+scroll path needs to take its
@@ -2105,6 +2379,7 @@ final class MarkdownPreview {
     /// provider reload, no markdown re-render — and the code views keep
     /// their scroll positions.
     func applyTypography(zoomPercent: Int, lineSpacingPercent: Int) {
+        let previousZoomPercent = previewZoomPercent
         previewZoomPercent = PreviewTypography.snappedZoomPercent(zoomPercent)
         let classes = PreviewTypography.cssClasses(
             zoomPercent: zoomPercent,
@@ -2118,6 +2393,54 @@ final class MarkdownPreview {
         rootScroll.addCSSClass(classes.spacing)
         appliedTypography = classes
         rootScroll.queueResize()
+        // Formulas are laid out at a pixel size, so a zoom step lays them
+        // out again at once (the text follows when GTK restyles on the next
+        // frame), then checks against the restyled fonts.
+        if previewZoomPercent != previousZoomPercent {
+            MathRenderer.withParseBudget(.milliseconds(100)) {
+                PreviewMath.rescale(
+                    under: rootScroll.child ?? container,
+                    by: Double(previewZoomPercent) / Double(previousZoomPercent)
+                )
+            }
+            schedulePostponedMathPass()
+            reapplySearchHighlights()
+        }
+        scheduleMathFontRefresh()
+    }
+
+    /// Re-lays out formulas whose labels' fonts changed — the zoom step after
+    /// GTK restyles, or the desktop's font settings — checking for a few
+    /// frames, since GTK applies a new font during a frame's style pass.
+    func scheduleMathFontRefresh() {
+        mathFontRefreshTicks = 0
+        guard !mathFontRefreshScheduled else { return }
+        mathFontRefreshScheduled = true
+        rootScroll.addTickCallback { [weak self] in
+            guard let self else { return false }
+            mathFontRefreshTicks += 1
+            let refreshed = MathRenderer.withParseBudget(Self.followUpParseBudget) {
+                PreviewMath.refreshFontSizes(under: rootScroll.child ?? container)
+            }
+            if refreshed {
+                schedulePostponedMathPass()
+                reapplySearchHighlights()
+            }
+            guard mathFontRefreshTicks > 10 else { return true }
+            mathFontRefreshScheduled = false
+            return false
+        }
+    }
+
+    /// Laying formulas out again replaces their labels' attributes, which
+    /// carry the search highlights too; put the current ones back.
+    private func reapplySearchHighlights() {
+        guard lastAppliedNonEmpty else { return }
+        let matches = lastAppliedMatches
+        let activeIndex = lastAppliedActiveIndex
+        lastAppliedMatches = []
+        lastAppliedNonEmpty = false
+        applySearchHighlights(matches: matches, activeIndex: activeIndex)
     }
 
     private func displayMarker(for marker: String, depth: Int) -> String {

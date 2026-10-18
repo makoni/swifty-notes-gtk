@@ -32,6 +32,9 @@ final class HTMLPreviewDocumentBuilder {
 
     private var listItemMetadata: [ListItemMeta] = []
     private var listItemMetadataCursor = 0
+    /// Math spans cut out of the source before parsing; the placeholders
+    /// survive the HTML pass and are restored by ``restoringMathSpans``.
+    private var mathSpans: [MathSpan] = []
 
     init(darkAppearance: Bool, renderEmojiShortcodes: Bool = true) {
         self.darkAppearance = darkAppearance
@@ -39,17 +42,26 @@ final class HTMLPreviewDocumentBuilder {
     }
 
     func render(markdown: String) -> [RenderedBlock] {
-        listItemMetadata = collectListItemMetadata(from: markdown)
+        // Math must be cut out before any Markdown processing: CommonMark
+        // mangles TeX (`$x^*$` emphasis, `\{` → `{`, `\\` → `\`). The
+        // extracted source keeps its line structure, so the line-based
+        // scanners below (task lists, list metadata) still line up.
+        let extraction = MathSpanExtractor.extract(from: markdown)
+        let source = extraction.markdown
+        mathSpans = extraction.spans
+        listItemMetadata = collectListItemMetadata(from: source)
         listItemMetadataCursor = 0
-        let html = HTMLFormatter.format(markdown)
+        let html = HTMLFormatter.format(source)
         let nodes = HTMLSubsetParser().parse(html)
         let rendered = assigningTaskIndices(
-            in: restoringImageMetadata(
-                in: restoringTaskListMarkers(in: blocks(from: nodes, listDepth: 0), markdown: markdown),
-                markdown: markdown,
+            in: restoringMathSpans(
+                in: restoringImageMetadata(
+                    in: restoringTaskListMarkers(in: blocks(from: nodes, listDepth: 0), markdown: source),
+                    markdown: source,
+                ),
             ),
         )
-        if rendered.isEmpty, markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if rendered.isEmpty, source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return [.paragraph(.plain("Nothing to preview yet.".localized))]
         }
         return rendered
@@ -794,6 +806,157 @@ final class HTMLPreviewDocumentBuilder {
         }
 
         return restored
+    }
+
+    /// Puts the extracted math back where the text landed.
+    ///
+    /// - A paragraph whose plain text is *exactly* one display span's
+    ///   placeholder becomes a `.math` block.
+    /// - Every other placeholder is restored inline: `$tex$` in
+    ///   `plainText` (search, outline and copy see the source), and one
+    ///   U+FFFC in `markup` that the preview draws the formula over, with
+    ///   the span listed in `mathSpans` in the same order. Display
+    ///   placeholders that ended up inline (e.g. `a $$b$$ c`) keep
+    ///   `isDisplay == true`.
+    /// - Table cells keep the TeX source (`$tex$`) in their markup: the
+    ///   table lays its columns out in monospace characters, which a drawn
+    ///   formula would break.
+    private func restoringMathSpans(in blocks: [RenderedBlock]) -> [RenderedBlock] {
+        guard !mathSpans.isEmpty else { return blocks }
+        return blocks.map { restoreMathSpans(in: $0) }
+    }
+
+    private func restoreMathSpans(in block: RenderedBlock) -> RenderedBlock {
+        switch block {
+        case let .paragraph(text):
+            if let span = displayMathSpan(for: text) {
+                return .math(tex: span.tex)
+            }
+            return .paragraph(restoredMathText(text))
+        case let .heading(level, text):
+            return .heading(level: level, text: restoredMathText(text))
+        case let .blockquote(text):
+            return .blockquote(restoredMathText(text))
+        case let .listItem(text, depth, marker, loose, taskIndex):
+            return .listItem(
+                text: restoredMathText(text),
+                depth: depth,
+                marker: marker,
+                loose: loose,
+                taskIndex: taskIndex,
+            )
+        case let .table(headers, rows, alignments):
+            return .table(
+                headers: headers.map { restoredMathText($0, drawsFormulas: false) },
+                rows: rows.map { row in row.map { restoredMathText($0, drawsFormulas: false) } },
+                alignments: alignments,
+            )
+        case let .image(alt, source, title, style):
+            return .image(
+                alt: restoredMathSource(alt),
+                source: source.map(restoredMathSource),
+                title: title.map(restoredMathSource),
+                style: style,
+            )
+        case let .imageGroup(items, style):
+            return .imageGroup(
+                items: items.map { item in
+                    RenderedImageItem(
+                        alt: restoredMathSource(item.alt),
+                        source: item.source.map(restoredMathSource),
+                        title: item.title.map(restoredMathSource),
+                        linkDestination: item.linkDestination.map(restoredMathSource),
+                    )
+                },
+                style: style,
+            )
+        case .math, .codeBlock, .thematicBreak:
+            return block
+        }
+    }
+
+    /// `text` with every placeholder put back as its source, for places
+    /// that show no formulas (image alt text, titles, URLs).
+    private func restoredMathSource(_ text: String) -> String {
+        MathSpanExtractor.replacingPlaceholders(in: text) { index in
+            index < mathSpans.count ? delimitedSource(of: mathSpans[index]) : nil
+        }
+    }
+
+    /// The span as it was written: `$$tex$$` for display math, `$tex$`
+    /// otherwise.
+    private func delimitedSource(of span: MathSpan) -> String {
+        span.isDisplay ? "$$\(span.tex)$$" : "$\(span.tex)$"
+    }
+
+    /// Like ``MathSpanExtractor/replacingPlaceholders(in:with:)`` for Pango markup: the
+    /// replacement also learns whether the placeholder sits inside a tag
+    /// (`<a href="…">`) rather than in the text. Text in markup has its `<`
+    /// and `>` escaped, so every literal `<` opens a tag.
+    private func replacingPlaceholders(inMarkup markup: String, with replacement: (_ index: Int, _ insideTag: Bool) -> String?) -> String {
+        let occurrences = MathSpanExtractor.spanIndices(in: markup)
+        guard !occurrences.isEmpty else { return markup }
+        let scalars = Array(markup.unicodeScalars)
+        var insideTag = false
+        var scanned = 0
+        var next = 0
+        return MathSpanExtractor.replacingPlaceholders(in: markup) { index in
+            let start = occurrences[next].range.lowerBound
+            next += 1
+            for scalar in scalars[scanned..<start] {
+                if scalar == "<" { insideTag = true } else if scalar == ">" { insideTag = false }
+            }
+            scanned = start
+            return replacement(index, insideTag)
+        }
+    }
+
+    private func displayMathSpan(for text: RenderedText) -> MathSpan? {
+        let trimmed = text.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let occurrences = MathSpanExtractor.spanIndices(in: trimmed)
+        guard occurrences.count == 1, let only = occurrences.first,
+              only.range == 0..<trimmed.unicodeScalars.count,
+              only.index < mathSpans.count, mathSpans[only.index].isDisplay
+        else { return nil }
+        return mathSpans[only.index]
+    }
+
+    private func restoredMathText(_ text: RenderedText) -> RenderedText {
+        restoredMathText(text, drawsFormulas: true)
+    }
+
+    private func restoredMathText(_ text: RenderedText, drawsFormulas: Bool) -> RenderedText {
+        guard !mathSpans.isEmpty else { return text }
+        var found: [MathSpan] = []
+
+        func replacePlaceholders(in string: String, replacement: (MathSpan) -> String) -> String {
+            MathSpanExtractor.replacingPlaceholders(in: string) { index in
+                index < mathSpans.count ? replacement(mathSpans[index]) : nil
+            }
+        }
+
+        // Drawn formulas are spelled `$tex$` (search offsets count on it);
+        // ones shown as source, as written.
+        let plainText = replacePlaceholders(in: text.plainText) { span in
+            drawsFormulas ? "$\(span.tex)$" : delimitedSource(of: span)
+        }
+        // A placeholder inside a tag (a link's href) is put back as source;
+        // only those in the text get a marker, so the markers and
+        // `mathSpans` stay in step.
+        // A U+FFFC written in the note, or decoded from an entity
+        // (`&#xFFFC;`), becomes U+FFFD: only a formula may own a marker.
+        let markerFree = String(String.UnicodeScalarView(text.markup.unicodeScalars.map {
+            $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
+        }))
+        let markup = replacingPlaceholders(inMarkup: markerFree) { index, insideTag in
+            guard index < mathSpans.count else { return nil }
+            let span = mathSpans[index]
+            if insideTag { return pangoEscapeAttribute(delimitedSource(of: span)) }
+            guard drawsFormulas else { return pangoEscape(delimitedSource(of: span)) }
+            found.append(span)
+            return String(MathSpanExtractor.formulaMarker)
+        }
+        return RenderedText(markup: markup, plainText: plainText, mathSpans: found)
     }
 
     func markdownImages(from markdown: String) -> [MarkdownImageMetadata] {

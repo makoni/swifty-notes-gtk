@@ -291,7 +291,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = true
-        row.setAccessibleLabel(trashedNote.note.title)
+        row.setAccessibleLabel(MathInlineText.readable(trashedNote.note.title))
 
         let rowBox = Box(orientation: .vertical, spacing: 2)
         rowBox.setMargins(8)
@@ -323,7 +323,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = true
-        row.setAccessibleLabel(noteItem.note.title)
+        row.setAccessibleLabel(MathInlineText.readable(noteItem.note.title))
 
         let rowBox = Box(orientation: .vertical, spacing: 2)
         rowBox.setMargins(8)
@@ -356,11 +356,12 @@ struct NotesSidebar {
     /// Settings for a note's title label. Long titles truncate to a single
     /// line with a trailing ellipsis instead of wrapping, so a long heading
     /// never grows the sidebar's row height or its overall width. The full
-    /// title is preserved in the tooltip.
+    /// title is preserved in the tooltip (as plain text, formulas spelled
+    /// out; titles are at most 80 characters, so it is never cut).
     static func titleLabelLayout(for note: Note) -> TitleLabelLayout {
         TitleLabelLayout(
             text: note.title,
-            tooltipText: note.title,
+            tooltipText: MathInlineText.readable(note.title),
             ellipsize: PANGO_ELLIPSIZE_END,
             wrap: false,
             lines: 1,
@@ -371,7 +372,9 @@ struct NotesSidebar {
     /// ``titleLabelLayout(for:)`` to a fresh `Label`.
     static func makeTitleLabel(for note: Note) -> Label {
         let layout = titleLabelLayout(for: note)
-        let title = Label(layout.text)
+        let title = Label("")
+        // Formulas in the title are drawn, as in the preview.
+        TitleMath.show(layout.text, in: title)
         title.xalign = 0
         title.ellipsize = layout.ellipsize
         title.lines = layout.lines

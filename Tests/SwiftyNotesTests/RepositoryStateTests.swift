@@ -1016,6 +1016,49 @@ struct RepositoryStateTests {
         #expect(decoded.isOutlineVisible == true)
     }
 
+    @Test("A preview width saved with the Outline counted in loses the Outline's width", arguments: [
+        // (saved width, outline shown, marker present, loaded width)
+        (812, true, false, 560),
+        (812, false, false, 812),
+        (812, true, true, 812),
+        (WorkspaceState.defaultPreviewWidth, true, false, WorkspaceState.defaultPreviewWidth),
+        (WorkspaceState.legacyDefaultPreviewWidth, true, false, WorkspaceState.legacyDefaultPreviewWidth),
+        (400, true, false, 360),
+        // A corrupted file must not overflow.
+        (Int.min + 8, true, false, 360),
+    ])
+    func aPreviewWidthSavedWithTheOutlineLosesItsWidth(saved: Int, outline: Bool, marker: Bool, loaded: Int) throws {
+        // A 1400 px window gives the Outline 252 px.
+        let json = """
+        {"windowWidth": 1400, "previewWidth": \(saved), "isOutlineVisible": \(outline)\(marker ? ", \"previewWidthExcludesOutline\": true" : "")}
+        """
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
+        #expect(decoded.previewWidth == loaded)
+    }
+
+    @Test("A preview width saved without the window's width loses the Outline's width for the default window")
+    func aPreviewWidthSavedWithoutTheWindowWidth() throws {
+        // The default window (1400 px) gave the Outline 252 px.
+        let json = #"{"previewWidth": 812, "isOutlineVisible": true}"#
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
+        #expect(decoded.windowWidth == 1400)
+        #expect(decoded.previewWidth == 560)
+    }
+
+    @Test("A preview width saved before the Outline existed keeps its width")
+    func aPreviewWidthSavedBeforeTheOutlineKeepsItsWidth() throws {
+        let json = #"{"windowWidth": 1400, "previewWidth": 812}"#
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
+        #expect(decoded.previewWidth == 812)
+        #expect(decoded.isOutlineVisible)
+    }
+
+    @Test("A saved workspace is marked as measuring the preview without the Outline")
+    func aSavedWorkspaceIsMarkedAsMeasuringThePreviewWithoutTheOutline() throws {
+        let data = try JSONEncoder().encode(WorkspaceState(previewWidth: 700, isOutlineVisible: true))
+        #expect(try JSONDecoder().decode(WorkspaceState.self, from: data).previewWidth == 700)
+    }
+
     @Test("Workspace state round trips per-note outline collapse + recents")
     func workspaceStateRoundTripsPerNoteOutlineCollapseRecents() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -1097,11 +1140,11 @@ struct RepositoryStateTests {
 
     @Test("Preview width resolution expands legacy default but preserves custom widths") @MainActor
     func previewWidthResolutionExpandsLegacyDefaultButPreservesCustomWidths() {
-        #expect(MainWindow.resolvedPreviewWidth(storedWidth: WorkspaceState.legacyDefaultPreviewWidth, availableWidth: 1600) == 560)
-        #expect(MainWindow.resolvedPreviewWidth(storedWidth: 720, availableWidth: 1600) == 720)
+        #expect(PaneLayout.resolvedPreviewWidth(storedWidth: WorkspaceState.legacyDefaultPreviewWidth, availableWidth: 1600) == 560)
+        #expect(PaneLayout.resolvedPreviewWidth(storedWidth: 720, availableWidth: 1600) == 720)
         // With minimumEditorWidth=320, a 900-wide pair clamps preview
         // to 900 - 320 = 580 instead of the older 540.
-        #expect(MainWindow.resolvedPreviewWidth(storedWidth: 720, availableWidth: 900) == 580)
+        #expect(PaneLayout.resolvedPreviewWidth(storedWidth: 720, availableWidth: 900) == 580)
     }
 
     // MARK: - Trash auto-prune (pure)

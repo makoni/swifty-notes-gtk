@@ -14,6 +14,7 @@ On macOS the release workflow produces a Developer-ID-signed, notarized, stapled
 
 - file-backed markdown notes stored in per-note directories with `note.md`, `meta.json`, and `assets/`
 - GTK/libadwaita UI with notes sidebar, live Markdown editor, and inspector-style preview
+- LaTeX math in the preview: `$…$` inline and `$$…$$` (or ```` ```math ````) display formulas, drawn natively by [RaTeX](https://github.com/erweixin/RaTeX), including `align`, matrices, `\ce{}` chemistry and `\newcommand`
 - first-launch seeded notes (`Markdown Showcase`, `About Swifty Notes`, and `Using Swifty Notes CLI`)
 - autosave, manual save, import/export, duplicate, rename, delete, and open-notes-folder flows
 - settings window for choosing and moving the notes storage folder
@@ -32,11 +33,13 @@ On macOS the release workflow produces a Developer-ID-signed, notarized, stapled
 - `Sources/SwiftyNotes/UI/` contains the main window, sidebar, editor, and preview widgets.
 - `Sources/SwiftyNotes/Storage/` contains note persistence and workspace-state persistence.
 - `Sources/SwiftyNotes/Services/MarkdownRenderer.swift` converts markdown into the native GTK preview model.
+- `Sources/RaTeXBridge/` is a small Rust crate that wraps the RaTeX math engine in a C API; `scripts/build-ratex-bridge.sh` builds it into `build/ratex-bridge/`, and the `MathEngine` target (`Sources/MathEngine/MathRenderer.swift`, which also carries the library's link settings) plus `UI/PreviewMath.swift` draw its formulas in the preview.
 - `Tests/SwiftyNotesTests/` contains repository/MainWindow regressions, CLI tests, and Wayland UI smoke tests.
 
 ## Requirements
 
 - Swift 6.3+ toolchain
+- Rust 1.88+ toolchain (for the math engine)
 - Linux (GTK 4, libadwaita, GtkSourceView 5, libspelling) **or** macOS 13+ on Apple Silicon
 
 ### Linux
@@ -47,11 +50,15 @@ sudo apt install libadwaita-1-dev libgtk-4-dev libgtksourceview-5-dev libspellin
 
 (or the Fedora / Arch equivalents — see `packaging/release/install-user.sh` for the full list.)
 
+LaTeX math in the preview is rendered by [RaTeX](https://github.com/erweixin/RaTeX), a Rust library, so you also need Rust 1.88 or newer: [rustup](https://rustup.rs), or on Ubuntu 24.04 `sudo apt install rustc-1.91 cargo-1.91` with `/usr/lib/rust-1.91/bin` on your `PATH` (the default `rustc` there is too old).
+
 ### macOS (Homebrew, Apple Silicon)
 
 ```bash
 brew install libadwaita gtksourceview5 libspelling adwaita-icon-theme pkgconf
 ```
+
+plus Rust for the math engine ([rustup](https://rustup.rs)).
 
 GLib needs Homebrew's compiled schemas on the search path — the
 launcher merges `/opt/homebrew/share` into `XDG_DATA_DIRS` at startup,
@@ -68,9 +75,12 @@ Release packaging reads the release number from the repository `VERSION` file by
 ## Build and run
 
 ```bash
+scripts/build-ratex-bridge.sh   # once, and after changing Sources/RaTeXBridge
 swift build
 swift run swiftynotes
 ```
+
+`scripts/build-ratex-bridge.sh` builds the math engine into `build/ratex-bridge/`, which the app links statically; without it `swift build` stops with `cannot find -lratex_bridge`.
 
 To force the update banner without shipping a new release first (useful
 for QA after touching the GitHub check flow):
