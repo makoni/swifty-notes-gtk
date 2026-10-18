@@ -147,6 +147,10 @@ struct PreviewPaneLayoutTests {
         Self.waitUntil(timeout: .seconds(2)) { window.editorPreviewPane.width > 0 && !divider.isRestoring }
         MainContext.pump(for: .milliseconds(200))
 
+        // Shown, the room is the pane's own width, not the window-based
+        // estimate (on CI that was 8 px over: the sidebar's border).
+        #expect(window.currentPreviewContainerWidth == window.editorPreviewPane.width)
+
         // A drag: the preview's new width is remembered.
         let room = window.editorPreviewPane.width
         window.editorPreviewPane.position = room - 500
