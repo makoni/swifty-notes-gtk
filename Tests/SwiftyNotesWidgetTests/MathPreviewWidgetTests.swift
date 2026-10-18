@@ -343,8 +343,14 @@ struct MathPreviewWidgetTests {
         let drawn = PreviewMath.debugFormulas(on: label).count
         #expect(drawn > 0)
         #expect(drawn < 600, "\(drawn) drawn")
-        // …and not far fewer than the budget allows.
-        let allowed = PreviewMath.drawnFormulaBudget / (nodeArea(of: label) * 4)
+        // …and not far fewer than the code's own model allows (a node at
+        // most the monitor's size, which the window may grow to).
+        let layout = try #require(gtk_label_get_layout(label.opaquePointer))
+        var ink = PangoRectangle()
+        var logical = PangoRectangle()
+        pango_layout_get_pixel_extents(layout, &ink, &logical)
+        let modelArea = min(Double(logical.width) * Double(logical.height), monitorArea(of: label))
+        let allowed = PreviewMath.drawnFormulaBudget / (modelArea * 4)
         #expect(Double(drawn) >= allowed / 2, "\(drawn) drawn, about \(Int(allowed)) allowed")
         // The rest show their source.
         #expect(label.text.contains("$\\frac{a_{599}}{b}$"))
@@ -426,7 +432,10 @@ struct MathPreviewWidgetTests {
         let prose = (0..<170).map { "$x_{\($0)}$ and some words between them" }.joined(separator: " ")
         let fixture = try Fixture(suffix: "budget-grow", markdown: prose, size: (400, 300))
         pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
-        gtk_window_maximize(UnsafeMutableRawPointer(fixture.window.opaquePointer).assumingMemoryBound(to: GtkWindow.self))
+        // Without a window manager (CI's xvfb) maximising does nothing; a
+        // size request grows the window anywhere.
+        fixture.preview.rootScroll.setSizeRequest(width: 1000, height: 700)
+        defer { fixture.preview.rootScroll.setSizeRequest(width: -1, height: -1) }
         MainContext.pump(for: .milliseconds(200))
         pumpUntil(timeout: .seconds(3)) { !fixture.preview.debugMathFontRefreshPending }
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
@@ -458,9 +467,20 @@ struct MathPreviewWidgetTests {
         let stack = "a" + String(repeating: "\u{352}", count: 1000)
         let many = (0..<200).map { "$x_{\($0)}$" }.joined(separator: " ")
         let fixture = try Fixture(suffix: "ink-stack", markdown: "\(stack) \(many) \(stack)")
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
-        #expect(PreviewMath.debugFormulas(on: label).isEmpty)
-        #expect(label.text.contains("$x_{1}$"))
+        let drawn = PreviewMath.debugFormulas(on: label).count
+        // Within budget whatever the font does with the marks…
+        #expect(Double(drawn) * nodeArea(of: label) * 4 <= PreviewMath.drawnFormulaBudget * 1.1, "\(drawn) drawn")
+        // …and where it stacks them far above the line (fonts differ), none.
+        let layout = try #require(gtk_label_get_layout(label.opaquePointer))
+        var ink = PangoRectangle()
+        var logical = PangoRectangle()
+        pango_layout_get_pixel_extents(layout, &ink, &logical)
+        if Double(ink.height) > 8 * Double(max(1, logical.height)) {
+            #expect(drawn == 0, "ink \(ink.height) px over a \(logical.height) px box")
+            #expect(label.text.contains("$x_{1}$"))
+        }
         // Ordinary accents are fine.
         fixture.render("Café naïve $x_0$ $x_1$ résumé")
         let plain = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
