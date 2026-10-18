@@ -225,7 +225,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            let toast = Toast(title: String(format: "Moved \"%@\" to Trash".localized, MathInlineText.readable(note.title)))
+            let toast = Toast(title: String(format: "Moved \"%@\" to Trash".localized, pangoEscape(MathInlineText.readable(note.title))))
             toast.timeout = 5
             toast.buttonLabel = "Undo".localized
             toast.onButtonClicked { [weak self] in

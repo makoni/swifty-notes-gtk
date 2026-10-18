@@ -129,7 +129,10 @@ struct UISmokeTests {
             app_stderr_log = os.environ["APP_STDERR_LOG"]
 
             def draws():
-                return open(app_stderr_log, "r", encoding="utf-8").read().count("swiftynotes-debug: formula drawn")
+                # A formula only the preview shows: the title's is drawn
+                # in the breadcrumb and sidebar too.
+                log = open(app_stderr_log, "r", encoding="utf-8").read()
+                return log.count("swiftynotes-debug: formula drawn x = \\\\frac{-b}{2a}")
 
             wait_until(lambda: draws() > 0, "formulas drawn in split", timeout=20)
 

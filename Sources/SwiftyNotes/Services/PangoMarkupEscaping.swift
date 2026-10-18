@@ -47,6 +47,8 @@ private func escapedForMarkup(_ text: String, quotes: Bool) -> String {
         case "<": result.append(contentsOf: "&lt;".unicodeScalars)
         case ">": result.append(contentsOf: "&gt;".unicodeScalars)
         case "\"" where quotes: result.append(contentsOf: "&quot;".unicodeScalars)
+        // GTK reads the markup as a C string: a NUL would end it mid-tag.
+        case "\u{0}": result.append("\u{FFFD}")
         default: result.append(scalar)
         }
     }

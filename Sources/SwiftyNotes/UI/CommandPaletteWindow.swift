@@ -286,6 +286,7 @@ final class CommandPaletteWindow {
     private func makeRow(for heading: Heading, query: String) -> ListBoxRow {
         let row = ListBoxRow()
         row.addCSSClass("sn-pal-row")
+        row.setAccessibleLabel(MathInlineText.readable(heading.text))
 
         let pill = Label(String(format: "H%d".localized, heading.level))
         pill.addCSSClass("sn-pal-pill")
@@ -395,6 +396,11 @@ final class CommandPaletteWindow {
 
         var debugHighlightIndex: Int {
             highlightIndex
+        }
+
+        /// The list of rows (tests look at their labels).
+        var debugList: Widget {
+            list
         }
 
         func debugSetQuery(_ q: String) {

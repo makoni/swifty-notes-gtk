@@ -43,9 +43,13 @@ struct PreviewPaneLayoutTests {
         }
         func expectPreviewWidth(_ step: String) {
             Self.waitUntil(timeout: .seconds(2)) { abs(window.editorPreviewPane.position - expectedDivider()) <= 12 }
+            // And still there once the layout has settled.
+            MainContext.pump(for: .milliseconds(300))
             let room = window.editorPreviewPane.width
             #expect(abs(window.editorPreviewPane.position - expectedDivider()) <= 12, "\(step): divider at \(window.editorPreviewPane.position) of \(room), expected \(expectedDivider())")
-            #expect(window.preview.rootScroll.width >= MainWindow.minimumPreviewWidth, "\(step)")
+            // What shows of the preview, not its allocation (never less than
+            // its minimum; GtkPaned clips the rest).
+            #expect(room - window.editorPreviewPane.position >= MainWindow.minimumPreviewWidth, "\(step)")
         }
         expectPreviewWidth("launch")
 
@@ -105,8 +109,17 @@ struct PreviewPaneLayoutTests {
             return abs(room - window.editorPreviewPane.position - expected)
         }
         Self.waitUntil(timeout: .seconds(2)) { previewWidthMiss() <= 12 }
+        MainContext.pump(for: .milliseconds(300))
         #expect(previewWidthMiss() <= 12, "divider at \(window.editorPreviewPane.position) of \(window.editorPreviewPane.width)")
-        #expect(window.preview.rootScroll.width >= MainWindow.minimumPreviewWidth)
+        #expect(window.editorPreviewPane.width - window.editorPreviewPane.position >= MainWindow.minimumPreviewWidth)
+
+        // Showing the outline beside the preview keeps the width it
+        // remembers: the room it measures excludes the outline.
+        window.toggleOutlineVisibility()
+        MainContext.pump(for: .milliseconds(500))
+        window.toggleOutlineVisibility()
+        MainContext.pump(for: .milliseconds(500))
+        #expect(window.debugPreferredPreviewWidth == WorkspaceState.defaultPreviewWidth)
     }
 
     @MainActor

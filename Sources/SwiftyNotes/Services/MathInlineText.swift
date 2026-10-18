@@ -9,13 +9,19 @@ enum MathInlineText {
     /// and the formulas in order; `spans` is empty when there are none, and
     /// the markup is then just the escaped text. The first case-insensitive
     /// match of `query`, if any, is highlighted as the outline and palette
-    /// filters do — a formula the match touches as a whole.
+    /// filters do — a formula the match touches as a whole. Formulas past
+    /// the first ``maxFormulas`` stay source: a title or heading is a line,
+    /// and a hostile one should not cost a whole page of formulas.
     static func markup(for text: String, highlighting query: String = "") -> (markup: String, spans: [MathSpan]) {
-        let spans = MathSpanExtractor.extract(from: text).spans
+        let extracted = MathSpanExtractor.extract(from: text).spans
         let sources = MathSpanExtractor.sourceRanges(in: text)
-        guard !spans.isEmpty, sources.count == spans.count else {
-            return (pangoHighlightedMarkup(text, query: query), [])
+        guard !extracted.isEmpty, sources.count == extracted.count else {
+            let markerFree = String(String.UnicodeScalarView(text.unicodeScalars.map {
+                $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
+            }))
+            return (pangoHighlightedMarkup(markerFree, query: query), [])
         }
+        let spans = Array(extracted.prefix(maxFormulas))
         let scalars = Array(text.unicodeScalars)
         let hit = firstMatch(of: query, in: text)
         var markup = ""
@@ -31,7 +37,7 @@ enum MathInlineText {
         }
         let marker = String(MathSpanExtractor.formulaMarker)
         var cursor = 0
-        for source in sources {
+        for source in sources.prefix(maxFormulas) {
             appendText(cursor..<source.lowerBound)
             markup += hit?.overlaps(source) == true ? pangoHighlightOpenTag + marker + "</span>" : marker
             cursor = source.upperBound
@@ -39,6 +45,9 @@ enum MathInlineText {
         appendText(cursor..<scalars.count)
         return (markup, spans)
     }
+
+    /// The most formulas one title or heading draws.
+    static let maxFormulas = 8
 
     /// `text` with each formula spelled as readable plain text: delimiters
     /// dropped, common commands as their characters (`\pi` → π, `\le` → ≤),
@@ -88,7 +97,7 @@ enum MathInlineText {
         "ell": "ℓ", "hbar": "ℏ", "Re": "ℜ", "Im": "ℑ", "aleph": "ℵ", "angle": "∠", "perp": "⊥", "parallel": "∥",
         "langle": "⟨", "rangle": "⟩", "lfloor": "⌊", "rfloor": "⌋", "lceil": "⌈", "rceil": "⌉",
         "{": "{", "}": "}", "$": "$", "%": "%", "&": "&", "#": "#", "_": "_",
-        ",": " ", ";": " ", ":": " ", "!": "", "quad": " ", "qquad": " ", "left": "", "right": "",
+        ",": " ", ";": " ", ":": " ", "!": "", " ": " ", "\\": " ", "quad": " ", "qquad": " ",
     ]
 
     /// Commands whose argument is shown as is.
@@ -98,9 +107,15 @@ enum MathInlineText {
     ]
 
     private static func readableTeX(_ tex: String) -> String {
+        // The reader recurses per group, so TeX the preview would not draw
+        // either (too long) stays as written rather than nest it deep.
+        guard tex.utf8.count <= maxReadableTeXBytes else { return "$\(tex)$" }
         var reader = Reader(scalars: Array(tex.unicodeScalars))
         return reader.readAll()
     }
+
+    /// As ``MathRenderer/maxTeXBytes``.
+    private static let maxReadableTeXBytes = 2048
 
     private struct Reader {
         let scalars: [Unicode.Scalar]
@@ -168,6 +183,11 @@ enum MathInlineText {
             }
             if MathInlineText.textCommands.contains(name) {
                 return readArgument()
+            }
+            if name == "left" || name == "right" {
+                // The delimiter that follows is kept, but `.` is none.
+                if index < scalars.count, scalars[index] == "." { index += 1 }
+                return ""
             }
             if let symbol = MathInlineText.symbols[name] {
                 return symbol

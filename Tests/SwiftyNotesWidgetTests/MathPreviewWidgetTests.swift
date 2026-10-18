@@ -19,6 +19,9 @@ private func gtkAccessibleLabelMismatch(of label: Label, expected: String) -> St
     return String(cString: mismatch)
 }
 
+/// Labels finalized since the count was reset (``g_object_weak_ref``).
+private nonisolated(unsafe) var finalizedLabelCount = 0
+
 /// Formulas drawn inside the preview's labels (``PreviewMath``).
 struct MathPreviewWidgetTests {
     @Test("Inline formulas are drawn over their markers in the paragraph label") @MainActor
@@ -776,8 +779,20 @@ struct MathPreviewWidgetTests {
             return found
         }
         let tex = "e^{i\\pi} + 1 = 0"
+        // Formulas past the shared parse budget come a pass later.
+        pumpUntil(timeout: .seconds(2)) {
+            drawnTeX(under: window.sidebar.root) == [tex] && drawnTeX(under: window.outlineSidebar.root) == [tex]
+                && drawnTeX(under: window.breadcrumb.root).contains(tex)
+        }
         #expect(drawnTeX(under: window.sidebar.root) == [tex], "sidebar")
         #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "outline")
+        var tooltips: [String] = []
+        var stack: [Widget] = [window.outlineSidebar.root]
+        while let widget = stack.popLast() {
+            if let label = widget.tryCast(Label.self), let tooltip = label.tooltipText { tooltips.append(tooltip) }
+            stack.append(contentsOf: widget.children())
+        }
+        #expect(tooltips.contains("Formulas e^{iπ} + 1 = 0"), "\(tooltips)")
         // Formulas are sized like the text around them (KaTeX's 1.21 em),
         // also after the desktop font changes.
         func formulaSizes() -> [(label: Double, formula: Double)] {
@@ -802,6 +817,7 @@ struct MathPreviewWidgetTests {
                 #expect(abs(size.label - size.formula) < 0.5, "\(step): \(sizes)")
             }
         }
+        pumpUntil(timeout: .seconds(2)) { formulaSizes().allSatisfy { abs($0.label - $0.formula) < 0.5 } }
         expectSizedLikeText("shown")
         // Well after any refresh that showing the labels started.
         MainContext.pump(for: .milliseconds(600))
@@ -813,10 +829,125 @@ struct MathPreviewWidgetTests {
 
         // Filtering keeps the formula drawn, the match on it highlighted.
         window.outlineSidebar.setQuery("pi")
+        pumpUntil(timeout: .seconds(2)) { drawnTeX(under: window.outlineSidebar.root) == [tex] }
         #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "filtered outline")
         window.outlineSidebar.setQuery("")
         #expect(drawnTeX(under: window.breadcrumb.root).contains(tex), "breadcrumb")
         #expect(window.debugHeaderSubtitle.hasPrefix("Formulas e^{iπ} + 1 = 0"), "\(window.debugHeaderSubtitle)")
+    }
+
+    @Test("Command palette rows draw their headings' formulas, filtered or not, and the parent's") @MainActor
+    func commandPaletteRowsDrawFormulas() throws {
+        let fixture = try Fixture(suffix: "palette", markdown: "")
+        let palette = CommandPaletteWindow(
+            transientFor: fixture.window,
+            headings: [
+                Heading(id: "area", level: 2, text: "Area $\\pi r^2$", blockIndex: 0, line: 1),
+                Heading(id: "angle", level: 3, text: "Angle $\\alpha$", blockIndex: 1, line: 3),
+            ],
+            currentID: nil,
+            recents: [],
+            onPick: { _ in },
+            onClosed: {},
+        )
+        func drawnTeX() -> [String] {
+            var found: [String] = []
+            var stack: [Widget] = [palette.debugList]
+            while let widget = stack.popLast() {
+                if let label = widget.tryCast(Label.self) {
+                    found += PreviewMath.debugFormulas(on: label).map(\.tex)
+                }
+                stack.append(contentsOf: widget.children())
+            }
+            return found.sorted()
+        }
+        // The H3 row names its H2 parent, formula and all. (Formulas past
+        // the shared parse budget come a pass later.)
+        pumpUntil(timeout: .seconds(2)) { drawnTeX().count == 3 }
+        #expect(drawnTeX() == ["\\alpha", "\\pi r^2", "\\pi r^2"])
+        // Filtered, the matching rows still draw (the match on the formula
+        // highlighted), rather than show their TeX.
+        palette.debugSetQuery("pi")
+        #expect(palette.debugItems.map(\.id).contains("area"))
+        pumpUntil(timeout: .seconds(2)) { drawnTeX().contains("\\pi r^2") }
+        #expect(drawnTeX().contains("\\pi r^2"), "\(drawnTeX())")
+    }
+
+    @Test("A title label draws its formula's ink") @MainActor
+    func aTitleLabelDrawsItsFormulasInk() throws {
+        let fixture = try Fixture(suffix: "title-ink", markdown: "")
+        let box = Box(orientation: .vertical, spacing: 0)
+        fixture.window.setContent(box)
+        let label = Label("")
+        PreviewMath.show("$\\blacksquare\\blacksquare\\blacksquare$", in: label)
+        box.append(label)
+        func ink() -> Int {
+            var count = 0
+            forEachRenderedPixel(of: label) { _, _, _, a in
+                if a > 200 { count += 1 }
+            }
+            return count
+        }
+        pumpUntil(timeout: .seconds(2)) { ink() > 150 }
+        #expect(ink() > 150)
+    }
+
+    @Test("Title labels with formulas are freed when removed right after they are shown or the font changes") @MainActor
+    func titleLabelsWithFormulasAreFreedWhenRemovedEarly() throws {
+        let fixture = try Fixture(suffix: "title-free", markdown: "")
+        let box = Box(orientation: .vertical, spacing: 0)
+        fixture.window.setContent(box)
+        let notify: GWeakNotify = { _, _ in finalizedLabelCount += 1 }
+
+        /// Shows `count` title labels, runs `between` once they are mapped,
+        /// removes them at once and returns how many were freed.
+        func freedLabels(count: Int, between: () -> Void) -> Int {
+            finalizedLabelCount = 0
+            do {
+                var labels: [Label] = []
+                for index in 0..<count {
+                    let label = Label("")
+                    PreviewMath.show("Row $x_{\(index)}$", in: label)
+                    g_object_weak_ref(UnsafeMutablePointer<GObject>(label.opaquePointer), notify, nil)
+                    box.append(label)
+                    labels.append(label)
+                }
+                pumpUntil(timeout: .seconds(1)) { labels.allSatisfy { gtk_widget_get_mapped($0.widgetPointer) != 0 } }
+                between()
+                for label in labels {
+                    box.remove(label)
+                }
+            }
+            pumpUntil(timeout: .seconds(1)) { finalizedLabelCount == count }
+            return finalizedLabelCount
+        }
+
+        #expect(freedLabels(count: 5) {} == 5, "removed right after being shown")
+        let originalFont = desktopFontName
+        defer { desktopFontName = originalFont }
+        let freedAfterFontChange = freedLabels(count: 5) {
+            MainContext.pump(for: .milliseconds(400))
+            desktopFontName = "Sans 19"
+            MainContext.pump(for: .milliseconds(20))
+        }
+        #expect(freedAfterFontChange == 5, "removed right after a font change")
+    }
+
+    @Test("Formulas outside the preview past the parse budget show their source, then get drawn") @MainActor
+    func formulasOutsideThePreviewPastTheParseBudgetGetDrawnLater() throws {
+        let fixture = try Fixture(suffix: "outside-budget", markdown: "") // brings GTK up
+        _ = fixture
+        MathRenderer.removeAllCachedFormulas()
+        let budget = PreviewMath.outsideParseBudget
+        PreviewMath.outsideParseBudget = .zero
+        defer { PreviewMath.outsideParseBudget = budget }
+        let label = Label("")
+        PreviewMath.show("Budget $\\alpha_1$ and $\\beta_2$", in: label)
+        // Nothing parsed within the (spent) budget: both wait, as source.
+        #expect(PreviewMath.debugFormulas(on: label).isEmpty)
+        #expect(label.text.contains("$\\alpha_1$"))
+        pumpUntil(timeout: .seconds(2)) { PreviewMath.debugFormulas(on: label).count == 2 }
+        #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["\\alpha_1", "\\beta_2"])
     }
 
     @Test("Formulas stay drawn when an opened file's window switches view modes") @MainActor
@@ -1114,7 +1245,9 @@ struct MathPreviewWidgetTests {
         }
     }
 
-    /// GtkSettings' `gtk-font-name`, the desktop's interface font.
+    /// GtkSettings' `gtk-font-name`, the desktop's interface font. Setting
+    /// it marks it set by the app for the rest of the process, so the real
+    /// desktop's font changes no longer reach these tests.
     @MainActor
     private var desktopFontName: String? {
         get {

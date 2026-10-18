@@ -19,6 +19,13 @@ struct PangoMarkupEscapingTests {
         #expect(parses(pangoEscape(tricky)))
     }
 
+    @Test("A NUL becomes a replacement character, since GTK reads markup as a C string")
+    func aNULBecomesAReplacementCharacter() {
+        let escaped = pangoEscape("a\u{0}<b>")
+        #expect(escaped == "a\u{FFFD}&lt;b&gt;")
+        #expect(parses("<span>\(escaped)</span>"))
+    }
+
     @Test("The breadcrumb strip's markup parses for any heading text") @MainActor
     func breadcrumbMarkupParsesForAnyHeadingText() {
         for (title, section, leaf) in [

@@ -2,7 +2,9 @@ import Adwaita
 import CAdwaita
 import Foundation
 
-/// Draws TeX formulas inside the preview's labels.
+/// Draws TeX formulas inside the preview's labels — and in labels outside
+/// it that show a note's title or a heading (sidebar, outline, breadcrumb,
+/// command palette; see ``show(markup:spans:in:)``).
 ///
 /// The renderer leaves one U+FFFC in a label's markup for every inline
 /// formula and lists the formulas in `RenderedText.mathSpans`, in the same
@@ -82,11 +84,21 @@ enum PreviewMath {
     /// outside the preview, drawing the formulas; they follow the label's
     /// font, which is only known once the label is styled where it is shown
     /// and changes with the desktop font. (The preview refreshes its own.)
+    ///
+    /// Titles are untrusted like any note text, and a sidebar or outline
+    /// shows many at once: all such labels share one parse budget per
+    /// period, and formulas past it show their source until later passes
+    /// lay them out.
     static func show(markup: String, spans: [MathSpan], in label: Label) {
         label.markup = markup
-        install(on: label, spans: spans)
-        guard let state = state(of: label), !state.followsFont else { return }
-        state.followsFont = true
+        withOutsideParseBudget {
+            install(on: label, spans: spans)
+        }
+        guard let state = state(of: label) else { return }
+        layOutPostponedOutsideSoon(label, state: state)
+        guard !state.isOutsidePreview else { return }
+        state.isOutsidePreview = true
+        restoreAccessibleLabel(of: label)
         let widget = UnsafeMutableRawPointer(label.widgetPointer)
         // `state` lives as long as the label draws formulas; the handler
         // goes with it.
@@ -95,15 +107,77 @@ enum PreviewMath {
         }
     }
 
-    /// Refreshes the formula sizes of a label over its next few frames, by
-    /// which GTK has styled it anew.
+    /// Refreshes the formula sizes of a label outside the preview over its
+    /// next few frames, by which GTK has styled it anew.
+    ///
+    /// The tick holds only the pointer, wrapping it for each frame: GTK owns
+    /// the callback, so a wrapper kept in it would keep the label alive — a
+    /// label removed before the last frame would never be freed. The
+    /// pointer is valid while the callback is registered.
     private static func refreshFontSizesSoon(of widget: UnsafeMutableRawPointer) {
-        let label = Widget(borrowing: widget)
         var frames = 0
-        label.addTickCallback {
+        Widget(borrowing: widget).addTickCallback {
             frames += 1
-            refreshFontSizes(under: label)
+            guard let label = Widget(borrowing: widget).tryCast(Label.self) else { return false }
+            withOutsideParseBudget {
+                _ = refreshFontSizes(under: label)
+            }
+            if let state = state(of: label) {
+                layOutPostponedOutsideSoon(label, state: state)
+            }
             return frames < 10
+        }
+    }
+
+    /// What labels outside the preview may spend parsing, all of them
+    /// together, in each ``outsideParsePeriod`` (tests lower it).
+    static var outsideParseBudget: Duration = .milliseconds(50)
+    private static let outsideParsePeriod: Duration = .milliseconds(100)
+    private static var outsideParsePeriodStart: ContinuousClock.Instant?
+
+    /// Runs `body` within what is left of the parse budget that labels
+    /// outside the preview share in the current period.
+    private static func withOutsideParseBudget(guaranteeingProgress: Bool = false, _ body: () -> Void) {
+        let now = ContinuousClock.now
+        if let start = outsideParsePeriodStart, now - start < outsideParsePeriod {
+            // Within the period: what it has left.
+        } else {
+            outsideParsePeriodStart = now
+        }
+        let remaining = max((outsideParsePeriodStart ?? now) + outsideParseBudget - now, .zero)
+        MathRenderer.withParseBudget(remaining, guaranteeingProgress: guaranteeingProgress, body)
+    }
+
+    /// Labels outside the preview with formulas the budget postponed.
+    private static var postponedOutside: [PostponedLabel] = []
+    private static var postponedOutsidePass: SourceID?
+
+    /// Lays the formulas `label` postponed out over the next passes, sharing
+    /// one budget with every other such label.
+    private static func layOutPostponedOutsideSoon(_ label: Label, state: MathLabelState) {
+        guard state.hasPostponedFormulas else { return }
+        if !postponedOutside.contains(where: { $0.state === state }) {
+            postponedOutside.append(PostponedLabel(state: state, widget: UnsafeMutableRawPointer(label.widgetPointer)))
+        }
+        guard postponedOutsidePass == nil else { return }
+        postponedOutsidePass = MainContext.timeout(every: .milliseconds(16)) {
+            withOutsideParseBudget(guaranteeingProgress: true) {
+                postponedOutside.removeAll { entry in
+                    // A label that is gone took its state with it.
+                    guard let state = entry.state,
+                          let label = Widget(borrowing: entry.widget).tryCast(Label.self)
+                    else {
+                        return true
+                    }
+                    if state.hasPostponedFormulas {
+                        layOut(label, state: state, applyingWhilePostponed: false)
+                    }
+                    return !state.hasPostponedFormulas
+                }
+            }
+            guard postponedOutside.isEmpty else { return true }
+            postponedOutsidePass = nil
+            return false
         }
     }
 
@@ -687,7 +761,12 @@ enum PreviewMath {
     /// its handler is dropped. One pair of GtkSettings connections serves
     /// every handler, made on first use.
     static func observeDesktopFontSettings(owner: AnyObject, _ handler: @escaping @MainActor () -> Void) {
-        fontSettingsObservers.removeAll { $0.owner == nil }
+        // Dropping the dead ones once the list has doubled keeps a sidebar
+        // of many formula titles from sweeping it on every row.
+        if fontSettingsObservers.count >= max(64, 2 * liveFontSettingsObservers) {
+            fontSettingsObservers.removeAll { $0.owner == nil }
+            liveFontSettingsObservers = fontSettingsObservers.count
+        }
         fontSettingsObservers.append(FontSettingsObserver(owner: owner, handler: handler))
         guard !didConnectFontSettings, let settings = gtk_settings_get_default() else { return }
         didConnectFontSettings = true
@@ -713,6 +792,7 @@ enum PreviewMath {
     }
 
     private static var fontSettingsObservers: [FontSettingsObserver] = []
+    private static var liveFontSettingsObservers = 0
     private static var didConnectFontSettings = false
 
     // MARK: - Drawing
@@ -734,7 +814,7 @@ enum PreviewMath {
             MainActor.assumeIsolated {
                 // Outside the preview a label is laid out before it is
                 // styled where it is shown (an outline row's font).
-                if PreviewMath.state(ofPointer: OpaquePointer(widget))?.followsFont == true {
+                if PreviewMath.state(ofPointer: OpaquePointer(widget))?.isOutsidePreview == true {
                     PreviewMath.refreshFontSizesSoon(of: widget)
                 }
             }
@@ -832,6 +912,13 @@ enum PreviewMath {
     }
 }
 
+private struct PostponedLabel {
+    /// Held by the label (its GObject data) alone, so it is gone once the
+    /// label is; `widget` is valid while it lives.
+    weak var state: MathLabelState?
+    let widget: UnsafeMutableRawPointer
+}
+
 private struct FontSettingsObserver {
     weak var owner: AnyObject?
     let handler: @MainActor () -> Void
@@ -874,9 +961,10 @@ final class MathLabelState {
     }
 
     var originalMarkup = ""
-    /// A label outside the preview, whose formulas follow its font on their
-    /// own (``PreviewMath/show(markup:spans:in:)``).
-    var followsFont = false
+    /// A label outside the preview (``PreviewMath/show(markup:spans:in:)``):
+    /// its formulas follow its font on their own, and its accessible label
+    /// reads them as plain text, as the window's other titles do.
+    var isOutsidePreview = false
     var spans: [MathSpan] = []
     var fallbackSpans: [MathSpan] = []
     var entries: [Entry] = []
@@ -961,7 +1049,8 @@ final class MathLabelState {
     }
 
     func accessibleText(labelText: String) -> String {
-        sourceText(labelText: labelText)
+        let source = sourceText(labelText: labelText)
+        return isOutsidePreview ? MathInlineText.readable(source) : source
     }
 
     /// See ``PreviewMath/labelOffset(forPlainOffset:in:isRangeEnd:)``. The plain text
@@ -1034,11 +1123,15 @@ private func drawFormulaShape(
     cairo_translate(cairo, x + shape.horizontalPadding, top)
     shape.formula.draw(on: UnsafeMutableRawPointer(cairo), red: red, green: green, blue: blue, alpha: alpha)
     cairo_restore(cairo)
+    #if DEBUG
     if logsFormulaDraws {
         FileHandle.standardError.write(Data("swiftynotes-debug: formula drawn \(shape.formula.tex)\n".utf8))
     }
+    #endif
 }
 
+#if DEBUG
 /// Lets the black-box UI tests see formulas being drawn, which the
-/// accessibility tree cannot show.
+/// accessibility tree cannot show. Debug builds only: it logs note text.
 private let logsFormulaDraws = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_LOG_FORMULA_DRAWS"] == "1"
+#endif

@@ -46,6 +46,33 @@ struct MathInlineTextTests {
         #expect(result.spans.isEmpty)
     }
 
+    @Test("Deeply nested TeX is read without exhausting the stack")
+    func deeplyNestedTeXIsReadWithoutExhaustingTheStack() {
+        let depth = 100_000
+        let braces = "$" + String(repeating: "{", count: depth) + "x" + String(repeating: "}", count: depth) + "$"
+        let fractions = "$" + String(repeating: "\\frac{1}{", count: depth) + String(repeating: "}", count: depth) + "$"
+        // Too long to draw, so kept as written.
+        #expect(MathInlineText.readable("Deep \(braces)") == "Deep \(braces)")
+        #expect(MathInlineText.readable(fractions) == fractions)
+    }
+
+    @Test("A title draws at most a few formulas; the rest stay source")
+    func aTitleDrawsAtMostAFewFormulas() {
+        let text = (0..<12).map { "$x_{\($0)}$" }.joined(separator: " ")
+        let result = MathInlineText.markup(for: text)
+        #expect(result.spans.count == MathInlineText.maxFormulas)
+        let markers = result.markup.unicodeScalars.filter { $0 == MathSpanExtractor.formulaMarker }.count
+        #expect(markers == MathInlineText.maxFormulas)
+        #expect(result.markup.hasSuffix("$x_{10}$ $x_{11}$"))
+    }
+
+    @Test("A stray object replacement character without formulas is not a marker")
+    func aStrayObjectReplacementCharacterWithoutFormulasIsNotAMarker() {
+        let result = MathInlineText.markup(for: "Odd \u{FFFC} title", highlighting: "odd")
+        #expect(!result.markup.unicodeScalars.contains(MathSpanExtractor.formulaMarker))
+        #expect(result.markup.contains("\u{FFFD}"))
+    }
+
     @Test("Formulas read as plain text", arguments: [
         ("Формулы $e^{i\\pi} + 1 = 0$", "Формулы e^{iπ} + 1 = 0"),
         ("$\\frac{a}{b}$, $\\frac{12}{25}$ and $\\frac{-b}{2a}$", "a/b, 12/25 and (-b)/(2a)"),
@@ -53,6 +80,7 @@ struct MathInlineTextTests {
         ("Area $\\text{A} = \\pi r^2$", "Area A = π r^2"),
         ("Costs $5 and $10", "Costs $5 and $10"),
         ("Unknown $\\weird{x}$", "Unknown \\weird{x}"),
+        ("$\\left. f \\right|_0$ and $a\\ b\\\\c$", " f |_0 and a b c"),
     ])
     func formulasReadAsPlainText(text: String, expected: String) {
         #expect(MathInlineText.readable(text) == expected)

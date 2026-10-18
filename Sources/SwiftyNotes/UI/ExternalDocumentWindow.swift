@@ -1144,7 +1144,7 @@ private extension ExternalDocumentWindow {
 
         do {
             let importedNote = try importIntoLibrary(fileURL)
-            toastOverlay.showToast(String(format: "Imported %@ into library".localized, MathInlineText.readable(importedNote.title)))
+            toastOverlay.showToast(String(format: "Imported %@ into library".localized, pangoEscape(MathInlineText.readable(importedNote.title))))
         } catch {
             presentError(
                 heading: "Could not import file into library".localized,
@@ -1256,6 +1256,11 @@ private extension ExternalDocumentWindow {
     extension ExternalDocumentWindow {
         var debugViewMode: EditorViewMode {
             viewMode
+        }
+
+        /// The preview width the window remembers for Split mode.
+        var debugPreferredPreviewWidth: Int {
+            preferredPreviewWidth
         }
 
         /// Routes through the real transition (`setViewMode`) so tests
