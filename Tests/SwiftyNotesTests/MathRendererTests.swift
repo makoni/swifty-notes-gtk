@@ -212,7 +212,11 @@ struct MathRendererTests {
         #expect(MathRenderer.formula(tex: String(repeating: "😀", count: 40), isDisplay: false, pixelSize: 20) == nil)
         #expect(MathRenderer.lastError?.contains("emoji") == true, "\(MathRenderer.lastError ?? "")")
         #expect(MathRenderer.formula(tex: "😀😀😀", isDisplay: false, pixelSize: 20) != nil)
-        // Digits, `#` and `*` have emoji PNGs (keycap bases) but are math.
+        // Emoji outside the pictograph blocks count too.
+        #expect(MathRenderer.formula(tex: String(repeating: "⌚", count: 40), isDisplay: false, pixelSize: 20) == nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "⏰", count: 40), isDisplay: false, pixelSize: 20) == nil)
+        // Digits, `#`, `*` and arrows have emoji PNGs but KaTeX draws them.
+        #expect(MathRenderer.formula(tex: String(repeating: "\\leftrightarrow", count: 40), isDisplay: false, pixelSize: 20) != nil)
         #expect(MathRenderer.formula(tex: String(repeating: "1234567890", count: 10) + "\\#*", isDisplay: false, pixelSize: 20) != nil)
         #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit\\heartsuit\\checkmark", count: 20), isDisplay: false, pixelSize: 20) != nil)
     }

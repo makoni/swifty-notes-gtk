@@ -634,6 +634,8 @@ dependencies = [
  "ab_glyph",
  "cairo-rs",
  "ratex-cairo",
+ "ratex-font",
+ "ratex-font-loader",
  "ratex-layout",
  "ratex-parser",
  "ratex-types",

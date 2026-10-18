@@ -943,8 +943,8 @@ final class HTMLPreviewDocumentBuilder {
         // A placeholder inside a tag (a link's href) is put back as source;
         // only those in the text get a marker, so the markers and
         // `mathSpans` stay in step.
-        // The source had its U+FFFC replaced, but an entity (`&#xFFFC;`)
-        // decodes to one; only a formula may own a marker.
+        // A U+FFFC written in the note, or decoded from an entity
+        // (`&#xFFFC;`), becomes U+FFFD: only a formula may own a marker.
         let markerFree = String(String.UnicodeScalarView(text.markup.unicodeScalars.map {
             $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
         }))

@@ -758,8 +758,6 @@ enum MathSpanExtractor {
         return true
     }
 
-    /// Whether one of `blankLines` (in document order) lies wholly inside
-    /// `range`: a binary search, as every delimiter candidate asks.
     /// Where the first of `blankLines` starting at or after `from` starts.
     private static func nextBlankLineStart(_ blankLines: [LineBounds], from: Int) -> Int? {
         var low = 0
@@ -771,6 +769,8 @@ enum MathSpanExtractor {
         return low < blankLines.count ? blankLines[low].start : nil
     }
 
+    /// Whether one of `blankLines` (in document order) lies wholly inside
+    /// `range`: a binary search, as every delimiter candidate asks.
     private static func containsBlankLine(_ blankLines: [LineBounds], range: Range<Int>) -> Bool {
         var low = 0
         var high = blankLines.count
