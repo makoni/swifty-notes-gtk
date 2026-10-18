@@ -22,21 +22,8 @@ func pangoEscapeAttribute(_ text: String) -> String {
     escapedForMarkup(text, quotes: true)
 }
 
-/// `text` escaped, with the first case-insensitive match of `query` on a
-/// yellow background (the outline and command palette filters). The match is
-/// found in `text` itself: ranges found in `text.lowercased()` do not fit
-/// `text` when lowercasing changes its length ("İ").
-func pangoHighlightedMarkup(_ text: String, query: String) -> String {
-    guard !query.isEmpty, let range = text.range(of: query, options: .caseInsensitive) else {
-        return pangoEscape(text)
-    }
-    let pre = String(text[..<range.lowerBound])
-    let hit = String(text[range])
-    let post = String(text[range.upperBound...])
-    return "\(pangoEscape(pre))\(pangoHighlightOpenTag)\(pangoEscape(hit))</span>\(pangoEscape(post))"
-}
-
-/// Opens the filter-match highlight of ``pangoHighlightedMarkup(_:query:)``.
+/// Opens the highlight of a filter match (the outline and command palette
+/// filters, ``MathInlineText/markup(for:highlighting:)``).
 let pangoHighlightOpenTag = "<span background=\"#f5c211\" foreground=\"#1e1e1e\">"
 
 private func escapedForMarkup(_ text: String, quotes: Bool) -> String {

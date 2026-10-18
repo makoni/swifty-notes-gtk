@@ -124,6 +124,50 @@ struct PreviewPaneLayoutTests {
         #expect(window.debugPreferredPreviewWidth == WorkspaceState.defaultPreviewWidth)
     }
 
+    @Test("A dragged divider is remembered; one grabbed while it settles is the user's") @MainActor
+    func aDraggedDividerIsRemembered() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.panelayout.drag")
+        try app.register()
+        let window = MainWindow(
+            application: app,
+            state: AppState(persistedState: WorkspaceState(isOutlineVisible: false)),
+            stateStore: WorkspaceStateStore(stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+        window.debugLoadInitialNotes()
+        window.window.setSizeRequest(width: 1400, height: 900)
+        window.present()
+        defer { window.window.close() }
+        window.setViewMode(.split, animated: false)
+        let divider = window.previewPaneDivider
+        Self.waitUntil(timeout: .seconds(2)) { window.editorPreviewPane.width > 0 && !divider.isRestoring }
+        MainContext.pump(for: .milliseconds(200))
+
+        // A drag: the preview's new width is remembered.
+        let room = window.editorPreviewPane.width
+        window.editorPreviewPane.position = room - 500
+        #expect(window.state.preferredPreviewWidth == 500)
+
+        // Placing it back after Editor → Split is layout, not a drag.
+        window.setViewMode(.editor, animated: false)
+        window.setViewMode(.split, animated: false)
+        #expect(divider.isRestoring)
+        window.editorPreviewPane.position = room - 450
+        #expect(window.state.preferredPreviewWidth == 500)
+
+        // Grabbing the handle while it settles hands it to the user.
+        divider.pointerPressed(atX: Double(window.editorPreviewPane.position))
+        #expect(!divider.isRestoring)
+        window.editorPreviewPane.position = room - 420
+        #expect(window.state.preferredPreviewWidth == 420)
+        MainContext.pump(for: .milliseconds(300))
+        #expect(window.editorPreviewPane.position == room - 420, "the settle took the divider back")
+    }
+
     @MainActor
     private static func waitUntil(
         timeout: Duration,

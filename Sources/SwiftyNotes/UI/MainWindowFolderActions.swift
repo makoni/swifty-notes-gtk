@@ -234,7 +234,7 @@ extension MainWindow {
             refreshSidebar()
             refreshDirectorySnapshot()
             persistWorkspaceState()
-            toastOverlay.showToast("Folder renamed".localized)
+            toastOverlay.showPlainToast("Folder renamed".localized)
         } catch {
             presentError(
                 heading: "Could not rename folder".localized,
@@ -293,7 +293,7 @@ extension MainWindow {
         let availableTargets = ["" /* root */] + state.folders.sorted()
         let targetsExceptCurrent = availableTargets.filter { $0 != note.folderPath }
         guard !targetsExceptCurrent.isEmpty else {
-            toastOverlay.showToast("No other folders to move into".localized)
+            toastOverlay.showPlainToast("No other folders to move into".localized)
             return
         }
 
@@ -353,7 +353,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note moved".localized)
+            toastOverlay.showPlainToast("Note moved".localized)
         } catch {
             presentError(
                 heading: "Could not move note".localized,
@@ -377,7 +377,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Folder deleted".localized)
+            toastOverlay.showPlainToast("Folder deleted".localized)
         } catch {
             presentError(
                 heading: "Could not delete folder".localized,

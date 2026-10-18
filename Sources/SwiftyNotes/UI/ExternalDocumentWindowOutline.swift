@@ -28,7 +28,7 @@ extension ExternalDocumentWindow {
 
     func openCommandPalette() {
         guard !currentHeadings.isEmpty else {
-            toastOverlay.addToast(Toast(title: "No headings to jump to.".localized))
+            toastOverlay.addToast(Toast.plain("No headings to jump to.".localized))
             return
         }
         // Rapid double Ctrl+G: drop the old wrapper — GTK closes its

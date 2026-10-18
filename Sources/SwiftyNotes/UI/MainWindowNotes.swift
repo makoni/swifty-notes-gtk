@@ -197,7 +197,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note duplicated".localized)
+            toastOverlay.showPlainToast("Note duplicated".localized)
         } catch {
             presentError(
                 heading: "Could not duplicate note".localized,
@@ -225,7 +225,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            let toast = Toast(title: String(format: "Moved \"%@\" to Trash".localized, pangoEscape(MathInlineText.readable(note.title))))
+            let toast = Toast.plain(String(format: "Moved \"%@\" to Trash".localized, MathInlineText.readable(note.title)))
             toast.timeout = 5
             toast.buttonLabel = "Undo".localized
             toast.onButtonClicked { [weak self] in
@@ -258,7 +258,7 @@ extension MainWindow {
             clearTrashedNotePreviewMode()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note restored".localized)
+            toastOverlay.showPlainToast("Note restored".localized)
         } catch {
             presentError(
                 heading: "Could not restore note".localized,
@@ -298,7 +298,7 @@ extension MainWindow {
             }
             refreshSidebar()
             persistWorkspaceState()
-            toastOverlay.showToast("Note permanently deleted".localized)
+            toastOverlay.showPlainToast("Note permanently deleted".localized)
         } catch {
             presentError(
                 heading: "Could not permanently delete note".localized,
@@ -426,7 +426,7 @@ extension MainWindow {
             }
             refreshSidebar()
             persistWorkspaceState()
-            toastOverlay.showToast("Trash emptied".localized)
+            toastOverlay.showPlainToast("Trash emptied".localized)
         } catch {
             presentError(
                 heading: "Could not empty Trash".localized,

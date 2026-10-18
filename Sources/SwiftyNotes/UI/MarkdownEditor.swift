@@ -123,6 +123,12 @@ struct MarkdownEditor {
     }
 
     func setText(_ text: String) {
+        // GtkTextBuffer refuses text holding a NUL and takes none of it; the
+        // editor stayed empty, and the next keystroke saved that over the
+        // note. A NUL shows (and is saved) as U+FFFD instead.
+        let text = text.unicodeScalars.contains("\u{0}")
+            ? String(String.UnicodeScalarView(text.unicodeScalars.map { $0 == "\u{0}" ? "\u{FFFD}" : $0 }))
+            : text
         if buffer.text != text {
             buffer.text = text
             buffer.modified = false

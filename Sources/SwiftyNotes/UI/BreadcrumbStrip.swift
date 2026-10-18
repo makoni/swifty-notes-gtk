@@ -98,12 +98,8 @@ final class BreadcrumbStrip {
     /// reads as a "passive you-are-here" cue. The colors use Adwaita's
     /// CSS-resolved foreground / muted tokens by way of opacity spans —
     /// avoids hard-coding hex values that wouldn't track theme changes.
-    static func buildMarkup(docTitle: String, section: String?, leaf: String?) -> String {
-        buildMathMarkup(docTitle: docTitle, section: section, leaf: leaf).markup
-    }
-
-    /// ``buildMarkup(docTitle:section:leaf:)`` with a formula marker per
-    /// formula in the segments, and those formulas in order.
+    /// Each formula in the segments is a marker in the markup; `spans` are
+    /// those formulas in order.
     static func buildMathMarkup(docTitle: String, section: String?, leaf: String?) -> (markup: String, spans: [MathSpan]) {
         var pieces: [String] = []
         var spans: [MathSpan] = []

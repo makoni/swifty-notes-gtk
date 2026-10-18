@@ -178,6 +178,18 @@ public enum MathRenderer {
         return try body()
     }
 
+    /// ``withParseBudget(_:guaranteeingProgress:_:)`` for a pass that needs
+    /// to know whether it parsed a new formula (a cached one does not count).
+    @discardableResult
+    static func parsingWithinBudget(_ duration: Duration, guaranteeingProgress: Bool = false, _ body: () -> Void) -> Bool {
+        var parsed = false
+        withParseBudget(duration, guaranteeingProgress: guaranteeingProgress) {
+            body()
+            parsed = parsedInBudget
+        }
+        return parsed
+    }
+
     /// Drops every cached formula and any parse budget (tests).
     static func removeAllCachedFormulas() {
         cache.removeAll()
@@ -188,8 +200,7 @@ public enum MathRenderer {
         cache.count
     }
 
-    /// How many formulas the engine has parsed (tests; the budget of labels
-    /// outside the preview tells by it whether a pass parsed anything).
+    /// How many formulas the engine has parsed (tests).
     private(set) static var parseCount = 0
 
     private static func parse(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {

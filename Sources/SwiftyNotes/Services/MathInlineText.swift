@@ -14,19 +14,14 @@ enum MathInlineText {
     /// stay source: a title or heading is a line, and a hostile one should
     /// not cost a whole page of formulas.
     static func markup(for text: String, highlighting query: String = "") -> (markup: String, spans: [MathSpan]) {
+        let text = shortened(text)
         let extracted = MathSpanExtractor.extract(from: text).spans
         let sources = MathSpanExtractor.sourceRanges(in: text)
-        guard !extracted.isEmpty, sources.count == extracted.count else {
-            let markerFree = String(String.UnicodeScalarView(text.unicodeScalars.map {
-                $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
-            }))
-            return (pangoHighlightedMarkup(markerFree, query: query), [])
-        }
         // The formulas drawn, with where each sits in `text`; the others
         // stay their source.
-        let drawn = zip(extracted, sources)
-            .filter { $0.0.tex.utf8.count <= maxFormulaBytes }
-            .prefix(maxFormulas)
+        let drawn = sources.count == extracted.count
+            ? Array(zip(extracted, sources).filter { $0.0.tex.utf8.count <= maxFormulaBytes }.prefix(maxFormulas))
+            : []
         let spans = drawn.map(\.0)
         let scalars = Array(text.unicodeScalars)
         let hit = firstMatch(of: query, in: text)
@@ -52,6 +47,17 @@ enum MathInlineText {
         return (markup, spans)
     }
 
+    /// The most characters of a title or heading shown: the places that
+    /// show one give it a line, and laying out a page of text for each row
+    /// of a long note's outline costs seconds.
+    static let maxShownCharacters = 300
+
+    /// `text`, cut to ``maxShownCharacters`` with an ellipsis.
+    private static func shortened(_ text: String) -> String {
+        guard text.count > maxShownCharacters else { return text }
+        return String(text.prefix(maxShownCharacters)) + "…"
+    }
+
     /// The most formulas one title or heading draws.
     static let maxFormulas = 8
 
@@ -64,6 +70,7 @@ enum MathInlineText {
     /// dropped, common commands as their characters (`\pi` → π, `\le` → ≤),
     /// `\frac{a}{b}` as a/b, `\text{…}` as its content; anything else kept.
     static func readable(_ text: String) -> String {
+        let text = shortened(text)
         let extraction = MathSpanExtractor.extract(from: text)
         guard !extraction.spans.isEmpty else { return text }
         return MathSpanExtractor.replacingPlaceholders(in: extraction.markdown) { index in
@@ -81,8 +88,9 @@ enum MathInlineText {
     }
 
     /// The first case-insensitive match of `query` in `text`, in Unicode
-    /// scalars; found in `text` itself, as ``pangoHighlightedMarkup(_:query:)``
-    /// does.
+    /// scalars. It is found in `text` itself: ranges found in
+    /// `text.lowercased()` do not fit `text` when lowercasing changes its
+    /// length ("İ").
     private static func firstMatch(of query: String, in text: String) -> Range<Int>? {
         guard !query.isEmpty, let range = text.range(of: query, options: .caseInsensitive) else { return nil }
         let start = text.unicodeScalars.distance(from: text.startIndex, to: range.lowerBound)
@@ -104,7 +112,7 @@ enum MathInlineText {
         "Rightarrow": "⇒", "Leftarrow": "⇐", "leftrightarrow": "↔", "Leftrightarrow": "⇔", "mapsto": "↦",
         "in": "∈", "notin": "∉", "subset": "⊂", "subseteq": "⊆", "supset": "⊃", "cup": "∪", "cap": "∩",
         "emptyset": "∅", "forall": "∀", "exists": "∃", "neg": "¬", "land": "∧", "lor": "∨", "partial": "∂",
-        "nabla": "∇", "sum": "∑", "prod": "∏", "int": "∫", "oint": "∮", "sqrt": "√", "circ": "∘", "degree": "°",
+        "nabla": "∇", "sum": "∑", "prod": "∏", "int": "∫", "oint": "∮", "circ": "∘", "degree": "°",
         "ell": "ℓ", "hbar": "ℏ", "Re": "ℜ", "Im": "ℑ", "aleph": "ℵ", "angle": "∠", "perp": "⊥", "parallel": "∥",
         "langle": "⟨", "rangle": "⟩", "lfloor": "⌊", "rfloor": "⌋", "lceil": "⌈", "rceil": "⌉",
         "{": "{", "}": "}", "$": "$", "%": "%", "&": "&", "#": "#", "_": "_",
@@ -137,7 +145,8 @@ enum MathInlineText {
             return output
         }
 
-        /// One item: a command with what it takes, a group, or a character.
+        /// One item: a command with what it takes, a group, a script, or a
+        /// character.
         mutating func readItem() -> String {
             let scalar = scalars[index]
             if scalar == "\\" {
@@ -145,7 +154,12 @@ enum MathInlineText {
             }
             index += 1
             if scalar == "{" {
-                return "{" + readGroupBody() + "}"
+                // Grouping only: its braces are not part of what it says.
+                return readGroupBody()
+            }
+            if scalar == "^" || scalar == "_" {
+                // A script keeps its extent: `e^{iπ}` reads `e^(iπ)`.
+                return String(scalar) + parenthesized(readArgument())
             }
             return String(scalar)
         }
@@ -184,6 +198,9 @@ enum MathInlineText {
                 name = String(scalars[index])
                 index += 1
             }
+            if name == "sqrt" {
+                return "√" + parenthesized(readArgument())
+            }
             if name == "frac" || name == "dfrac" || name == "tfrac" {
                 let numerator = readArgument()
                 let denominator = readArgument()
@@ -200,9 +217,17 @@ enum MathInlineText {
             if let symbol = MathInlineText.symbols[name] {
                 return symbol
             }
-            return "\\" + name
+            // Unknown: kept as written, with its arguments.
+            var written = "\\" + name
+            while index < scalars.count, scalars[index] == "{" {
+                index += 1
+                written += "{" + readGroupBody() + "}"
+            }
+            return written
         }
 
+        /// `text` as one term: as is when it is one character or a number,
+        /// in parentheses otherwise.
         private func parenthesized(_ text: String) -> String {
             text.count <= 1 || text.allSatisfy(\.isNumber) ? text : "(\(text))"
         }

@@ -1,3 +1,4 @@
+import Adwaita
 import CAdwaita
 import Foundation
 @testable import SwiftyNotes
@@ -19,6 +20,30 @@ struct PangoMarkupEscapingTests {
         #expect(parses(pangoEscape(tricky)))
     }
 
+    @Test("Toasts show their text as written, not as markup") @MainActor
+    func toastsShowTheirTextAsWritten() {
+        #expect(!Toast.plain("A & B <draft>").useMarkup)
+    }
+
+    @Test("Every toast in the app is a plain one")
+    func everyToastInTheAppIsAPlainOne() throws {
+        // A note's title or an error message in a markup toast breaks it.
+        let sources = URL(fileURLWithPath: #filePath, isDirectory: false)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/SwiftyNotes", isDirectory: true)
+        let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
+        var offenders: [String] = []
+        for case let url as URL in files where url.pathExtension == "swift" && url.lastPathComponent != "PlainToasts.swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
+                where line.contains(".showToast(") || line.contains("Toast(title:")
+            {
+                offenders.append("\(url.lastPathComponent):\(number + 1)")
+            }
+        }
+        #expect(offenders.isEmpty, "\(offenders)")
+    }
+
     @Test("A NUL becomes a replacement character, since GTK reads markup as a C string")
     func aNULBecomesAReplacementCharacter() {
         let escaped = pangoEscape("a\u{0}<b>")
@@ -33,7 +58,7 @@ struct PangoMarkupEscapingTests {
             ("Doc", tricky, nil),
             ("", nil, tricky),
         ] {
-            let markup = BreadcrumbStrip.buildMarkup(docTitle: title, section: section, leaf: leaf)
+            let markup = BreadcrumbStrip.buildMathMarkup(docTitle: title, section: section, leaf: leaf).markup
             #expect(parses(markup), "\(markup)")
         }
     }
@@ -42,11 +67,11 @@ struct PangoMarkupEscapingTests {
     func filterHighlightsSurviveTextThatLowercasingMakesLonger() {
         // "İ" lowercases to two code points, so ranges found in the
         // lowercased text used to run past the end of the original.
-        let markup = pangoHighlightedMarkup("İİİİİİ x", query: "x")
+        let markup = MathInlineText.markup(for: "İİİİİİ x", highlighting: "x").markup
         #expect(markup == "İİİİİİ <span background=\"#f5c211\" foreground=\"#1e1e1e\">x</span>")
-        #expect(pangoHighlightedMarkup("Area <b>", query: "AREA").hasPrefix("<span background=\"#f5c211\" foreground=\"#1e1e1e\">Area</span>"))
-        #expect(parses(pangoHighlightedMarkup(tricky, query: "a")))
-        #expect(pangoHighlightedMarkup("a<b", query: "") == "a&lt;b")
+        #expect(MathInlineText.markup(for: "Area <b>", highlighting: "AREA").markup.hasPrefix("<span background=\"#f5c211\" foreground=\"#1e1e1e\">Area</span>"))
+        #expect(parses(MathInlineText.markup(for: tricky, highlighting: "a").markup))
+        #expect(MathInlineText.markup(for: "a<b").markup == "a&lt;b")
     }
 
     private func parses(_ markup: String) -> Bool {

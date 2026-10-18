@@ -89,17 +89,14 @@ enum PreviewMath {
     /// font, which is only known once the label is styled where it is shown
     /// and changes with the desktop font. (The preview refreshes its own.)
     ///
-    /// Titles are untrusted like any note text, and a sidebar or outline
-    /// shows many at once: all such labels share one parse budget per
-    /// period, and formulas past it show their source until later passes
-    /// lay them out.
+    /// Parsing is paced by ``titleScheduler``.
     static func show(markup: String, spans: [MathSpan], in label: Label) {
         label.markup = markup
-        withOutsideParseBudget {
+        titleScheduler.withBudget {
             install(on: label, spans: spans, outsidePreview: true)
         }
         guard let state = state(of: label) else { return }
-        layOutPostponedOutsideSoon(label, state: state)
+        titleScheduler.layOutPostponedSoon(label, state: state)
         guard !state.observesDesktopFont else { return }
         state.observesDesktopFont = true
         let widget = UnsafeMutableRawPointer(label.widgetPointer)
@@ -122,90 +119,19 @@ enum PreviewMath {
         Widget(borrowing: widget).addTickCallback {
             frames += 1
             guard let label = Widget(borrowing: widget).tryCast(Label.self) else { return false }
-            withOutsideParseBudget {
+            titleScheduler.withBudget {
                 _ = refreshFontSizes(under: label)
             }
             if let state = state(of: label) {
-                layOutPostponedOutsideSoon(label, state: state)
+                titleScheduler.layOutPostponedSoon(label, state: state)
             }
             return frames < 10
         }
     }
 
-    /// What labels outside the preview may spend parsing, all of them
-    /// together, in each ``outsideParsePeriod`` (tests lower it).
-    static var outsideParseBudget: Duration = .milliseconds(50)
-    private static let outsideParsePeriod: Duration = .milliseconds(100)
-    private static var outsideParsePeriodStart: ContinuousClock.Instant?
-    /// Set once the main-loop pass that started the period has finished.
-    private static var outsideParsePassEnded = true
-    private static var parsedInOutsidePeriod = false
-
-    /// Runs `body` within what is left of the parse budget that labels
-    /// outside the preview share in the current period. A period renews
-    /// only in a later main-loop pass (or the catch-up pass), so one long
-    /// rebuild does not refill it as it goes; the catch-up pass parses at
-    /// least one formula per period, so postponed ones always come.
-    private static func withOutsideParseBudget(fromCatchUpPass: Bool = false, _ body: () -> Void) {
-        let now = ContinuousClock.now
-        let elapsed = outsideParsePeriodStart.map { now - $0 } ?? outsideParsePeriod
-        if elapsed >= outsideParsePeriod, outsideParsePassEnded || fromCatchUpPass {
-            outsideParsePeriodStart = now
-            parsedInOutsidePeriod = false
-            if outsideParsePassEnded {
-                outsideParsePassEnded = false
-                MainContext.idle {
-                    PreviewMath.outsideParsePassEnded = true
-                }
-            }
-        }
-        let remaining = max((outsideParsePeriodStart ?? now) + outsideParseBudget - now, .zero)
-        let parsedBefore = MathRenderer.parseCount
-        MathRenderer.withParseBudget(remaining, guaranteeingProgress: fromCatchUpPass && !parsedInOutsidePeriod, body)
-        guard MathRenderer.parseCount > parsedBefore else { return }
-        parsedInOutsidePeriod = true
-        // A parse may run past the budget (one forced, or one begun just
-        // before the deadline): the period then lasts until the time left
-        // over is free again, so the UI gets that share whatever a formula
-        // costs.
-        if let start = outsideParsePeriodStart {
-            outsideParsePeriodStart = max(start, ContinuousClock.now - outsideParseBudget)
-        }
-    }
-
-    /// Labels outside the preview with formulas the budget postponed.
-    private static var postponedOutside: [PostponedLabel] = []
-    private static var postponedOutsidePass: SourceID?
-
-    /// Lays the formulas `label` postponed out over the next passes, sharing
-    /// one budget with every other such label.
-    private static func layOutPostponedOutsideSoon(_ label: Label, state: MathLabelState) {
-        guard state.hasPostponedFormulas else { return }
-        if !state.isQueuedOutside {
-            state.isQueuedOutside = true
-            postponedOutside.append(PostponedLabel(state: state, widget: UnsafeMutableRawPointer(label.widgetPointer)))
-        }
-        guard postponedOutsidePass == nil else { return }
-        postponedOutsidePass = MainContext.timeout(every: .milliseconds(16)) {
-            withOutsideParseBudget(fromCatchUpPass: true) {
-                postponedOutside.removeAll { entry in
-                    // A label that is gone took its state with it.
-                    guard let state = entry.state else { return true }
-                    guard let label = Widget(borrowing: entry.widget).tryCast(Label.self) else {
-                        state.isQueuedOutside = false
-                        return true
-                    }
-                    if state.hasPostponedFormulas {
-                        layOut(label, state: state, applyingWhilePostponed: false)
-                    }
-                    state.isQueuedOutside = state.hasPostponedFormulas
-                    return !state.hasPostponedFormulas
-                }
-            }
-            guard postponedOutside.isEmpty else { return true }
-            postponedOutsidePass = nil
-            return false
-        }
+    /// Paces parsing for labels outside the preview.
+    static let titleScheduler = TitleMathScheduler { label, state in
+        layOut(label, state: state, applyingWhilePostponed: false)
     }
 
     /// Lays out formulas that a render pass postponed when it ran out of
@@ -340,12 +266,6 @@ enum PreviewMath {
     static func sourceText(of label: Label, selection: Range<Int>? = nil) -> String {
         guard let state = state(of: label) else { return label.text }
         return state.sourceText(labelText: label.text, scalarRange: selection)
-    }
-
-    /// Runs `body` within the parse budget of labels outside the preview,
-    /// as the catch-up pass does with `fromCatchUpPass` (tests).
-    static func debugWithOutsideParseBudget(fromCatchUpPass: Bool, _ body: () -> Void) {
-        withOutsideParseBudget(fromCatchUpPass: fromCatchUpPass, body)
     }
 
     /// Whether the preview may have formulas waiting for parse budget (tests).
@@ -952,13 +872,6 @@ enum PreviewMath {
             forEachMathLabel(under: child, body)
         }
     }
-}
-
-private struct PostponedLabel {
-    /// Held by the label (its GObject data) alone, so it is gone once the
-    /// label is; `widget` is valid while it lives.
-    weak var state: MathLabelState?
-    let widget: UnsafeMutableRawPointer
 }
 
 private struct FontSettingsObserver {

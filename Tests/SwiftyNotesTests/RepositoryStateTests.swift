@@ -1016,6 +1016,30 @@ struct RepositoryStateTests {
         #expect(decoded.isOutlineVisible == true)
     }
 
+    @Test("A preview width saved with the Outline counted in loses the Outline's width", arguments: [
+        // (saved width, outline shown, marker present, loaded width)
+        (812, true, false, 560),
+        (812, false, false, 812),
+        (812, true, true, 812),
+        (WorkspaceState.defaultPreviewWidth, true, false, WorkspaceState.defaultPreviewWidth),
+        (WorkspaceState.legacyDefaultPreviewWidth, true, false, WorkspaceState.legacyDefaultPreviewWidth),
+        (400, true, false, 360),
+    ])
+    func aPreviewWidthSavedWithTheOutlineLosesItsWidth(saved: Int, outline: Bool, marker: Bool, loaded: Int) throws {
+        // A 1400 px window gives the Outline 252 px.
+        let json = """
+        {"windowWidth": 1400, "previewWidth": \(saved), "isOutlineVisible": \(outline)\(marker ? ", \"previewWidthExcludesOutline\": true" : "")}
+        """
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
+        #expect(decoded.previewWidth == loaded)
+    }
+
+    @Test("A saved workspace is marked as measuring the preview without the Outline")
+    func aSavedWorkspaceIsMarkedAsMeasuringThePreviewWithoutTheOutline() throws {
+        let data = try JSONEncoder().encode(WorkspaceState(previewWidth: 700, isOutlineVisible: true))
+        #expect(try JSONDecoder().decode(WorkspaceState.self, from: data).previewWidth == 700)
+    }
+
     @Test("Workspace state round trips per-note outline collapse + recents")
     func workspaceStateRoundTripsPerNoteOutlineCollapseRecents() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

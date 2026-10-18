@@ -790,13 +790,14 @@ struct MathPreviewWidgetTests {
         }
         #expect(drawnTeX(under: window.sidebar.root) == [tex], "sidebar")
         #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "outline")
+        #expect(drawnTeX(under: window.breadcrumb.root).contains(tex), "breadcrumb")
         var tooltips: [String] = []
         var stack: [Widget] = [window.outlineSidebar.root]
         while let widget = stack.popLast() {
             if let label = widget.tryCast(Label.self), let tooltip = label.tooltipText { tooltips.append(tooltip) }
             stack.append(contentsOf: widget.children())
         }
-        #expect(tooltips.contains("Formulas e^{iπ} + 1 = 0"), "\(tooltips)")
+        #expect(tooltips.contains("Formulas e^(iπ) + 1 = 0"), "\(tooltips)")
         // Screen readers hear the title's formula as text, not TeX.
         var sidebarTitles: [Label] = []
         var sidebarStack: [Widget] = [window.sidebar.root]
@@ -805,7 +806,7 @@ struct MathPreviewWidgetTests {
             sidebarStack.append(contentsOf: widget.children())
         }
         let sidebarTitle = try #require(sidebarTitles.first)
-        #expect(gtkAccessibleLabelMismatch(of: sidebarTitle, expected: "Formulas e^{iπ} + 1 = 0") == nil)
+        #expect(gtkAccessibleLabelMismatch(of: sidebarTitle, expected: "Formulas e^(iπ) + 1 = 0") == nil)
         // Formulas are sized like the text around them (KaTeX's 1.21 em),
         // also after the desktop font changes.
         func formulaSizes() -> [(label: Double, formula: Double)] {
@@ -845,8 +846,7 @@ struct MathPreviewWidgetTests {
         pumpUntil(timeout: .seconds(2)) { drawnTeX(under: window.outlineSidebar.root) == [tex] }
         #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "filtered outline")
         window.outlineSidebar.setQuery("")
-        #expect(drawnTeX(under: window.breadcrumb.root).contains(tex), "breadcrumb")
-        #expect(window.debugHeaderSubtitle.hasPrefix("Formulas e^{iπ} + 1 = 0"), "\(window.debugHeaderSubtitle)")
+        #expect(window.debugHeaderSubtitle.hasPrefix("Formulas e^(iπ) + 1 = 0"), "\(window.debugHeaderSubtitle)")
     }
 
     @Test("Command palette rows draw their headings' formulas, filtered or not, and the parent's") @MainActor
@@ -952,9 +952,9 @@ struct MathPreviewWidgetTests {
         let fixture = try Fixture(suffix: "outside-budget", markdown: "") // brings GTK up
         _ = fixture
         MathRenderer.removeAllCachedFormulas()
-        let budget = PreviewMath.outsideParseBudget
-        PreviewMath.outsideParseBudget = .zero
-        defer { PreviewMath.outsideParseBudget = budget }
+        let budget = PreviewMath.titleScheduler.budget
+        PreviewMath.titleScheduler.budget = .zero
+        defer { PreviewMath.titleScheduler.budget = budget }
         // Whatever earlier tests postponed in the preview is done with.
         _ = PreviewMath.layOutPostponedFormulas(under: Box(orientation: .vertical, spacing: 0))
         let label = Label("")
@@ -993,9 +993,9 @@ struct MathPreviewWidgetTests {
         let fixture = try Fixture(suffix: "outside-budget-pace", markdown: "")
         _ = fixture
         MathRenderer.removeAllCachedFormulas()
-        let budget = PreviewMath.outsideParseBudget
-        PreviewMath.outsideParseBudget = .zero
-        defer { PreviewMath.outsideParseBudget = budget }
+        let budget = PreviewMath.titleScheduler.budget
+        PreviewMath.titleScheduler.budget = .zero
+        defer { PreviewMath.titleScheduler.budget = budget }
         let labels = (0..<30).map { _ in Label("") }
         for (index, label) in labels.enumerated() {
             PreviewMath.show("Row $z_{\(index + 100)}$", in: label)
@@ -1017,13 +1017,13 @@ struct MathPreviewWidgetTests {
         MainContext.pump(for: .milliseconds(150))
         // A catch-up pass whose one parse takes longer than a whole period
         // (heavy mhchem on a slow machine).
-        PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {
+        PreviewMath.titleScheduler.withBudget(fromCatchUpPass: true) {
             _ = MathRenderer.formula(tex: "\\eta_7", isDisplay: false, pixelSize: 16)
             Thread.sleep(forTimeInterval: 0.12)
         }
         // The next pass, straight after, must not parse again at once.
         var postponed = false
-        PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {
+        PreviewMath.titleScheduler.withBudget(fromCatchUpPass: true) {
             _ = MathRenderer.formula(tex: "\\theta_8", isDisplay: false, pixelSize: 16)
             postponed = MathRenderer.lastLookupWasPostponed
         }
@@ -1031,11 +1031,11 @@ struct MathPreviewWidgetTests {
         // Passes that parse nothing do not hold the period back: once the
         // free share is over, the next pass parses again.
         for _ in 0..<12 {
-            PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {}
+            PreviewMath.titleScheduler.withBudget(fromCatchUpPass: true) {}
             Thread.sleep(forTimeInterval: 0.016)
         }
         var parsedLater = false
-        PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {
+        PreviewMath.titleScheduler.withBudget(fromCatchUpPass: true) {
             _ = MathRenderer.formula(tex: "\\theta_8", isDisplay: false, pixelSize: 16)
             parsedLater = !MathRenderer.lastLookupWasPostponed
         }

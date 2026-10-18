@@ -60,7 +60,7 @@ final class MainWindow {
         keyCaptureWindow: window,
         viewMode: { [weak self] in self?.state.viewMode ?? .split },
         presentToast: { [weak self] message in
-            self?.toastOverlay.addToast(Toast(title: message))
+            self?.toastOverlay.addToast(Toast.plain(message))
         },
     )
     /// Built lazily in `wireSignals` (deferred so the editor / preview
@@ -239,11 +239,17 @@ final class MainWindow {
             self?.syncPreviewScroll()
         },
     )
-    var isRestoringPreviewPaneLayout = false
-    var previewPaneSettleTickID: UInt?
-    var previewPaneSettleGeneration = 0
-    var previewAnimationID: SourceID?
-    var isPreviewPaneAttached = false
+    lazy var previewPaneDivider = PreviewPaneDivider(
+        pane: editorPreviewPane,
+        previewContent: previewPaneContent,
+        host: .init(
+            roomWidth: { [weak self] in self?.currentPreviewContainerWidth ?? 0 },
+            isSplit: { [weak self] in self?.state.viewMode == .split },
+            preferredPreviewWidth: { [weak self] in self?.state.preferredPreviewWidth ?? WorkspaceState.defaultPreviewWidth },
+            setPreferredPreviewWidth: { [weak self] in self?.state.setPreferredPreviewWidth($0) },
+            editorWidthChanged: { [weak self] in self?.updateEditorFormattingToolbarLayout(forWidth: $0) },
+        ),
+    )
     var suppressViewModeToggleChange = false
     /// Convenience accessor used by debug tests; delegates to the toolbar.
     var editorFormattingButtons: [MarkdownFormattingAction: Button] {
@@ -690,9 +696,8 @@ final class MainWindow {
             self?.refreshPreview()
         }
 
-        editorPreviewPane.onPositionChanged { [weak self] in
-            self?.handlePreviewPaneMoved()
-        }
+        // Places the divider and remembers the width the user drags to.
+        _ = previewPaneDivider
 
         editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in
             self?.updateEditorFormattingToolbarLayout(forWidth: width)
@@ -773,18 +778,17 @@ final class MainWindow {
         )
     }
 
-    static let minimumPreviewWidth = 360
+    static let minimumPreviewWidth = PaneLayout.minimumPreviewWidth
     static let minimumEditorWidth = 320
     static let editorFormattingCompactWidthThreshold = 520
     static let previewAnimationDuration = 220
-    static let outlineWidthFraction = 0.18
-    static let minimumOutlineWidth = 220
-    static let maximumOutlineWidth = 320
+    static let outlineWidthFraction = PaneLayout.outlineWidthFraction
+    static let minimumOutlineWidth = PaneLayout.minimumOutlineWidth
+    static let maximumOutlineWidth = PaneLayout.maximumOutlineWidth
 
-    /// The Outline's width in a window `windowWidth` wide: the share of the
-    /// window its split view gives it, within its bounds.
+    /// See ``PaneLayout/outlineWidth(forWindowWidth:)``.
     static func outlineWidth(forWindowWidth windowWidth: Int) -> Int {
-        min(max(Int(Double(windowWidth) * outlineWidthFraction), minimumOutlineWidth), maximumOutlineWidth)
+        PaneLayout.outlineWidth(forWindowWidth: windowWidth)
     }
 
     /// Returns the on-disk path to a bundled icon SVG (e.g. `table-symbolic`)

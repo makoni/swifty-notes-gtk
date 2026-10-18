@@ -42,7 +42,7 @@ struct MathInlineTextTests {
     @Test("Without formulas the filter highlight is the plain one")
     func withoutFormulasTheFilterHighlightIsThePlainOne() {
         let result = MathInlineText.markup(for: "Costs <$5>", highlighting: "costs")
-        #expect(result.markup == pangoHighlightedMarkup("Costs <$5>", query: "costs"))
+        #expect(result.markup == pangoHighlightOpenTag + "Costs</span> &lt;$5&gt;")
         #expect(result.spans.isEmpty)
     }
 
@@ -51,9 +51,9 @@ struct MathInlineTextTests {
         let depth = 100_000
         let braces = "$" + String(repeating: "{", count: depth) + "x" + String(repeating: "}", count: depth) + "$"
         let fractions = "$" + String(repeating: "\\frac{1}{", count: depth) + String(repeating: "}", count: depth) + "$"
-        // Too long to draw, so kept as written.
-        #expect(MathInlineText.readable("Deep \(braces)") == "Deep \(braces)")
-        #expect(MathInlineText.readable(fractions) == fractions)
+        // Cut short for display, and never read past what fits on a line.
+        #expect(MathInlineText.readable("Deep \(braces)").hasPrefix("Deep ${{{"))
+        #expect(MathInlineText.readable(fractions).count == MathInlineText.maxShownCharacters + 1)
     }
 
     @Test("A title draws at most a few formulas; the rest stay source")
@@ -66,12 +66,26 @@ struct MathInlineTextTests {
         #expect(result.markup.hasSuffix("$x_{10}$ $x_{11}$"))
     }
 
+    @Test("A very long heading is shown cut short")
+    func aVeryLongHeadingIsShownCutShort() {
+        let heading = "Start $x$ " + String(repeating: "word ", count: 4000)
+        let markup = MathInlineText.markup(for: heading, highlighting: "start")
+        #expect(markup.spans.count == 1)
+        #expect(markup.markup.count < MathInlineText.maxShownCharacters + 100)
+        #expect(markup.markup.hasSuffix("…"))
+        let readable = MathInlineText.readable(heading)
+        #expect(readable.count <= MathInlineText.maxShownCharacters + 1)
+        #expect(readable.hasSuffix("…"))
+        #expect(readable.hasPrefix("Start x "))
+    }
+
     @Test("A long formula in a title stays source")
     func aLongFormulaInATitleStaysSource() {
-        let long = "x" + String(repeating: " + x", count: MathInlineText.maxFormulaBytes / 4)
+        // Short enough to show, too many bytes to draw (∑ is three).
+        let long = String(repeating: "∑", count: MathInlineText.maxFormulaBytes / 3 + 1)
         let result = MathInlineText.markup(for: "Long $\(long)$ and $y$")
         #expect(result.spans == [MathSpan(tex: "y", isDisplay: false)])
-        #expect(result.markup.hasPrefix("Long $x + x"))
+        #expect(result.markup.hasPrefix("Long $∑∑"))
         #expect(result.markup.unicodeScalars.filter { $0 == MathSpanExtractor.formulaMarker }.count == 1)
     }
 
@@ -83,13 +97,15 @@ struct MathInlineTextTests {
     }
 
     @Test("Formulas read as plain text", arguments: [
-        ("Формулы $e^{i\\pi} + 1 = 0$", "Формулы e^{iπ} + 1 = 0"),
+        ("Формулы $e^{i\\pi} + 1 = 0$", "Формулы e^(iπ) + 1 = 0"),
         ("$\\frac{a}{b}$, $\\frac{12}{25}$ and $\\frac{-b}{2a}$", "a/b, 12/25 and (-b)/(2a)"),
         ("$\\alpha \\le \\beta \\cdot \\gamma$", "α ≤ β · γ"),
         ("Area $\\text{A} = \\pi r^2$", "Area A = π r^2"),
         ("Costs $5 and $10", "Costs $5 and $10"),
         ("Unknown $\\weird{x}$", "Unknown \\weird{x}"),
         ("$\\left. f \\right|_0$ and $a\\ b\\\\c$", " f |_0 and a b c"),
+        ("$\\sqrt{x+1}$, $\\sqrt{2}$ and $x_{ij}^{2}$", "√(x+1), √2 and x_(ij)^2"),
+        ("${a}{b}$", "ab"),
     ])
     func formulasReadAsPlainText(text: String, expected: String) {
         #expect(MathInlineText.readable(text) == expected)

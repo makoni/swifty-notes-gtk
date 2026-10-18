@@ -630,11 +630,18 @@ final class MarkdownPreview {
         let root = rootScroll.child ?? container
         guard !postponedMathPassScheduled, PreviewMath.hasPostponedFormulas(under: root) else { return }
         postponedMathPassScheduled = true
+        var resumeAt = ContinuousClock.now
         rootScroll.addTickCallback { [weak self] in
             guard let self else { return false }
+            // A pass that ran past its budget (one heavy formula, forced)
+            // leaves as long again to the UI before the next.
+            let started = ContinuousClock.now
+            guard started >= resumeAt else { return true }
             let stillPostponed = MathRenderer.withParseBudget(Self.followUpParseBudget, guaranteeingProgress: true) {
                 PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
             }
+            let spent = ContinuousClock.now - started
+            resumeAt = ParseBudgetPeriod.nextCatchUp(after: started, spent: spent, budget: Self.followUpParseBudget)
             reapplySearchHighlights()
             if !stillPostponed {
                 postponedMathPassScheduled = false

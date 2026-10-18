@@ -193,6 +193,7 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         case isOutlineVisible
         case collapsedOutlineSections
         case recentOutlineJumps
+        case previewWidthExcludesOutline
     }
 
     public init(from decoder: any Decoder) throws {
@@ -219,6 +220,19 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         isOutlineVisible = try container.decodeIfPresent(Bool.self, forKey: .isOutlineVisible) ?? true
         collapsedOutlineSections = try container.decodeIfPresent([String: [String]].self, forKey: .collapsedOutlineSections) ?? [:]
         recentOutlineJumps = try container.decodeIfPresent([String: [String]].self, forKey: .recentOutlineJumps) ?? [:]
+        // Saved by earlier versions, a dragged preview width counted the
+        // Outline beside it (its room was the window less the notes sidebar
+        // only), so with the Outline shown it is too wide by the Outline's
+        // width. The defaults were never measured, so they stay.
+        let excludesOutline = try container.decodeIfPresent(Bool.self, forKey: .previewWidthExcludesOutline) ?? false
+        if !excludesOutline, isOutlineVisible,
+           previewWidth != Self.defaultPreviewWidth, previewWidth != Self.legacyDefaultPreviewWidth
+        {
+            previewWidth = max(
+                previewWidth - PaneLayout.outlineWidth(forWindowWidth: windowWidth),
+                PaneLayout.minimumPreviewWidth,
+            )
+        }
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -243,5 +257,6 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         let stableCollapsed = collapsedOutlineSections.mapValues { $0.sorted() }
         try container.encode(stableCollapsed, forKey: .collapsedOutlineSections)
         try container.encode(recentOutlineJumps, forKey: .recentOutlineJumps)
+        try container.encode(true, forKey: .previewWidthExcludesOutline)
     }
 }

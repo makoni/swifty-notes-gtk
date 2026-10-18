@@ -8,7 +8,7 @@ extension MainWindow {
         refreshSidebar()
         persistWorkspaceState()
         toastOverlay.dismissAll()
-        toastOverlay.showToast(sortMode.sortingMessage)
+        toastOverlay.showPlainToast(sortMode.sortingMessage)
     }
 
     func focusSearch() {
@@ -94,13 +94,13 @@ extension MainWindow {
         refreshPreview()
         updateHeaderSubtitle()
         if announceSuccess {
-            toastOverlay.showToast("Note saved".localized)
+            toastOverlay.showPlainToast("Note saved".localized)
         }
         applyDeferredExternalReloadIfPossible()
     }
 
     func handleSaveFailure(_ error: Error) {
-        toastOverlay.showToast(String(format: "Could not save note: %@".localized, error.localizedDescription))
+        toastOverlay.showPlainToast(String(format: "Could not save note: %@".localized, error.localizedDescription))
         updateHeaderSubtitle()
     }
 
@@ -149,7 +149,7 @@ extension MainWindow {
             refreshDirectorySnapshot()
             renderSelection()
             persistWorkspaceState()
-            toastOverlay.showToast("Note renamed".localized)
+            toastOverlay.showPlainToast("Note renamed".localized)
         } catch {
             presentError(
                 heading: "Could not rename note".localized,

@@ -730,142 +730,28 @@ extension MainWindow {
 
     func showPreviewPane(animated: Bool) {
         showEditorContent()
-        attachPreviewPane()
-        if animated, canAnimatePreviewPane {
-            let totalWidth = currentPreviewContainerWidth
-            let targetPosition = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
-            editorPreviewPane.position = totalWidth
-            animatePreviewPane(to: targetPosition)
-            return
-        }
-        restorePreviewPaneLayout()
+        previewPaneDivider.show(animated: animated)
     }
 
     func hidePreviewPane(animated: Bool) {
         showEditorContent()
-        guard isPreviewPaneAttached else { return }
-        guard animated, canAnimatePreviewPane else {
-            detachPreviewPane()
-            return
-        }
-        animatePreviewPane(to: currentPreviewContainerWidth)
+        previewPaneDivider.hide(animated: animated)
     }
 
     func restorePreviewPaneLayout() {
-        guard state.viewMode == .split else { return }
-        let totalWidth = currentPreviewContainerWidth
-        isRestoringPreviewPaneLayout = true
-        editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
-        refreshEditorFormattingToolbarLayout()
-        settlePreviewPanePosition()
-    }
-
-    /// Sets the divider again once the pane has been laid out with the
-    /// preview: GtkPaned moves it by however much the pane's width changed
-    /// while the preview was away (a sidebar or the Outline toggled in
-    /// Editor mode), and the room is only known for sure after that layout
-    /// — or once a sidebar still sliding in or out has stopped.
-    private func settlePreviewPanePosition() {
-        cancelPreviewPaneSettle()
-        // A newer settle owns the restoring flag from here on.
-        previewPaneSettleGeneration += 1
-        let generation = previewPaneSettleGeneration
-        var frames = 0
-        var lastWidth = -1
-        var steadyFrames = 0
-        previewPaneSettleTickID = editorPreviewPane.addTickCallback { [weak self] in
-            guard let self else { return false }
-            frames += 1
-            let width = editorPreviewPane.width
-            steadyFrames = width == lastWidth ? steadyFrames + 1 : 0
-            lastWidth = width
-            guard frames >= 2 else { return true }
-            let position = resolvedVisiblePreviewPosition(totalWidth: currentPreviewContainerWidth)
-            if editorPreviewPane.position != position {
-                editorPreviewPane.position = position
-                refreshEditorFormattingToolbarLayout()
-            }
-            // Done once the room holds still (a sidebar sliding in or out
-            // has finished), or after about a second.
-            guard steadyFrames < 3, frames < 60 else {
-                previewPaneSettleTickID = nil
-                MainContext.idle { [weak self] in
-                    guard let self, generation == previewPaneSettleGeneration else { return }
-                    isRestoringPreviewPaneLayout = false
-                }
-                return false
-            }
-            return true
-        }
-    }
-
-    private func cancelPreviewPaneSettle() {
-        if let previewPaneSettleTickID {
-            editorPreviewPane.removeTickCallback(previewPaneSettleTickID)
-            self.previewPaneSettleTickID = nil
-        }
-    }
-
-    func attachPreviewPane() {
-        guard !isPreviewPaneAttached else { return }
-        editorPreviewPane.endChild = previewPaneContent
-        isPreviewPaneAttached = true
+        previewPaneDivider.restore()
     }
 
     func detachPreviewPane() {
-        guard isPreviewPaneAttached else { return }
-        stopPreviewAnimation()
-        editorPreviewPane.endChild = nil
-        isPreviewPaneAttached = false
-    }
-
-    func animatePreviewPane(to targetPosition: Int) {
-        stopPreviewAnimation()
-        let startPosition = editorPreviewPane.position
-        guard startPosition != targetPosition else {
-            isRestoringPreviewPaneLayout = false
-            if state.viewMode != .split {
-                schedulePreviewDetachIfNeeded()
-            }
-            return
-        }
-
-        isRestoringPreviewPaneLayout = true
-        let startedAt = Date()
-        let duration = Double(Self.previewAnimationDuration) / 1000
-        previewAnimationID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
-            guard let self else { return false }
-            let elapsed = Date().timeIntervalSince(startedAt)
-            let progress = min(max(elapsed / duration, 0), 1)
-            let easedProgress = 1 - pow(1 - progress, 3)
-            let position = Double(startPosition) + (Double(targetPosition - startPosition) * easedProgress)
-            editorPreviewPane.position = Int(position.rounded())
-            if progress < 1 {
-                return true
-            }
-
-            previewAnimationID = nil
-            isRestoringPreviewPaneLayout = false
-            if state.viewMode != .split {
-                schedulePreviewDetachIfNeeded()
-            }
-            return false
-        }
-    }
-
-    func schedulePreviewDetachIfNeeded() {
-        MainContext.delay(for: .milliseconds(1)) { [weak self] in
-            guard let self, state.viewMode != .split else { return }
-            detachPreviewPane()
-        }
+        previewPaneDivider.detach()
     }
 
     func stopPreviewAnimation() {
-        cancelPreviewPaneSettle()
-        if let previewAnimationID {
-            MainContext.cancel(sourceId: previewAnimationID)
-            self.previewAnimationID = nil
-        }
+        previewPaneDivider.stopAnimation()
+    }
+
+    var isPreviewPaneAttached: Bool {
+        previewPaneDivider.isPreviewAttached
     }
 
     /// The editor and preview's room: the window less the sidebar and the
@@ -878,34 +764,6 @@ extension MainWindow {
             window.defaultWidth - 280 - outlineWidth,
             state.preferredWindowWidth - 280 - outlineWidth,
         )
-    }
-
-    var canAnimatePreviewPane: Bool {
-        editorPreviewPane.parent != nil && editorPreviewPane.width > 0 && editorPreviewPane.height > 0
-    }
-
-    func resolvedVisiblePreviewPosition(totalWidth: Int) -> Int {
-        let previewWidth = Self.resolvedPreviewWidth(
-            storedWidth: state.preferredPreviewWidth,
-            availableWidth: totalWidth,
-        )
-        if state.preferredPreviewWidth == WorkspaceState.legacyDefaultPreviewWidth,
-           previewWidth > state.preferredPreviewWidth
-        {
-            state.setPreferredPreviewWidth(previewWidth)
-        }
-        preview.rootScroll.minContentWidth = Self.minimumPreviewWidth
-        return max(totalWidth - previewWidth, Self.minimumEditorWidth)
-    }
-
-    func handlePreviewPaneMoved() {
-        guard state.viewMode == .split, isPreviewPaneAttached, !isRestoringPreviewPaneLayout else { return }
-        let totalWidth = currentPreviewContainerWidth
-        guard totalWidth >= Self.minimumPreviewWidth + Self.minimumEditorWidth else { return }
-        let previewWidth = totalWidth - editorPreviewPane.position
-        guard previewWidth >= Self.minimumPreviewWidth else { return }
-        state.setPreferredPreviewWidth(previewWidth)
-        updateEditorFormattingToolbarLayout(forWidth: editorPreviewPane.position)
     }
 
     var currentSidebarWidth: Int {
