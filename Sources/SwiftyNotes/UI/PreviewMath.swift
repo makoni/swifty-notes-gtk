@@ -257,9 +257,10 @@ enum PreviewMath {
     }
 
     /// The width, clip area and scale a label's formula budget goes by: its
-    /// own width (before allocation, its scrolled window's), and the area of
-    /// the monitor its window is on — what a GPU renderer rasterises of a
-    /// node at most, however the window is resized.
+    /// own width (before allocation, its scrolled window's), and the larger
+    /// of its monitor's area and its window's — what a GPU renderer
+    /// rasterises of a node at most; a window growing on its monitor stays
+    /// within it, and a resize past it is re-checked.
     private static func budgetFrame(of label: Label) -> (width: Double, clipArea: Double, scale: Double) {
         let scroller = gtk_widget_get_ancestor(label.widgetPointer, gtk_scrolled_window_get_type())
         let ownWidth = Double(gtk_widget_get_width(label.widgetPointer))
@@ -274,6 +275,12 @@ enum PreviewMath {
             if geometry.width > 0, geometry.height > 0 {
                 clipArea = Double(geometry.width) * Double(geometry.height)
             }
+        }
+        // A window can be larger than the monitor GDK names for it (spread
+        // over two): the renderer draws the whole window.
+        if let root = gtk_widget_get_root(label.widgetPointer) {
+            let window = UnsafeMutableRawPointer(root).assumingMemoryBound(to: GtkWidget.self)
+            clipArea = max(clipArea, Double(gtk_widget_get_width(window)) * Double(gtk_widget_get_height(window)))
         }
         return (ownWidth > 0 ? ownWidth : (scrollerWidth > 0 ? scrollerWidth : 1280), clipArea, surfaceScale(of: label))
     }

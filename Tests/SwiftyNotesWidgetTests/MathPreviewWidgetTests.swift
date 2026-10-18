@@ -367,11 +367,13 @@ struct MathPreviewWidgetTests {
         var ink = PangoRectangle()
         var logical = PangoRectangle()
         pango_layout_get_pixel_extents(layout, &ink, &logical)
-        // A renderer rasterises each node at most the monitor's size.
-        let area = min(Double(logical.width) * Double(logical.height), monitorArea(of: label))
         #expect(drawn > 0)
-        #expect(Double(drawn) * area * 4 <= PreviewMath.drawnFormulaBudget * 1.05, "\(drawn) drawn in \(logical.width)×\(logical.height)")
-        #expect(Double(drawn) * area * 4 >= PreviewMath.drawnFormulaBudget / 2, "\(drawn) drawn in \(logical.width)×\(logical.height)")
+        // Within the budget as GTK draws it…
+        #expect(Double(drawn) * nodeArea(of: label) * 4 <= PreviewMath.drawnFormulaBudget * 1.05, "\(drawn) drawn")
+        // …and not far under it by the code's own model (a node at most the
+        // monitor's size, which the window may grow to).
+        let modelArea = min(Double(logical.width) * Double(logical.height), monitorArea(of: label))
+        #expect(Double(drawn) * modelArea * 4 >= PreviewMath.drawnFormulaBudget / 2, "\(drawn) drawn in \(logical.width)×\(logical.height)")
     }
 
     @Test(
@@ -948,11 +950,23 @@ struct MathPreviewWidgetTests {
         return Double(geometry.width) * Double(geometry.height)
     }
 
-    /// What one formula's node costs in pixels: the label, at most the
-    /// monitor.
+    /// What one formula's node costs in pixels, measured independently of
+    /// the code's model: the label's own layout (ink included — GTK sizes
+    /// the node by it), clipped to the preview's visible area.
     @MainActor
     private func nodeArea(of label: Label) -> Double {
-        min(Double(label.width) * Double(label.height), monitorArea(of: label))
+        guard let layout = gtk_label_get_layout(label.opaquePointer) else { return 0 }
+        var ink = PangoRectangle()
+        var logical = PangoRectangle()
+        pango_layout_get_pixel_extents(layout, &ink, &logical)
+        let width = max(Double(label.width), Double(max(ink.x + ink.width, logical.x + logical.width) - min(ink.x, logical.x)))
+        let height = Double(max(ink.y + ink.height, logical.y + logical.height) - min(ink.y, logical.y))
+        var scroller: Widget = label
+        while let parent = scroller.parent, scroller.tryCast(ScrolledWindow.self) == nil || scroller.widgetPointer == label.widgetPointer {
+            scroller = parent
+        }
+        let visible = Double(scroller.width) * Double(scroller.height)
+        return min(width * height, visible)
     }
 
     @MainActor

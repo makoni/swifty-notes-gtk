@@ -400,10 +400,14 @@ final class MarkdownPreview {
         PreviewMath.observeDesktopFontSettings(owner: self) { [weak self] in
             self?.scheduleMathFontRefresh()
         }
-        // The formula budget depends on the window's scale (another screen)
-        // and on how much of the preview is visible (a resize).
+        // The formula budget depends on the window's scale — the surface's
+        // own, which also follows fractional changes (125% → 200%) that the
+        // integer scale-factor misses — and on the window's size.
         rootScroll.onNotify(.custom("scale-factor")) { [weak self] in
             self?.scheduleMathFontRefresh()
+        }
+        rootScroll.onRealize { [weak self] in
+            self?.observeSurfaceScale()
         }
         for adjustment in [rootScroll.verticalAdjustment, rootScroll.horizontalAdjustment] {
             SignalHelper.onNotify(adjustment, property: .custom("page-size")) { [weak self] in
@@ -582,6 +586,22 @@ final class MarkdownPreview {
 
     func attach(to window: ApplicationWindow) {
         self.window = window
+    }
+
+    /// The window surface whose scale the preview follows (see the
+    /// formula budget in ``PreviewMath``).
+    private var observedSurface: UnsafeMutableRawPointer?
+
+    private func observeSurfaceScale() {
+        guard let native = gtk_widget_get_native(rootScroll.widgetPointer),
+              let surface = gtk_native_get_surface(native)
+        else { return }
+        let pointer = UnsafeMutableRawPointer(surface)
+        guard pointer != observedSurface else { return }
+        observedSurface = pointer
+        SignalHelper.onNotify(GObjectRef(borrowing: pointer), property: .custom("scale")) { [weak self] in
+            self?.scheduleMathFontRefresh()
+        }
     }
 
     /// Re-applies the preview's own accessible label.
