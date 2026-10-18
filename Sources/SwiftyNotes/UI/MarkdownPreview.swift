@@ -1360,6 +1360,15 @@ final class MarkdownPreview {
         PreviewMath.restoreAccessibleLabel(of: label)
     }
 
+    private func forgetHighlightedLabels(under widget: Widget) {
+        if let label = widget.tryCast(Label.self) {
+            highlightedLabelPointers.remove(label.opaquePointer)
+        }
+        for child in widget.children() {
+            forgetHighlightedLabels(under: child)
+        }
+    }
+
     private func shouldUseVirtualizedRows(_ rows: [PreviewRow]) -> Bool {
         let forcedByEnvironment = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW"]
             .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
@@ -1482,8 +1491,18 @@ final class MarkdownPreview {
 
         for index in diff.oldChangedRange.reversed() {
             let child = existingChildren[index]
+            // The search overlay must not reach the labels about to be
+            // freed (a later re-apply — zoom, a font change — would).
+            forgetHighlightedLabels(under: child)
             child.visible = false
             container.remove(child)
+        }
+        if !diff.oldChangedRange.isEmpty {
+            // As in clear(): the matches were for the old rows; the next
+            // apply from the search controller starts afresh.
+            lastAppliedMatches = []
+            lastAppliedActiveIndex = nil
+            lastAppliedNonEmpty = false
         }
 
         let retainedChildren = container.children()

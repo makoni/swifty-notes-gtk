@@ -15,8 +15,9 @@
 extern "C" {
 #endif
 
-/* A parsed, laid-out formula. Immutable apart from an internal per-colour
- * cache; use one formula from one thread at a time. */
+/* A parsed, laid-out formula: its drawing, recoloured in place (under a
+ * lock) when the default colour changes, so it may be used from any
+ * thread. */
 typedef struct ratex_bridge_formula ratex_bridge_formula;
 
 /*
@@ -53,8 +54,8 @@ int ratex_bridge_draw(ratex_bridge_formula *formula, void *cr, double red, doubl
 /* Frees a formula. NULL is ignored. */
 void ratex_bridge_free(ratex_bridge_formula *formula);
 
-/* The most estimated bytes one formula may keep (lib.rs: MAX_FORMULA_BYTES). */
-#define RATEX_BRIDGE_MAX_FORMULA_BYTES 524288
+/* The most bytes one formula may keep; larger ones are refused. */
+size_t ratex_bridge_max_formula_bytes(void);
 
 /* Diagnostics: estimated bytes all live (not yet freed) formulas keep. */
 size_t ratex_bridge_live_bytes(void);

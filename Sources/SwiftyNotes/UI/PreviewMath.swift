@@ -63,6 +63,7 @@ enum PreviewMath {
         state.decisions = state.decisions.map { $0?.formula == nil ? nil : $0 }
         state.spans = spans
         state.baseFontPixels = fontPixels(of: label)
+        state.measuredFontPixels = state.baseFontPixels
         layOut(label, state: state)
         return true
     }
@@ -111,14 +112,21 @@ enum PreviewMath {
         }
     }
 
-    /// Re-lays out every formula label under `root` whose own font size no
-    /// longer matches the size its formulas were laid out for (zoom, or the
-    /// desktop's font settings). Returns true when a label was refreshed.
+    /// Re-lays out every formula label under `root` whose own font size
+    /// changed (zoom once GTK restyles, the desktop's font settings) to a
+    /// size its formulas were not laid out for. Returns true when a label
+    /// was refreshed.
+    ///
+    /// Only a change of the label's font counts: until GTK restyles after a
+    /// zoom step the font still has the old size, and going by that would
+    /// undo ``rescale(under:by:)`` for a frame.
     @discardableResult
     static func refreshFontSizes(under root: Widget) -> Bool {
         var refreshed = false
         forEachMathLabel(under: root) { label, state in
             let pixels = fontPixels(of: label)
+            guard abs(pixels - state.measuredFontPixels) > 0.01 else { return }
+            state.measuredFontPixels = pixels
             guard abs(pixels - state.baseFontPixels) > 0.01 else { return }
             state.baseFontPixels = pixels
             layOut(label, state: state)
@@ -585,6 +593,8 @@ final class MathLabelState {
     /// the markup to find.
     var markerSizes: (basePixels: Double, sizes: [Double])?
     var baseFontPixels = 0.0
+    /// The label's font size when last read: formulas follow its changes.
+    var measuredFontPixels = 0.0
     var isDisplayBlock = false
     var hasPostponedFormulas = false
 
@@ -647,7 +657,9 @@ final class MathLabelState {
         var shift = 0
         for entry in entries {
             let plainStart = entry.graphemeIndex + shift
-            let plainLength = entry.shape.span.tex.count + 2
+            // Counted as characters of `$tex$`: a TeX that starts with a
+            // combining mark merges with the dollar.
+            let plainLength = "$\(entry.shape.span.tex)$".count
             if offset <= plainStart {
                 break
             }
@@ -691,16 +703,20 @@ private func drawFormulaShape(
     var y = 0.0
     cairo_get_current_point(cairo, &x, &y)
     let top = y + Double(attribute.pointee.logical_rect.y) / Double(PANGO_SCALE) + shape.verticalPadding
-    var color = GdkRGBA()
-    gtk_widget_get_color(shape.label, &color)
+    // The renderer sets the source to the run's foreground — a link's
+    // colour, a dimmed quote, a search hit's text — before calling back;
+    // the label's own colour stands in when it is not a plain colour.
+    var red = 0.0
+    var green = 0.0
+    var blue = 0.0
+    var alpha = 0.0
+    if cairo_pattern_get_rgba(cairo_get_source(cairo), &red, &green, &blue, &alpha) != CAIRO_STATUS_SUCCESS {
+        var color = GdkRGBA()
+        gtk_widget_get_color(shape.label, &color)
+        (red, green, blue, alpha) = (Double(color.red), Double(color.green), Double(color.blue), Double(color.alpha))
+    }
     cairo_save(cairo)
     cairo_translate(cairo, x + shape.horizontalPadding, top)
-    shape.formula.draw(
-        on: UnsafeMutableRawPointer(cairo),
-        red: Double(color.red),
-        green: Double(color.green),
-        blue: Double(color.blue),
-        alpha: Double(color.alpha)
-    )
+    shape.formula.draw(on: UnsafeMutableRawPointer(cairo), red: red, green: green, blue: blue, alpha: alpha)
     cairo_restore(cairo)
 }

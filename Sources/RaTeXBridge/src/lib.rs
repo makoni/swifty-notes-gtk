@@ -40,7 +40,6 @@ const MAX_BOX_PX: f64 = 16_384.0;
 /// Most memory, in estimated bytes, one formula may keep. Stretchy
 /// constructs (`\overbrace`, `\xrightarrow`) are drawn as long paths, tens
 /// of kilobytes each, so a short formula could otherwise hold megabytes.
-/// Also `RATEX_BRIDGE_MAX_FORMULA_BYTES` in the header.
 const MAX_FORMULA_BYTES: usize = 512 * 1024;
 
 /// Most memory, in estimated bytes, all live formulas together may keep by
@@ -472,9 +471,19 @@ pub unsafe extern "C" fn ratex_bridge_draw(
             set_last_error(&format!("cairo: {error}"));
             return -1;
         }
+        // Restores even when rendering panics, so the caller's cairo state
+        // is never left one save deep.
+        struct RestoreOnDrop<'a>(&'a cairo::Context);
+        impl Drop for RestoreOnDrop<'_> {
+            fn drop(&mut self) {
+                let _ = self.0.restore();
+            }
+        }
         let options = CairoOptions { font_size: formula.font_px, padding: 0.0, font_dir: None };
-        let result = formula.with_display_list(color, |list| render_to_cairo(&context, list, &options));
-        let _ = context.restore();
+        let result = {
+            let _restore = RestoreOnDrop(&context);
+            formula.with_display_list(color, |list| render_to_cairo(&context, list, &options))
+        };
         match result {
             Ok(()) => 0,
             Err(error) => {
@@ -498,6 +507,11 @@ pub unsafe extern "C" fn ratex_bridge_free(formula: *mut Formula) {
 }
 
 /// Estimated bytes all live formulas keep.
+#[no_mangle]
+pub extern "C" fn ratex_bridge_max_formula_bytes() -> usize {
+    MAX_FORMULA_BYTES
+}
+
 #[no_mangle]
 pub extern "C" fn ratex_bridge_live_bytes() -> usize {
     LIVE_BYTES.load(Ordering::Relaxed)

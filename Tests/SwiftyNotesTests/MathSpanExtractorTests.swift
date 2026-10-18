@@ -240,7 +240,7 @@ struct MathSpanExtractorTests {
             return Int((state >> 33) % UInt64(bound))
         }
         let pieces = ["$", "$$", "\\", "`", "```", "~~~", "<", ">", "<!--", "-->", "](", ")", "(", "[", "]",
-                      "\n", "\n\n", " ", "    ", "> ", "- ", "a", "x^2", "http://", "www.", "<a ", "&", "\u{FFFC}", "\u{E000}"]
+                      "\n", "\n\n", " ", "    ", "> ", "- ", "a", "x^2", "http://", "www.", "<a ", "&", "\u{FFFC}", "\u{E000}", String(Unicode.Scalar(0xFDD0 as UInt32)!), String(Unicode.Scalar(0xFDE1 as UInt32)!)]
         for _ in 0..<3000 {
             let markdown = (0..<next(24)).map { _ in pieces[next(pieces.count)] }.joined()
             let result = extract(markdown)

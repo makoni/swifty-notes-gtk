@@ -56,7 +56,7 @@ let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent
 // BEGIN math bridge system libraries
 #if os(macOS)
 let mathBridgeSystemLibraries = [
-    "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lintl", "-lcairo-gobject", "-lcairo", "-lfontconfig",
+    "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lintl", "-lcairo-gobject", "-lcairo",
     "-liconv", "-framework", "CoreFoundation",
 ]
 #else

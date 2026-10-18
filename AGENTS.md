@@ -91,6 +91,15 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
   `packaging/hunspell-dictionaries.txt`. The Flatpak manifest spells the same
   list out in its own `hunspell-dictionaries` module; keep the two in step so
   the packages offer the same languages.
+- The math engine is a Rust static library linked into the app. The system
+  libraries it needs are listed once in `Package.swift`, between the
+  `BEGIN`/`END math bridge system libraries` lines; `scripts/build-ratex-bridge.sh`
+  reads that list back and fails when cargo asks for one it lacks. Every
+  package build runs that script first, and the licences it gathers
+  (`build/ratex-bridge/share/licenses`) ship in every package.
+- Flatpak builds offline: after changing `Sources/RaTeXBridge/Cargo.lock`, run
+  `scripts/generate-flatpak-cargo-sources.py` and commit
+  `flatpak/ratex-cargo-sources.json` (CI fails when they drift).
 - Pin third-party build tools by tag *and* checksum. `build-appimage.sh` does
   this for linuxdeploy, its GTK plugin and the AppImage runtime — the runtime's
   only maintained tag is `continuous`, so the checksum is what turns an
@@ -111,6 +120,7 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 - Persistent note storage lives in `NotesRepository`. Both GUI and CLI use the same repository and the same default XDG-backed notes directory (`XDG_DATA_HOME` or `~/.local/share/me.spaceinbox.swiftynotes/notes`), so storage behavior must stay compatible across both entry points.
 - Persisted UI/session state lives in `WorkspaceStateStore`, backed by JSON under `XDG_STATE_HOME` or `~/.local/state/me.spaceinbox.swiftynotes/workspace.json`. `AppState` is the in-memory model for selected note, sidebar/preview visibility, search query, sort mode, and preferred window/pane sizes.
 - Markdown preview is fully native GTK. The pipeline is `swift-markdown` -> `HTMLFormatter` / `HTMLSubsetParser` in `MarkdownRenderer` -> `RenderedBlock` values -> GTK widget construction in `MarkdownPreview`. Do not assume a WebView/WebKit architecture.
+- Math (`$…$`, `$$…$$`, ```` ```math ````) is cut out of the source before CommonMark sees it (`MathSpanExtractor`, which leaves noncharacter placeholders and keeps the line count), put back by `MarkdownRendererHTMLBuilder` as a U+FFFC marker per formula plus `RenderedText.mathSpans`, and drawn over the markers by `PreviewMath` with Pango shape attributes. `MathRenderer` wraps the RaTeX engine (Rust, `Sources/RaTeXBridge`, a C API in `include/ratex_bridge.h`); it caches formulas and bounds parse time per pass, and the bridge bounds their memory.
 - Tests are split across:
   - `NotesRepositoryTests.swift` for repository, renderer, CLI parsing/integration, and MainWindow regression coverage via debug hooks.
   - `UISmokeTests.swift` for Wayland-native black-box UI checks under headless Weston + AT-SPI.

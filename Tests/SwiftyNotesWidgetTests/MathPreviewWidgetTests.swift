@@ -150,11 +150,18 @@ struct MathPreviewWidgetTests {
             MainContext.pump(for: .milliseconds(40))
         }
         fixture.preview.applyTypography(zoomPercent: 150, lineSpacingPercent: 100)
-        pumpUntil(timeout: .milliseconds(800)) {
-            (PreviewMath.debugFormulas(on: label).first?.pixelSize ?? before) != before
+        // Laid out at the new size at once, and never back at the old one
+        // on a later frame while GTK restyles the label.
+        let zoomed = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
+        var smallestSeen = zoomed
+        _ = label.addTickCallback {
+            smallestSeen = min(smallestSeen, PreviewMath.debugFormulas(on: label).first?.pixelSize ?? 0)
+            return fixture.preview.debugMathFontRefreshPending
         }
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
         let after = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
         #expect(abs(after / before - 1.5) < 0.05, "formula size \(before) → \(after)")
+        #expect(smallestSeen > before * 1.3, "a frame showed \(smallestSeen), the old size was \(before)")
     }
 
     @Test("Search highlights keep the formulas and land on the right words") @MainActor
@@ -204,6 +211,23 @@ struct MathPreviewWidgetTests {
         #expect(try #require(PreviewMath.debugFormulas(on: label).first).pixelSize >= zoomed * 0.95)
         #expect(attributeCount(on: label) == before, "highlight attributes survive the relayout")
         #expect(PreviewMath.debugShapeAttributeCount(on: label) == 1)
+    }
+
+    @Test("Zooming after a rebuilt row had search hits does not touch the freed label") @MainActor
+    func zoomingAfterARebuiltRowHadSearchHitsDoesNotTouchTheFreedLabel() throws {
+        let fixture = try Fixture(suffix: "rebuilt-highlight", markdown: "A needle $x$ here.\n\n```\nc\n```")
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["needle"])
+        // Paragraph → heading rebuilds the row, freeing its label.
+        fixture.render("# A needle $x$ here.\n\n```\nc\n```")
+        defer { preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100) }
+        // Re-applies the last highlights; reaching the freed label crashed.
+        preview.applyTypography(zoomPercent: 150, lineSpacingPercent: 100)
+        MainContext.pump(for: .milliseconds(100))
+        let heading = try #require(fixture.labels().first { $0.text.hasPrefix("A needle") })
+        #expect(PreviewMath.debugFormulas(on: heading).map(\.tex) == ["x"])
     }
 
     @Test("Editing a paragraph re-installs its formulas") @MainActor
@@ -336,6 +360,25 @@ struct MathPreviewWidgetTests {
         let blue = paintedColours(of: label)
         #expect(blue.blue > 20, "formula ink after the colour change: \(blue)")
         #expect(blue.red == 0)
+    }
+
+    @Test("A formula in a link takes the link's colour") @MainActor
+    func aFormulaInALinkTakesTheLinksColour() throws {
+        let fixture = try Fixture(suffix: "link-colour", markdown: "[$\\blacksquare\\blacksquare\\blacksquare$](https://example.org)")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        // Ink far from the label's own (text) colour is the link colour.
+        var labelColor = GdkRGBA()
+        gtk_widget_get_color(label.widgetPointer, &labelColor)
+        let text = (Int(labelColor.red * 255), Int(labelColor.green * 255), Int(labelColor.blue * 255))
+        var linkColoured = 0
+        pumpUntil(timeout: .milliseconds(500)) {
+            linkColoured = 0
+            forEachRenderedPixel(of: label) { r, g, b, a in
+                if a > 200, abs(r - text.0) + abs(g - text.1) + abs(b - text.2) > 120 { linkColoured += 1 }
+            }
+            return linkColoured > 150
+        }
+        #expect(linkColoured > 150, "\(linkColoured) pixels not in the text colour")
     }
 
     @Test("Formulas in a coalesced heading are sized like the heading") @MainActor
@@ -518,31 +561,45 @@ struct MathPreviewWidgetTests {
     /// pixels; the plain text draws in the cairo source, set to green here.
     @MainActor
     private func paintedColours(of label: Label) -> (red: Int, blue: Int) {
-        guard let layout = gtk_label_get_layout(label.opaquePointer) else { return (0, 0) }
-        var width: Int32 = 0
-        var height: Int32 = 0
-        pango_layout_get_pixel_size(layout, &width, &height)
-        guard width > 0, height > 0 else { return (0, 0) }
-        let surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height)
-        defer { cairo_surface_destroy(surface) }
-        let cairo = cairo_create(surface)
-        cairo_set_source_rgb(cairo, 0, 1, 0)
-        pango_cairo_show_layout(cairo, layout)
-        cairo_destroy(cairo)
-        cairo_surface_flush(surface)
-        let stride = Int(cairo_image_surface_get_stride(surface))
-        guard let data = cairo_image_surface_get_data(surface) else { return (0, 0) }
         var counts = (red: 0, blue: 0)
-        for y in 0..<Int(height) {
-            for x in 0..<Int(width) {
-                let pixel = data + y * stride + x * 4
-                let (b, g, r, a) = (Int(pixel[0]), Int(pixel[1]), Int(pixel[2]), Int(pixel[3]))
-                guard a > 200, g < 60 else { continue }
-                if r > 200, b < 60 { counts.red += 1 }
-                if b > 200, r < 60 { counts.blue += 1 }
-            }
+        forEachRenderedPixel(of: label) { r, g, b, a in
+            guard a > 200, g < 60 else { return }
+            if r > 200, b < 60 { counts.red += 1 }
+            if b > 200, r < 60 { counts.blue += 1 }
         }
         return counts
+    }
+
+    /// Renders `widget` the way GTK does (its snapshot through GSK's cairo
+    /// renderer) and visits every pixel, straight alpha not applied.
+    @MainActor
+    private func forEachRenderedPixel(of widget: Widget, _ visit: (Int, Int, Int, Int) -> Void) {
+        let width = gtk_widget_get_width(widget.widgetPointer)
+        let height = gtk_widget_get_height(widget.widgetPointer)
+        guard width > 0, height > 0, let paintable = gtk_widget_paintable_new(widget.widgetPointer) else { return }
+        defer { g_object_unref(UnsafeMutableRawPointer(paintable)) }
+        let snapshot = gtk_snapshot_new()
+        gdk_paintable_snapshot(paintable, snapshot, Double(width), Double(height))
+        guard let node = gtk_snapshot_free_to_node(snapshot) else { return }
+        defer { gsk_render_node_unref(node) }
+        guard let renderer = gsk_cairo_renderer_new() else { return }
+        defer { g_object_unref(UnsafeMutableRawPointer(renderer)) }
+        guard gsk_renderer_realize_for_display(renderer, gdk_display_get_default(), nil) != 0 else { return }
+        defer { gsk_renderer_unrealize(renderer) }
+        guard let texture = gsk_renderer_render_texture(renderer, node, nil) else { return }
+        defer { g_object_unref(UnsafeMutableRawPointer(texture)) }
+        let textureWidth = Int(gdk_texture_get_width(texture))
+        let textureHeight = Int(gdk_texture_get_height(texture))
+        let stride = textureWidth * 4
+        var bytes = [UInt8](repeating: 0, count: stride * textureHeight)
+        // GDK_MEMORY_DEFAULT: B, G, R, A in memory on little-endian machines.
+        gdk_texture_download(texture, &bytes, gsize(stride))
+        for y in 0..<textureHeight {
+            for x in 0..<textureWidth {
+                let i = y * stride + x * 4
+                visit(Int(bytes[i + 2]), Int(bytes[i + 1]), Int(bytes[i]), Int(bytes[i + 3]))
+            }
+        }
     }
 
     @MainActor

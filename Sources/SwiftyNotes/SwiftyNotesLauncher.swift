@@ -262,9 +262,6 @@ final class AppController {
 public enum SwiftyNotesLauncher {
     @MainActor
     public static func run(arguments: [String] = Array(CommandLine.arguments.dropFirst())) -> Never {
-        // Sets an environment variable, so it has to run before anything
-        // starts a thread.
-        MathRenderer.configureTextFallbackFont()
         ensureRuntimeResourcePathsForUnbundledMacOSIfNeeded()
         let catalogueReachable = initializeLocalization(language: storedInterfaceLanguage())
         MainContext.silenceSpuriousScrollbarWarnings()
@@ -277,6 +274,9 @@ public enum SwiftyNotesLauncher {
             }
             exit(cliResult.exitCode)
         }
+        // The GUI only (the CLI draws no formulas). It sets an environment
+        // variable, so it has to run before GTK starts any thread.
+        MathRenderer.configureTextFallbackFont()
 
         // Only the GUI path reports this. `initializeLocalization` runs before
         // command dispatch, so warning there would prepend a line to the stderr

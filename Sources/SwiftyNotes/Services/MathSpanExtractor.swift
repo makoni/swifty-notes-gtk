@@ -23,7 +23,7 @@ public struct MathSpan: Sendable, Equatable {
 }
 
 /// Cuts math spans out of markdown source before markdown parsing and
-/// replaces each with a Private-Use-Area placeholder
+/// replaces each with a placeholder made of reserved noncharacters
 /// (``MathSpanExtractor/placeholder(for:)``), which survives HTML escaping
 /// and the Pango markup pass. The renderer puts the TeX back where the
 /// text landed.
@@ -207,20 +207,32 @@ enum MathSpanExtractor {
     static let formulaMarker: Unicode.Scalar = "\u{FFFC}"
     private static let replacementCharacter: Unicode.Scalar = "\u{FFFD}"
 
-    /// Characters with a meaning of their own in the rendered text — the
-    /// formula marker and the placeholder code points — become U+FFFD when
-    /// they come from the note itself, so typed text can neither pose as a
-    /// formula nor pull another formula's TeX into place.
+    /// Placeholders are built from the noncharacters U+FDD0–U+FDEF, which
+    /// Unicode reserves for a program's internal use: U+FDD0 opens, U+FDD1
+    /// closes, U+FDE0–U+FDE9 are the index digits.
+    private static let placeholderOpen = Unicode.Scalar(0xFDD0 as UInt32)!
+    private static let placeholderClose = Unicode.Scalar(0xFDD1 as UInt32)!
+    private static let placeholderDigitZero: UInt32 = 0xFDE0
+    private static let reservedRange: ClosedRange<UInt32> = 0xFDD0...0xFDEF
+
+    /// The reserved noncharacters become U+FFFD when they come from the
+    /// note itself, so typed text can neither pose as a formula nor pull
+    /// another formula's TeX into place. No real text holds them, so
+    /// nothing else (code, private-use icons) is touched; a stray formula
+    /// marker U+FFFC is dealt with where the markup is built.
     private static func sanitized(_ scalar: Unicode.Scalar) -> Unicode.Scalar {
-        switch scalar.value {
-        case formulaMarker.value, 0xE000, 0xE001, 0xE010...0xE019:
-            replacementCharacter
-        default:
-            scalar
-        }
+        reservedRange.contains(scalar.value) ? replacementCharacter : scalar
     }
 
-    /// Numeric character references (`&#xE000;`, `&#65532;`) to the same
+    /// `tex` with any formula marker U+FFFC turned into U+FFFD: a formula
+    /// that does not draw shows its TeX in the label, where the marker
+    /// would be taken for another formula.
+    private static func markerFree(_ tex: String) -> String {
+        guard tex.unicodeScalars.contains(formulaMarker) else { return tex }
+        return String(String.UnicodeScalarView(tex.unicodeScalars.map { $0 == formulaMarker ? replacementCharacter : $0 }))
+    }
+
+    /// Numeric character references (`&#xFDD0;`, `&#64976;`) to the same
     /// reserved characters are rewritten to U+FFFD in place, digits padded
     /// to the same length so no position moves: Markdown decodes them after
     /// the source was sanitised.
@@ -251,15 +263,15 @@ enum MathSpanExtractor {
         }
     }
 
-    /// `U+E000`, then the index as PUA digits (`U+E010+d` per decimal
-    /// digit), then `U+E001`.
+    /// U+FDD0, then the index in reserved digits (U+FDE0 + d per decimal
+    /// digit), then U+FDD1.
     static func placeholder(for index: Int) -> String {
-        var scalars: [Unicode.Scalar] = ["\u{E000}"]
+        var scalars: [Unicode.Scalar] = [placeholderOpen]
         for digit in String(max(0, index)).unicodeScalars {
             // `digit` is the *character*; its value is `0x30` + the digit.
-            scalars.append(Unicode.Scalar(0xE010 &+ digit.value &- 0x30)!)
+            scalars.append(Unicode.Scalar(placeholderDigitZero &+ digit.value &- 0x30)!)
         }
-        scalars.append("\u{E001}")
+        scalars.append(placeholderClose)
         return string(from: scalars)
     }
 
@@ -277,17 +289,19 @@ enum MathSpanExtractor {
         var result: [(range: Range<Int>, index: Int)] = []
         var i = 0
         while i < scalars.count {
-            guard scalars[i].value == 0xE000 else {
+            guard scalars[i] == placeholderOpen else {
                 i += 1
                 continue
             }
             var j = i + 1
             var index = 0
-            while j < scalars.count, j - i <= maxPlaceholderDigits, (0xE010...0xE019).contains(scalars[j].value) {
-                index = index * 10 + Int(scalars[j].value - 0xE010)
+            while j < scalars.count, j - i <= maxPlaceholderDigits,
+                  (placeholderDigitZero...(placeholderDigitZero + 9)).contains(scalars[j].value)
+            {
+                index = index * 10 + Int(scalars[j].value - placeholderDigitZero)
                 j += 1
             }
-            if j > i + 1, j < scalars.count, scalars[j].value == 0xE001 {
+            if j > i + 1, j < scalars.count, scalars[j] == placeholderClose {
                 result.append((range: i..<(j + 1), index: index))
                 i = j + 1
             } else {
@@ -406,7 +420,7 @@ enum MathSpanExtractor {
                             output.append(s)
                             i += 1
                         } else {
-                            spans.append(LocatedSpan(span: MathSpan(tex: tex, isDisplay: true), source: i..<(close + 2)))
+                            spans.append(LocatedSpan(span: MathSpan(tex: markerFree(tex), isDisplay: true), source: i..<(close + 2)))
                             appendPlaceholder(&output, index: spans.count - 1, lineBreaks: content.lineBreaks)
                             i = close + 2
                         }
@@ -422,7 +436,7 @@ enum MathSpanExtractor {
                         let content = strippingQuoteMarkers(scalars: scalars, range: (i + 1)..<close, openedAt: i, freeStart: range.lowerBound)
                         let tex = string(from: content.scalars)
                             .replacingOccurrences(of: "\n", with: " ")
-                        spans.append(LocatedSpan(span: MathSpan(tex: tex, isDisplay: false), source: i..<(close + 1)))
+                        spans.append(LocatedSpan(span: MathSpan(tex: markerFree(tex), isDisplay: false), source: i..<(close + 1)))
                         appendPlaceholder(&output, index: spans.count - 1, lineBreaks: content.lineBreaks)
                         i = close + 1
                         continue
@@ -580,7 +594,7 @@ enum MathSpanExtractor {
             if tex.isEmpty {
                 output.append(contentsOf: scalars[state.blockStart..<blockEnd])
             } else {
-                spans.append(LocatedSpan(span: MathSpan(tex: tex, isDisplay: true), source: state.blockStart..<blockEnd))
+                spans.append(LocatedSpan(span: MathSpan(tex: markerFree(tex), isDisplay: true), source: state.blockStart..<blockEnd))
                 appendPlaceholder(
                     &output, index: spans.count - 1,
                     lineBreaks: Array(repeating: [], count: newlineCount(scalars: scalars, range: state.blockStart..<blockEnd)),

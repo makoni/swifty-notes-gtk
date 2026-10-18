@@ -287,15 +287,29 @@ struct MathRenderingPipelineTests {
 
     @Test("Placeholder code points typed into a note stay plain text")
     func placeholderCodePointsTypedIntoANoteStayPlainText() {
-        let typed = "\u{E000}\u{E010}\u{E001}"
-        let overflowing = "\u{E000}" + String(repeating: "\u{E019}", count: 30) + "\u{E001}"
+        let typed = reserved(0xFDD0) + reserved(0xFDE0) + reserved(0xFDD1)
+        let overflowing = reserved(0xFDD0) + String(repeating: reserved(0xFDE9), count: 30) + reserved(0xFDD1)
         let blocks = blocks(for: "Typed \(typed) and \(overflowing) then $z$")
         guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
             Issue.record("expected one paragraph, got \(blocks)")
             return
         }
         #expect(text.mathSpans == [MathSpan(tex: "z", isDisplay: false)])
-        #expect(!text.plainText.unicodeScalars.contains { (0xE000...0xE019).contains($0.value) })
+        #expect(!text.plainText.unicodeScalars.contains { (0xFDD0...0xFDEF).contains($0.value) })
+    }
+
+    @Test("Code and private-use characters are left exactly as written")
+    func codeAndPrivateUseCharactersAreLeftExactlyAsWritten() {
+        // Private-use icons (Nerd Fonts), U+FFFC and entities for them.
+        let text = "icons \u{E000}\u{E001}\u{E00A} \u{FFFC} &#xE000; &#65532;"
+        let blocks = blocks(for: "```\n\(text)\n```\n\n`\(text)` and $x$")
+        guard blocks.count == 2, case let .codeBlock(code, _) = blocks[0], case let .paragraph(paragraph) = blocks[1] else {
+            Issue.record("expected a code block and a paragraph, got \(blocks)")
+            return
+        }
+        #expect(code == text + "\n")
+        #expect(paragraph.plainText.contains("\u{E000}\u{E001}\u{E00A}"))
+        #expect(paragraph.plainText.contains("&#xE000; &#65532;"))
     }
 
     @Test("An object replacement character inside TeX cannot shift the formulas")
@@ -402,7 +416,7 @@ struct MathRenderingPipelineTests {
                 return
             }
             #expect(text.mathSpans.isEmpty)
-            #expect(!text.plainText.contains("\u{E000}"))
+            #expect(!text.plainText.unicodeScalars.contains { (0xFDD0...0xFDEF).contains($0.value) })
         }
     }
 
@@ -543,7 +557,7 @@ struct MathRenderingPipelineTests {
             Issue.record("expected a paragraph, got \(blocks)")
             return
         }
-        #expect(!text.markup.unicodeScalars.contains { (0xE000...0xE019).contains($0.value) })
+        #expect(!text.markup.unicodeScalars.contains { (0xFDD0...0xFDEF).contains($0.value) })
         #expect(text.markup.contains("href=\"/search?q=$a$b$\""))
         #expect(text.mathSpans == [MathSpan(tex: "x", isDisplay: false)])
         #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
@@ -551,7 +565,7 @@ struct MathRenderingPipelineTests {
 
     @Test("Entities for placeholder characters cannot repeat a formula")
     func entitiesForPlaceholderCharactersCannotRepeatAFormula() {
-        for markdown in ["$x$ &#xE000;&#xE010;&#xE001;", "$x$ &#57344;&#57360;&#57345;", "$x$ &#x0e000;&#xE010;&#xe001;"] {
+        for markdown in ["$x$ &#xFDD0;&#xFDE0;&#xFDD1;", "$x$ &#64976;&#64992;&#64977;", "$x$ &#x0fdd0;&#xFDE0;&#xfdd1;"] {
             let blocks = blocks(for: markdown)
             guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
                 Issue.record("expected one paragraph, got \(blocks)")
@@ -561,13 +575,13 @@ struct MathRenderingPipelineTests {
             #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1, "\(markdown)")
         }
         // Same length, so source positions do not move.
-        #expect(MathSpanExtractor.extract(from: "&#xE000; $y$").markdown.unicodeScalars.count
+        #expect(MathSpanExtractor.extract(from: "&#xFDD0; $y$").markdown.unicodeScalars.count
             == "&#xFFFD; \(MathSpanExtractor.placeholder(for: 0))".unicodeScalars.count)
     }
 
     @Test("Entities in a link cannot carry another formula's TeX")
     func entitiesInALinkCannotCarryAnotherFormulasTex() {
-        let blocks = blocks(for: "Secret $\\text{PIN 1234}$ [l](http://h/&#xE000;&#xE010;&#xE001;)")
+        let blocks = blocks(for: "Secret $\\text{PIN 1234}$ [l](http://h/&#xFDD0;&#xFDE0;&#xFDD1;)")
         guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
             Issue.record("expected one paragraph, got \(blocks)")
             return
@@ -584,5 +598,10 @@ struct MathRenderingPipelineTests {
         }
         #expect(text.mathSpans == [MathSpan(tex: "x", isDisplay: false)])
         #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
+    }
+
+    /// A reserved noncharacter, which Swift string literals do not accept.
+    private func reserved(_ value: UInt32) -> String {
+        String(Unicode.Scalar(value)!)
     }
 }

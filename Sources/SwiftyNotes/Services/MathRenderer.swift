@@ -3,9 +3,9 @@ import Foundation
 
 /// A TeX formula parsed and laid out by the RaTeX engine at one pixel size.
 ///
-/// Immutable apart from the bridge's per-colour layout cache, and only ever
-/// used from the main actor, so it is `@unchecked Sendable` to sit in
-/// `Sendable` values; the underlying formula is freed with the object.
+/// Immutable on this side; the bridge recolours its drawing under a lock,
+/// so it is safe from any thread and `@unchecked Sendable` to sit in
+/// `Sendable` values. The underlying formula is freed with the object.
 public final class MathFormula: @unchecked Sendable {
     public let tex: String
     public let isDisplay: Bool
@@ -118,7 +118,7 @@ public enum MathRenderer {
             // the least recently used cached ones (those no label shows any
             // more are freed) until one more formula surely fits, and try
             // once more.
-            freeCachedFormulas(bytes: UInt(RATEX_BRIDGE_MAX_FORMULA_BYTES))
+            freeCachedFormulas(bytes: ratex_bridge_max_formula_bytes())
             formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
             // Still refused: not cached, as it may draw once memory frees.
             if formula == nil, ratex_bridge_last_error_is_transient() != 0 {
@@ -204,7 +204,7 @@ public enum MathRenderer {
 
     /// Drops cached formulas, least recently used first, until the engine
     /// has given back `bytes` or the cache is empty.
-    private static func freeCachedFormulas(bytes: UInt) {
+    private static func freeCachedFormulas(bytes: Int) {
         let start = ratex_bridge_live_bytes()
         for (key, _) in cache.sorted(by: { $0.value.lastUse < $1.value.lastUse }) {
             cache.removeValue(forKey: key)
