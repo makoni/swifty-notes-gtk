@@ -36,7 +36,9 @@ struct PreviewPaneLayoutTests {
         // keeps at least its own minimum (its toolbar's).
         func expectedDivider() -> Int {
             let room = window.editorPreviewPane.width
-            let previewWidth = MainWindow.resolvedPreviewWidth(storedWidth: WorkspaceState.defaultPreviewWidth, availableWidth: room)
+            // The width the window remembers: a clamp by the editor's
+            // minimum (a narrow room) is remembered like a drag.
+            let previewWidth = MainWindow.resolvedPreviewWidth(storedWidth: window.state.preferredPreviewWidth, availableWidth: room)
             var editorMinimum: Int32 = 0
             gtk_widget_measure(window.editorContent.widgetPointer, GTK_ORIENTATION_HORIZONTAL, -1, &editorMinimum, nil, nil, nil)
             return max(room - previewWidth, Int(editorMinimum))
