@@ -206,21 +206,34 @@ struct MathRendererTests {
         #expect(ratex_bridge_live_bytes() < before + 16 * 1024)
     }
 
+    @Test("Math symbols that also have emoji images are not counted as emoji")
+    func mathSymbolsThatAlsoHaveEmojiImagesAreNotCountedAsEmoji() {
+        // Digits, `#`, `*`, arrows and suits have emoji PNGs but KaTeX draws
+        // them; a few real emoji are fine wherever they are drawn.
+        #expect(MathRenderer.formula(tex: String(repeating: "1234567890", count: 10) + "\\#*", isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "\\leftrightarrow", count: 40), isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit", count: 40), isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: "😀😀😀", isDisplay: false, pixelSize: 20) != nil)
+    }
+
+    @Test("Emoji are drawn as images where the setup says they should be")
+    func emojiAreDrawnAsImagesWhereTheSetupSaysTheyShouldBe() {
+        // Keeps the gate below honest: where colour-emoji images are expected
+        // (set on machines that have them), the gate must not turn itself off.
+        guard ProcessInfo.processInfo.environment["SWIFTY_NOTES_EXPECT_EMOJI_IMAGES"] == "1" else { return }
+        #expect(ratex_bridge_draws_emoji_images() == 1)
+    }
+
     @Test("A formula drawing many emoji is refused", .enabled(if: ratex_bridge_draws_emoji_images() != 0))
     func aFormulaDrawingManyEmojiIsRefused() {
-        // Each emoji is a PNG decoded on every draw.
-        #expect(MathRenderer.formula(tex: String(repeating: "😀", count: 40), isDisplay: false, pixelSize: 20) == nil)
+        // Each emoji is a PNG decoded on every draw; at most 32 per formula.
+        #expect(MathRenderer.formula(tex: String(repeating: "😀", count: 32), isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "😀", count: 33), isDisplay: false, pixelSize: 20) == nil)
         #expect(MathRenderer.lastError?.contains("emoji") == true, "\(MathRenderer.lastError ?? "")")
-        #expect(MathRenderer.formula(tex: "😀😀😀", isDisplay: false, pixelSize: 20) != nil)
         // Emoji outside the pictograph blocks count too.
         #expect(MathRenderer.formula(tex: String(repeating: "⌚", count: 40), isDisplay: false, pixelSize: 20) == nil)
         #expect(MathRenderer.formula(tex: String(repeating: "⏰", count: 40), isDisplay: false, pixelSize: 20) == nil)
-        // Digits, `#`, `*` and arrows have emoji PNGs but KaTeX draws them.
-        #expect(MathRenderer.formula(tex: String(repeating: "\\leftrightarrow", count: 40), isDisplay: false, pixelSize: 20) != nil)
-        #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit", count: 40), isDisplay: false, pixelSize: 20) != nil)
         #expect(MathRenderer.formula(tex: String(repeating: "⭐", count: 40), isDisplay: false, pixelSize: 20) == nil)
-        #expect(MathRenderer.formula(tex: String(repeating: "1234567890", count: 10) + "\\#*", isDisplay: false, pixelSize: 20) != nil)
-        #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit\\heartsuit\\checkmark", count: 20), isDisplay: false, pixelSize: 20) != nil)
     }
 
     @Test("A formula that would keep too much memory is refused")

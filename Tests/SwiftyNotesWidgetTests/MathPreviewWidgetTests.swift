@@ -245,6 +245,7 @@ struct MathPreviewWidgetTests {
     func aFormulaRefusedAtTheMemoryLimitIsDrawnAfterTheNextEdit() throws {
         let fixture = try Fixture(suffix: "retry-limit", markdown: "")
         let previous = ratex_bridge_set_live_bytes_limit(0)
+        defer { ratex_bridge_set_live_bytes_limit(previous) }
         fixture.render("Text $m_{retry}$ here.")
         ratex_bridge_set_live_bytes_limit(previous)
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
@@ -261,6 +262,7 @@ struct MathPreviewWidgetTests {
         // Leave the engine's "transient" flag set, as a memory refusal would:
         // the label must not take it for its own formulas.
         let previous = ratex_bridge_set_live_bytes_limit(0)
+        defer { ratex_bridge_set_live_bytes_limit(previous) }
         _ = MathRenderer.formula(tex: "t_{flag}", isDisplay: false, pixelSize: 20)
         ratex_bridge_set_live_bytes_limit(previous)
         // More than the formula cache holds, so only the label remembers.
@@ -300,6 +302,32 @@ struct MathPreviewWidgetTests {
         let texts = fixture.labels().map(\.text)
         #expect(texts.contains("With \u{FFFC} math."), "\(texts)")
         #expect(!texts.contains { $0.contains("\u{FFFC}") && $0.contains("Plain") }, "\(texts)")
+        // In every order and kind of run: a heading with a formula, plain
+        // text before a formula, quotes.
+        for markdown in [
+            "# Head $y$\n\nPlain after heading.",
+            "```\nc\n```\n\nPlain first.\n\nWith $x$ math.",
+            "> plain quote\n\n> quote with $q$",
+        ] {
+            fixture.render(markdown)
+            let labels = fixture.labels().map(\.text)
+            #expect(!labels.contains { $0.contains("\u{FFFC}") && ($0.contains("Plain") || $0.contains("plain")) }, "\(labels)")
+        }
+    }
+
+    @Test("A rebuilt row is highlighted again by the same matches") @MainActor
+    func aRebuiltRowIsHighlightedAgainByTheSameMatches() throws {
+        let fixture = try Fixture(suffix: "rebuilt-rehighlight", markdown: "A needle $x$ here.\n\n```\nc\n```")
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        fixture.render("# A needle $x$ here.\n\n```\nc\n```")
+        // The search finds the same matches; they must not be skipped as
+        // already applied — they were applied to a label that is gone.
+        let again = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: again, activeIndex: 0)
+        let heading = try #require(fixture.labels().first { $0.text.hasPrefix("A needle") })
+        #expect(preview.debugHighlightedLabelPointers == [heading.opaquePointer])
     }
 
     @Test("A label draws only the formulas its budget allows") @MainActor
@@ -311,9 +339,15 @@ struct MathPreviewWidgetTests {
         }
         MainContext.pump(for: .milliseconds(100))
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
         let drawn = PreviewMath.debugFormulas(on: label).count
         #expect(drawn > 0)
         #expect(drawn < 600, "\(drawn) drawn")
+        // …and not far fewer than the budget allows.
+        let width = Double(label.width)
+        let visible = Double(fixture.preview.rootScroll.height)
+        let allowed = PreviewMath.drawnFormulaBudget / (width * visible * 4)
+        #expect(Double(drawn) >= allowed / 2, "\(drawn) drawn, about \(Int(allowed)) allowed")
         // The rest show their source.
         #expect(label.text.contains("$\\frac{a_{599}}{b}$"))
     }
@@ -340,17 +374,57 @@ struct MathPreviewWidgetTests {
         let area = Double(logical.width) * min(Double(logical.height), visible)
         #expect(drawn > 0)
         #expect(Double(drawn) * area * 4 <= PreviewMath.drawnFormulaBudget * 1.05, "\(drawn) drawn in \(logical.width)×\(logical.height)")
+        #expect(Double(drawn) * area * 4 >= PreviewMath.drawnFormulaBudget / 2, "\(drawn) drawn in \(logical.width)×\(logical.height)")
+    }
+
+    @Test(
+        "The budget holds for wide and for many small formulas, the same after an edit",
+        arguments: ["sums", "rules", "fractions"]
+    ) @MainActor
+    func theBudgetHoldsForWideAndManySmallFormulas(kind: String) throws {
+        let formulas = switch kind {
+        case "sums": (0..<200).map { n in "$" + (0..<40).map { "x_{\($0)}" }.joined(separator: "+") + "+n_{\(n)}$" }
+        // Each wider than half the label: a line of its own.
+        case "rules": (0..<150).map { "$\\rule{60em}{0.5em}_{\($0)}$" }
+        default: (0..<300).map { "$\\frac{a_{\($0)}}{b}$" }
+        }
+        let fixture = try Fixture(suffix: "budget-\(kind)", markdown: "")
+        func render(_ end: String) {
+            MathRenderer.withParseBudget(.seconds(60)) {
+                fixture.preview.render(blocks: MarkdownRenderer().blocks(
+                    for: "Start " + formulas.joined(separator: " ") + end, darkAppearance: false
+                ))
+            }
+            pumpUntil(timeout: .seconds(3)) { !fixture.preview.debugMathFontRefreshPending }
+        }
+        func cost() throws -> (drawn: Int, bytes: Double) {
+            let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+            let drawn = PreviewMath.debugFormulas(on: label).count
+            let visible = Double(fixture.preview.rootScroll.height)
+            return (drawn, Double(drawn) * Double(label.width) * min(Double(label.height), visible) * 4)
+        }
+        render(" end.")
+        let first = try cost()
+        #expect(first.drawn > 0)
+        #expect(first.bytes <= PreviewMath.drawnFormulaBudget * 1.1, "\(first.drawn) drawn, \(Int(first.bytes / 1_048_576)) MiB")
+        // The decision depends on the note, not on what the label showed before.
+        render(" end!")
+        let edited = try cost()
+        #expect(edited.drawn == first.drawn)
     }
 
     @Test("Text inking far past its box draws no formulas") @MainActor
     func textInkingFarPastItsBoxDrawsNoFormulas() throws {
         // A stack of combining marks inks thousands of pixels above one line,
         // and GTK sizes every formula's node by the label's ink.
+        // A few formulas are within budget even if each costs the whole
+        // visible area; many next to the stack are not drawn at all.
         let stack = "a" + String(repeating: "\u{352}", count: 1000)
-        let fixture = try Fixture(suffix: "ink-stack", markdown: "\(stack) $x_0$ $x_1$ $x_2$ \(stack)")
+        let many = (0..<200).map { "$x_{\($0)}$" }.joined(separator: " ")
+        let fixture = try Fixture(suffix: "ink-stack", markdown: "\(stack) \(many) \(stack)")
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         #expect(PreviewMath.debugFormulas(on: label).isEmpty)
-        #expect(label.text.contains("$x_1$"))
+        #expect(label.text.contains("$x_{1}$"))
         // Ordinary accents are fine.
         fixture.render("Café naïve $x_0$ $x_1$ résumé")
         let plain = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
@@ -565,12 +639,19 @@ struct MathPreviewWidgetTests {
             return "formulas \(PreviewMath.debugFormulas(on: label).count), shapes \(PreviewMath.debugShapeAttributeCount(on: label)), "
                 + "size \(gtk_widget_get_width(label.widgetPointer))×\(gtk_widget_get_height(label.widgetPointer)), \(top)"
         }
-        pumpUntil(timeout: .seconds(2)) { inkColour(of: linked) != nil && inkColour(of: plain) != nil }
-        let link = try #require(inkColour(of: linked), "\(diagnosis(linked))")
-        let text = try #require(inkColour(of: plain), "\(diagnosis(plain))")
-        // Adwaita draws links in an accent colour, text in a grey.
-        let difference = abs(link.0 - text.0) + abs(link.1 - text.1) + abs(link.2 - text.2)
-        #expect(difference > 80, "link ink \(link), text ink \(text)")
+        let styleManager = StyleManager.default
+        let original = styleManager.colorScheme
+        defer { styleManager.colorScheme = original }
+        for scheme in [AdwColorScheme.forceLight, .forceDark] {
+            styleManager.colorScheme = scheme
+            MainContext.pump(for: .milliseconds(100))
+            pumpUntil(timeout: .seconds(2)) { inkColour(of: linked) != nil && inkColour(of: plain) != nil }
+            let link = try #require(inkColour(of: linked), "\(diagnosis(linked))")
+            let text = try #require(inkColour(of: plain), "\(diagnosis(plain))")
+            // Adwaita draws links in an accent colour, text in a grey.
+            let difference = abs(link.0 - text.0) + abs(link.1 - text.1) + abs(link.2 - text.2)
+            #expect(difference > 80, "scheme \(scheme): link ink \(link), text ink \(text)")
+        }
     }
 
     @Test("A search hit after a formula starting with a combining mark lands on its word") @MainActor

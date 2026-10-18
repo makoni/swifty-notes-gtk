@@ -400,9 +400,15 @@ final class MarkdownPreview {
         PreviewMath.observeDesktopFontSettings(owner: self) { [weak self] in
             self?.scheduleMathFontRefresh()
         }
-        // The formula budget depends on the window's scale (another screen).
+        // The formula budget depends on the window's scale (another screen)
+        // and on how much of the preview is visible (a resize).
         rootScroll.onNotify(.custom("scale-factor")) { [weak self] in
             self?.scheduleMathFontRefresh()
+        }
+        for adjustment in [rootScroll.verticalAdjustment, rootScroll.horizontalAdjustment] {
+            SignalHelper.onNotify(adjustment, property: .custom("page-size")) { [weak self] in
+                self?.scheduleMathFontRefresh()
+            }
         }
         retranslateAccessibility()
         rootScroll.overlayScrolling = false
@@ -1721,7 +1727,9 @@ final class MarkdownPreview {
         var remaining = spans[...]
         func visit(_ widget: Widget) {
             if let label = widget.tryCast(Label.self) {
-                let markers = label.markup.unicodeScalars.reduce(0) { $0 + ($1 == MathSpanExtractor.formulaMarker ? 1 : 0) }
+                let markers = label.markup.unicodeScalars.reduce(0) {
+                    $0 + ($1 == MathSpanExtractor.formulaMarker ? 1 : 0)
+                }
                 guard markers > 0 else {
                     // An edit may have removed the label's formulas; drop
                     // the shapes that pointed at them.

@@ -327,7 +327,7 @@ struct MathSpanExtractorTests {
     @Test("Backtick runs of many lengths stay fast")
     func backtickRunsOfManyLengthsStayFast() {
         // Each run length used to search to the end of the text.
-        let text = (1...1414).map { String(repeating: "`", count: $0) + " a " }.joined() + " $x$"
+        let text = (1...2000).map { String(repeating: "`", count: $0) + " a " }.joined() + " $x$"
         let start = ContinuousClock.now
         let result = MathSpanExtractor.extract(from: text)
         #expect(ContinuousClock.now - start < .milliseconds(1500))
