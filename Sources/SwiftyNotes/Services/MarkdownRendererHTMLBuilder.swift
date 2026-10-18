@@ -875,13 +875,42 @@ final class HTMLPreviewDocumentBuilder {
         }
     }
 
-    /// `text` with every placeholder put back as its `$tex$` source, for
-    /// places that show no formulas (image alt text, titles, URLs).
+    /// `text` with every placeholder put back as its source, for places
+    /// that show no formulas (image alt text, titles, URLs).
     private func restoredMathSource(_ text: String) -> String {
         MathSpanExtractor.replacingPlaceholders(in: text) { index in
-            index < mathSpans.count ? "$\(mathSpans[index].tex)$" : nil
+            index < mathSpans.count ? delimitedSource(of: mathSpans[index]) : nil
         }
     }
+
+    /// The span as it was written: `$$tex$$` for display math, `$tex$`
+    /// otherwise.
+    private func delimitedSource(of span: MathSpan) -> String {
+        span.isDisplay ? "$$\(span.tex)$$" : "$\(span.tex)$"
+    }
+
+    /// Like ``MathSpanExtractor/replacingPlaceholders(in:with:)`` for Pango markup: the
+    /// replacement also learns whether the placeholder sits inside a tag
+    /// (`<a href="…">`) rather than in the text. Text in markup has its `<`
+    /// and `>` escaped, so every literal `<` opens a tag.
+    private func replacingPlaceholders(inMarkup markup: String, with replacement: (_ index: Int, _ insideTag: Bool) -> String?) -> String {
+        let occurrences = MathSpanExtractor.spanIndices(in: markup)
+        guard !occurrences.isEmpty else { return markup }
+        let scalars = Array(markup.unicodeScalars)
+        var insideTag = false
+        var scanned = 0
+        var next = 0
+        return MathSpanExtractor.replacingPlaceholders(in: markup) { index in
+            let start = occurrences[next].range.lowerBound
+            next += 1
+            for scalar in scalars[scanned..<start] {
+                if scalar == "<" { insideTag = true } else if scalar == ">" { insideTag = false }
+            }
+            scanned = start
+            return replacement(index, insideTag)
+        }
+    }
+
 
     private func displayMathSpan(for text: RenderedText) -> MathSpan? {
         let trimmed = text.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -918,10 +947,10 @@ final class HTMLPreviewDocumentBuilder {
         let markerFree = String(String.UnicodeScalarView(text.markup.unicodeScalars.map {
             $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
         }))
-        let markup = MathSpanExtractor.replacingPlaceholders(inMarkup: markerFree) { index, insideTag in
+        let markup = replacingPlaceholders(inMarkup: markerFree) { index, insideTag in
             guard index < mathSpans.count else { return nil }
             let span = mathSpans[index]
-            if insideTag { return "$\(pangoEscapeAttribute(span.tex))$" }
+            if insideTag { return pangoEscapeAttribute(delimitedSource(of: span)) }
             guard drawsFormulas else { return "$\(pangoEscape(span.tex))$" }
             found.append(span)
             return String(MathSpanExtractor.formulaMarker)

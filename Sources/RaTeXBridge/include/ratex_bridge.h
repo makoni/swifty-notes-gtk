@@ -53,7 +53,10 @@ int ratex_bridge_draw(ratex_bridge_formula *formula, void *cr, double red, doubl
 /* Frees a formula. NULL is ignored. */
 void ratex_bridge_free(ratex_bridge_formula *formula);
 
-/* Estimated bytes all live (not yet freed) formulas keep. */
+/* The most estimated bytes one formula may keep (lib.rs: MAX_FORMULA_BYTES). */
+#define RATEX_BRIDGE_MAX_FORMULA_BYTES 524288
+
+/* Diagnostics: estimated bytes all live (not yet freed) formulas keep. */
 size_t ratex_bridge_live_bytes(void);
 
 /*
@@ -78,7 +81,8 @@ const char *ratex_bridge_last_error(void);
 /*
  * The serif system font (from fontconfig, with Cyrillic and Greek) RaTeX
  * should draw text with that the KaTeX fonts lack, as a value for the
- * RATEX_UNICODE_FONT environment variable, or NULL if there is none. RaTeX
+ * RATEX_UNICODE_FONT environment variable, or NULL if there is none (always
+ * on macOS, where RaTeX's own discovery finds Arial Unicode). RaTeX
  * reads that variable once, so set it before the first formula — and, as
  * changing the environment is not thread-safe, before starting threads.
  */

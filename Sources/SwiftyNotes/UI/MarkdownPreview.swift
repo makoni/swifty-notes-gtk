@@ -599,7 +599,7 @@ final class MarkdownPreview {
         postponedMathPassScheduled = true
         rootScroll.addTickCallback { [weak self] in
             guard let self else { return false }
-            let stillPostponed = MathRenderer.withParseBudget(Self.followUpParseBudget) {
+            let stillPostponed = MathRenderer.withParseBudget(Self.followUpParseBudget, guaranteeingProgress: true) {
                 PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
             }
             reapplySearchHighlights()
@@ -617,7 +617,9 @@ final class MarkdownPreview {
     /// When the parse budget the row binds of this frame share runs out;
     /// the first bind of a frame starts it.
     private func bindParseDeadline() -> ContinuousClock.Instant {
-        if let deadline = currentBindParseDeadline {
+        // A deadline well past is stale: the frame clock that clears it may
+        // not be ticking (an unmapped preview).
+        if let deadline = currentBindParseDeadline, ContinuousClock.now < deadline + .milliseconds(100) {
             return deadline
         }
         let deadline = ContinuousClock.now + .milliseconds(50)
@@ -1074,6 +1076,11 @@ final class MarkdownPreview {
     /// reverts it to a same-string `set_markup` no-op records `false`
     /// here. Reset at the start of every non-memoized apply pass.
     private(set) var debugMarkupRebuildBlankReads: [Bool] = []
+
+    /// Whether the formula font refresh is still checking frames.
+    var debugMathFontRefreshPending: Bool {
+        mathFontRefreshScheduled
+    }
     #endif
 
     /// Apply yellow-background Pango attributes over the rendered

@@ -93,7 +93,8 @@ enum MathSpanExtractor {
         // Sanitise the source before generating placeholders, so only the
         // extractor's own placeholders survive (one scalar in, one out: line
         // structure and positions are unchanged).
-        let scalars = markdown.unicodeScalars.map(sanitized)
+        var scalars = markdown.unicodeScalars.map(sanitized)
+        neutralizeReservedEntities(in: &scalars)
         let lines = lineBounds(scalars)
         let blankLines = lines.filter { isBlankLine(scalars: scalars, line: $0) }
         var spans: [LocatedSpan] = []
@@ -206,6 +207,37 @@ enum MathSpanExtractor {
         }
     }
 
+    /// Numeric character references (`&#xE000;`, `&#65532;`) to the same
+    /// reserved characters are rewritten to U+FFFD in place, digits padded
+    /// to the same length so no position moves: Markdown decodes them after
+    /// the source was sanitised.
+    private static func neutralizeReservedEntities(in scalars: inout [Unicode.Scalar]) {
+        var i = 0
+        while i + 3 < scalars.count {
+            guard scalars[i] == "&", scalars[i + 1] == "#" else {
+                i += 1
+                continue
+            }
+            let isHex = scalars[i + 2] == "x" || scalars[i + 2] == "X"
+            let digitsStart = i + (isHex ? 3 : 2)
+            var j = digitsStart
+            while j < scalars.count, j - digitsStart < 8, (isHex ? scalars[j].properties.isASCIIHexDigit : ("0"..."9").contains(scalars[j])) {
+                j += 1
+            }
+            guard j > digitsStart, j < scalars.count, scalars[j] == ";",
+                  let value = UInt32(String(String.UnicodeScalarView(scalars[digitsStart..<j])), radix: isHex ? 16 : 10),
+                  let reserved = Unicode.Scalar(value), sanitized(reserved) != reserved
+            else {
+                i += 1
+                continue
+            }
+            let digits = String(replacementCharacter.value, radix: isHex ? 16 : 10, uppercase: true)
+            let padded = String(repeating: "0", count: max(0, (j - digitsStart) - digits.count)) + digits
+            scalars.replaceSubrange(digitsStart..<j, with: padded.unicodeScalars.suffix(j - digitsStart))
+            i = j + 1
+        }
+    }
+
     /// `U+E000`, then the index as PUA digits (`U+E010+d` per decimal
     /// digit), then `U+E001`.
     static func placeholder(for index: Int) -> String {
@@ -272,28 +304,6 @@ enum MathSpanExtractor {
         }
         result.append(contentsOf: scalars[cursor...])
         return String(result)
-    }
-
-    /// Like ``replacingPlaceholders(in:with:)`` for Pango markup: the
-    /// replacement also learns whether the placeholder sits inside a tag
-    /// (`<a href="…">`) rather than in the text. Text in markup has its `<`
-    /// and `>` escaped, so every literal `<` opens a tag.
-    static func replacingPlaceholders(inMarkup markup: String, with replacement: (_ index: Int, _ insideTag: Bool) -> String?) -> String {
-        let occurrences = spanIndices(in: markup)
-        guard !occurrences.isEmpty else { return markup }
-        let scalars = Array(markup.unicodeScalars)
-        var insideTag = false
-        var scanned = 0
-        var next = 0
-        return replacingPlaceholders(in: markup) { index in
-            let start = occurrences[next].range.lowerBound
-            next += 1
-            for scalar in scalars[scanned..<start] {
-                if scalar == "<" { insideTag = true } else if scalar == ">" { insideTag = false }
-            }
-            scanned = start
-            return replacement(index, insideTag)
-        }
     }
 
     // MARK: - Free-text scan (comments, autolinks, code spans, math)
@@ -512,7 +522,8 @@ enum MathSpanExtractor {
         }
         guard matches("http://", at: after) || matches("https://", at: after) else { return nil }
         var j = after
-        while j < end, scalars[j].value != 0x0A {
+        let limit = min(end, after + maxConstructScan)
+        while j < limit, scalars[j].value != 0x0A, scalars[j].value != 0x3C {
             if scalars[j].value == 0x3E { return j }
             j += 1
         }
@@ -767,6 +778,11 @@ enum MathSpanExtractor {
         return count
     }
 
+    /// How far the scans for a link destination, an autolink or an HTML tag
+    /// look: each starts at every `](` or `<`, so an unbounded scan makes a
+    /// long line of them quadratic. Real ones are far shorter.
+    private static let maxConstructScan = 2048
+
     /// The `>` closing a raw HTML tag that starts after `<` at `start`
     /// (`<a href=…>`, `</a>`, `<br/>`), on the same line, or nil. The tag
     /// name must be ASCII and end at a space, `/` or `>`, so prose such as
@@ -779,7 +795,8 @@ enum MathSpanExtractor {
             j += 1
         }
         guard j < end, [" ", "\t", "/", ">"].contains(scalars[j]) else { return nil }
-        while j < end {
+        let limit = min(end, start + maxConstructScan)
+        while j < limit {
             switch scalars[j] {
             case ">": return j
             case "\n", "<": return nil
@@ -813,30 +830,73 @@ enum MathSpanExtractor {
         return j
     }
 
-    /// The `)` closing a link destination whose content starts at `start`
-    /// (just after `](`): parentheses nest, a backslash escapes, and the
-    /// destination stays on one line.
-    private static func linkDestinationEnd(scalars: [Unicode.Scalar], from start: Int, end: Int) -> Int? {
-        var depth = 0
+    /// The `)` closing an inline link's destination and optional title,
+    /// which start at `start` (just after `](`), or nil when what follows is
+    /// not one: a destination is `<…>` or a run without spaces (parentheses
+    /// balanced, backslash escapes), and a title is quoted with `"`, `'` or
+    /// parentheses. All on one line.
+    private static func linkDestinationEnd(scalars: [Unicode.Scalar], from start: Int, end lineEnd: Int) -> Int? {
+        let end = min(lineEnd, start + maxConstructScan)
         var j = start
-        while j < end {
-            switch scalars[j] {
-            case "\\":
-                j += 2
-                continue
-            case "(":
-                depth += 1
-            case ")":
-                if depth == 0 { return j }
-                depth -= 1
-            case "\n":
-                return nil
-            default:
-                break
-            }
-            j += 1
+        func skipSpaces() {
+            while j < end, scalars[j] == " " || scalars[j] == "\t" { j += 1 }
         }
-        return nil
+        // Another `](` ends the attempt, so a line of them stays linear.
+        func opensAnotherLink() -> Bool {
+            scalars[j] == "]" && j + 1 < end && scalars[j + 1] == "("
+        }
+        skipSpaces()
+        if j < end, scalars[j] == "<" {
+            j += 1
+            while j < end, scalars[j] != ">" {
+                if scalars[j] == "\n" || scalars[j] == "<" || opensAnotherLink() { return nil }
+                j += scalars[j] == "\\" ? 2 : 1
+            }
+            guard j < end else { return nil }
+            j += 1
+        } else {
+            var depth = 0
+            while j < end {
+                let scalar = scalars[j]
+                if scalar == "\\" {
+                    j += 2
+                    continue
+                }
+                if scalar.properties.isWhitespace || scalar.value < 0x20 { break }
+                if opensAnotherLink() { return nil }
+                if scalar == "(" {
+                    depth += 1
+                } else if scalar == ")" {
+                    if depth == 0 { break }
+                    depth -= 1
+                }
+                j += 1
+            }
+            guard depth == 0 else { return nil }
+        }
+        let destinationEnd = j
+        skipSpaces()
+        if j < end, j > destinationEnd, let closer = titleCloser(for: scalars[j]) {
+            j += 1
+            while j < end, scalars[j] != closer {
+                if scalars[j] == "\n" || opensAnotherLink() { return nil }
+                j += scalars[j] == "\\" ? 2 : 1
+            }
+            guard j < end else { return nil }
+            j += 1
+            skipSpaces()
+        }
+        guard j < end, scalars[j] == ")" else { return nil }
+        return j
+    }
+
+    private static func titleCloser(for opener: Unicode.Scalar) -> Unicode.Scalar? {
+        switch opener {
+        case "\"": "\""
+        case "'": "'"
+        case "(": ")"
+        default: nil
+        }
     }
 
     /// The placeholder, then the span's line breaks (each followed by the

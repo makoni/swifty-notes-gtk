@@ -199,7 +199,8 @@ struct MathPreviewWidgetTests {
         #expect(attributeCount(on: label) == before, "highlight attributes survive the immediate rescale")
         // …and so does the refresh once GTK has restyled the label.
         let zoomed = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
-        MainContext.pump(for: .milliseconds(200))
+        pumpUntil(timeout: .seconds(2)) { !preview.debugMathFontRefreshPending }
+        #expect(!preview.debugMathFontRefreshPending)
         #expect(try #require(PreviewMath.debugFormulas(on: label).first).pixelSize >= zoomed * 0.95)
         #expect(attributeCount(on: label) == before, "highlight attributes survive the relayout")
         #expect(PreviewMath.debugShapeAttributeCount(on: label) == 1)
@@ -212,26 +213,88 @@ struct MathPreviewWidgetTests {
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["a", "b"])
         #expect(PreviewMath.debugShapeAttributeCount(on: label) == 2)
-        #expect(label.accessibleLabel == "Text $a$ and $b$ here.\n\nSecond paragraph.")
+        #expect(gtkAccessibleLabelMismatch(of: label, expected: "Text $a$ and $b$ here.\n\nSecond paragraph.") == nil)
         fixture.render("Text without math.\n\nSecond paragraph.")
         let plain = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         #expect(PreviewMath.debugFormulas(on: plain).isEmpty)
         #expect(PreviewMath.debugShapeAttributeCount(on: plain) == 0)
         // The accessible label no longer spells out formulas that are gone.
-        #expect(plain.accessibleLabel?.contains("$a$") != true)
+        #expect(gtkAccessibleLabelMismatch(of: plain, expected: "Text without math.\n\nSecond paragraph.") == nil)
+    }
+
+    @Test("Editing a formula's TeX in place draws the new formula") @MainActor
+    func editingAFormulasTexInPlaceDrawsTheNewFormula() throws {
+        let fixture = try Fixture(suffix: "edit-tex", markdown: "Text $a$ here.\n\nSecond paragraph.")
+        fixture.render("Text $b$ here.\n\nSecond paragraph.")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["b"])
+    }
+
+    @Test("Search highlights come back after postponed formulas are drawn") @MainActor
+    func searchHighlightsComeBackAfterPostponedFormulasAreDrawn() throws {
+        let fixture = try Fixture(suffix: "postponed-search", markdown: "")
+        // No main-loop run inside the budget: the follow-up pass would draw it.
+        MathRenderer.withParseBudget(.zero) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: "Late $q_{searched}$ formula needle.", darkAppearance: false))
+        }
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        let highlighted = attributeCount(on: label)
+        #expect(highlighted > 0)
+        pumpUntil(timeout: .milliseconds(800)) { !PreviewMath.debugFormulas(on: label).isEmpty }
+        #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["q_{searched}"])
+        #expect(attributeCount(on: label) == highlighted + 1, "the highlight and the formula shape")
     }
 
     @Test("Formulas postponed by the parse budget are drawn on the next frames") @MainActor
     func postponedFormulasAreDrawnLater() throws {
         let fixture = try Fixture(suffix: "postponed", markdown: "")
+        // No main-loop run inside the budget: the follow-up pass would draw it.
         MathRenderer.withParseBudget(.zero) {
-            fixture.render("Late $q_{postponed}$ formula.")
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: "Late $q_{postponed}$ formula.", darkAppearance: false))
         }
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         #expect(PreviewMath.debugFormulas(on: label).isEmpty)
         pumpUntil(timeout: .milliseconds(800)) { !PreviewMath.debugFormulas(on: label).isEmpty }
         #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["q_{postponed}"])
         #expect(label.text == "Late \u{FFFC} formula.")
+    }
+
+    @Test("Formulas too wide or too large to draw show their source") @MainActor
+    func formulasTooWideOrTooLargeToDrawShowTheirSource() throws {
+        let fixture = try Fixture(suffix: "too-wide", markdown: "Wide $x\\hspace{600em}x$ and $y$.\n\n$$\n\\rule{300em}{300em}\n$$")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["y"])
+        #expect(label.text.contains("$x\\hspace{600em}x$"))
+        let block = try #require(fixture.firstLabel(withCSSClass: "preview-math-label"))
+        #expect(PreviewMath.debugFormulas(on: block).isEmpty)
+        #expect(block.text.contains("\\rule{300em}{300em}"))
+    }
+
+    @Test("A long label is shown again only once all its postponed formulas are ready") @MainActor
+    func aLongLabelIsShownAgainOnlyOnceAllItsPostponedFormulasAreReady() throws {
+        let fixture = try Fixture(suffix: "postponed-deferred", markdown: "")
+        let markdown = "Many " + (0..<12).map { "$d_{\($0)}$" }.joined(separator: " ") + " end."
+        MathRenderer.withParseBudget(.zero) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: markdown, darkAppearance: false))
+        }
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let textBefore = label.text
+        #expect(PreviewMath.debugFormulas(on: label).isEmpty)
+        // One formula per pass: the label stays as it was until the last one.
+        var passes = 0
+        while MathRenderer.withParseBudget(.zero, guaranteeingProgress: true, {
+            PreviewMath.layOutPostponedFormulas(under: fixture.preview.rootScroll)
+        }) {
+            passes += 1
+            #expect(label.text == textBefore)
+            #expect(PreviewMath.debugFormulas(on: label).isEmpty)
+            if passes > 20 { break }
+        }
+        #expect(passes == 11)
+        #expect(PreviewMath.debugFormulas(on: label).count == 12)
     }
 
     @Test("Formulas are painted, in the label's colour, and follow a colour change") @MainActor
@@ -314,7 +377,7 @@ struct MathPreviewWidgetTests {
         #expect(!formula.isDisplay)
         gtk_label_select_region(label.opaquePointer, 0, -1)
         gtk_widget_activate_action_variant(label.widgetPointer, "clipboard.copy", nil)
-        #expect(readClipboardText(gtk_widget_get_clipboard(label.widgetPointer))?.contains("$$\\frac{1}{2}$$") == true)
+        #expect(readClipboardText(gtk_widget_get_clipboard(label.widgetPointer)) == "a $$\\frac{1}{2}$$ c")
     }
 
     @Test("A search hit inside a display formula highlights it") @MainActor
@@ -327,12 +390,23 @@ struct MathPreviewWidgetTests {
         #expect(preview.debugAppliedHighlightTexts == ["\u{FFFC}"])
     }
 
+    @Test("A search hit inside a display formula that cannot draw lands on its words") @MainActor
+    func aSearchHitInsideADisplayFormulaThatCannotDrawLandsOnItsWords() throws {
+        let fixture = try Fixture(suffix: "search-display-fallback", markdown: "Intro.\n\n$$\n\\undefinedmacro{beta}\n$$")
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "beta", options: .init())
+        #expect(matches.count == 1)
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["beta"])
+    }
+
     @Test("Changing a heading's level resizes its formula") @MainActor
     func changingAHeadingsLevelResizesItsFormula() throws {
-        let fixture = try Fixture(suffix: "heading-level", markdown: "# Title $x$\n\nBody.")
+        // The code block keeps the heading a row of its own, sized by CSS.
+        let fixture = try Fixture(suffix: "heading-level", markdown: "# Title $x$\n\n```\ncode\n```")
         let label = try #require(fixture.labels().first { $0.text.hasPrefix("Title") })
         let large = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
-        fixture.render("### Title $x$\n\nBody.")
+        fixture.render("### Title $x$\n\n```\ncode\n```")
         let resized = try #require(fixture.labels().first { $0.text.hasPrefix("Title") })
         pumpUntil(timeout: .milliseconds(800)) {
             (PreviewMath.debugFormulas(on: resized).first?.pixelSize ?? large) < large * 0.9

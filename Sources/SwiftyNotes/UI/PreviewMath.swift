@@ -54,7 +54,10 @@ enum PreviewMath {
         }
 
         let state = existing ?? attachState(to: label)
-        state.originalMarkup = markup
+        if state.originalMarkup != markup {
+            state.originalMarkup = markup
+            state.markerSizes = nil
+        }
         state.spans = spans
         state.baseFontPixels = fontPixels(of: label)
         layOut(label, state: state)
@@ -68,7 +71,9 @@ enum PreviewMath {
         var stillPostponed = false
         forEachMathLabel(under: root) { label, state in
             guard state.hasPostponedFormulas else { return }
-            layOut(label, state: state)
+            // Relaying a long label out costs more than a pass may spend, so
+            // it is shown again only once all its formulas are ready.
+            layOut(label, state: state, applyingWhilePostponed: false)
             stillPostponed = stillPostponed || state.hasPostponedFormulas
         }
         if !stillPostponed {
@@ -189,10 +194,27 @@ enum PreviewMath {
 
     // MARK: - Layout
 
-    private static func layOut(_ label: Label, state: MathLabelState) {
+    /// Formulas wider than this inline, or larger than ``maxFormulaArea``,
+    /// show their source: GTK renders label content into textures, and a
+    /// formula thousands of pixels wide (`\hspace{600em}`) costs tens of
+    /// megabytes there.
+    static let maxInlineFormulaWidth = 2048.0
+    static let maxFormulaArea = 2048.0 * 2048.0
+
+    static func isDrawable(_ formula: MathFormula, inline: Bool) -> Bool {
+        formula.width * formula.height <= maxFormulaArea && (!inline || formula.width <= maxInlineFormulaWidth)
+    }
+
+    private static func layOut(_ label: Label, state: MathLabelState, applyingWhilePostponed: Bool = true) {
         // Parse every formula at its own size; one that does not parse falls
         // back to its source, which changes the markup.
-        let sizes = markerFontPixels(in: state.originalMarkup, basePixels: state.baseFontPixels)
+        let sizes: [Double]
+        if let cached = state.markerSizes, cached.basePixels == state.baseFontPixels {
+            sizes = cached.sizes
+        } else {
+            sizes = markerFontPixels(in: state.originalMarkup, basePixels: state.baseFontPixels)
+            state.markerSizes = (state.baseFontPixels, sizes)
+        }
         var formulas: [MathFormula?] = []
         state.hasPostponedFormulas = false
         for (index, span) in state.spans.enumerated() {
@@ -206,13 +228,17 @@ enum PreviewMath {
                 formulas.append(drawn)
                 continue
             }
-            formulas.append(MathRenderer.formula(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels))
+            let formula = MathRenderer.formula(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels)
+            formulas.append(formula.flatMap { isDrawable($0, inline: !state.isDisplayBlock) ? $0 : nil })
             if MathRenderer.lastLookupWasPostponed {
                 state.hasPostponedFormulas = true
                 mayHavePostponedFormulas = true
             }
         }
         state.formulas = formulas
+        if state.hasPostponedFormulas, !applyingWhilePostponed {
+            return
+        }
         let markup = markupReplacingFailedFormulas(
             in: state.originalMarkup,
             spans: state.spans,
@@ -535,6 +561,9 @@ final class MathLabelState {
     var entries: [Entry] = []
     /// The formulas last laid out, by span (nil: source shown).
     var formulas: [MathFormula?] = []
+    /// The font size of each marker for a base size, which takes a parse of
+    /// the markup to find.
+    var markerSizes: (basePixels: Double, sizes: [Double])?
     var baseFontPixels = 0.0
     var isDisplayBlock = false
     var hasPostponedFormulas = false

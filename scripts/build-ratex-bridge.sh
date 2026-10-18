@@ -64,7 +64,8 @@ case "$(uname -s)" in
     Darwin) branch='/^#if os(macOS)/,/^#else/p' ;;
     *) branch='/^#else/,/^#endif/p' ;;
 esac
-listed="$(sed -n "$branch" "$APP_ROOT/Package.swift" | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ' || true)"
+listed="$(sed -n '/^\/\/ BEGIN math bridge system libraries/,/^\/\/ END math bridge system libraries/p' "$APP_ROOT/Package.swift" \
+    | sed -n "$branch" | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ' || true)"
 if [ -z "$listed" ]; then
     echo "build-ratex-bridge.sh: could not read mathBridgeSystemLibraries for this platform from Package.swift" >&2
     exit 1

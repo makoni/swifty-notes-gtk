@@ -199,7 +199,6 @@ struct MathSpanExtractorTests {
 
     @Test("Verbatim regions keep their dollars", arguments: [
         "$a\n\nb$",
-        "`a\n\n$b$` c`",
         "<https://example.com/$a$>",
         "<!-- $a$ -->",
         "~~~\n$a$\n~~~",
@@ -212,7 +211,18 @@ struct MathSpanExtractorTests {
     ])
     func verbatimRegionsKeepTheirDollars(markdown: String) {
         let result = extract(markdown)
-        #expect(result.spans.filter { $0.tex == "a" }.isEmpty, "\(markdown)")
+        #expect(result.spans.isEmpty, "\(markdown)")
+        #expect(result.markdown == markdown)
+    }
+
+    @Test("A code span cannot cross a blank line, so math after one is math")
+    func aCodeSpanCannotCrossABlankLine() {
+        #expect(extract("`a\n\n$b$` c`").spans == [MathSpan(tex: "b", isDisplay: false)])
+    }
+
+    @Test("An escaped dollar right before the closing pair stays in display TeX")
+    func anEscapedDollarRightBeforeTheClosingPairStaysInDisplayTex() {
+        #expect(extract("$$\\$$$").spans == [MathSpan(tex: "\\$", isDisplay: true)])
     }
 
     @Test("A comment at the very end, or right before math")
@@ -233,8 +243,12 @@ struct MathSpanExtractorTests {
                       "\n", "\n\n", " ", "    ", "> ", "- ", "a", "x^2", "http://", "www.", "<a ", "&", "\u{FFFC}", "\u{E000}"]
         for _ in 0..<3000 {
             let markdown = (0..<next(24)).map { _ in pieces[next(pieces.count)] }.joined()
-            let result = extract(markdown)
-            #expect(MathSpanExtractor.sourceRanges(in: markdown).count == result.spans.count, "\(markdown.debugDescription)")
+            _ = extract(markdown)
+            // Every span starts at a delimiter: `$`, or a fence's backtick or tilde.
+            let scalars = Array(markdown.unicodeScalars)
+            for range in MathSpanExtractor.sourceRanges(in: markdown) {
+                #expect(["$", "`", "~"].contains(scalars[range.lowerBound]), "\(markdown.debugDescription)")
+            }
         }
     }
 
@@ -244,6 +258,19 @@ struct MathSpanExtractorTests {
         #expect(extract("- item\n  - nested\n\n      more $a$").spans == [MathSpan(tex: "a", isDisplay: false)])
         // A paragraph back at the margin ends the code block.
         #expect(extract("    code\n\nafter $a$").spans == [MathSpan(tex: "a", isDisplay: false)])
+    }
+
+    @Test("Long lines of link, autolink and tag openers stay fast")
+    func longLinesOfLinkAutolinkAndTagOpenersStayFast() {
+        // Each opener used to scan to the end of the line: seconds at 100 KB.
+        for piece in ["](", "](a (", "](<", "<http://", "<a "] {
+            let line = String(repeating: piece, count: 100_000 / piece.count) + " $x$"
+            let start = ContinuousClock.now
+            let result = MathSpanExtractor.extract(from: line)
+            let elapsed = ContinuousClock.now - start
+            #expect(result.spans == [MathSpan(tex: "x", isDisplay: false)], "\(piece)")
+            #expect(elapsed < .milliseconds(1500), "\(piece): \(elapsed)")
+        }
     }
 
     @Test("A fence indented four spaces is code, not a fence")

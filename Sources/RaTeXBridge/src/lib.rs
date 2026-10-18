@@ -21,7 +21,7 @@ use ratex_layout::{
     layout_with_fallback_metrics, to_display_list, validate_layout, FallbackGlyphMetrics,
     LayoutOptions,
 };
-use ratex_parser::{parse, ParseNode};
+use ratex_parser::parse;
 use ratex_types::color::Color;
 use ratex_types::math_style::MathStyle;
 use ratex_types::path_command::PathCommand;
@@ -40,6 +40,7 @@ const MAX_BOX_PX: f64 = 16_384.0;
 /// Most memory, in estimated bytes, one formula may keep. Stretchy
 /// constructs (`\overbrace`, `\xrightarrow`) are drawn as long paths, tens
 /// of kilobytes each, so a short formula could otherwise hold megabytes.
+/// Also `RATEX_BRIDGE_MAX_FORMULA_BYTES` in the header.
 const MAX_FORMULA_BYTES: usize = 512 * 1024;
 
 /// Most memory, in estimated bytes, all live formulas together may keep by
@@ -115,12 +116,17 @@ fn guarded<T>(fallback: T, body: impl FnOnce() -> T) -> T {
 // Formula
 // ---------------------------------------------------------------------------
 
-/// A parsed formula. The layout is redone per default colour (the theme can
-/// change between draws) and the last one is cached.
+/// The default colour a formula is laid out with, standing in for the
+/// colour it is drawn with. `\color` values come from 8-bit components or
+/// names, which never land on these fractions.
+const DEFAULT_COLOR_STAND_IN: Color = Color { r: 1.0 / 512.0, g: 3.0 / 512.0, b: 5.0 / 512.0, a: 1.0 };
+
+/// A laid-out formula. It keeps only its display list, laid out once with
+/// `DEFAULT_COLOR_STAND_IN`, plus a copy recoloured for the colour it was
+/// last drawn in (the theme can change between draws); the parse tree,
+/// which macros can make far larger than the drawing, is not kept.
 pub struct Formula {
-    nodes: Vec<ParseNode>,
-    style: MathStyle,
-    fallback_metrics: Arc<HashMap<char, FallbackGlyphMetrics>>,
+    base: DisplayList,
     font_px: f64,
     width: f64,
     height: f64,
@@ -136,7 +142,7 @@ impl Drop for Formula {
     }
 }
 
-/// Estimated heap bytes of a display list; paths dominate.
+/// Heap bytes of a display list, near enough; paths dominate.
 fn display_list_bytes(list: &DisplayList) -> usize {
     let mut bytes = std::mem::size_of::<DisplayList>() + list.items.capacity() * std::mem::size_of::<DisplayItem>();
     for item in &list.items {
@@ -149,30 +155,37 @@ fn display_list_bytes(list: &DisplayList) -> usize {
     bytes
 }
 
-/// Estimated bytes a formula keeps: its display list, which the colour
-/// cache may hold twice while a new colour is laid out, plus the parse tree.
-fn formula_cost(tex: &str, list: &DisplayList) -> usize {
-    2 * display_list_bytes(list) + 64 * tex.len() + 4096
+/// Bytes a formula keeps: its display list twice (the base and the
+/// recoloured copy) and some bookkeeping.
+fn formula_cost(list: &DisplayList) -> usize {
+    2 * display_list_bytes(list) + 1024
 }
 
 impl Formula {
-    fn layout(&self, color: Color) -> Result<DisplayList, String> {
-        let options = LayoutOptions::default().with_style(self.style).with_color(color);
-        let tree = layout_with_fallback_metrics(&self.nodes, &options, Arc::clone(&self.fallback_metrics));
-        validate_layout(&tree).map_err(|error| format!("layout rejected: {error}"))?;
-        Ok(to_display_list(&tree))
-    }
-
-    fn display_list(&self, color: Color) -> Result<Arc<DisplayList>, String> {
+    fn display_list(&self, color: Color) -> Arc<DisplayList> {
         let mut cached = self.cached.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some((cached_color, list)) = cached.as_ref() {
             if *cached_color == color {
-                return Ok(Arc::clone(list));
+                return Arc::clone(list);
             }
         }
-        let list = Arc::new(self.layout(color)?);
+        // Drop the old copy before making the new one.
+        *cached = None;
+        let mut list = self.base.clone();
+        for item in &mut list.items {
+            let item_color = match item {
+                DisplayItem::GlyphPath { color, .. }
+                | DisplayItem::Line { color, .. }
+                | DisplayItem::Rect { color, .. }
+                | DisplayItem::Path { color, .. } => color,
+            };
+            if *item_color == DEFAULT_COLOR_STAND_IN {
+                *item_color = color;
+            }
+        }
+        let list = Arc::new(list);
         *cached = Some((color, Arc::clone(&list)));
-        Ok(list)
+        list
     }
 }
 
@@ -233,18 +246,14 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
         return Err("formula memory limit reached".to_string());
     }
     let nodes = parse(tex).map_err(|error| format!("parse error: {error}"))?;
-    let mut formula = Formula {
-        nodes,
-        style: if display { MathStyle::Display } else { MathStyle::Text },
-        fallback_metrics: Arc::new(fallback_metrics(tex)),
-        font_px,
-        width: 0.0,
-        height: 0.0,
-        depth: 0.0,
-        cached: Mutex::new(None),
-        cost: 0,
-    };
-    let list = formula.layout(Color::BLACK)?;
+    let style = if display { MathStyle::Display } else { MathStyle::Text };
+    let options = LayoutOptions::default().with_style(style).with_color(DEFAULT_COLOR_STAND_IN);
+    let tree = layout_with_fallback_metrics(&nodes, &options, Arc::new(fallback_metrics(tex)));
+    validate_layout(&tree).map_err(|error| format!("layout rejected: {error}"))?;
+    let list = to_display_list(&tree);
+    // The tree and the layout are dropped here; only the list stays.
+    drop(tree);
+    drop(nodes);
     let width = list.width * font_px;
     let height = (list.height + list.depth) * font_px;
     let depth = list.depth * font_px;
@@ -252,7 +261,7 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
     if !sane(width) || !sane(height) || !sane(depth) || depth > height {
         return Err(format!("formula box {width}×{height} px is out of range"));
     }
-    let cost = formula_cost(tex, &list);
+    let cost = formula_cost(&list);
     if cost > MAX_FORMULA_BYTES {
         return Err(format!("formula needs about {} KiB, more than {} KiB", cost / 1024, MAX_FORMULA_BYTES / 1024));
     }
@@ -264,20 +273,16 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
         set_last_error_transient(true);
         return Err("formula memory limit reached".to_string());
     }
-    formula.cost = cost;
-    formula.width = width;
-    formula.height = height;
-    formula.depth = depth;
-    *formula.cached.get_mut().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some((Color::BLACK, Arc::new(list)));
-    Ok(formula)
+    Ok(Formula { base: list, font_px, width, height, depth, cached: Mutex::new(None), cost })
 }
 
 // ---------------------------------------------------------------------------
 // Text fallback font
 // ---------------------------------------------------------------------------
 
-// fontconfig is already in the process (Pango and cairo use it); these are
+// fontconfig is already in the process on Linux (Pango and cairo use it); these are
 // the few calls needed to ask it for a font.
+#[cfg(not(target_os = "macos"))]
 #[link(name = "fontconfig")]
 extern "C" {
     fn FcNameParse(name: *const u8) -> *mut c_void;
@@ -291,7 +296,9 @@ extern "C" {
     fn FcPatternDestroy(pattern: *mut c_void);
 }
 
+#[cfg(not(target_os = "macos"))]
 const FC_MATCH_PATTERN: c_int = 0;
+#[cfg(not(target_os = "macos"))]
 const FC_RESULT_MATCH: c_int = 0;
 
 /// The serif system font fontconfig picks for Russian text, as a RaTeX font
@@ -300,6 +307,7 @@ const FC_RESULT_MATCH: c_int = 0;
 /// it looks for Noto Sans CJK at a fixed path (absent in Flatpak runtimes)
 /// and then guesses by locale. A serif with Cyrillic and Greek matches
 /// KaTeX's own text font far better.
+#[cfg(not(target_os = "macos"))]
 fn text_fallback_font_spec() -> Option<String> {
     // SAFETY: plain fontconfig calls on the default configuration; every
     // pattern created here is destroyed before returning.
@@ -338,6 +346,13 @@ fn text_fallback_font_spec() -> Option<String> {
         let path = path?;
         Some(if index == 0 { path } else { format!("{path}#{index}") })
     }
+}
+
+/// Pango does not use fontconfig on macOS, and RaTeX finds Arial Unicode
+/// there by itself.
+#[cfg(target_os = "macos")]
+fn text_fallback_font_spec() -> Option<String> {
+    None
 }
 
 // ---------------------------------------------------------------------------
@@ -446,13 +461,7 @@ pub unsafe extern "C" fn ratex_bridge_draw(
         }
         let unit = |value: f64| if value.is_finite() { value.clamp(0.0, 1.0) as f32 } else { 0.0 };
         let color = Color::new(unit(red), unit(green), unit(blue), unit(alpha));
-        let list = match formula.display_list(color) {
-            Ok(list) => list,
-            Err(message) => {
-                set_last_error(&message);
-                return -1;
-            }
-        };
+        let list = formula.display_list(color);
         // from_raw_none takes its own reference and drops it again, so the
         // caller keeps ownership of the context.
         let context = cairo::Context::from_raw_none(cr.cast::<cairo::ffi::cairo_t>());

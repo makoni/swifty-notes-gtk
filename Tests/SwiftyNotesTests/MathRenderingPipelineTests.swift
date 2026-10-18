@@ -429,6 +429,65 @@ struct MathRenderingPipelineTests {
         #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
     }
 
+    @Test("Text in parentheses after a bracket is not a link destination")
+    func textInParenthesesAfterABracketIsNotALinkDestination() {
+        #expect(MathSpanExtractor.extract(from: "[note](see $x$)").spans == [MathSpan(tex: "x", isDisplay: false)])
+        #expect(MathSpanExtractor.extract(from: "[a](<x $y$>) and [b](u \"t $z$\")").spans.isEmpty)
+    }
+
+    @Test("A placeholder in an href comes back with its own delimiters")
+    func aPlaceholderInAnHrefComesBackWithItsOwnDelimiters() {
+        let blocks = blocks(for: "[r][ref]\n\n[ref]: /x?$$a$$")
+        guard let first = blocks.first, case let .paragraph(text) = first else {
+            Issue.record("expected a paragraph, got \(blocks)")
+            return
+        }
+        #expect(text.markup.contains("href=\"/x?$$a$$\""), "\(text.markup)")
+    }
+
+    @Test("A link destination pairs its own dollars with none outside")
+    func aLinkDestinationPairsItsOwnDollarsWithNoneOutside() {
+        let blocks = blocks(for: "[a](x?$p) b$ c")
+        guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+            Issue.record("expected one paragraph, got \(blocks)")
+            return
+        }
+        #expect(text.mathSpans.isEmpty)
+        #expect(text.plainText == "a b$ c")
+    }
+
+    @Test("TeX put back into an href is escaped for the attribute")
+    func texPutBackIntoAnHrefIsEscapedForTheAttribute() {
+        let blocks = blocks(for: "[docs][ref] and $x$\n\n[ref]: /q?$a&b$")
+        guard let first = blocks.first, case let .paragraph(text) = first else {
+            Issue.record("expected a paragraph, got \(blocks)")
+            return
+        }
+        #expect(text.markup.contains("href=\"/q?$a&amp;b$\""), "\(text.markup)")
+    }
+
+    @Test("Image titles and image groups put math back as source")
+    func imageTitlesAndImageGroupsPutMathBackAsSource() {
+        let titled = blocks(for: "![alt][img]\n\n[img]: pic.png \"Title $t$\"")
+        if case let .image(_, _, title, _) = titled.first {
+            #expect(title == "Title $t$")
+        } else {
+            Issue.record("expected an image, got \(titled)")
+        }
+        let group = blocks(for: "![A $a$](a.png) ![B $b$](b.png)")
+        if case let .imageGroup(items, _) = group.first {
+            #expect(items.map(\.alt) == ["A $a$", "B $b$"])
+        } else {
+            Issue.record("expected an image group, got \(group)")
+        }
+        let linked = blocks(for: "[![i](a.png)][l] [![j](b.png)][l]\n\n[l]: /p?$q$")
+        if case let .imageGroup(items, _) = linked.first {
+            #expect(items.map(\.linkDestination) == ["/p?$q$", "/p?$q$"])
+        } else {
+            Issue.record("expected an image group, got \(linked)")
+        }
+    }
+
     @Test("A bare URL with dollars is not math")
     func aBareURLWithDollarsIsNotMath() {
         let url = "https://example.com/api?$select=a&$top=5"
@@ -477,6 +536,32 @@ struct MathRenderingPipelineTests {
         #expect(text.markup.contains("href=\"/search?q=$a$b$\""))
         #expect(text.mathSpans == [MathSpan(tex: "x", isDisplay: false)])
         #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1)
+    }
+
+    @Test("Entities for placeholder characters cannot repeat a formula")
+    func entitiesForPlaceholderCharactersCannotRepeatAFormula() {
+        for markdown in ["$x$ &#xE000;&#xE010;&#xE001;", "$x$ &#57344;&#57360;&#57345;", "$x$ &#x0e000;&#xE010;&#xe001;"] {
+            let blocks = blocks(for: markdown)
+            guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+                Issue.record("expected one paragraph, got \(blocks)")
+                continue
+            }
+            #expect(text.mathSpans == [MathSpan(tex: "x", isDisplay: false)], "\(markdown)")
+            #expect(text.markup.unicodeScalars.filter { $0 == "\u{FFFC}" }.count == 1, "\(markdown)")
+        }
+        // Same length, so source positions do not move.
+        #expect(MathSpanExtractor.extract(from: "&#xE000; $y$").markdown.unicodeScalars.count
+            == "&#xFFFD; \(MathSpanExtractor.placeholder(for: 0))".unicodeScalars.count)
+    }
+
+    @Test("Entities in a link cannot carry another formula's TeX")
+    func entitiesInALinkCannotCarryAnotherFormulasTex() {
+        let blocks = blocks(for: "Secret $\\text{PIN 1234}$ [l](http://h/&#xE000;&#xE010;&#xE001;)")
+        guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+            Issue.record("expected one paragraph, got \(blocks)")
+            return
+        }
+        #expect(!text.markup.contains("PIN 1234"), "\(text.markup)")
     }
 
     @Test("An entity for the formula marker does not become a formula")

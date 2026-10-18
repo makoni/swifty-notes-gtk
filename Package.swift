@@ -50,8 +50,10 @@ func sourceDependency(
 // The system libraries the static library needs are listed here rather
 // than read from the build: SwiftPM caches this manifest by its contents,
 // so anything it read from build/ would go stale. The build script reads
-// these lists back and fails if cargo asks for anything else.
+// these lists back, between the BEGIN and END lines, and fails if cargo
+// asks for anything else.
 let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
+// BEGIN math bridge system libraries
 #if os(macOS)
 let mathBridgeSystemLibraries = [
     "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lintl", "-lcairo-gobject", "-lcairo", "-lfontconfig",
@@ -63,6 +65,7 @@ let mathBridgeSystemLibraries = [
     "-lgcc_s", "-lutil", "-lrt", "-lpthread", "-lm", "-ldl",
 ]
 #endif
+// END math bridge system libraries
 let mathBridgeLinkerFlags = ["-L\(packageDirectory)/build/ratex-bridge/lib", "-lratex_bridge"]
     + mathBridgeSystemLibraries
 

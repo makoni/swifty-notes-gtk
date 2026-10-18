@@ -73,6 +73,8 @@ public enum MathRenderer {
     private static var cache: [CacheKey: CacheEntry] = [:]
     private static var useCounter = 0
     private static var parseDeadline: ContinuousClock.Instant?
+    private static var parseMustProgress = false
+    private static var parsedInBudget = false
 
     /// Set when a lookup returned nil only because the pass ran out of parse
     /// budget, so the caller can tell a postponed formula from a broken one;
@@ -104,17 +106,26 @@ public enum MathRenderer {
             cache[key]?.lastUse = useCounter
             return cached.formula
         }
-        if let parseDeadline, ContinuousClock.now >= parseDeadline {
+        if let parseDeadline, ContinuousClock.now >= parseDeadline, !(parseMustProgress && !parsedInBudget) {
             // Out of time for this pass; not cached, so a later pass parses it.
             lastLookupWasPostponed = true
             return nil
         }
-        let formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
-        // A formula refused only because the formulas alive now hold the
-        // engine's memory limit may draw once they are gone; not cached.
-        if formula != nil || ratex_bridge_last_error_is_transient() == 0 {
-            store(formula, for: key)
+        parsedInBudget = true
+        var formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
+        if formula == nil, ratex_bridge_last_error_is_transient() != 0 {
+            // The live formulas hold the engine's memory limit. Let go of
+            // the least recently used cached ones (those no label shows any
+            // more are freed) until one more formula surely fits, and try
+            // once more.
+            freeCachedFormulas(bytes: UInt(RATEX_BRIDGE_MAX_FORMULA_BYTES))
+            formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
+            // Still refused: not cached, as it may draw once memory frees.
+            if formula == nil, ratex_bridge_last_error_is_transient() != 0 {
+                return nil
+            }
         }
+        store(formula, for: key)
         return formula
     }
 
@@ -130,23 +141,33 @@ public enum MathRenderer {
     /// macOS is left to the engine: Pango does not use fontconfig there, and
     /// the engine finds Arial Unicode by itself.
     nonisolated public static func configureTextFallbackFont() {
-        #if os(macOS)
-        return
-        #endif
+        #if !os(macOS)
         guard getenv("RATEX_UNICODE_FONT") == nil, let spec = ratex_bridge_text_fallback_font() else { return }
         setenv("RATEX_UNICODE_FONT", spec, 0)
+        #endif
     }
 
     /// Runs one render pass, which may spend at most `duration` parsing
     /// formulas that are not cached yet; past that, ``formula(tex:isDisplay:pixelSize:)``
     /// returns nil for new formulas until the pass ends.
+    ///
+    /// With `guaranteeingProgress`, the first new formula of the pass is
+    /// parsed whatever the time, so passes that follow one another always
+    /// get through the postponed formulas.
     public static func withParseBudget<Result>(
         _ duration: Duration = .milliseconds(400),
+        guaranteeingProgress: Bool = false,
         _ body: () throws -> Result
     ) rethrows -> Result {
-        let outer = parseDeadline
-        parseDeadline = min(outer ?? .now + duration, .now + duration)
-        defer { parseDeadline = outer }
+        let outer = (deadline: parseDeadline, mustProgress: parseMustProgress, parsed: parsedInBudget)
+        parseDeadline = min(outer.deadline ?? .now + duration, .now + duration)
+        parseMustProgress = guaranteeingProgress
+        parsedInBudget = false
+        defer {
+            parseDeadline = outer.deadline
+            parseMustProgress = outer.mustProgress
+            parsedInBudget = outer.parsed || parsedInBudget
+        }
         return try body()
     }
 
@@ -178,7 +199,22 @@ public enum MathRenderer {
         guard cache.count > cacheLimit else { return }
         // Evict the least recently used quarter at once, so eviction (a
         // sort) runs once per many insertions rather than on every one.
-        let evicted = cache.sorted { $0.value.lastUse < $1.value.lastUse }.prefix(cacheLimit / 4)
+        evictLeastRecentlyUsed(cacheLimit / 4)
+    }
+
+    /// Drops cached formulas, least recently used first, until the engine
+    /// has given back `bytes` or the cache is empty.
+    private static func freeCachedFormulas(bytes: UInt) {
+        let start = ratex_bridge_live_bytes()
+        for (key, _) in cache.sorted(by: { $0.value.lastUse < $1.value.lastUse }) {
+            cache.removeValue(forKey: key)
+            let live = ratex_bridge_live_bytes()
+            if live <= start, start - live >= bytes { return }
+        }
+    }
+
+    private static func evictLeastRecentlyUsed(_ count: Int) {
+        let evicted = cache.sorted { $0.value.lastUse < $1.value.lastUse }.prefix(count)
         for (key, _) in evicted {
             cache.removeValue(forKey: key)
         }

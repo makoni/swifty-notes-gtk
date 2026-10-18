@@ -185,6 +185,27 @@ struct MathRendererTests {
         #expect(MathRenderer.formula(tex: "new", isDisplay: false, pixelSize: 20) != nil)
     }
 
+    @Test("A pass that must progress parses its first formula whatever the time")
+    func aPassThatMustProgressParsesItsFirstFormula() {
+        MathRenderer.withParseBudget(.zero, guaranteeingProgress: true) {
+            #expect(MathRenderer.formula(tex: "p_1", isDisplay: false, pixelSize: 20) != nil)
+            #expect(MathRenderer.formula(tex: "p_2", isDisplay: false, pixelSize: 20) == nil)
+            #expect(MathRenderer.lastLookupWasPostponed)
+        }
+    }
+
+    @Test("Macros that build a huge tree do not keep it")
+    func macrosThatBuildAHugeTreeDoNotKeepIt() throws {
+        // ~500 bytes of TeX expanding to tens of thousands of nodes that draw
+        // nothing: only the (empty) drawing may count.
+        let fractions = String(repeating: "\\frac{a}{b}", count: 36)
+        let tex = "\\def\\a{\(fractions)}\\def\\b{\(String(repeating: "\\a", count: 10))}\\vphantom{\(String(repeating: "\\b", count: 24))}"
+        let before = ratex_bridge_live_bytes()
+        let handle = try #require(tex.withCString { ratex_bridge_parse($0, strlen($0), 0, 20) })
+        defer { ratex_bridge_free(handle) }
+        #expect(ratex_bridge_live_bytes() - before < 16 * 1024)
+    }
+
     @Test("A formula that would keep too much memory is refused")
     func formulaKeepingTooMuchMemoryIsRefused() {
         // Each stretchy brace is a long path: ~2 KB of TeX, megabytes drawn.
@@ -218,12 +239,25 @@ struct MathRendererTests {
         #expect(ratex_bridge_last_error_is_transient() == 0)
     }
 
+    @Test("At the memory limit, cached formulas no label holds make room")
+    func atTheMemoryLimitCachedFormulasNoLabelHoldsMakeRoom() throws {
+        // Cached only: nothing else keeps these alive.
+        for index in 0..<8 {
+            _ = MathRenderer.formula(tex: "\\overbrace{a_{\(index)}}", isDisplay: false, pixelSize: 20)
+        }
+        let previous = ratex_bridge_set_live_bytes_limit(ratex_bridge_live_bytes())
+        defer { ratex_bridge_set_live_bytes_limit(previous) }
+        #expect(MathRenderer.formula(tex: "\\overbrace{fresh}", isDisplay: false, pixelSize: 20) != nil)
+    }
+
+    #if !os(macOS)
     @Test("A serif fallback font with Cyrillic and Greek is found for text in formulas")
     func serifFallbackFontIsFound() throws {
         let spec = try #require(ratex_bridge_text_fallback_font().map { String(cString: $0) })
         let path = String(spec.split(separator: "#").first ?? "")
         #expect(FileManager.default.fileExists(atPath: path), "\(spec)")
     }
+    #endif
 
     @Test("Every formula in the bundled notes renders")
     func everyFormulaInTheBundledNotesRenders() {
