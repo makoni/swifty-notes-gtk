@@ -292,6 +292,18 @@ struct MathSpanExtractorTests {
     @Test("A line of only quote markers ends display math in a quote")
     func aLineOfOnlyQuoteMarkersEndsDisplayMathInAQuote() {
         #expect(extract("> $$a\n>\n> b$$").spans.isEmpty)
+        #expect(extract("> > $$a\n> >\n> > b$$").spans.isEmpty)
+    }
+
+    @Test("Indented code inside an outer list item after a nested one")
+    func indentedCodeInsideAnOuterListItemAfterANestedOne() {
+        // Six spaces: four past the outer item's content, so code.
+        #expect(extract("- outer\n  - inner\n\n  back in outer\n\n      $x^2$").spans.isEmpty)
+    }
+
+    @Test("A lazy continuation line keeps the list open")
+    func aLazyContinuationLineKeepsTheListOpen() {
+        #expect(extract("- item\nlazy\n\n    $x$").spans == [MathSpan(tex: "x", isDisplay: false)])
     }
 
     @Test("A long line of formulas extracts in linear time")
@@ -300,6 +312,16 @@ struct MathSpanExtractorTests {
         let start = ContinuousClock.now
         #expect(MathSpanExtractor.extract(from: line).spans.count == 25000)
         #expect(ContinuousClock.now - start < .milliseconds(1500))
+    }
+
+    @Test("Backtick runs of many lengths stay fast")
+    func backtickRunsOfManyLengthsStayFast() {
+        // Each run length used to search to the end of the text.
+        let text = (1...1414).map { String(repeating: "`", count: $0) + " a " }.joined() + " $x$"
+        let start = ContinuousClock.now
+        let result = MathSpanExtractor.extract(from: text)
+        #expect(ContinuousClock.now - start < .milliseconds(1500))
+        #expect(result.spans == [MathSpan(tex: "x", isDisplay: false)])
     }
 
     @Test("A fence indented four spaces is code, not a fence")

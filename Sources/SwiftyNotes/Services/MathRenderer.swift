@@ -81,6 +81,11 @@ public enum MathRenderer {
     /// cleared by the next lookup.
     public private(set) static var lastLookupWasPostponed = false
 
+    /// Set when a lookup returned nil because the formulas alive held the
+    /// engine's memory limit, so it may succeed later (unlike a formula
+    /// that does not parse); cleared by the next lookup.
+    public private(set) static var lastLookupWasTransient = false
+
     private struct CacheEntry {
         let formula: MathFormula?
         var lastUse: Int
@@ -98,6 +103,7 @@ public enum MathRenderer {
     /// TeX does not parse, is too long or lays out absurdly large.
     public static func formula(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {
         lastLookupWasPostponed = false
+        lastLookupWasTransient = false
         guard pixelSize.isFinite, pixelSize >= 1, pixelSize <= 1024 else { return nil }
         guard !tex.utf8.isEmpty, tex.utf8.count <= maxTeXBytes else { return nil }
         let key = CacheKey(tex: tex, isDisplay: isDisplay, quarterPixels: Int((pixelSize * 4).rounded()))
@@ -122,6 +128,7 @@ public enum MathRenderer {
             formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
             // Still refused: not cached, as it may draw once memory frees.
             if formula == nil, ratex_bridge_last_error_is_transient() != 0 {
+                lastLookupWasTransient = true
                 return nil
             }
         }
@@ -181,7 +188,11 @@ public enum MathRenderer {
         cache.count
     }
 
+    /// How many formulas the engine has parsed (tests).
+    private(set) static var parseCount = 0
+
     private static func parse(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {
+        parseCount += 1
         let handle: OpaquePointer? = tex.utf8CString.withUnsafeBufferPointer { buffer in
             // utf8CString is NUL-terminated; pass the explicit length so a
             // NUL inside the TeX is an error, not a silent truncation.

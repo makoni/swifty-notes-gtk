@@ -1,6 +1,7 @@
 #if !os(macOS)
 import Adwaita
 import CAdwaita
+import CRaTeXBridge
 import CSpelling
 import Foundation
 @testable import SwiftyNotes
@@ -228,6 +229,53 @@ struct MathPreviewWidgetTests {
         MainContext.pump(for: .milliseconds(100))
         let heading = try #require(fixture.labels().first { $0.text.hasPrefix("A needle") })
         #expect(PreviewMath.debugFormulas(on: heading).map(\.tex) == ["x"])
+    }
+
+    @Test("A formula refused at the memory limit is drawn after the next edit") @MainActor
+    func aFormulaRefusedAtTheMemoryLimitIsDrawnAfterTheNextEdit() throws {
+        let fixture = try Fixture(suffix: "retry-limit", markdown: "")
+        let previous = ratex_bridge_set_live_bytes_limit(0)
+        fixture.render("Text $m_{retry}$ here.")
+        ratex_bridge_set_live_bytes_limit(previous)
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: label).isEmpty)
+        fixture.render("Text $m_{retry}$ here!")
+        let edited = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(edited.widgetPointer == label.widgetPointer, "updated in place")
+        #expect(PreviewMath.debugFormulas(on: edited).map(\.tex) == ["m_{retry}"])
+    }
+
+    @Test("Broken formulas are not parsed again on the next edit") @MainActor
+    func brokenFormulasAreNotParsedAgainOnTheNextEdit() throws {
+        let fixture = try Fixture(suffix: "broken-no-reparse", markdown: "")
+        // More than the formula cache holds, so only the label remembers.
+        let formulas = (0..<(MathRenderer.cacheLimit + 88)).map { "$\\nosuchmacro{e\($0)}$" }.joined(separator: " ")
+        MathRenderer.withParseBudget(.seconds(30)) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: "Broken \(formulas) end.", darkAppearance: false))
+        }
+        let before = MathRenderer.parseCount
+        fixture.render("Broken \(formulas) end!")
+        #expect(MathRenderer.parseCount == before, "\(MathRenderer.parseCount - before) formulas parsed again")
+    }
+
+    @Test("Changing a heading's level in a single-label note resizes its formula") @MainActor
+    func changingAHeadingsLevelInASingleLabelNoteResizesItsFormula() throws {
+        let fixture = try Fixture(suffix: "custom-heading-level", markdown: "", configure: { $0.debugForceCustomTextLayout = true })
+        fixture.render("# Title $a$\n\nBody $b$ text.")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let large = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
+        fixture.render("### Title $a$\n\nBody $b$ text.")
+        let small = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
+        #expect(small < large * 0.9, "\(large) → \(small)")
+    }
+
+    @Test("A search hit after display math inside a sentence lands on its word") @MainActor
+    func aSearchHitAfterDisplayMathInsideASentenceLandsOnItsWord() throws {
+        let fixture = try Fixture(suffix: "search-after-display-inline", markdown: "a $$\\frac{1}{2}$$ c needle.")
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["needle"])
     }
 
     @Test("Editing a paragraph re-installs its formulas") @MainActor

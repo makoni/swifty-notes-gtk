@@ -344,6 +344,7 @@ enum MathSpanExtractor {
     ) {
         var i = range.lowerBound
         let end = range.upperBound
+        var backtickRuns = BacktickRuns()
         while i < end {
             let s = scalars[i]
 
@@ -399,7 +400,9 @@ enum MathSpanExtractor {
 
             if s.value == 0x60 { // backtick
                 let run = backtickRunLength(scalars: scalars, from: i, end: end)
-                if let close = findCodeSpanClose(scalars: scalars, from: i + run, end: end, length: run, blankLines: blankLines) {
+                if let close = findCodeSpanClose(
+                    scalars: scalars, from: i + run, end: end, length: run, blankLines: blankLines, record: &backtickRuns,
+                ) {
                     output.append(contentsOf: scalars[i...(close + run - 1)])
                     i = close + run
                     continue
@@ -500,24 +503,47 @@ enum MathSpanExtractor {
         return j - from
     }
 
+    /// What the code-span searches of one paragraph have seen, as cmark
+    /// keeps it: once a search has reached the paragraph's end, an opener
+    /// whose length has no run after it is literal without a search, so
+    /// runs of many different lengths stay linear.
+    private struct BacktickRuns {
+        var limit = -1
+        var scannedUntil = 0
+        var lastStart: [Int: Int] = [:]
+    }
+
+    /// The closing backtick run of `length` for a code span whose content
+    /// starts at `from`, or nil. A code span never crosses a blank line (an
+    /// approximation of the CommonMark rule that it stays inside one
+    /// paragraph), so the search stops at the next.
     private static func findCodeSpanClose(
         scalars: [Unicode.Scalar], from: Int, end: Int, length: Int, blankLines: [LineBounds],
+        record: inout BacktickRuns,
     ) -> Int? {
+        let limit = min(end, nextBlankLineStart(blankLines, from: from) ?? end)
+        if record.limit != limit {
+            record = BacktickRuns(limit: limit, scannedUntil: from, lastStart: [:])
+        }
+        if record.scannedUntil >= limit, (record.lastStart[length] ?? -1) < from {
+            return nil
+        }
         var j = from
-        while j < end {
+        while j < limit {
             if scalars[j].value == 0x60 {
                 var k = j
-                while k < end, scalars[k].value == 0x60 { k += 1 }
+                while k < limit, scalars[k].value == 0x60 { k += 1 }
+                record.lastStart[k - j] = j
                 if k - j == length {
-                    // A code span never spans a blank line (approximation of
-                    // the CommonMark rule that it stays inside one paragraph).
-                    return containsBlankLine(blankLines, range: from..<j) ? nil : j
+                    record.scannedUntil = max(record.scannedUntil, k)
+                    return j
                 }
                 j = k
                 continue
             }
             j += 1
         }
+        record.scannedUntil = limit
         return nil
     }
 
@@ -734,6 +760,17 @@ enum MathSpanExtractor {
 
     /// Whether one of `blankLines` (in document order) lies wholly inside
     /// `range`: a binary search, as every delimiter candidate asks.
+    /// Where the first of `blankLines` starting at or after `from` starts.
+    private static func nextBlankLineStart(_ blankLines: [LineBounds], from: Int) -> Int? {
+        var low = 0
+        var high = blankLines.count
+        while low < high {
+            let middle = (low + high) / 2
+            if blankLines[middle].start < from { low = middle + 1 } else { high = middle }
+        }
+        return low < blankLines.count ? blankLines[low].start : nil
+    }
+
     private static func containsBlankLine(_ blankLines: [LineBounds], range: Range<Int>) -> Bool {
         var low = 0
         var high = blankLines.count

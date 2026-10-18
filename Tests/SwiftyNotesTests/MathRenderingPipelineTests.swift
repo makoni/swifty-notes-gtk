@@ -565,7 +565,7 @@ struct MathRenderingPipelineTests {
 
     @Test("Entities for placeholder characters cannot repeat a formula")
     func entitiesForPlaceholderCharactersCannotRepeatAFormula() {
-        for markdown in ["$x$ &#xFDD0;&#xFDE0;&#xFDD1;", "$x$ &#64976;&#64992;&#64977;", "$x$ &#x0fdd0;&#xFDE0;&#xfdd1;"] {
+        for markdown in ["$x$ &#xFDD0;&#xFDE0;&#xFDD1;", "$x$ &#XFDD0;&#XFDE0;&#XFDD1;", "$x$ &#64976;&#64992;&#64977;", "$x$ &#x0fdd0;&#xFDE0;&#xfdd1;"] {
             let blocks = blocks(for: markdown)
             guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
                 Issue.record("expected one paragraph, got \(blocks)")
@@ -581,12 +581,25 @@ struct MathRenderingPipelineTests {
 
     @Test("Entities in a link cannot carry another formula's TeX")
     func entitiesInALinkCannotCarryAnotherFormulasTex() {
-        let blocks = blocks(for: "Secret $\\text{PIN 1234}$ [l](http://h/&#xFDD0;&#xFDE0;&#xFDD1;)")
+        for entities in ["&#xFDD0;&#xFDE0;&#xFDD1;", "&#XFDD0;&#XFDE0;&#XFDD1;"] {
+            let blocks = blocks(for: "Secret $\\text{PIN 1234}$ [l](http://h/\(entities))")
+            guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
+                Issue.record("expected one paragraph, got \(blocks)")
+                continue
+            }
+            #expect(!text.markup.contains("PIN 1234"), "\(text.markup)")
+        }
+    }
+
+    @Test("Display math inside a sentence is spelled with single dollars in the plain text")
+    func displayMathInsideASentenceIsSpelledWithSingleDollarsInThePlainText() {
+        // Search offsets count each drawn formula as `$tex$`.
+        let blocks = blocks(for: "a $$\\frac{1}{2}$$ c")
         guard blocks.count == 1, case let .paragraph(text) = blocks[0] else {
             Issue.record("expected one paragraph, got \(blocks)")
             return
         }
-        #expect(!text.markup.contains("PIN 1234"), "\(text.markup)")
+        #expect(text.plainText == "a $\\frac{1}{2}$ c")
     }
 
     @Test("An entity for the formula marker does not become a formula")

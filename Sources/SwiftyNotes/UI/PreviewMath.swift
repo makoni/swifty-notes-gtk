@@ -58,9 +58,10 @@ enum PreviewMath {
             state.originalMarkup = markup
             state.markerSizes = nil
         }
-        // A new render tries formulas shown as source again (one refused at
-        // the memory limit may fit now); drawn ones are kept.
-        state.decisions = state.decisions.map { $0?.formula == nil ? nil : $0 }
+        // A new render tries again formulas refused only at the memory limit
+        // (they may fit now); every other decision stands, so a note full of
+        // broken formulas is not parsed again on each keystroke.
+        state.decisions = state.decisions.filter { !$0.value.isRetryable }
         state.spans = spans
         state.baseFontPixels = fontPixels(of: label)
         state.measuredFontPixels = state.baseFontPixels
@@ -227,21 +228,19 @@ enum PreviewMath {
             state.markerSizes = (state.baseFontPixels, sizes)
         }
         var formulas: [MathFormula?] = []
-        var decisions: [MathLabelState.Decision?] = []
+        var decisions: [MathLabelState.DecisionKey: MathLabelState.Decision] = [:]
         state.hasPostponedFormulas = false
         for (index, span) in state.spans.enumerated() {
             let pixels = (index < sizes.count ? sizes[index] : state.baseFontPixels) * formulaScale
             let isDisplay = span.isDisplay && state.isDisplayBlock
-            let quarterPixels = Int((pixels * 4).rounded())
+            let key = MathLabelState.DecisionKey(tex: span.tex, isDisplay: isDisplay, quarterPixels: Int((pixels * 4).rounded()))
             // Keep what the label already decided — a drawn formula, or its
-            // source: the cache may have dropped either while a long
-            // postponed pass went on, and looking them up again would never
-            // end on a label with more of them than the cache holds.
-            if index < state.decisions.count, let decided = state.decisions[index], decided.tex == span.tex,
-               decided.isDisplay == isDisplay, decided.quarterPixels == quarterPixels
-            {
+            // source: the cache may have dropped either, and looking them up
+            // again would never end on a label with more of them than the
+            // cache holds.
+            if let decided = decisions[key] ?? state.decisions[key] {
                 formulas.append(decided.formula)
-                decisions.append(decided)
+                decisions[key] = decided
                 continue
             }
             let formula = MathRenderer.formula(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels)
@@ -250,11 +249,11 @@ enum PreviewMath {
             if MathRenderer.lastLookupWasPostponed {
                 state.hasPostponedFormulas = true
                 mayHavePostponedFormulas = true
-                decisions.append(nil)
             } else {
-                decisions.append(.init(tex: span.tex, isDisplay: isDisplay, quarterPixels: quarterPixels, formula: formula))
+                decisions[key] = .init(formula: formula, isRetryable: MathRenderer.lastLookupWasTransient)
             }
         }
+        // Only the formulas the label holds now.
         state.decisions = decisions
         if state.hasPostponedFormulas, !applyingWhilePostponed {
             return
@@ -579,16 +578,22 @@ final class MathLabelState {
     var spans: [MathSpan] = []
     var fallbackSpans: [MathSpan] = []
     var entries: [Entry] = []
-    /// What the last layout decided for each span: the formula drawn, or
-    /// nil for its source. A nil decision means postponed.
-    struct Decision {
+    struct DecisionKey: Hashable {
         let tex: String
         let isDisplay: Bool
+        /// The pixel size in quarter pixels, as the formula cache keys it.
         let quarterPixels: Int
-        let formula: MathFormula?
     }
 
-    var decisions: [Decision?] = []
+    /// What was decided for a formula: drawn, or its source shown (nil).
+    struct Decision {
+        let formula: MathFormula?
+        /// Refused only at the memory limit; worth trying again.
+        let isRetryable: Bool
+    }
+
+    /// The decisions for the label's formulas; a postponed one has none.
+    var decisions: [DecisionKey: Decision] = [:]
     /// The font size of each marker for a base size, which takes a parse of
     /// the markup to find.
     var markerSizes: (basePixels: Double, sizes: [Double])?

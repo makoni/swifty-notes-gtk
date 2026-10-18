@@ -42,6 +42,10 @@ const MAX_BOX_PX: f64 = 16_384.0;
 /// of kilobytes each, so a short formula could otherwise hold megabytes.
 const MAX_FORMULA_BYTES: usize = 512 * 1024;
 
+/// Most emoji one formula may draw: each is a PNG decoded on every draw,
+/// so hundreds of them make every redraw of the label slow.
+const MAX_EMOJI_PER_FORMULA: usize = 32;
+
 /// Most memory, in estimated bytes, all live formulas together may keep by
 /// default; past it new formulas are refused until some are freed.
 const DEFAULT_LIVE_BYTES_LIMIT: usize = 192 * 1024 * 1024;
@@ -119,6 +123,19 @@ fn guarded<T>(fallback: T, body: impl FnOnce() -> T) -> T {
 /// colour it is drawn with. `\color` values come from 8-bit components or
 /// names, which never land on these fractions.
 const DEFAULT_COLOR_STAND_IN: Color = Color { r: 1.0 / 512.0, g: 3.0 / 512.0, b: 5.0 / 512.0, a: 1.0 };
+
+/// Whether `code` is in a block of emoji the KaTeX fonts do not draw: the
+/// pictographs from U+1F000, and the symbols and dingbats at U+2600–U+27BF
+/// and U+2B00–U+2BFF less the card suits, music signs, check mark and
+/// Maltese cross that KaTeX has.
+fn is_emoji_block(code: u32) -> bool {
+    match code {
+        0x1F000..=0x1FAFF | 0x2B00..=0x2BFF => true,
+        0x2660..=0x2667 | 0x266D..=0x266F | 0x2713 | 0x2720 => false,
+        0x2600..=0x27BF => true,
+        _ => false,
+    }
+}
 
 /// A laid-out formula. It keeps only its display list, in the colour it was
 /// last drawn in, and which items take the default colour (the theme can
@@ -244,6 +261,26 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
     let tree = layout_with_fallback_metrics(&nodes, &options, Arc::new(fallback_metrics(tex)));
     validate_layout(&tree).map_err(|error| format!("layout rejected: {error}"))?;
     let mut list = to_display_list(&tree);
+    // Counted as ratex-cairo draws them: a character in an emoji block
+    // that the KaTeX fonts lack and the colour-emoji font has a PNG for
+    // (looked up once per distinct character). Digits, `#` and `*` have
+    // PNGs too (keycap bases) but are drawn from KaTeX's fonts.
+    let mut emoji_chars: HashMap<u32, bool> = HashMap::new();
+    let emoji = list
+        .items
+        .iter()
+        .filter(|item| match item {
+            DisplayItem::GlyphPath { char_code, .. } => *emoji_chars.entry(*char_code).or_insert_with(|| {
+                is_emoji_block(*char_code)
+                    && char::from_u32(*char_code)
+                        .is_some_and(|ch| ratex_unicode_font::emoji_png_raster_for_char(ch, 32.0).is_some())
+            }),
+            _ => false,
+        })
+        .count();
+    if emoji > MAX_EMOJI_PER_FORMULA {
+        return Err(format!("formula draws {emoji} emoji, more than {MAX_EMOJI_PER_FORMULA}"));
+    }
     // The tree and the layout are dropped here; only the list stays.
     drop(tree);
     drop(nodes);

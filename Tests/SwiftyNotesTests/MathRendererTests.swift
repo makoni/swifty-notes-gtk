@@ -203,7 +203,18 @@ struct MathRendererTests {
         let before = ratex_bridge_live_bytes()
         let handle = try #require(tex.withCString { ratex_bridge_parse($0, strlen($0), 0, 20) })
         defer { ratex_bridge_free(handle) }
-        #expect(ratex_bridge_live_bytes() - before < 16 * 1024)
+        #expect(ratex_bridge_live_bytes() < before + 16 * 1024)
+    }
+
+    @Test("A formula drawing many emoji is refused", .enabled(if: FileManager.default.fileExists(atPath: "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf")))
+    func aFormulaDrawingManyEmojiIsRefused() {
+        // Each emoji is a PNG decoded on every draw.
+        #expect(MathRenderer.formula(tex: String(repeating: "😀", count: 40), isDisplay: false, pixelSize: 20) == nil)
+        #expect(MathRenderer.lastError?.contains("emoji") == true, "\(MathRenderer.lastError ?? "")")
+        #expect(MathRenderer.formula(tex: "😀😀😀", isDisplay: false, pixelSize: 20) != nil)
+        // Digits, `#` and `*` have emoji PNGs (keycap bases) but are math.
+        #expect(MathRenderer.formula(tex: String(repeating: "1234567890", count: 10) + "\\#*", isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit\\heartsuit\\checkmark", count: 20), isDisplay: false, pixelSize: 20) != nil)
     }
 
     @Test("A formula that would keep too much memory is refused")
@@ -218,18 +229,26 @@ struct MathRendererTests {
 
     @Test("Live formulas count against the engine's memory until freed")
     func liveFormulasCountAgainstTheEnginesMemoryUntilFreed() throws {
-        let before = ratex_bridge_live_bytes()
-        let tex = "\\overbrace{a+b}^{n}"
-        let handle = try #require(tex.withCString { ratex_bridge_parse($0, strlen($0), 0, 20) })
-        let held = ratex_bridge_live_bytes() - before
-        #expect(held > 1000)
-        ratex_bridge_free(handle)
-        #expect(ratex_bridge_live_bytes() == before)
+        func held(by tex: String) throws -> Int {
+            let before = ratex_bridge_live_bytes()
+            let handle = try #require(tex.withCString { ratex_bridge_parse($0, strlen($0), 0, 20) })
+            let held = ratex_bridge_live_bytes() - before
+            ratex_bridge_free(handle)
+            #expect(ratex_bridge_live_bytes() == before)
+            return held
+        }
+        // The drawing is what counts: a brace's long path costs far more
+        // than a single letter.
+        let letter = try held(by: "x")
+        let brace = try held(by: "\\overbrace{a+b}^{n}")
+        #expect(letter > 0)
+        #expect(brace > letter + 10_000, "brace \(brace), letter \(letter)")
     }
 
     @Test("Formulas refused at the memory limit are tried again later")
     func formulasRefusedAtTheMemoryLimitAreTriedAgainLater() {
         let previous = ratex_bridge_set_live_bytes_limit(0)
+        defer { ratex_bridge_set_live_bytes_limit(previous) }
         #expect(MathRenderer.formula(tex: "m_1", isDisplay: false, pixelSize: 20) == nil)
         #expect(ratex_bridge_last_error_is_transient() == 1)
         ratex_bridge_set_live_bytes_limit(previous)
