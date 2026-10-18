@@ -757,6 +757,12 @@ extension MainWindow {
     /// The editor and preview's room: the window less the sidebar and the
     /// Outline beside them.
     var currentPreviewContainerWidth: Int {
+        // Shown, the pane's own width is the room; the window's sizes are
+        // only an estimate for before (or while it is away, in Preview
+        // mode), and can be off by the sidebar's border.
+        if gtk_widget_get_mapped(editorPreviewPane.widgetPointer) != 0, editorPreviewPane.width > 0 {
+            return editorPreviewPane.width
+        }
         let outlineWidth = currentOutlineWidth
         return max(
             editorPreviewPane.width,

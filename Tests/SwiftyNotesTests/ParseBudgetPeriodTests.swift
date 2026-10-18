@@ -73,7 +73,7 @@ struct ParseBudgetPeriodTests {
     @Test("The preview's catch-up waits as long again after a pass that overran")
     func thePreviewsCatchUpWaitsAfterAnOverrun() {
         let budget = Duration.milliseconds(16)
-        #expect(ParseBudgetPeriod.nextCatchUp(after: at(0), spent: .milliseconds(10), budget: budget) == at(0))
-        #expect(ParseBudgetPeriod.nextCatchUp(after: at(0), spent: .milliseconds(100), budget: budget) == at(200))
+        #expect(nextFrameCatchUp(after: at(0), spent: .milliseconds(10), budget: budget) == at(0))
+        #expect(nextFrameCatchUp(after: at(0), spent: .milliseconds(100), budget: budget) == at(200))
     }
 }

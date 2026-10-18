@@ -397,7 +397,7 @@ final class MarkdownPreview {
         rootScroll.kineticScrolling = true
         #endif
         rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
-        PreviewMath.observeDesktopFontSettings(owner: self) { [weak self] in
+        DesktopFontSettings.shared.observe(owner: self) { [weak self] in
             self?.scheduleMathFontRefresh()
         }
         // The formula budget depends on the window's scale — the surface's
@@ -641,7 +641,7 @@ final class MarkdownPreview {
                 PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
             }
             let spent = ContinuousClock.now - started
-            resumeAt = ParseBudgetPeriod.nextCatchUp(after: started, spent: spent, budget: Self.followUpParseBudget)
+            resumeAt = nextFrameCatchUp(after: started, spent: spent, budget: Self.followUpParseBudget)
             reapplySearchHighlights()
             if !stillPostponed {
                 postponedMathPassScheduled = false

@@ -1042,6 +1042,29 @@ struct MathPreviewWidgetTests {
         #expect(parsedLater, "the period never renewed")
     }
 
+    @Test("The preview's catch-up leaves the UI as long again after a slow formula") @MainActor
+    func thePreviewsCatchUpLeavesTheUITimeAfterASlowFormula() throws {
+        MathRenderer.removeAllCachedFormulas()
+        MathRenderer.debugParseDelay = .milliseconds(40)
+        MathRenderer.debugParseStarts = []
+        defer {
+            MathRenderer.debugParseDelay = .zero
+            MathRenderer.debugParseStarts = []
+        }
+        // More formulas than the render's budget (400 ms) parses at 40 ms
+        // each, one per paragraph.
+        let markdown = (0..<24).map { "Para $q_{\($0 + 300)}$." }.joined(separator: "\n\n")
+        let fixture = try Fixture(suffix: "catch-up-pace", markdown: markdown)
+        _ = fixture
+        let renderEnded = ContinuousClock.now
+        MainContext.pump(for: .milliseconds(900))
+        let catchUp = MathRenderer.debugParseStarts.filter { $0 > renderEnded }
+        #expect(catchUp.count >= 3, "the catch-up parsed \(catchUp.count)")
+        let gaps = zip(catchUp.dropFirst(), catchUp).map { $0 - $1 }
+        // Back to back, a pass would start one frame after the last: ~40-56 ms.
+        #expect(gaps.allSatisfy { $0 >= .milliseconds(70) }, "\(gaps)")
+    }
+
     @Test("Formulas stay drawn when an opened file's window switches view modes") @MainActor
     func formulasStayDrawnWhenAnOpenedFilesWindowSwitchesViewModes() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

@@ -356,7 +356,8 @@ struct NotesSidebar {
     /// Settings for a note's title label. Long titles truncate to a single
     /// line with a trailing ellipsis instead of wrapping, so a long heading
     /// never grows the sidebar's row height or its overall width. The full
-    /// title is preserved in the tooltip.
+    /// title is preserved in the tooltip (as plain text, formulas spelled
+    /// out; titles are at most 80 characters, so it is never cut).
     static func titleLabelLayout(for note: Note) -> TitleLabelLayout {
         TitleLabelLayout(
             text: note.title,

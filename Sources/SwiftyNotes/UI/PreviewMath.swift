@@ -102,7 +102,7 @@ enum PreviewMath {
         let widget = UnsafeMutableRawPointer(label.widgetPointer)
         // `state` lives as long as the label draws formulas; the handler
         // goes with it.
-        observeDesktopFontSettings(owner: state) {
+        DesktopFontSettings.shared.observe(owner: state) {
             refreshFontSizesSoon(of: widget)
         }
     }
@@ -715,48 +715,6 @@ enum PreviewMath {
         return size > 0 ? size : 15
     }
 
-    // MARK: - Desktop font settings
-
-    /// Calls `handler` when the desktop's interface font or its resolution
-    /// changes, which resizes the preview's text without any CSS class
-    /// changing. Handlers are held weakly through `owner`: once it is gone
-    /// its handler is dropped. One pair of GtkSettings connections serves
-    /// every handler, made on first use.
-    static func observeDesktopFontSettings(owner: AnyObject, _ handler: @escaping @MainActor () -> Void) {
-        // Dropping the dead ones once the list has doubled keeps a sidebar
-        // of many formula titles from sweeping it on every row.
-        if fontSettingsObservers.count >= max(64, 2 * liveFontSettingsObservers) {
-            fontSettingsObservers.removeAll { $0.owner == nil }
-            liveFontSettingsObservers = fontSettingsObservers.count
-        }
-        fontSettingsObservers.append(FontSettingsObserver(owner: owner, handler: handler))
-        guard !didConnectFontSettings, let settings = gtk_settings_get_default() else { return }
-        didConnectFontSettings = true
-        let callback: @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer?, UnsafeMutableRawPointer?) -> Void = {
-            _, _, _ in
-            MainActor.assumeIsolated {
-                PreviewMath.fontSettingsObservers.removeAll { $0.owner == nil }
-                for observer in PreviewMath.fontSettingsObservers {
-                    observer.handler()
-                }
-            }
-        }
-        for property in ["notify::gtk-font-name", "notify::gtk-xft-dpi"] {
-            g_signal_connect_data(
-                UnsafeMutableRawPointer(settings),
-                property,
-                unsafeBitCast(callback, to: GCallback.self),
-                nil,
-                nil,
-                GConnectFlags(rawValue: 0)
-            )
-        }
-    }
-
-    private static var fontSettingsObservers: [FontSettingsObserver] = []
-    private static var liveFontSettingsObservers = 0
-    private static var didConnectFontSettings = false
-
     // MARK: - Drawing
 
     /// Sets the formula drawer on the label's Pango context — again each
@@ -872,11 +830,6 @@ enum PreviewMath {
             forEachMathLabel(under: child, body)
         }
     }
-}
-
-private struct FontSettingsObserver {
-    weak var owner: AnyObject?
-    let handler: @MainActor () -> Void
 }
 
 /// One drawn formula. Pango copies shape attributes; each copy holds a

@@ -1034,6 +1034,14 @@ struct RepositoryStateTests {
         #expect(decoded.previewWidth == loaded)
     }
 
+    @Test("A preview width saved before the Outline existed keeps its width")
+    func aPreviewWidthSavedBeforeTheOutlineKeepsItsWidth() throws {
+        let json = #"{"windowWidth": 1400, "previewWidth": 812}"#
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
+        #expect(decoded.previewWidth == 812)
+        #expect(decoded.isOutlineVisible)
+    }
+
     @Test("A saved workspace is marked as measuring the preview without the Outline")
     func aSavedWorkspaceIsMarkedAsMeasuringThePreviewWithoutTheOutline() throws {
         let data = try JSONEncoder().encode(WorkspaceState(previewWidth: 700, isOutlineVisible: true))

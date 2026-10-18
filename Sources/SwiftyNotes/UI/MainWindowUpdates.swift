@@ -114,8 +114,8 @@ extension MainWindow {
             // is the difference between "nothing happened" and "done".
             toastOverlay.addToast(Toast.plain("Update downloaded. Restart Swifty Notes to use it.".localized))
         } catch {
-            toastOverlay.addToast(Toast(
-                title: String(format: "Could not update: %@".localized, error.localizedDescription),
+            toastOverlay.addToast(Toast.plain(
+                String(format: "Could not update: %@".localized, error.localizedDescription),
             ))
         }
     }

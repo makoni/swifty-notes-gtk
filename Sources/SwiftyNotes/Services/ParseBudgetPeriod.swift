@@ -59,12 +59,10 @@ struct ParseBudgetPeriod {
     }
 }
 
-extension ParseBudgetPeriod {
-    /// When a frame-by-frame catch-up (the preview's) may run again after a
-    /// pass that began at `started` and took `spent`: at once if it kept to
-    /// `budget`, otherwise after as long again, so the UI gets half the
-    /// time however long one formula takes.
-    static func nextCatchUp(after started: ContinuousClock.Instant, spent: Duration, budget: Duration) -> ContinuousClock.Instant {
-        spent > budget ? started + spent * 2 : started
-    }
+/// When a frame-by-frame catch-up (the preview's) may run again after a
+/// pass that began at `started` and took `spent`: at once if it kept to
+/// `budget`, otherwise after as long again, so the UI gets half the time
+/// however long one formula takes.
+func nextFrameCatchUp(after started: ContinuousClock.Instant, spent: Duration, budget: Duration) -> ContinuousClock.Instant {
+    spent > budget ? started + spent * 2 : started
 }

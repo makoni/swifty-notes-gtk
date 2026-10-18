@@ -1,4 +1,5 @@
 import Adwaita
+import CAdwaita
 import Foundation
 
 /// The divider between the editor and the preview in Split mode, for the
@@ -58,7 +59,12 @@ final class PreviewPaneDivider {
     /// A press at `x` in the pane: on the handle while a settle is under
     /// way, the divider is the user's from now on.
     func pointerPressed(atX x: Double) {
-        guard settleTickID != nil, abs(x - Double(pane.position)) <= 12 else { return }
+        // Right to left, the pane mirrors: the handle sits that far from
+        // the right edge.
+        let handleX = gtk_widget_get_direction(pane.widgetPointer) == GTK_TEXT_DIR_RTL
+            ? pane.width - pane.position
+            : pane.position
+        guard settleTickID != nil, abs(x - Double(handleX)) <= 12 else { return }
         cancelSettle()
         isRestoring = false
     }
@@ -127,18 +133,18 @@ final class PreviewPaneDivider {
     /// the editor keeps its minimum.
     func position(forRoom room: Int) -> Int {
         let stored = host.preferredPreviewWidth()
-        let previewWidth = MainWindow.resolvedPreviewWidth(storedWidth: stored, availableWidth: room)
+        let previewWidth = PaneLayout.resolvedPreviewWidth(storedWidth: stored, availableWidth: room)
         // The old default grows into the comfortable width once.
         if stored == WorkspaceState.legacyDefaultPreviewWidth, previewWidth > stored {
             host.setPreferredPreviewWidth(previewWidth)
         }
-        return max(room - previewWidth, MainWindow.minimumEditorWidth)
+        return max(room - previewWidth, PaneLayout.minimumEditorWidth)
     }
 
     /// The editor's width with the preview at its remembered width.
     func editorWidth(forRoom room: Int) -> Int {
-        let previewWidth = MainWindow.resolvedPreviewWidth(storedWidth: host.preferredPreviewWidth(), availableWidth: room)
-        return max(room - previewWidth, MainWindow.minimumEditorWidth)
+        let previewWidth = PaneLayout.resolvedPreviewWidth(storedWidth: host.preferredPreviewWidth(), availableWidth: room)
+        return max(room - previewWidth, PaneLayout.minimumEditorWidth)
     }
 
     private var canAnimate: Bool {
@@ -155,9 +161,9 @@ final class PreviewPaneDivider {
     private func handleMoved() {
         guard host.isSplit(), isPreviewAttached, !isRestoring else { return }
         let room = host.roomWidth()
-        guard room >= MainWindow.minimumPreviewWidth + MainWindow.minimumEditorWidth else { return }
+        guard room >= PaneLayout.minimumPreviewWidth + PaneLayout.minimumEditorWidth else { return }
         let previewWidth = room - pane.position
-        guard previewWidth >= MainWindow.minimumPreviewWidth else { return }
+        guard previewWidth >= PaneLayout.minimumPreviewWidth else { return }
         host.setPreferredPreviewWidth(previewWidth)
         host.editorWidthChanged(pane.position)
     }
@@ -210,7 +216,7 @@ final class PreviewPaneDivider {
         }
         isRestoring = true
         let startedAt = Date()
-        let duration = Double(MainWindow.previewAnimationDuration) / 1000
+        let duration = Double(PaneLayout.previewAnimationDuration) / 1000
         animationID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
             guard let self else { return false }
             let progress = min(max(Date().timeIntervalSince(startedAt) / duration, 0), 1)

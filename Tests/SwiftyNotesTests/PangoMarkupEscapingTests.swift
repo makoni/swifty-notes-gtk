@@ -33,12 +33,13 @@ struct PangoMarkupEscapingTests {
             .appendingPathComponent("Sources/SwiftyNotes", isDirectory: true)
         let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
         var offenders: [String] = []
+        // Over whole files: a call may be split across lines.
+        let markupToast = try Regex(#"\bToast\s*\(|\.showToast\s*\("#)
         for case let url as URL in files where url.pathExtension == "swift" && url.lastPathComponent != "PlainToasts.swift" {
             let text = try String(contentsOf: url, encoding: .utf8)
-            for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
-                where line.contains(".showToast(") || line.contains("Toast(title:")
-            {
-                offenders.append("\(url.lastPathComponent):\(number + 1)")
+            for match in text.matches(of: markupToast) {
+                let line = text[..<match.range.lowerBound].count { $0 == "\n" } + 1
+                offenders.append("\(url.lastPathComponent):\(line)")
             }
         }
         #expect(offenders.isEmpty, "\(offenders)")

@@ -166,6 +166,18 @@ struct PreviewPaneLayoutTests {
         #expect(window.state.preferredPreviewWidth == 420)
         MainContext.pump(for: .milliseconds(300))
         #expect(window.editorPreviewPane.position == room - 420, "the settle took the divider back")
+
+        // Right to left the pane mirrors, and so does the handle.
+        gtk_widget_set_direction(window.editorPreviewPane.widgetPointer, GTK_TEXT_DIR_RTL)
+        defer { gtk_widget_set_direction(window.editorPreviewPane.widgetPointer, GTK_TEXT_DIR_NONE) }
+        window.setViewMode(.editor, animated: false)
+        window.setViewMode(.split, animated: false)
+        #expect(divider.isRestoring)
+        let mirroredHandle = Double(window.editorPreviewPane.width - window.editorPreviewPane.position)
+        divider.pointerPressed(atX: Double(window.editorPreviewPane.position))
+        #expect(divider.isRestoring, "a press where the handle would be left to right")
+        divider.pointerPressed(atX: mirroredHandle)
+        #expect(!divider.isRestoring, "a press on the mirrored handle")
     }
 
     @MainActor

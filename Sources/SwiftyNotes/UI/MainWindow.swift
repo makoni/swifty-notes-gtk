@@ -779,9 +779,9 @@ final class MainWindow {
     }
 
     static let minimumPreviewWidth = PaneLayout.minimumPreviewWidth
-    static let minimumEditorWidth = 320
+    static let minimumEditorWidth = PaneLayout.minimumEditorWidth
     static let editorFormattingCompactWidthThreshold = 520
-    static let previewAnimationDuration = 220
+    static let previewAnimationDuration = PaneLayout.previewAnimationDuration
     static let outlineWidthFraction = PaneLayout.outlineWidthFraction
     static let minimumOutlineWidth = PaneLayout.minimumOutlineWidth
     static let maximumOutlineWidth = PaneLayout.maximumOutlineWidth
@@ -1064,18 +1064,8 @@ final class MainWindow {
         try process.run()
     }
 
+    /// See ``PaneLayout/resolvedPreviewWidth(storedWidth:availableWidth:)``.
     static func resolvedPreviewWidth(storedWidth: Int, availableWidth: Int) -> Int {
-        let boundedAvailableWidth = max(availableWidth, minimumPreviewWidth + minimumEditorWidth)
-        let maximumPreviewWidth = max(boundedAvailableWidth - minimumEditorWidth, minimumPreviewWidth)
-        let comfortablePreviewWidth = min(
-            max(Int(Double(boundedAvailableWidth) * 0.34), WorkspaceState.defaultPreviewWidth),
-            maximumPreviewWidth,
-        )
-        let requestedWidth: Int = if storedWidth == WorkspaceState.legacyDefaultPreviewWidth {
-            max(storedWidth, comfortablePreviewWidth)
-        } else {
-            storedWidth
-        }
-        return min(max(requestedWidth, minimumPreviewWidth), maximumPreviewWidth)
+        PaneLayout.resolvedPreviewWidth(storedWidth: storedWidth, availableWidth: availableWidth)
     }
 }

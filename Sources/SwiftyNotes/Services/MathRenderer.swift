@@ -203,8 +203,21 @@ public enum MathRenderer {
     /// How many formulas the engine has parsed (tests).
     private(set) static var parseCount = 0
 
+    #if DEBUG
+    /// Makes every parse take this much longer, and records when parses
+    /// start (tests of pacing; a real heavy formula is not portable).
+    static var debugParseDelay: Duration = .zero
+    static var debugParseStarts: [ContinuousClock.Instant] = []
+    #endif
+
     private static func parse(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {
         parseCount += 1
+        #if DEBUG
+        if debugParseDelay > .zero {
+            debugParseStarts.append(.now)
+            Thread.sleep(forTimeInterval: Double(debugParseDelay.components.attoseconds) / 1e18 + Double(debugParseDelay.components.seconds))
+        }
+        #endif
         let handle: OpaquePointer? = tex.utf8CString.withUnsafeBufferPointer { buffer in
             // utf8CString is NUL-terminated; pass the explicit length so a
             // NUL inside the TeX is an error, not a silent truncation.
