@@ -33,7 +33,7 @@ On macOS the release workflow produces a Developer-ID-signed, notarized, stapled
 - `Sources/SwiftyNotes/UI/` contains the main window, sidebar, editor, and preview widgets.
 - `Sources/SwiftyNotes/Storage/` contains note persistence and workspace-state persistence.
 - `Sources/SwiftyNotes/Services/MarkdownRenderer.swift` converts markdown into the native GTK preview model.
-- `Sources/RaTeXBridge/` is a small Rust crate that wraps the RaTeX math engine in a C API; `scripts/build-ratex-bridge.sh` builds it into `build/ratex-bridge/`, and `Services/MathRenderer.swift` plus `UI/PreviewMath.swift` draw its formulas in the preview.
+- `Sources/RaTeXBridge/` is a small Rust crate that wraps the RaTeX math engine in a C API; `scripts/build-ratex-bridge.sh` builds it into `build/ratex-bridge/`, and the `MathEngine` target (`Sources/MathEngine/MathRenderer.swift`, which also carries the library's link settings) plus `UI/PreviewMath.swift` draw its formulas in the preview.
 - `Tests/SwiftyNotesTests/` contains repository/MainWindow regressions, CLI tests, and Wayland UI smoke tests.
 
 ## Requirements

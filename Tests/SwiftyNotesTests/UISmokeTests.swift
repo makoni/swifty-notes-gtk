@@ -158,8 +158,19 @@ struct UISmokeTests {
 
             # Each switch moves the preview to another container; its
             # formulas must be drawn again there.
+            def settled_draws():
+                # Frames left over from the last mode (Split slides in) must
+                # not count for the next one.
+                last = draws()
+                while True:
+                    time.sleep(0.3)
+                    now = draws()
+                    if now == last:
+                        return now
+                    last = now
+
             for mode in ["Preview", "Split", "Editor", "Split", "Preview"]:
-                before = draws()
+                before = settled_draws()
                 toggle(mode).queryAction().doAction(0)
                 if mode == "Editor":
                     time.sleep(1)
@@ -468,13 +479,20 @@ struct UISmokeTests {
             ENGLISH = ("Notes Sidebar", "Outline Sidebar")
             ARABIC = ("شريط الملاحظات الجانبي", "شريط المخطط الجانبي")
 
+            def switch_language():
+                # The app switches once this file appears: the tree has
+                # been read, however long that took.
+                open(os.path.join(os.environ["XDG_RUNTIME_DIR"], "switch-language"), "w").close()
+
             wait_for(ENGLISH[0])
             report("ltr", *ENGLISH)
+            switch_language()
 
             wait_for(ARABIC[0])
             report("rtl", *ARABIC)
             names = visible_names(frame)
             assert ENGLISH[0] not in names, f"English label survived the switch: {names}"
+            switch_language()
 
             wait_for(ENGLISH[0])
             report("back", *ENGLISH)
@@ -491,9 +509,9 @@ struct UISmokeTests {
                 "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS": "400",
                 "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH": "ar",
                 "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN": "en",
-                // Long enough for the script to read the whole Arabic tree
-                // before the switch back: AT-SPI walks are slow on CI.
-                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "3000",
+                // Each switch waits for the script (AT-SPI walks are slow on
+                // CI, and a fixed delay raced them).
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_GATE": "switch-language",
             ],
         )
         expectUIScriptSucceeded(result)

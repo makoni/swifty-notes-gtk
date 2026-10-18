@@ -155,13 +155,20 @@ let package = Package(
                 .apt(["libspelling-1-dev"])
             ]
         ),
+        // The math engine's Swift wrapper, with the Rust library's link
+        // settings: the rest of the app reaches the engine only through it.
+        .target(
+            name: "MathEngine",
+            dependencies: ["CRaTeXBridge"],
+            linkerSettings: [.unsafeFlags(mathBridgeLinkerFlags)]
+        ),
         .target(
             name: "SwiftyNotes",
             dependencies: [
                 .product(name: "Adwaita", package: "swift-adwaita"),
                 .product(name: "Markdown", package: "swift-markdown"),
                 "CSpelling",
-                "CRaTeXBridge",
+                "MathEngine",
             ],
             resources: [
                 // The `locale/` directory is inside the target so SwiftPM
@@ -182,8 +189,7 @@ let package = Package(
                 // and GTK's icon-theme lookup expects the standard
                 // `<theme>/<size>/<context>/<name>.<ext>` layout.
                 .copy("AppIcons")
-            ],
-            linkerSettings: [.unsafeFlags(mathBridgeLinkerFlags)]
+            ]
         ),
         .executableTarget(
             // Target name (and `path:`) must not case-collide with the
@@ -198,11 +204,11 @@ let package = Package(
         ),
         .testTarget(
             name: "SwiftyNotesTests",
-            dependencies: ["SwiftyNotes"]
+            dependencies: ["SwiftyNotes", "MathEngine"]
         ),
         .testTarget(
             name: "SwiftyNotesWidgetTests",
-            dependencies: ["SwiftyNotes"],
+            dependencies: ["SwiftyNotes", "MathEngine"],
             path: "Tests/SwiftyNotesWidgetTests"
         )
     ]

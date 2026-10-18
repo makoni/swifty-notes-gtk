@@ -374,7 +374,7 @@ struct NotesSidebar {
         let layout = titleLabelLayout(for: note)
         let title = Label("")
         // Formulas in the title are drawn, as in the preview.
-        PreviewMath.show(layout.text, in: title)
+        TitleMath.show(layout.text, in: title)
         title.xalign = 0
         title.ellipsize = layout.ellipsize
         title.lines = layout.lines

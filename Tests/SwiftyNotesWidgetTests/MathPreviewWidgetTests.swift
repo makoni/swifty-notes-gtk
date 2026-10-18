@@ -4,6 +4,7 @@ import CAdwaita
 import CRaTeXBridge
 import CSpelling
 import Foundation
+@testable import MathEngine
 @testable import SwiftyNotes
 import Testing
 
@@ -863,6 +864,8 @@ struct MathPreviewWidgetTests {
             onPick: { _ in },
             onClosed: {},
         )
+        palette.present()
+        defer { palette.debugClose() }
         func drawnTeX() -> [String] {
             var found: [String] = []
             var stack: [Widget] = [palette.debugList]
@@ -878,6 +881,22 @@ struct MathPreviewWidgetTests {
         // the shared parse budget come a pass later.)
         pumpUntil(timeout: .seconds(2)) { drawnTeX().count == 3 }
         #expect(drawnTeX() == ["\\alpha", "\\pi r^2", "\\pi r^2"])
+        // Shown, the rows paint them.
+        func ink() -> Int {
+            var count = 0
+            var stack: [Widget] = [palette.debugList]
+            while let widget = stack.popLast() {
+                if let label = widget.tryCast(Label.self), !PreviewMath.debugFormulas(on: label).isEmpty {
+                    forEachRenderedPixel(of: label) { _, _, _, a in
+                        if a > 200 { count += 1 }
+                    }
+                }
+                stack.append(contentsOf: widget.children())
+            }
+            return count
+        }
+        pumpUntil(timeout: .seconds(2)) { ink() > 0 }
+        #expect(ink() > 0)
         // Filtered, the matching rows still draw (the match on the formula
         // highlighted), rather than show their TeX. "pi" keeps both: the H3
         // matches through its parent.
@@ -1040,6 +1059,43 @@ struct MathPreviewWidgetTests {
             parsedLater = !MathRenderer.lastLookupWasPostponed
         }
         #expect(parsedLater, "the period never renewed")
+    }
+
+    @Test("The breadcrumb reads segment by segment, its dollars where they were") @MainActor
+    func theBreadcrumbReadsSegmentBySegment() throws {
+        let fixture = try Fixture(suffix: "breadcrumb-a11y", markdown: "")
+        _ = fixture
+        let strip = BreadcrumbStrip()
+        // Joined, the `$` of the title would pair with the section's.
+        strip.update(docTitle: "Price $5", section: "Costs 3$ more", leaf: "Area $\\pi r^2$")
+        pumpUntil(timeout: .seconds(2)) { !PreviewMath.debugFormulas(on: strip.label).isEmpty }
+        #expect(PreviewMath.debugFormulas(on: strip.label).map(\.tex) == ["\\pi r^2"])
+        #expect(gtkAccessibleLabelMismatch(of: strip.label, expected: "Price $5 › Costs 3$ more › Area π r^2") == nil)
+    }
+
+    @Test("The title catch-up lays out only what its budget allows, and skips the queue when it has none") @MainActor
+    func theTitleCatchUpSkipsTheQueueWithoutBudget() throws {
+        let fixture = try Fixture(suffix: "title-catch-up-walk", markdown: "")
+        _ = fixture
+        var calls = 0
+        // A stand-in for the drawer: each layout parses one new formula and
+        // leaves the label waiting, as when the budget runs out.
+        let scheduler = TitleMathScheduler(budget: .zero, period: .milliseconds(100)) { _, _ in
+            calls += 1
+            _ = MathRenderer.formula(tex: "\\zeta_{\(calls + 900)}", isDisplay: false, pixelSize: 16)
+        }
+        let labels = (0..<40).map { _ in Label("") }
+        let states = labels.map { _ in MathLabelState() }
+        for (label, state) in zip(labels, states) {
+            state.hasPostponedFormulas = true
+            scheduler.layOutPostponedSoon(label, state: state)
+        }
+        MainContext.pump(for: .milliseconds(350))
+        // One forced parse a period, the walk stopping at the label still
+        // waiting: about four, never one per label per tick.
+        #expect(calls >= 1 && calls <= 6, "\(calls) layouts")
+        let allQueued = states.allSatisfy { $0.isQueuedOutside }
+        #expect(allQueued)
     }
 
     @Test("The preview's catch-up leaves the UI as long again after a slow formula") @MainActor

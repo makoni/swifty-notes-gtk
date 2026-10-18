@@ -243,7 +243,7 @@ final class MainWindow {
         pane: editorPreviewPane,
         previewContent: previewPaneContent,
         host: .init(
-            roomWidth: { [weak self] in self?.currentPreviewContainerWidth ?? 0 },
+            estimatedRoomWidth: { [weak self] in self?.estimatedPreviewContainerWidth ?? 0 },
             isSplit: { [weak self] in self?.state.viewMode == .split },
             preferredPreviewWidth: { [weak self] in self?.state.preferredPreviewWidth ?? WorkspaceState.defaultPreviewWidth },
             setPreferredPreviewWidth: { [weak self] in self?.state.setPreferredPreviewWidth($0) },
@@ -545,9 +545,9 @@ final class MainWindow {
         outlineSplitView.sidebarPosition = .end
         outlineSplitView.enableShowGesture = false
         outlineSplitView.enableHideGesture = false
-        outlineSplitView.minSidebarWidth = Double(Self.minimumOutlineWidth)
-        outlineSplitView.maxSidebarWidth = Double(Self.maximumOutlineWidth)
-        outlineSplitView.sidebarWidthFraction = Self.outlineWidthFraction
+        outlineSplitView.minSidebarWidth = Double(PaneLayout.minimumOutlineWidth)
+        outlineSplitView.maxSidebarWidth = Double(PaneLayout.maximumOutlineWidth)
+        outlineSplitView.sidebarWidthFraction = PaneLayout.outlineWidthFraction
         outlineSplitView.sidebar = outlineSidebar.root
         outlineSplitView.content = splitView
         outlineSplitView.showSidebar = state.isOutlineVisible
@@ -778,18 +778,7 @@ final class MainWindow {
         )
     }
 
-    static let minimumPreviewWidth = PaneLayout.minimumPreviewWidth
-    static let minimumEditorWidth = PaneLayout.minimumEditorWidth
     static let editorFormattingCompactWidthThreshold = 520
-    static let previewAnimationDuration = PaneLayout.previewAnimationDuration
-    static let outlineWidthFraction = PaneLayout.outlineWidthFraction
-    static let minimumOutlineWidth = PaneLayout.minimumOutlineWidth
-    static let maximumOutlineWidth = PaneLayout.maximumOutlineWidth
-
-    /// See ``PaneLayout/outlineWidth(forWindowWidth:)``.
-    static func outlineWidth(forWindowWidth windowWidth: Int) -> Int {
-        PaneLayout.outlineWidth(forWindowWidth: windowWidth)
-    }
 
     /// Returns the on-disk path to a bundled icon SVG (e.g. `table-symbolic`)
     /// shipped under the resource bundle's `Icons/` directory. Used for
@@ -1064,8 +1053,4 @@ final class MainWindow {
         try process.run()
     }
 
-    /// See ``PaneLayout/resolvedPreviewWidth(storedWidth:availableWidth:)``.
-    static func resolvedPreviewWidth(storedWidth: Int, availableWidth: Int) -> Int {
-        PaneLayout.resolvedPreviewWidth(storedWidth: storedWidth, availableWidth: availableWidth)
-    }
 }

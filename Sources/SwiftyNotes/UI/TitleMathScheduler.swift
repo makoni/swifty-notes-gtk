@@ -1,5 +1,6 @@
 import Adwaita
 import Foundation
+import MathEngine
 
 /// Paces formula parsing for labels outside the preview — note titles and
 /// headings in the sidebar, outline, breadcrumb and command palette. Titles
@@ -16,7 +17,11 @@ final class TitleMathScheduler {
 
     /// - Parameter layOut: lays a label's postponed formulas out (within
     ///   the budget the scheduler has opened).
-    init(budget: Duration = .milliseconds(50), period: Duration = .milliseconds(100), layOut: @escaping (Label, MathLabelState) -> Void) {
+    init(
+        budget: Duration = .milliseconds(50),
+        period: Duration = .milliseconds(100),
+        layOut: @escaping (Label, MathLabelState) -> Void
+    ) {
         self.period = ParseBudgetPeriod(budget: budget, period: period)
         self.layOut = layOut
     }
@@ -29,12 +34,20 @@ final class TitleMathScheduler {
 
     /// Runs `body` within what is left of the shared budget.
     func withBudget(fromCatchUpPass: Bool = false, _ body: () -> Void) {
+        run(grant: begin(fromCatchUpPass: fromCatchUpPass), body)
+    }
+
+    private func begin(fromCatchUpPass: Bool) -> ParseBudgetPeriod.Grant {
         let grant = period.begin(at: .now, fromCatchUpPass: fromCatchUpPass)
         if grant.opensPass {
             MainContext.idle { [weak self] in
                 self?.period.passEnded()
             }
         }
+        return grant
+    }
+
+    private func run(grant: ParseBudgetPeriod.Grant, _ body: () -> Void) {
         let parsed = MathRenderer.parsingWithinBudget(grant.remaining, guaranteeingProgress: grant.forcesProgress, body)
         period.end(at: .now, parsed: parsed)
     }
@@ -49,24 +62,45 @@ final class TitleMathScheduler {
         guard catchUpPass == nil else { return }
         catchUpPass = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
             guard let self else { return false }
-            withBudget(fromCatchUpPass: true) {
-                self.postponed.removeAll { entry in
-                    // A label that is gone took its state with it.
-                    guard let state = entry.state else { return true }
-                    guard let label = Widget(borrowing: entry.widget).tryCast(Label.self) else {
-                        state.isQueuedOutside = false
-                        return true
-                    }
-                    if state.hasPostponedFormulas {
-                        self.layOut(label, state)
-                    }
-                    state.isQueuedOutside = state.hasPostponedFormulas
-                    return !state.hasPostponedFormulas
-                }
-            }
+            catchUp()
             guard postponed.isEmpty else { return true }
             catchUpPass = nil
             return false
+        }
+    }
+
+    /// One catch-up pass: lays labels out in the order they came until the
+    /// budget runs out. With nothing to spend it leaves the queue alone,
+    /// so a long queue costs nothing between periods.
+    private func catchUp() {
+        let grant = begin(fromCatchUpPass: true)
+        guard grant.canParse else { return }
+        run(grant: grant) {
+            var kept: [PostponedLabel] = []
+            var isOutOfBudget = false
+            for entry in postponed {
+                guard !isOutOfBudget else {
+                    kept.append(entry)
+                    continue
+                }
+                // A label that is gone took its state with it.
+                guard let state = entry.state else { continue }
+                guard let label = Widget(borrowing: entry.widget).tryCast(Label.self) else {
+                    state.isQueuedOutside = false
+                    continue
+                }
+                if state.hasPostponedFormulas {
+                    layOut(label, state)
+                }
+                if state.hasPostponedFormulas {
+                    // Still waiting: the budget ran out, the rest wait too.
+                    kept.append(entry)
+                    isOutOfBudget = true
+                } else {
+                    state.isQueuedOutside = false
+                }
+            }
+            postponed = kept
         }
     }
 }

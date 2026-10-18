@@ -239,10 +239,11 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         if !excludesOutline, outlineWasShown,
            previewWidth != Self.defaultPreviewWidth, previewWidth != Self.legacyDefaultPreviewWidth
         {
-            previewWidth = max(
-                previewWidth - Self.legacyOutlineWidth(forWindowWidth: windowWidth),
-                PaneLayout.minimumPreviewWidth,
-            )
+            // Clamped first: the file may hold anything, and an Int near its
+            // minimum would overflow.
+            let saved = max(previewWidth, PaneLayout.minimumPreviewWidth)
+            let outlineWidth = Self.legacyOutlineWidth(forWindowWidth: max(windowWidth, 0))
+            previewWidth = max(saved - outlineWidth, PaneLayout.minimumPreviewWidth)
         }
     }
 

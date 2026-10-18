@@ -2,6 +2,7 @@ import Adwaita
 import CAdwaita
 import CSpelling
 import Foundation
+import MathEngine
 
 @MainActor
 final class MarkdownPreview {
@@ -396,7 +397,7 @@ final class MarkdownPreview {
         #else
         rootScroll.kineticScrolling = true
         #endif
-        rootScroll.minContentWidth = MainWindow.minimumPreviewWidth
+        rootScroll.minContentWidth = PaneLayout.minimumPreviewWidth
         DesktopFontSettings.shared.observe(owner: self) { [weak self] in
             self?.scheduleMathFontRefresh()
         }
@@ -641,7 +642,7 @@ final class MarkdownPreview {
                 PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
             }
             let spent = ContinuousClock.now - started
-            resumeAt = nextFrameCatchUp(after: started, spent: spent, budget: Self.followUpParseBudget)
+            resumeAt = FrameCatchUp.next(after: started, spent: spent, budget: Self.followUpParseBudget)
             reapplySearchHighlights()
             if !stillPostponed {
                 postponedMathPassScheduled = false

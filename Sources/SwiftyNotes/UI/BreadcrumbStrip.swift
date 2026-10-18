@@ -63,7 +63,12 @@ final class BreadcrumbStrip {
 
         // Formulas in the title and headings are drawn, as in the preview.
         let built = Self.buildMathMarkup(docTitle: docTitle, section: section, leaf: leaf)
-        PreviewMath.show(markup: built.markup, spans: built.spans, in: label)
+        TitleMath.show(
+            markup: built.markup,
+            spans: built.spans,
+            in: label,
+            accessibleText: Self.readableText(docTitle: docTitle, section: section, leaf: leaf),
+        )
         // Visibility: hide the whole strip if there's nothing to show.
         label.visible = !docTitle.isEmpty || section?.isEmpty == false || leaf?.isEmpty == false
     }
@@ -131,6 +136,15 @@ final class BreadcrumbStrip {
             pieces.append("<span weight=\"500\">\(segment(leaf))</span>")
         }
         return (pieces.joined(separator: " "), spans)
+    }
+
+    /// The strip read as plain text, segment by segment: read as one, a `$`
+    /// in one segment would pair with one in the next.
+    static func readableText(docTitle: String, section: String?, leaf: String?) -> String {
+        [docTitle, section ?? "", leaf ?? ""]
+            .filter { !$0.isEmpty }
+            .map(MathInlineText.readable)
+            .joined(separator: " › ")
     }
 
     /// Pango-escaped chevron `›` with a dim alpha matching the design's

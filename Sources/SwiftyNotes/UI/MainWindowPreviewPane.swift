@@ -247,7 +247,7 @@ extension MainWindow {
         }
 
         hasScheduledDebugLanguageSwitch = true
-        MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds)) { [weak self] in
+        afterDebugLanguageSwitchGate { [weak self] in
             guard let self else { return }
             selectDebugLanguage(language)
             let followUps = (ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN"] ?? "")
@@ -281,10 +281,32 @@ extension MainWindow {
     private func selectDebugLanguagesInSequence(_ languages: [AppLanguage]) {
         guard let next = languages.first else { return }
         let rest = Array(languages.dropFirst())
-        MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds)) { [weak self] in
+        afterDebugLanguageSwitchGate { [weak self] in
             guard let self else { return }
             selectDebugLanguage(next)
             selectDebugLanguagesInSequence(rest)
+        }
+    }
+
+    /// Runs `switchLanguage` after the delay — or, with
+    /// `SWIFTY_NOTES_DEBUG_SET_LANGUAGE_GATE=<name>`, once a file of that
+    /// name appears in `$XDG_RUNTIME_DIR` (it is removed again): a test that
+    /// reads the interface over AT-SPI says when it is done with a
+    /// language, however slow the reading is.
+    private func afterDebugLanguageSwitchGate(_ switchLanguage: @escaping @MainActor () -> Void) {
+        let environment = ProcessInfo.processInfo.environment
+        guard let name = environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_GATE"], !name.isEmpty,
+              let runtimeDirectory = environment["XDG_RUNTIME_DIR"]
+        else {
+            MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds), switchLanguage)
+            return
+        }
+        let gate = URL(fileURLWithPath: runtimeDirectory, isDirectory: true).appendingPathComponent(name)
+        _ = MainContext.timeout(every: .milliseconds(100)) {
+            guard FileManager.default.fileExists(atPath: gate.path) else { return true }
+            try? FileManager.default.removeItem(at: gate)
+            switchLanguage()
+            return false
         }
     }
     #endif
@@ -754,15 +776,15 @@ extension MainWindow {
         previewPaneDivider.isPreviewAttached
     }
 
-    /// The editor and preview's room: the window less the sidebar and the
-    /// Outline beside them.
+    /// The room the editor and preview share (see
+    /// ``PreviewPaneDivider/roomWidth``).
     var currentPreviewContainerWidth: Int {
-        // Shown, the pane's own width is the room; the window's sizes are
-        // only an estimate for before (or while it is away, in Preview
-        // mode), and can be off by the sidebar's border.
-        if gtk_widget_get_mapped(editorPreviewPane.widgetPointer) != 0, editorPreviewPane.width > 0 {
-            return editorPreviewPane.width
-        }
+        previewPaneDivider.roomWidth
+    }
+
+    /// That room estimated from the window: the window less the sidebar and
+    /// the Outline beside them.
+    var estimatedPreviewContainerWidth: Int {
         let outlineWidth = currentOutlineWidth
         return max(
             editorPreviewPane.width,
@@ -781,6 +803,7 @@ extension MainWindow {
     var currentOutlineWidth: Int {
         guard outlineSplitView.showSidebar else { return 0 }
         if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
-        return Self.outlineWidth(forWindowWidth: window.width > 0 ? window.width : max(window.defaultWidth, state.preferredWindowWidth))
+        let windowWidth = window.width > 0 ? window.width : max(window.defaultWidth, state.preferredWindowWidth)
+        return PaneLayout.outlineWidth(forWindowWidth: windowWidth)
     }
 }

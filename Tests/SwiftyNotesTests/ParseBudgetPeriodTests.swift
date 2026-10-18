@@ -26,8 +26,11 @@ struct ParseBudgetPeriodTests {
         _ = period.begin(at: at(0), fromCatchUpPass: false)
         // Still the same pass, long after: nothing new.
         #expect(period.begin(at: at(150), fromCatchUpPass: false).remaining == .zero)
-        // The catch-up pass runs in its own pass.
-        #expect(period.begin(at: at(150), fromCatchUpPass: true).remaining == .milliseconds(50))
+        // The catch-up pass runs in its own pass — without claiming to
+        // open one: the pass that opened the period has not ended.
+        let catchUp = period.begin(at: at(150), fromCatchUpPass: true)
+        #expect(catchUp.remaining == .milliseconds(50))
+        #expect(!catchUp.opensPass)
         period.passEnded()
         let later = period.begin(at: at(260), fromCatchUpPass: false)
         #expect(later.remaining == .milliseconds(50))
@@ -73,7 +76,9 @@ struct ParseBudgetPeriodTests {
     @Test("The preview's catch-up waits as long again after a pass that overran")
     func thePreviewsCatchUpWaitsAfterAnOverrun() {
         let budget = Duration.milliseconds(16)
-        #expect(nextFrameCatchUp(after: at(0), spent: .milliseconds(10), budget: budget) == at(0))
-        #expect(nextFrameCatchUp(after: at(0), spent: .milliseconds(100), budget: budget) == at(200))
+        #expect(FrameCatchUp.next(after: at(0), spent: .milliseconds(10), budget: budget) == at(0))
+        #expect(FrameCatchUp.next(after: at(0), spent: .milliseconds(100), budget: budget) == at(200))
+        // Exactly the budget is keeping to it.
+        #expect(FrameCatchUp.next(after: at(0), spent: budget, budget: budget) == at(0))
     }
 }

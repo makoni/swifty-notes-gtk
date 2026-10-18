@@ -1,6 +1,7 @@
 import CAdwaita
 import CRaTeXBridge
 import Foundation
+@testable import MathEngine
 @testable import SwiftyNotes
 import Testing
 

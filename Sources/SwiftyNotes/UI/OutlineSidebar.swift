@@ -224,7 +224,6 @@ struct OutlineSidebar {
         searchEntry.setAccessibleLabel("Filter Outline".localized)
     }
 
-
     private func rerender() {
         let visible = OutlineFilter.visible(
             headings: renderState.allHeadings,
@@ -315,7 +314,7 @@ struct OutlineSidebar {
         // Formulas in the heading are drawn, as in the preview, and the
         // filter's match is highlighted; the markup escapes the rest.
         let trimmedQuery = renderState.query.trimmingCharacters(in: .whitespacesAndNewlines)
-        PreviewMath.show(heading.text, in: label, highlighting: trimmedQuery)
+        TitleMath.show(heading.text, in: label, highlighting: trimmedQuery)
 
         row.addCSSClass("sn-out")
         row.addCSSClass("sn-out-h\(heading.level)")
@@ -416,7 +415,6 @@ struct OutlineSidebar {
         default:   16 + 16 * (level - 3)
         }
     }
-
 
     // MARK: — Internal handler hook
 

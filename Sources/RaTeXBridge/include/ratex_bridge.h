@@ -67,15 +67,6 @@ size_t ratex_bridge_live_bytes(void);
  */
 int ratex_bridge_last_error_is_transient(void);
 
-/* ---- For tests and diagnostics; the app does not call these. ---- */
-
-/* Sets the limit on ratex_bridge_live_bytes() and returns the old one. */
-size_t ratex_bridge_set_live_bytes_limit(size_t limit);
-
-/* 1 when an emoji is drawn as a colour image here (not from a fallback
- * font that has it), else 0. Lays a formula out on every call. */
-int ratex_bridge_draws_emoji_images(void);
-
 /*
  * The last error on the calling thread, or NULL. Valid until the next bridge
  * call on the same thread.
@@ -91,6 +82,15 @@ const char *ratex_bridge_last_error(void);
  * changing the environment is not thread-safe, before starting threads.
  */
 const char *ratex_bridge_text_fallback_font(void);
+
+/* ---- For tests and diagnostics; the app does not call these. ---- */
+
+/* Sets the limit on ratex_bridge_live_bytes() and returns the old one. */
+size_t ratex_bridge_set_live_bytes_limit(size_t limit);
+
+/* 1 when an emoji is drawn as a colour image here (not from a fallback
+ * font that has it), else 0. Lays a formula out on every call. */
+int ratex_bridge_draws_emoji_images(void);
 
 #ifdef __cplusplus
 }

@@ -296,7 +296,9 @@ final class CommandPaletteWindow {
         let parentLabel = Label("")
         parentLabel.addCSSClass(.dimLabel)
         if let parent = parentText[heading.id], heading.level >= 3 {
-            PreviewMath.show("\(parent) ›", in: parentLabel)
+            // The chevron after the heading's (perhaps shortened) text.
+            let math = MathInlineText.markup(for: parent)
+            TitleMath.show(markup: math.markup + " ›", spans: math.spans, in: parentLabel)
             // A heading can be very long, and a label drawing a formula
             // is drawn whole for it.
             parentLabel.ellipsize = .end
@@ -307,7 +309,7 @@ final class CommandPaletteWindow {
         parentLabel.marginEnd = 4
 
         let leafLabel = Label("")
-        PreviewMath.show(heading.text, in: leafLabel, highlighting: query)
+        TitleMath.show(heading.text, in: leafLabel, highlighting: query)
         leafLabel.ellipsize = .end
         leafLabel.hexpand = true
         leafLabel.xalign = 0
@@ -388,7 +390,6 @@ final class CommandPaletteWindow {
         _ = dialog.close()
     }
 
-
 }
 
 #if DEBUG
@@ -423,6 +424,10 @@ final class CommandPaletteWindow {
         /// exactly what `GtkSearchEntry` does when the user presses Escape with
         /// focus on the entry.  Used by unit tests to verify the Escape close path
         /// without simulating real keyboard events.
+        func debugClose() {
+            _ = dialog.close()
+        }
+
         func debugEmitStopSearch() {
             searchEntry.emitStopSearch()
         }

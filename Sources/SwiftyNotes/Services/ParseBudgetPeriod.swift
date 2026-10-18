@@ -27,9 +27,23 @@ struct ParseBudgetPeriod {
         self.period = period
     }
 
-    /// What a call at `now` may spend; `opensPass` is true when this opened
-    /// a period in a new main-loop pass (the caller notes when it ends).
-    mutating func begin(at now: ContinuousClock.Instant, fromCatchUpPass: Bool) -> (remaining: Duration, forcesProgress: Bool, opensPass: Bool) {
+    /// What one call may spend.
+    struct Grant {
+        let remaining: Duration
+        /// Parse one formula even with nothing left.
+        let forcesProgress: Bool
+        /// This call opened a period in a new main-loop pass (the caller
+        /// notes when the pass ends).
+        let opensPass: Bool
+
+        /// Whether the call can parse anything at all.
+        var canParse: Bool {
+            remaining > .zero || forcesProgress
+        }
+    }
+
+    /// What a call at `now` may spend.
+    mutating func begin(at now: ContinuousClock.Instant, fromCatchUpPass: Bool) -> Grant {
         let elapsed = start.map { now - $0 } ?? period
         var opensPass = false
         if elapsed >= period, isPassOver || fromCatchUpPass {
@@ -41,7 +55,7 @@ struct ParseBudgetPeriod {
             }
         }
         let remaining = max((start ?? now) + budget - now, .zero)
-        return (remaining, fromCatchUpPass && !hasParsed, opensPass)
+        return Grant(remaining: remaining, forcesProgress: fromCatchUpPass && !hasParsed, opensPass: opensPass)
     }
 
     /// A call that began earlier ended at `now`, having parsed or not.
@@ -59,10 +73,17 @@ struct ParseBudgetPeriod {
     }
 }
 
-/// When a frame-by-frame catch-up (the preview's) may run again after a
-/// pass that began at `started` and took `spent`: at once if it kept to
-/// `budget`, otherwise after as long again, so the UI gets half the time
-/// however long one formula takes.
-func nextFrameCatchUp(after started: ContinuousClock.Instant, spent: Duration, budget: Duration) -> ContinuousClock.Instant {
-    spent > budget ? started + spent * 2 : started
+/// Pacing for a frame-by-frame catch-up (the preview's), which has a
+/// budget per frame rather than a shared period.
+enum FrameCatchUp {
+    /// When it may run again after a pass that began at `started` and took
+    /// `spent`: at once if it kept to `budget`, otherwise after as long
+    /// again, so the UI gets half the time however long one formula takes.
+    static func next(
+        after started: ContinuousClock.Instant,
+        spent: Duration,
+        budget: Duration
+    ) -> ContinuousClock.Instant {
+        spent > budget ? started + spent * 2 : started
+    }
 }

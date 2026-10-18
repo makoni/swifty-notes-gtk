@@ -17,9 +17,10 @@ import Foundation
 final class PreviewPaneDivider {
     /// What the divider needs from its window.
     struct Host {
-        /// The room the editor and preview share: the pane's width once
-        /// allocated, an estimate before.
-        var roomWidth: () -> Int
+        /// The room the editor and preview would share, from the window's
+        /// sizes: for while the pane is not shown (not yet, or Preview
+        /// mode).
+        var estimatedRoomWidth: () -> Int
         /// Whether the window shows Split mode.
         var isSplit: () -> Bool
         var preferredPreviewWidth: () -> Int
@@ -35,6 +36,10 @@ final class PreviewPaneDivider {
     private(set) var isPreviewAttached = false
     /// The divider is being placed or animated, not dragged.
     private(set) var isRestoring = false
+    /// A settle is re-placing the divider frame by frame.
+    var isSettling: Bool {
+        settleTickID != nil
+    }
     private var animationID: SourceID?
     private var settleTickID: UInt?
     private var settleGeneration = 0
@@ -56,16 +61,18 @@ final class PreviewPaneDivider {
         pane.addController(drag)
     }
 
-    /// A press at `x` in the pane: on the handle while a settle is under
-    /// way, the divider is the user's from now on.
+    /// A press at `x` in the pane: on the handle while a settle or the
+    /// preview's slide in is under way, the divider is the user's from now
+    /// on. (A slide out finishes: the preview is leaving.)
     func pointerPressed(atX x: Double) {
         // Right to left, the pane mirrors: the handle sits that far from
         // the right edge.
         let handleX = gtk_widget_get_direction(pane.widgetPointer) == GTK_TEXT_DIR_RTL
             ? pane.width - pane.position
             : pane.position
-        guard settleTickID != nil, abs(x - Double(handleX)) <= 12 else { return }
-        cancelSettle()
+        let isSlidingIn = animationID != nil && host.isSplit()
+        guard settleTickID != nil || isSlidingIn, abs(x - Double(handleX)) <= 12 else { return }
+        stopAnimation()
         isRestoring = false
     }
 
@@ -75,8 +82,9 @@ final class PreviewPaneDivider {
     func show(animated: Bool) {
         attach()
         if animated, canAnimate {
-            let room = host.roomWidth()
-            let target = position(forRoom: room)
+            let room = roomWidth
+            upgradeLegacyPreviewWidth(room: room)
+            let target = editorWidth(forRoom: room)
             pane.position = room
             animate(to: target)
             return
@@ -91,15 +99,16 @@ final class PreviewPaneDivider {
             detach()
             return
         }
-        animate(to: host.roomWidth())
+        animate(to: roomWidth)
     }
 
     /// Puts the divider where the preview gets its remembered width, and
     /// again once the layout has settled.
     func restore() {
         guard host.isSplit() else { return }
+        upgradeLegacyPreviewWidth(room: roomWidth)
         isRestoring = true
-        let position = position(forRoom: host.roomWidth())
+        let position = editorWidth(forRoom: roomWidth)
         pane.position = position
         host.editorWidthChanged(position)
         settle()
@@ -129,19 +138,28 @@ final class PreviewPaneDivider {
 
     // MARK: - Position
 
-    /// Where the divider goes in `room` for the remembered preview width;
-    /// the editor keeps its minimum.
-    func position(forRoom room: Int) -> Int {
-        let stored = host.preferredPreviewWidth()
-        let previewWidth = PaneLayout.resolvedPreviewWidth(storedWidth: stored, availableWidth: room)
-        // The old default grows into the comfortable width once.
-        if stored == WorkspaceState.legacyDefaultPreviewWidth, previewWidth > stored {
-            host.setPreferredPreviewWidth(previewWidth)
+    /// The room the editor and preview share: the shown pane's own width,
+    /// else the window's estimate (which can be off by a sidebar's border).
+    var roomWidth: Int {
+        if gtk_widget_get_mapped(pane.widgetPointer) != 0, pane.width > 0 {
+            return pane.width
         }
-        return max(room - previewWidth, PaneLayout.minimumEditorWidth)
+        return host.estimatedRoomWidth()
     }
 
-    /// The editor's width with the preview at its remembered width.
+    /// The old default preview width grows, once, into the comfortable
+    /// width `room` gives it.
+    private func upgradeLegacyPreviewWidth(room: Int) {
+        let stored = host.preferredPreviewWidth()
+        guard stored == WorkspaceState.legacyDefaultPreviewWidth else { return }
+        let previewWidth = PaneLayout.resolvedPreviewWidth(storedWidth: stored, availableWidth: room)
+        if previewWidth > stored {
+            host.setPreferredPreviewWidth(previewWidth)
+        }
+    }
+
+    /// The editor's width — where the divider goes — with the preview at
+    /// its remembered width; the editor keeps its minimum.
     func editorWidth(forRoom room: Int) -> Int {
         let previewWidth = PaneLayout.resolvedPreviewWidth(storedWidth: host.preferredPreviewWidth(), availableWidth: room)
         return max(room - previewWidth, PaneLayout.minimumEditorWidth)
@@ -160,7 +178,7 @@ final class PreviewPaneDivider {
     /// A move the user made: remember the preview's width.
     private func handleMoved() {
         guard host.isSplit(), isPreviewAttached, !isRestoring else { return }
-        let room = host.roomWidth()
+        let room = roomWidth
         guard room >= PaneLayout.minimumPreviewWidth + PaneLayout.minimumEditorWidth else { return }
         let previewWidth = room - pane.position
         guard previewWidth >= PaneLayout.minimumPreviewWidth else { return }
@@ -185,7 +203,7 @@ final class PreviewPaneDivider {
             steadyFrames = width == lastWidth ? steadyFrames + 1 : 0
             lastWidth = width
             guard frames >= 2 else { return true }
-            place(at: position(forRoom: host.roomWidth()))
+            place(at: editorWidth(forRoom: roomWidth))
             guard steadyFrames < 3, frames < 60 else {
                 settleTickID = nil
                 // After the layout that follows the last placement.

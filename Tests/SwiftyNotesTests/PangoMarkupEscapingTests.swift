@@ -28,20 +28,30 @@ struct PangoMarkupEscapingTests {
     @Test("Every toast in the app is a plain one")
     func everyToastInTheAppIsAPlainOne() throws {
         // A note's title or an error message in a markup toast breaks it.
-        let sources = URL(fileURLWithPath: #filePath, isDirectory: false)
+        let root = URL(fileURLWithPath: #filePath, isDirectory: false)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("Sources/SwiftyNotes", isDirectory: true)
-        let files = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
+        // Over whole files: a call may be split across lines. A toast made
+        // any other way than Toast.plain, or one set back to markup.
+        let markupToast = try Regex(
+            #"\bToast\s*\(|\bToast\.init\s*\(|\.init\s*\(\s*title\s*:|\.showToast\s*\(|[Tt]oast\w*\s*\.useMarkup\s*=\s*true"#
+        )
         var offenders: [String] = []
-        // Over whole files: a call may be split across lines.
-        let markupToast = try Regex(#"\bToast\s*\(|\.showToast\s*\("#)
-        for case let url as URL in files where url.pathExtension == "swift" && url.lastPathComponent != "PlainToasts.swift" {
-            let text = try String(contentsOf: url, encoding: .utf8)
-            for match in text.matches(of: markupToast) {
-                let line = text[..<match.range.lowerBound].count { $0 == "\n" } + 1
-                offenders.append("\(url.lastPathComponent):\(line)")
+        var scanned: [String] = []
+        for directory in ["Sources/SwiftyNotes", "Sources/SwiftyNotesApp"] {
+            let url = root.appendingPathComponent(directory, isDirectory: true)
+            let files = try #require(FileManager.default.enumerator(at: url, includingPropertiesForKeys: nil))
+            for case let file as URL in files where file.pathExtension == "swift" {
+                scanned.append(file.lastPathComponent)
+                guard file.lastPathComponent != "PlainToasts.swift" else { continue }
+                let text = try String(contentsOf: file, encoding: .utf8)
+                for match in text.matches(of: markupToast) {
+                    let line = text[..<match.range.lowerBound].count { $0 == "\n" } + 1
+                    offenders.append("\(file.lastPathComponent):\(line)")
+                }
             }
         }
+        // The scan read the app, not an empty or moved directory.
+        #expect(scanned.contains("PlainToasts.swift") && scanned.count > 50, "\(scanned.count) files")
         #expect(offenders.isEmpty, "\(offenders)")
     }
 

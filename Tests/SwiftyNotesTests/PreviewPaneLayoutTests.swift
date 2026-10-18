@@ -26,6 +26,7 @@ struct PreviewPaneLayoutTests {
         // Wider than a headless test monitor would let it be by default.
         window.window.setSizeRequest(width: 1400, height: 900)
         window.present()
+        defer { window.window.close() }
         window.setViewMode(.split, animated: false)
         Self.waitUntil(timeout: .seconds(2)) { window.editorPreviewPane.width > 0 && window.preview.rootScroll.width > 0 }
         MainContext.pump(for: .milliseconds(100))
@@ -38,7 +39,7 @@ struct PreviewPaneLayoutTests {
             let room = window.editorPreviewPane.width
             // The width the window remembers: a clamp by the editor's
             // minimum (a narrow room) is remembered like a drag.
-            let previewWidth = MainWindow.resolvedPreviewWidth(storedWidth: window.state.preferredPreviewWidth, availableWidth: room)
+            let previewWidth = PaneLayout.resolvedPreviewWidth(storedWidth: window.state.preferredPreviewWidth, availableWidth: room)
             var editorMinimum: Int32 = 0
             gtk_widget_measure(window.editorContent.widgetPointer, GTK_ORIENTATION_HORIZONTAL, -1, &editorMinimum, nil, nil, nil)
             return max(room - previewWidth, Int(editorMinimum))
@@ -51,7 +52,7 @@ struct PreviewPaneLayoutTests {
             #expect(abs(window.editorPreviewPane.position - expectedDivider()) <= 12, "\(step): divider at \(window.editorPreviewPane.position) of \(room), expected \(expectedDivider())")
             // What shows of the preview, not its allocation (never less than
             // its minimum; GtkPaned clips the rest).
-            #expect(room - window.editorPreviewPane.position >= MainWindow.minimumPreviewWidth, "\(step)")
+            #expect(room - window.editorPreviewPane.position >= PaneLayout.minimumPreviewWidth, "\(step)")
         }
         expectPreviewWidth("launch")
 
@@ -79,6 +80,21 @@ struct PreviewPaneLayoutTests {
         MainContext.pump(for: .milliseconds(20))
         window.setViewMode(.split, animated: false)
         expectPreviewWidth("split while the sidebar slides out")
+
+        // The room grows while the divider settles: placed in the narrow
+        // room first (the editor's minimum clamps the preview), it must
+        // follow, not leave the preview at the clamped width — nor remember
+        // that width as the user's.
+        window.setViewMode(.editor, animated: false)
+        MainContext.pump(for: .milliseconds(100))
+        window.toggleSidebarVisibility()
+        MainContext.pump(for: .milliseconds(500))
+        window.state.setPreferredPreviewWidth(WorkspaceState.defaultPreviewWidth)
+        window.setViewMode(.split, animated: false)
+        MainContext.pump(for: .milliseconds(30))
+        window.toggleSidebarVisibility()
+        expectPreviewWidth("room grown while settling")
+        #expect(window.state.preferredPreviewWidth == WorkspaceState.defaultPreviewWidth)
     }
 
     @Test("An opened file's split preview gets its width beside a shown outline") @MainActor
@@ -96,6 +112,7 @@ struct PreviewPaneLayoutTests {
         // Wider than a headless test monitor would let it be by default.
         window.window.setSizeRequest(width: 1400, height: 900)
         window.present()
+        defer { window.window.close() }
         Self.waitUntil(timeout: .seconds(2)) { window.editorPreviewPane.width > 0 }
         // Show the outline while the preview is away, then bring the
         // preview back beside it.
@@ -107,13 +124,14 @@ struct PreviewPaneLayoutTests {
 
         func previewWidthMiss() -> Int {
             let room = window.editorPreviewPane.width
-            let expected = MainWindow.resolvedPreviewWidth(storedWidth: WorkspaceState.defaultPreviewWidth, availableWidth: room)
+            let expected = PaneLayout.resolvedPreviewWidth(storedWidth: WorkspaceState.defaultPreviewWidth, availableWidth: room)
             return abs(room - window.editorPreviewPane.position - expected)
         }
         Self.waitUntil(timeout: .seconds(2)) { previewWidthMiss() <= 12 }
         MainContext.pump(for: .milliseconds(300))
         #expect(previewWidthMiss() <= 12, "divider at \(window.editorPreviewPane.position) of \(window.editorPreviewPane.width)")
-        #expect(window.editorPreviewPane.width - window.editorPreviewPane.position >= MainWindow.minimumPreviewWidth)
+        #expect(window.debugPreviewRoomWidth == window.editorPreviewPane.width)
+        #expect(window.editorPreviewPane.width - window.editorPreviewPane.position >= PaneLayout.minimumPreviewWidth)
 
         // Showing the outline beside the preview keeps the width it
         // remembers: the room it measures excludes the outline.
@@ -166,10 +184,24 @@ struct PreviewPaneLayoutTests {
         // Grabbing the handle while it settles hands it to the user.
         divider.pointerPressed(atX: Double(window.editorPreviewPane.position))
         #expect(!divider.isRestoring)
+        #expect(!divider.isSettling)
         window.editorPreviewPane.position = room - 420
         #expect(window.state.preferredPreviewWidth == 420)
         MainContext.pump(for: .milliseconds(300))
         #expect(window.editorPreviewPane.position == room - 420, "the settle took the divider back")
+
+        // Grabbing it while the preview slides in stops the slide.
+        window.setViewMode(.editor, animated: false)
+        MainContext.pump(for: .milliseconds(100))
+        window.setViewMode(.split, animated: true)
+        #expect(divider.isRestoring, "sliding in")
+        divider.pointerPressed(atX: Double(window.editorPreviewPane.position))
+        #expect(!divider.isRestoring)
+        let grabbedAt = window.editorPreviewPane.position
+        MainContext.pump(for: .milliseconds(400))
+        // (GtkPaned may nudge it into its bounds; the slide would take it
+        // hundreds of pixels.)
+        #expect(abs(window.editorPreviewPane.position - grabbedAt) <= 12, "the slide went on")
 
         // Right to left the pane mirrors, and so does the handle.
         gtk_widget_set_direction(window.editorPreviewPane.widgetPointer, GTK_TEXT_DIR_RTL)

@@ -125,10 +125,9 @@ enum MathInlineText {
         "mathcal", "operatorname", "boldsymbol", "ce",
     ]
 
+    /// The reader recurses per group; ``readable(_:)`` reads text already
+    /// cut to ``maxShownCharacters``, which bounds how deep it goes.
     private static func readableTeX(_ tex: String) -> String {
-        // The reader recurses per group, so TeX the preview would not draw
-        // either (too long) stays as written rather than nest it deep.
-        guard tex.utf8.count <= MathRenderer.maxTeXBytes else { return "$\(tex)$" }
         var reader = Reader(scalars: Array(tex.unicodeScalars))
         return reader.readAll()
     }

@@ -181,7 +181,11 @@ public enum MathRenderer {
     /// ``withParseBudget(_:guaranteeingProgress:_:)`` for a pass that needs
     /// to know whether it parsed a new formula (a cached one does not count).
     @discardableResult
-    static func parsingWithinBudget(_ duration: Duration, guaranteeingProgress: Bool = false, _ body: () -> Void) -> Bool {
+    public static func parsingWithinBudget(
+        _ duration: Duration,
+        guaranteeingProgress: Bool = false,
+        _ body: () -> Void
+    ) -> Bool {
         var parsed = false
         withParseBudget(duration, guaranteeingProgress: guaranteeingProgress) {
             body()
@@ -190,6 +194,7 @@ public enum MathRenderer {
         return parsed
     }
 
+    #if DEBUG
     /// Drops every cached formula and any parse budget (tests).
     static func removeAllCachedFormulas() {
         cache.removeAll()
@@ -203,7 +208,6 @@ public enum MathRenderer {
     /// How many formulas the engine has parsed (tests).
     private(set) static var parseCount = 0
 
-    #if DEBUG
     /// Makes every parse take this much longer, and records when parses
     /// start (tests of pacing; a real heavy formula is not portable).
     static var debugParseDelay: Duration = .zero
@@ -211,11 +215,12 @@ public enum MathRenderer {
     #endif
 
     private static func parse(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {
-        parseCount += 1
         #if DEBUG
+        parseCount += 1
         if debugParseDelay > .zero {
             debugParseStarts.append(.now)
-            Thread.sleep(forTimeInterval: Double(debugParseDelay.components.attoseconds) / 1e18 + Double(debugParseDelay.components.seconds))
+            let delay = debugParseDelay.components
+            Thread.sleep(forTimeInterval: Double(delay.seconds) + Double(delay.attoseconds) / 1e18)
         }
         #endif
         let handle: OpaquePointer? = tex.utf8CString.withUnsafeBufferPointer { buffer in

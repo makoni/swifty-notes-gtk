@@ -1,6 +1,7 @@
 import Adwaita
 import CAdwaita
 import Foundation
+import MathEngine
 
 /// Draws TeX formulas inside the preview's labels — and in labels outside
 /// it that show a note's title or a heading (sidebar, outline, breadcrumb,
@@ -90,12 +91,21 @@ enum PreviewMath {
     /// and changes with the desktop font. (The preview refreshes its own.)
     ///
     /// Parsing is paced by ``titleScheduler``.
-    static func show(markup: String, spans: [MathSpan], in label: Label) {
+    static func show(markup: String, spans: [MathSpan], in label: Label, accessibleText: String? = nil) {
         label.markup = markup
         titleScheduler.withBudget {
             install(on: label, spans: spans, outsidePreview: true)
         }
-        guard let state = state(of: label) else { return }
+        guard let state = state(of: label) else {
+            if let accessibleText {
+                label.setAccessibleLabel(accessibleText)
+            }
+            return
+        }
+        if state.accessibleTextOverride != accessibleText {
+            state.accessibleTextOverride = accessibleText
+            restoreAccessibleLabel(of: label)
+        }
         titleScheduler.layOutPostponedSoon(label, state: state)
         guard !state.observesDesktopFont else { return }
         state.observesDesktopFont = true
@@ -268,6 +278,7 @@ enum PreviewMath {
         return state.sourceText(labelText: label.text, scalarRange: selection)
     }
 
+    #if DEBUG
     /// Whether the preview may have formulas waiting for parse budget (tests).
     static var debugMayHavePostponedFormulas: Bool {
         mayHavePostponedFormulas
@@ -304,6 +315,7 @@ enum PreviewMath {
         }
         return count
     }
+    #endif
 
     // MARK: - Layout
 
@@ -727,26 +739,18 @@ enum PreviewMath {
         let object = UnsafeMutablePointer<GObject>(label.opaquePointer)
         guard g_object_get_data(object, shapeRendererKey) == nil else { return }
         g_object_set_data(object, shapeRendererKey, UnsafeMutableRawPointer(bitPattern: 1))
-        let onMap: @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer?) -> Void = { widget, _ in
-            guard let widget else { return }
+        // The pointer, not the label: the label owns this handler, and a
+        // wrapper kept in it would keep the label alive.
+        let widget = UnsafeMutableRawPointer(label.widgetPointer)
+        label.onMap {
             let context = gtk_widget_get_pango_context(widget.assumingMemoryBound(to: GtkWidget.self))
             pango_cairo_context_set_shape_renderer(context, drawFormulaShape, nil, nil)
-            MainActor.assumeIsolated {
-                // Outside the preview a label is laid out before it is
-                // styled where it is shown (an outline row's font).
-                if PreviewMath.state(ofPointer: OpaquePointer(widget))?.isOutsidePreview == true {
-                    PreviewMath.refreshFontSizesSoon(of: widget)
-                }
+            // Outside the preview a label is laid out before it is styled
+            // where it is shown (an outline row's font).
+            if PreviewMath.state(ofPointer: OpaquePointer(widget))?.isOutsidePreview == true {
+                PreviewMath.refreshFontSizesSoon(of: widget)
             }
         }
-        g_signal_connect_data(
-            UnsafeMutableRawPointer(label.opaquePointer),
-            "map",
-            unsafeBitCast(onMap, to: GCallback.self),
-            nil,
-            nil,
-            GConnectFlags(rawValue: 0)
-        )
     }
 
     // MARK: - Copy
@@ -764,7 +768,8 @@ enum PreviewMath {
             }
         }
         // After the default handler, so the TeX text replaces the U+FFFC
-        // copy GTK just put on the clipboard.
+        // copy GTK just put on the clipboard. (Raw: swift-adwaita's signal
+        // helpers cannot connect after the default handler.)
         g_signal_connect_data(
             label.widgetPointer,
             "copy-clipboard",
@@ -875,6 +880,9 @@ final class MathLabelState {
     var isOutsidePreview = false
     /// Set once the label follows desktop font changes.
     var observesDesktopFont = false
+    /// What the label's owner wants it read as, when the label's own text
+    /// would read wrong (the breadcrumb's segments).
+    var accessibleTextOverride: String?
     /// In the catch-up queue of labels outside the preview.
     var isQueuedOutside = false
     var spans: [MathSpan] = []
@@ -961,6 +969,9 @@ final class MathLabelState {
     }
 
     func accessibleText(labelText: String) -> String {
+        if let accessibleTextOverride {
+            return accessibleTextOverride
+        }
         let source = sourceText(labelText: labelText)
         return isOutsidePreview ? MathInlineText.readable(source) : source
     }

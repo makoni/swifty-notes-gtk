@@ -175,7 +175,7 @@ final class ExternalDocumentWindow {
         pane: editorPreviewPane,
         previewContent: previewPaneContent,
         host: .init(
-            roomWidth: { [weak self] in self?.currentPreviewContainerWidth ?? 0 },
+            estimatedRoomWidth: { [weak self] in self?.estimatedPreviewContainerWidth ?? 0 },
             isSplit: { [weak self] in self?.viewMode == .split },
             preferredPreviewWidth: { [weak self] in self?.preferredPreviewWidth ?? WorkspaceState.defaultPreviewWidth },
             setPreferredPreviewWidth: { [weak self] in self?.preferredPreviewWidth = $0 },
@@ -344,9 +344,9 @@ private extension ExternalDocumentWindow {
         outlineSplitView.sidebarPosition = .end
         outlineSplitView.enableShowGesture = false
         outlineSplitView.enableHideGesture = false
-        outlineSplitView.minSidebarWidth = Double(MainWindow.minimumOutlineWidth)
-        outlineSplitView.maxSidebarWidth = Double(MainWindow.maximumOutlineWidth)
-        outlineSplitView.sidebarWidthFraction = MainWindow.outlineWidthFraction
+        outlineSplitView.minSidebarWidth = Double(PaneLayout.minimumOutlineWidth)
+        outlineSplitView.maxSidebarWidth = Double(PaneLayout.maximumOutlineWidth)
+        outlineSplitView.sidebarWidthFraction = PaneLayout.outlineWidthFraction
         outlineSplitView.sidebar = outlineSidebar.root
         outlineSplitView.content = contentHost
         outlineSplitView.showSidebar = false
@@ -803,14 +803,15 @@ private extension ExternalDocumentWindow {
         previewPaneDivider.isPreviewAttached
     }
 
-    /// The editor and preview's room: the window less the Outline beside
-    /// them.
+    /// The room the editor and preview share (see
+    /// ``PreviewPaneDivider/roomWidth``).
     var currentPreviewContainerWidth: Int {
-        // Shown, the pane's own width is the room; the window's sizes are
-        // only an estimate for before (or while it is away).
-        if gtk_widget_get_mapped(editorPreviewPane.widgetPointer) != 0, editorPreviewPane.width > 0 {
-            return editorPreviewPane.width
-        }
+        previewPaneDivider.roomWidth
+    }
+
+    /// That room estimated from the window: the window less the Outline
+    /// beside it.
+    var estimatedPreviewContainerWidth: Int {
         let outlineWidth = currentOutlineWidth
         return max(
             editorPreviewPane.width,
@@ -825,7 +826,7 @@ private extension ExternalDocumentWindow {
     var currentOutlineWidth: Int {
         guard outlineSplitView.showSidebar else { return 0 }
         if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
-        return MainWindow.outlineWidth(forWindowWidth: max(window.width, window.defaultWidth))
+        return PaneLayout.outlineWidth(forWindowWidth: max(window.width, window.defaultWidth))
     }
 }
 
@@ -1134,6 +1135,11 @@ private extension ExternalDocumentWindow {
         /// The preview width the window remembers for Split mode.
         var debugPreferredPreviewWidth: Int {
             preferredPreviewWidth
+        }
+
+        /// The room the divider measures (see ``PreviewPaneDivider/roomWidth``).
+        var debugPreviewRoomWidth: Int {
+            currentPreviewContainerWidth
         }
 
         /// Routes through the real transition (`setViewMode`) so tests

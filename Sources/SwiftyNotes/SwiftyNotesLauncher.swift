@@ -1,5 +1,6 @@
 import Adwaita
 import Foundation
+import MathEngine
 
 #if canImport(Darwin)
 import Darwin
