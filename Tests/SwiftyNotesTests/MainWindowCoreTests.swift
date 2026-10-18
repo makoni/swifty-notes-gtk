@@ -38,6 +38,24 @@ struct MainWindowCoreTests {
         #expect(window.debugPreviewText.contains("Body"))
     }
 
+    @Test("The trash banner shows a note's title as text, not markup") @MainActor
+    func theTrashBannerShowsANotesTitleAsText() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.trashbanner")
+        try app.register()
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)),
+            repository: NotesRepository(notesDirectory: temp),
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+        // A title like "A & B <draft>" would not parse as markup.
+        #expect(!window.trashedNoteBanner.useMarkup)
+    }
+
     @Test("Main window typing burst defers markdown rebuild until pending preview flush") @MainActor
     func mainWindowTypingBurstDefersMarkdownRebuildUntilPendingPreviewFlush() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

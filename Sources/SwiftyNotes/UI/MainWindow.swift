@@ -241,6 +241,7 @@ final class MainWindow {
     )
     var isRestoringPreviewPaneLayout = false
     var previewPaneSettleTickID: UInt?
+    var previewPaneSettleDeadline: ContinuousClock.Instant?
     var previewAnimationID: SourceID?
     var isPreviewPaneAttached = false
     var suppressViewModeToggleChange = false
@@ -458,6 +459,8 @@ final class MainWindow {
         installEditorClipboardImagePaste()
 
         trashedNoteBanner.buttonLabel = "Restore".localized
+        // The title holds the note's title, which is text, not markup.
+        trashedNoteBanner.useMarkup = false
         trashedNoteBanner.revealed = false
         trashedNoteBanner.onButtonClicked { [weak self] in
             guard let self, let id = previewedTrashedNoteID else { return }
@@ -689,6 +692,9 @@ final class MainWindow {
 
         editorPreviewPane.onPositionChanged { [weak self] in
             self?.handlePreviewPaneMoved()
+        }
+        editorPreviewPane.onSizeAllocate { [weak self] _, _ in
+            self?.handlePreviewPaneRoomChanged()
         }
 
         editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in
