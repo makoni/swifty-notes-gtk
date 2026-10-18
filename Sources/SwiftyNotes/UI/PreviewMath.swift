@@ -134,18 +134,32 @@ enum PreviewMath {
     static var outsideParseBudget: Duration = .milliseconds(50)
     private static let outsideParsePeriod: Duration = .milliseconds(100)
     private static var outsideParsePeriodStart: ContinuousClock.Instant?
+    /// Set once the main-loop pass that started the period has finished.
+    private static var outsideParsePassEnded = true
+    private static var parsedInOutsidePeriod = false
 
     /// Runs `body` within what is left of the parse budget that labels
-    /// outside the preview share in the current period.
-    private static func withOutsideParseBudget(guaranteeingProgress: Bool = false, _ body: () -> Void) {
+    /// outside the preview share in the current period. A period renews
+    /// only in a later main-loop pass (or the catch-up pass), so one long
+    /// rebuild does not refill it as it goes; the catch-up pass parses at
+    /// least one formula per period, so postponed ones always come.
+    private static func withOutsideParseBudget(fromCatchUpPass: Bool = false, _ body: () -> Void) {
         let now = ContinuousClock.now
-        if let start = outsideParsePeriodStart, now - start < outsideParsePeriod {
-            // Within the period: what it has left.
-        } else {
+        let elapsed = outsideParsePeriodStart.map { now - $0 } ?? outsideParsePeriod
+        if elapsed >= outsideParsePeriod, outsideParsePassEnded || fromCatchUpPass {
             outsideParsePeriodStart = now
+            parsedInOutsidePeriod = false
+            outsideParsePassEnded = false
+            MainContext.idle {
+                PreviewMath.outsideParsePassEnded = true
+            }
         }
         let remaining = max((outsideParsePeriodStart ?? now) + outsideParseBudget - now, .zero)
-        MathRenderer.withParseBudget(remaining, guaranteeingProgress: guaranteeingProgress, body)
+        let parsedBefore = MathRenderer.parseCount
+        MathRenderer.withParseBudget(remaining, guaranteeingProgress: fromCatchUpPass && !parsedInOutsidePeriod, body)
+        if MathRenderer.parseCount > parsedBefore {
+            parsedInOutsidePeriod = true
+        }
     }
 
     /// Labels outside the preview with formulas the budget postponed.
@@ -161,7 +175,7 @@ enum PreviewMath {
         }
         guard postponedOutsidePass == nil else { return }
         postponedOutsidePass = MainContext.timeout(every: .milliseconds(16)) {
-            withOutsideParseBudget(guaranteeingProgress: true) {
+            withOutsideParseBudget(fromCatchUpPass: true) {
                 postponedOutside.removeAll { entry in
                     // A label that is gone took its state with it.
                     guard let state = entry.state,

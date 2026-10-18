@@ -491,7 +491,9 @@ struct UISmokeTests {
                 "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS": "400",
                 "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH": "ar",
                 "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN": "en",
-                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "1200",
+                // Long enough for the script to read the whole Arabic tree
+                // before the switch back: AT-SPI walks are slow on CI.
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "3000",
             ],
         )
         expectUIScriptSucceeded(result)

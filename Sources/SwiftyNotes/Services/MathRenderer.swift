@@ -188,7 +188,8 @@ public enum MathRenderer {
         cache.count
     }
 
-    /// How many formulas the engine has parsed (tests).
+    /// How many formulas the engine has parsed (tests; the budget of labels
+    /// outside the preview tells by it whether a pass parsed anything).
     private(set) static var parseCount = 0
 
     private static func parse(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {
