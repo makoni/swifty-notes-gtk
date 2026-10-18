@@ -64,7 +64,7 @@ public final class MathFormula: @unchecked Sendable {
 @MainActor
 public enum MathRenderer {
     /// Formulas longer than this many UTF-8 bytes stay TeX source.
-    public static let maxTeXBytes = 2048
+    public nonisolated static let maxTeXBytes = 2048
 
     /// The engine's message for the last formula that failed to parse.
     public private(set) static var lastError: String?

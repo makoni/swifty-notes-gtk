@@ -66,6 +66,15 @@ struct MathInlineTextTests {
         #expect(result.markup.hasSuffix("$x_{10}$ $x_{11}$"))
     }
 
+    @Test("A long formula in a title stays source")
+    func aLongFormulaInATitleStaysSource() {
+        let long = "x" + String(repeating: " + x", count: MathInlineText.maxFormulaBytes / 4)
+        let result = MathInlineText.markup(for: "Long $\(long)$ and $y$")
+        #expect(result.spans == [MathSpan(tex: "y", isDisplay: false)])
+        #expect(result.markup.hasPrefix("Long $x + x"))
+        #expect(result.markup.unicodeScalars.filter { $0 == MathSpanExtractor.formulaMarker }.count == 1)
+    }
+
     @Test("A stray object replacement character without formulas is not a marker")
     func aStrayObjectReplacementCharacterWithoutFormulasIsNotAMarker() {
         let result = MathInlineText.markup(for: "Odd \u{FFFC} title", highlighting: "odd")

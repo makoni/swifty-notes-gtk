@@ -241,7 +241,7 @@ final class MainWindow {
     )
     var isRestoringPreviewPaneLayout = false
     var previewPaneSettleTickID: UInt?
-    var previewPaneSettleDeadline: ContinuousClock.Instant?
+    var previewPaneSettleGeneration = 0
     var previewAnimationID: SourceID?
     var isPreviewPaneAttached = false
     var suppressViewModeToggleChange = false
@@ -692,9 +692,6 @@ final class MainWindow {
 
         editorPreviewPane.onPositionChanged { [weak self] in
             self?.handlePreviewPaneMoved()
-        }
-        editorPreviewPane.onSizeAllocate { [weak self] _, _ in
-            self?.handlePreviewPaneRoomChanged()
         }
 
         editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in

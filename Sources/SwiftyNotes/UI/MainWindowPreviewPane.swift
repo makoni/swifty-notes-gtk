@@ -757,30 +757,7 @@ extension MainWindow {
         isRestoringPreviewPaneLayout = true
         editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
         refreshEditorFormattingToolbarLayout()
-        previewPaneSettleDeadline = .now + .milliseconds(1500)
         settlePreviewPanePosition()
-    }
-
-    /// The pane's width changed shortly after the preview came back — a
-    /// sidebar still sliding, which the frame-by-frame settle may have
-    /// stopped watching (frames come unevenly): lay the divider out again
-    /// for the room it ends with.
-    func handlePreviewPaneRoomChanged() {
-        guard let deadline = previewPaneSettleDeadline, ContinuousClock.now < deadline,
-              state.viewMode == .split, isPreviewPaneAttached, previewAnimationID == nil
-        else {
-            return
-        }
-        // Not from within the allocation that reported the change.
-        MainContext.idle { [weak self] in
-            guard let self, state.viewMode == .split, isPreviewPaneAttached, previewAnimationID == nil else { return }
-            let position = resolvedVisiblePreviewPosition(totalWidth: currentPreviewContainerWidth)
-            guard editorPreviewPane.position != position else { return }
-            isRestoringPreviewPaneLayout = true
-            editorPreviewPane.position = position
-            refreshEditorFormattingToolbarLayout()
-            settlePreviewPanePosition()
-        }
     }
 
     /// Sets the divider again once the pane has been laid out with the
@@ -790,6 +767,9 @@ extension MainWindow {
     /// — or once a sidebar still sliding in or out has stopped.
     private func settlePreviewPanePosition() {
         cancelPreviewPaneSettle()
+        // A newer settle owns the restoring flag from here on.
+        previewPaneSettleGeneration += 1
+        let generation = previewPaneSettleGeneration
         var frames = 0
         var lastWidth = -1
         var steadyFrames = 0
@@ -810,7 +790,8 @@ extension MainWindow {
             guard steadyFrames < 3, frames < 60 else {
                 previewPaneSettleTickID = nil
                 MainContext.idle { [weak self] in
-                    self?.isRestoringPreviewPaneLayout = false
+                    guard let self, generation == previewPaneSettleGeneration else { return }
+                    isRestoringPreviewPaneLayout = false
                 }
                 return false
             }

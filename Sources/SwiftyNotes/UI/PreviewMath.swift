@@ -40,8 +40,11 @@ enum PreviewMath {
     /// different number of markers (which should not happen) loses any
     /// formulas it drew rather than keep ones that no longer match; returns
     /// false then.
+    ///
+    /// `outsidePreview` marks a label that shows a title or heading
+    /// elsewhere (``show(markup:spans:in:)``).
     @discardableResult
-    static func install(on label: Label, spans: [MathSpan]) -> Bool {
+    static func install(on label: Label, spans: [MathSpan], outsidePreview: Bool = false) -> Bool {
         let existing = state(of: label)
         let markup = label.markup
         let markerCount = markup.unicodeScalars.reduce(0) { $0 + ($1 == MathSpanExtractor.formulaMarker ? 1 : 0) }
@@ -66,6 +69,7 @@ enum PreviewMath {
         // broken formulas is not parsed again on each keystroke.
         state.decisions = state.decisions.filter { !$0.value.isRetryable }
         state.spans = spans
+        state.isOutsidePreview = state.isOutsidePreview || outsidePreview
         state.baseFontPixels = fontPixels(of: label)
         state.measuredFontPixels = state.baseFontPixels
         layOut(label, state: state)
@@ -92,13 +96,12 @@ enum PreviewMath {
     static func show(markup: String, spans: [MathSpan], in label: Label) {
         label.markup = markup
         withOutsideParseBudget {
-            install(on: label, spans: spans)
+            install(on: label, spans: spans, outsidePreview: true)
         }
         guard let state = state(of: label) else { return }
         layOutPostponedOutsideSoon(label, state: state)
-        guard !state.isOutsidePreview else { return }
-        state.isOutsidePreview = true
-        restoreAccessibleLabel(of: label)
+        guard !state.observesDesktopFont else { return }
+        state.observesDesktopFont = true
         let widget = UnsafeMutableRawPointer(label.widgetPointer)
         // `state` lives as long as the label draws formulas; the handler
         // goes with it.
@@ -149,16 +152,24 @@ enum PreviewMath {
         if elapsed >= outsideParsePeriod, outsideParsePassEnded || fromCatchUpPass {
             outsideParsePeriodStart = now
             parsedInOutsidePeriod = false
-            outsideParsePassEnded = false
-            MainContext.idle {
-                PreviewMath.outsideParsePassEnded = true
+            if outsideParsePassEnded {
+                outsideParsePassEnded = false
+                MainContext.idle {
+                    PreviewMath.outsideParsePassEnded = true
+                }
             }
         }
         let remaining = max((outsideParsePeriodStart ?? now) + outsideParseBudget - now, .zero)
         let parsedBefore = MathRenderer.parseCount
         MathRenderer.withParseBudget(remaining, guaranteeingProgress: fromCatchUpPass && !parsedInOutsidePeriod, body)
-        if MathRenderer.parseCount > parsedBefore {
-            parsedInOutsidePeriod = true
+        guard MathRenderer.parseCount > parsedBefore else { return }
+        parsedInOutsidePeriod = true
+        // A parse may run past the budget (one forced, or one begun just
+        // before the deadline): the period then lasts until the time left
+        // over is free again, so the UI gets that share whatever a formula
+        // costs.
+        if let start = outsideParsePeriodStart {
+            outsideParsePeriodStart = max(start, ContinuousClock.now - outsideParseBudget)
         }
     }
 
@@ -170,7 +181,8 @@ enum PreviewMath {
     /// one budget with every other such label.
     private static func layOutPostponedOutsideSoon(_ label: Label, state: MathLabelState) {
         guard state.hasPostponedFormulas else { return }
-        if !postponedOutside.contains(where: { $0.state === state }) {
+        if !state.isQueuedOutside {
+            state.isQueuedOutside = true
             postponedOutside.append(PostponedLabel(state: state, widget: UnsafeMutableRawPointer(label.widgetPointer)))
         }
         guard postponedOutsidePass == nil else { return }
@@ -178,14 +190,15 @@ enum PreviewMath {
             withOutsideParseBudget(fromCatchUpPass: true) {
                 postponedOutside.removeAll { entry in
                     // A label that is gone took its state with it.
-                    guard let state = entry.state,
-                          let label = Widget(borrowing: entry.widget).tryCast(Label.self)
-                    else {
+                    guard let state = entry.state else { return true }
+                    guard let label = Widget(borrowing: entry.widget).tryCast(Label.self) else {
+                        state.isQueuedOutside = false
                         return true
                     }
                     if state.hasPostponedFormulas {
                         layOut(label, state: state, applyingWhilePostponed: false)
                     }
+                    state.isQueuedOutside = state.hasPostponedFormulas
                     return !state.hasPostponedFormulas
                 }
             }
@@ -327,6 +340,17 @@ enum PreviewMath {
     static func sourceText(of label: Label, selection: Range<Int>? = nil) -> String {
         guard let state = state(of: label) else { return label.text }
         return state.sourceText(labelText: label.text, scalarRange: selection)
+    }
+
+    /// Runs `body` within the parse budget of labels outside the preview,
+    /// as the catch-up pass does with `fromCatchUpPass` (tests).
+    static func debugWithOutsideParseBudget(fromCatchUpPass: Bool, _ body: () -> Void) {
+        withOutsideParseBudget(fromCatchUpPass: fromCatchUpPass, body)
+    }
+
+    /// Whether the preview may have formulas waiting for parse budget (tests).
+    static var debugMayHavePostponedFormulas: Bool {
+        mayHavePostponedFormulas
     }
 
     /// The pixel size of the label's own font (tests).
@@ -596,7 +620,11 @@ enum PreviewMath {
             formulas.append(formula)
             if MathRenderer.lastLookupWasPostponed {
                 state.hasPostponedFormulas = true
-                mayHavePostponedFormulas = true
+                // Labels outside the preview catch up on their own; the
+                // preview's flag only spares its row binds a tree walk.
+                if !state.isOutsidePreview {
+                    mayHavePostponedFormulas = true
+                }
             } else {
                 decisions[key] = .init(formula: formula, isRetryable: MathRenderer.lastLookupWasTransient)
             }
@@ -979,6 +1007,10 @@ final class MathLabelState {
     /// its formulas follow its font on their own, and its accessible label
     /// reads them as plain text, as the window's other titles do.
     var isOutsidePreview = false
+    /// Set once the label follows desktop font changes.
+    var observesDesktopFont = false
+    /// In the catch-up queue of labels outside the preview.
+    var isQueuedOutside = false
     var spans: [MathSpan] = []
     var fallbackSpans: [MathSpan] = []
     var entries: [Entry] = []

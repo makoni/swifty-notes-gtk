@@ -297,6 +297,9 @@ final class CommandPaletteWindow {
         parentLabel.addCSSClass(.dimLabel)
         if let parent = parentText[heading.id], heading.level >= 3 {
             PreviewMath.show("\(parent) ›", in: parentLabel)
+            // A heading can be very long, and a label drawing a formula
+            // is drawn whole for it.
+            parentLabel.ellipsize = .end
             parentLabel.visible = true
         } else {
             parentLabel.visible = false

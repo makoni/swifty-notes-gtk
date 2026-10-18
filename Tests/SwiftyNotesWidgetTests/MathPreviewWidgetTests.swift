@@ -695,6 +695,8 @@ struct MathPreviewWidgetTests {
         // Wide enough for the editor and the preview side by side.
         window.window.setDefaultSize(width: 1400, height: 900)
         window.present()
+        // Closed after, so its labels stop reacting to later tests' changes.
+        defer { window.window.close() }
         window.debugSelectDisplayedNote(at: 0)
 
         func formulaInk() -> Int {
@@ -763,6 +765,8 @@ struct MathPreviewWidgetTests {
         window.debugLoadInitialNotes()
         window.window.setDefaultSize(width: 1400, height: 900)
         window.present()
+        // Closed after, so its labels stop reacting to later tests' changes.
+        defer { window.window.close() }
         window.debugSelectDisplayedNote(at: 0)
         _ = window.debugPreviewText
         MainContext.pump(for: .milliseconds(200))
@@ -951,13 +955,91 @@ struct MathPreviewWidgetTests {
         let budget = PreviewMath.outsideParseBudget
         PreviewMath.outsideParseBudget = .zero
         defer { PreviewMath.outsideParseBudget = budget }
+        // Whatever earlier tests postponed in the preview is done with.
+        _ = PreviewMath.layOutPostponedFormulas(under: Box(orientation: .vertical, spacing: 0))
         let label = Label("")
         PreviewMath.show("Budget $\\alpha_1$ and $\\beta_2$", in: label)
         // Nothing parsed within the (spent) budget: both wait, as source.
         #expect(PreviewMath.debugFormulas(on: label).isEmpty)
         #expect(label.text.contains("$\\alpha_1$"))
+        // The preview's own catch-up is not woken for it: its row binds
+        // would walk their tree for nothing.
+        #expect(!PreviewMath.debugMayHavePostponedFormulas)
         pumpUntil(timeout: .seconds(2)) { PreviewMath.debugFormulas(on: label).count == 2 }
         #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["\\alpha_1", "\\beta_2"])
+    }
+
+    @Test("One long pass does not renew the parse budget of labels outside the preview") @MainActor
+    func oneLongPassDoesNotRenewTheOutsideParseBudget() throws {
+        let fixture = try Fixture(suffix: "outside-budget-pass", markdown: "")
+        _ = fixture
+        MathRenderer.removeAllCachedFormulas()
+        // Any earlier period is over and its main-loop pass has ended.
+        MainContext.pump(for: .milliseconds(150))
+        let first = Label("")
+        PreviewMath.show("Start $\\gamma_3$", in: first)
+        #expect(PreviewMath.debugFormulas(on: first).count == 1)
+        // The same pass keeps working (a long outline rebuild) past a period.
+        Thread.sleep(forTimeInterval: 0.15)
+        let second = Label("")
+        PreviewMath.show("Later $\\delta_4$", in: second)
+        #expect(PreviewMath.debugFormulas(on: second).isEmpty, "the budget renewed within one pass")
+        pumpUntil(timeout: .seconds(2)) { PreviewMath.debugFormulas(on: second).count == 1 }
+        #expect(PreviewMath.debugFormulas(on: second).count == 1)
+    }
+
+    @Test("The catch-up pass for labels outside the preview forces at most one formula per period") @MainActor
+    func theOutsideCatchUpIsPaced() throws {
+        let fixture = try Fixture(suffix: "outside-budget-pace", markdown: "")
+        _ = fixture
+        MathRenderer.removeAllCachedFormulas()
+        let budget = PreviewMath.outsideParseBudget
+        PreviewMath.outsideParseBudget = .zero
+        defer { PreviewMath.outsideParseBudget = budget }
+        let labels = (0..<30).map { _ in Label("") }
+        for (index, label) in labels.enumerated() {
+            PreviewMath.show("Row $z_{\(index + 100)}$", in: label)
+        }
+        let before = MathRenderer.parseCount
+        MainContext.pump(for: .milliseconds(300))
+        let parsed = MathRenderer.parseCount - before
+        #expect(parsed >= 1, "postponed formulas still come")
+        #expect(parsed <= 6, "forced \(parsed) parses in 300 ms")
+        pumpUntil(timeout: .seconds(6)) { labels.allSatisfy { PreviewMath.debugFormulas(on: $0).count == 1 } }
+        #expect(labels.allSatisfy { PreviewMath.debugFormulas(on: $0).count == 1 })
+    }
+
+    @Test("A parse that overruns the budget leaves the UI its share before the next") @MainActor
+    func aParseThatOverrunsTheBudgetLeavesTheUIItsShare() throws {
+        let fixture = try Fixture(suffix: "outside-budget-overrun", markdown: "")
+        _ = fixture
+        MathRenderer.removeAllCachedFormulas()
+        MainContext.pump(for: .milliseconds(150))
+        // A catch-up pass whose one parse takes longer than a whole period
+        // (heavy mhchem on a slow machine).
+        PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {
+            _ = MathRenderer.formula(tex: "\\eta_7", isDisplay: false, pixelSize: 16)
+            Thread.sleep(forTimeInterval: 0.12)
+        }
+        // The next pass, straight after, must not parse again at once.
+        var postponed = false
+        PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {
+            _ = MathRenderer.formula(tex: "\\theta_8", isDisplay: false, pixelSize: 16)
+            postponed = MathRenderer.lastLookupWasPostponed
+        }
+        #expect(postponed, "a second forced parse ran back to back")
+        // Passes that parse nothing do not hold the period back: once the
+        // free share is over, the next pass parses again.
+        for _ in 0..<12 {
+            PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {}
+            Thread.sleep(forTimeInterval: 0.016)
+        }
+        var parsedLater = false
+        PreviewMath.debugWithOutsideParseBudget(fromCatchUpPass: true) {
+            _ = MathRenderer.formula(tex: "\\theta_8", isDisplay: false, pixelSize: 16)
+            parsedLater = !MathRenderer.lastLookupWasPostponed
+        }
+        #expect(parsedLater, "the period never renewed")
     }
 
     @Test("Formulas stay drawn when an opened file's window switches view modes") @MainActor
@@ -974,6 +1056,8 @@ struct MathPreviewWidgetTests {
         )
         window.window.setDefaultSize(width: 1400, height: 900)
         window.present()
+        // Closed after, so its labels stop reacting to later tests' changes.
+        defer { window.window.close() }
 
         func formulaInk() -> Int {
             var count = 0
