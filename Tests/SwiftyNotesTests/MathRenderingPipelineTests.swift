@@ -246,6 +246,17 @@ struct MathRenderingPipelineTests {
         #expect(cellsHaveNoFormulas)
     }
 
+    @Test("Display math in a table cell keeps its double dollars")
+    func displayMathInATableCellKeepsItsDoubleDollars() {
+        let blocks = blocks(for: "| A |\n| --- |\n| $$x$$ |")
+        guard blocks.count == 1, case let .table(_, rows, _) = blocks[0], let cell = rows.first?.first else {
+            Issue.record("expected one table, got \(blocks)")
+            return
+        }
+        #expect(cell.plainText == "$$x$$")
+        #expect(cell.markup == "$$x$$")
+    }
+
     @Test("TeX in a table cell is escaped for the markup")
     func texInATableCellIsEscapedForTheMarkup() {
         let blocks = blocks(for: "| A |\n| --- |\n| $a<b \\& c$ |")

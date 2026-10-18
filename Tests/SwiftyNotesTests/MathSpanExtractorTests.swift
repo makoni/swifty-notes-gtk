@@ -243,7 +243,8 @@ struct MathSpanExtractorTests {
                       "\n", "\n\n", " ", "    ", "> ", "- ", "a", "x^2", "http://", "www.", "<a ", "&", "\u{FFFC}", "\u{E000}"]
         for _ in 0..<3000 {
             let markdown = (0..<next(24)).map { _ in pieces[next(pieces.count)] }.joined()
-            _ = extract(markdown)
+            let result = extract(markdown)
+            #expect(MathSpanExtractor.sourceRanges(in: markdown).count == result.spans.count)
             // Every span starts at a delimiter: `$`, or a fence's backtick or tilde.
             let scalars = Array(markdown.unicodeScalars)
             for range in MathSpanExtractor.sourceRanges(in: markdown) {

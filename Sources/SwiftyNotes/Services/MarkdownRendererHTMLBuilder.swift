@@ -911,7 +911,6 @@ final class HTMLPreviewDocumentBuilder {
         }
     }
 
-
     private func displayMathSpan(for text: RenderedText) -> MathSpan? {
         let trimmed = text.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
         let occurrences = MathSpanExtractor.spanIndices(in: trimmed)
@@ -936,8 +935,10 @@ final class HTMLPreviewDocumentBuilder {
             }
         }
 
+        // Drawn formulas are spelled `$tex$` (search offsets count on it);
+        // ones shown as source, as written.
         let plainText = replacePlaceholders(in: text.plainText) { span in
-            "$\(span.tex)$"
+            drawsFormulas ? "$\(span.tex)$" : delimitedSource(of: span)
         }
         // A placeholder inside a tag (a link's href) is put back as source;
         // only those in the text get a marker, so the markers and
@@ -951,7 +952,7 @@ final class HTMLPreviewDocumentBuilder {
             guard index < mathSpans.count else { return nil }
             let span = mathSpans[index]
             if insideTag { return pangoEscapeAttribute(delimitedSource(of: span)) }
-            guard drawsFormulas else { return "$\(pangoEscape(span.tex))$" }
+            guard drawsFormulas else { return pangoEscape(delimitedSource(of: span)) }
             found.append(span)
             return String(MathSpanExtractor.formulaMarker)
         }

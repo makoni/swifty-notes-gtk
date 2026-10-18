@@ -58,6 +58,9 @@ enum PreviewMath {
             state.originalMarkup = markup
             state.markerSizes = nil
         }
+        // A new render tries formulas shown as source again (one refused at
+        // the memory limit may fit now); drawn ones are kept.
+        state.decisions = state.decisions.map { $0?.formula == nil ? nil : $0 }
         state.spans = spans
         state.baseFontPixels = fontPixels(of: label)
         layOut(label, state: state)
@@ -216,26 +219,35 @@ enum PreviewMath {
             state.markerSizes = (state.baseFontPixels, sizes)
         }
         var formulas: [MathFormula?] = []
+        var decisions: [MathLabelState.Decision?] = []
         state.hasPostponedFormulas = false
         for (index, span) in state.spans.enumerated() {
             let pixels = (index < sizes.count ? sizes[index] : state.baseFontPixels) * formulaScale
             let isDisplay = span.isDisplay && state.isDisplayBlock
-            // Keep what the label already drew: the cache may have dropped
-            // it while a long postponed pass went on.
-            if index < state.formulas.count, let drawn = state.formulas[index], drawn.tex == span.tex,
-               drawn.isDisplay == isDisplay, abs(drawn.pixelSize - pixels) < 0.125
+            let quarterPixels = Int((pixels * 4).rounded())
+            // Keep what the label already decided — a drawn formula, or its
+            // source: the cache may have dropped either while a long
+            // postponed pass went on, and looking them up again would never
+            // end on a label with more of them than the cache holds.
+            if index < state.decisions.count, let decided = state.decisions[index], decided.tex == span.tex,
+               decided.isDisplay == isDisplay, decided.quarterPixels == quarterPixels
             {
-                formulas.append(drawn)
+                formulas.append(decided.formula)
+                decisions.append(decided)
                 continue
             }
             let formula = MathRenderer.formula(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels)
-            formulas.append(formula.flatMap { isDrawable($0, inline: !state.isDisplayBlock) ? $0 : nil })
+                .flatMap { isDrawable($0, inline: !state.isDisplayBlock) ? $0 : nil }
+            formulas.append(formula)
             if MathRenderer.lastLookupWasPostponed {
                 state.hasPostponedFormulas = true
                 mayHavePostponedFormulas = true
+                decisions.append(nil)
+            } else {
+                decisions.append(.init(tex: span.tex, isDisplay: isDisplay, quarterPixels: quarterPixels, formula: formula))
             }
         }
-        state.formulas = formulas
+        state.decisions = decisions
         if state.hasPostponedFormulas, !applyingWhilePostponed {
             return
         }
@@ -559,8 +571,16 @@ final class MathLabelState {
     var spans: [MathSpan] = []
     var fallbackSpans: [MathSpan] = []
     var entries: [Entry] = []
-    /// The formulas last laid out, by span (nil: source shown).
-    var formulas: [MathFormula?] = []
+    /// What the last layout decided for each span: the formula drawn, or
+    /// nil for its source. A nil decision means postponed.
+    struct Decision {
+        let tex: String
+        let isDisplay: Bool
+        let quarterPixels: Int
+        let formula: MathFormula?
+    }
+
+    var decisions: [Decision?] = []
     /// The font size of each marker for a base size, which takes a parse of
     /// the markup to find.
     var markerSizes: (basePixels: Double, sizes: [Double])?

@@ -297,6 +297,25 @@ struct MathPreviewWidgetTests {
         #expect(PreviewMath.debugFormulas(on: label).count == 12)
     }
 
+    @Test("Postponed passes end on a label with more broken formulas than the cache holds") @MainActor
+    func postponedPassesEndOnALabelWithMoreBrokenFormulasThanTheCacheHolds() throws {
+        let fixture = try Fixture(suffix: "postponed-broken", markdown: "")
+        let count = MathRenderer.cacheLimit + 188
+        let markdown = "Broken " + (0..<count).map { "$\\nosuchmacro{\($0)}$" }.joined(separator: " ") + " end."
+        MathRenderer.withParseBudget(.zero) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: markdown, darkAppearance: false))
+        }
+        var passes = 0
+        while passes <= count * 2, MathRenderer.withParseBudget(.zero, guaranteeingProgress: true, {
+            PreviewMath.layOutPostponedFormulas(under: fixture.preview.rootScroll)
+        }) {
+            passes += 1
+        }
+        #expect(passes < count, "one formula per pass, each decided once: \(passes) passes")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(label.text.contains("$\\nosuchmacro{\(count - 1)}$"))
+    }
+
     @Test("Formulas are painted, in the label's colour, and follow a colour change") @MainActor
     func formulasArePaintedInTheLabelsColour() throws {
         let fixture = try Fixture(suffix: "paint", markdown: "Square $\\blacksquare\\blacksquare$ here.")
