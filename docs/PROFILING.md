@@ -18,7 +18,10 @@ document they were written in:
   virtualized `ListView` so only visible rows are realized. Both
   thresholds can be forced for testing with
   `SWIFTY_NOTES_DEBUG_FORCE_CUSTOM_TEXT_PREVIEW` and
-  `SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW`.
+  `SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW`. Text with LaTeX
+  formulas is the exception: it never coalesces, and a note with
+  formulas never takes the single-label layout (GTK draws each formula
+  into a node the size of its whole label; see `PreviewMath`).
 - Per-frame texture conversion for image blocks was identified as a
   secondary cost and never pursued, on the grounds that the two
   changes above moved the frame budget far enough.

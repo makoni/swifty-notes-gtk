@@ -321,21 +321,82 @@ struct MathPreviewWidgetTests {
     @Test("The budget goes by the label as its formulas leave it") @MainActor
     func theBudgetGoesByTheLabelAsItsFormulasLeaveIt() throws {
         // Zero-width but tall: each adds a line of its own height, which the
-        // layout before the formulas does not show.
+        // text alone does not show.
         let formulas = (0..<300).map { "$\\rule{0pt}{60em}_{\($0)}$" }.joined(separator: " ")
         let fixture = try Fixture(suffix: "budget-tall", markdown: "")
         MathRenderer.withParseBudget(.seconds(60)) {
             fixture.preview.render(blocks: MarkdownRenderer().blocks(for: "Tall \(formulas) end.", darkAppearance: false))
         }
+        // Measured once GTK has sized the label.
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         let drawn = PreviewMath.debugFormulas(on: label).count
         let layout = try #require(gtk_label_get_layout(label.opaquePointer))
         var ink = PangoRectangle()
         var logical = PangoRectangle()
         pango_layout_get_pixel_extents(layout, &ink, &logical)
-        let area = min(Double(logical.width) * Double(logical.height), 3840 * 2160)
+        // GPU renderers rasterise only the visible part of each node.
+        let visible = Double(fixture.preview.rootScroll.height)
+        let area = Double(logical.width) * min(Double(logical.height), visible)
         #expect(drawn > 0)
         #expect(Double(drawn) * area * 4 <= PreviewMath.drawnFormulaBudget * 1.05, "\(drawn) drawn in \(logical.width)×\(logical.height)")
+    }
+
+    @Test("Text inking far past its box draws no formulas") @MainActor
+    func textInkingFarPastItsBoxDrawsNoFormulas() throws {
+        // A stack of combining marks inks thousands of pixels above one line,
+        // and GTK sizes every formula's node by the label's ink.
+        let stack = "a" + String(repeating: "\u{352}", count: 1000)
+        let fixture = try Fixture(suffix: "ink-stack", markdown: "\(stack) $x_0$ $x_1$ $x_2$ \(stack)")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: label).isEmpty)
+        #expect(label.text.contains("$x_1$"))
+        // Ordinary accents are fine.
+        fixture.render("Café naïve $x_0$ $x_1$ résumé")
+        let plain = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: plain).count == 2)
+    }
+
+    @Test("A long ordinary paragraph draws all its formulas") @MainActor
+    func aLongOrdinaryParagraphDrawsAllItsFormulas() throws {
+        // Laid out before GTK sizes it, the label is one character wide; the
+        // budget must not go by that.
+        let words = String(repeating: "lorem ipsum dolor sit amet ", count: 45)
+        let formulas = (0..<10).map { $0 == 3 ? "$\\alpha+\\beta+\\gamma+\\delta+\\epsilon+\\kappa$" : "$x_{\($0)}$" }
+        let fixture = try Fixture(suffix: "long-ordinary", markdown: words + formulas.joined(separator: " " + words.prefix(80)))
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: label).count == 10)
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        #expect(PreviewMath.debugFormulas(on: label).count == 10)
+    }
+
+    @Test("Zooming in and back out keeps the formulas a label draws") @MainActor
+    func zoomingInAndBackOutKeepsTheFormulasALabelDraws() throws {
+        let fixture = try Fixture(suffix: "budget-zoom", markdown: "Many " + (0..<120).map { "$\\frac{a_{\($0)}}{b}$" }.joined(separator: " "))
+        let preview = fixture.preview
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        pumpUntil(timeout: .seconds(2)) { !preview.debugMathFontRefreshPending }
+        let before = PreviewMath.debugFormulas(on: label).count
+        defer { preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100) }
+        preview.applyTypography(zoomPercent: 200, lineSpacingPercent: 100)
+        pumpUntil(timeout: .seconds(2)) { !preview.debugMathFontRefreshPending }
+        preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100)
+        pumpUntil(timeout: .seconds(2)) { !preview.debugMathFontRefreshPending }
+        #expect(PreviewMath.debugFormulas(on: label).count == before)
+    }
+
+    @Test("A tall formula while typing does not cut the paragraph for good") @MainActor
+    func aTallFormulaWhileTypingDoesNotCutTheParagraphForGood() throws {
+        let formulas = (0..<40).map { "$y_{\($0)}$" }.joined(separator: " ")
+        let fixture = try Fixture(suffix: "budget-edit", markdown: "Edit $\\rule{1pt}{1em}$ \(formulas)")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        let before = PreviewMath.debugFormulas(on: label).count
+        fixture.render("Edit $\\rule{1pt}{100em}$ \(formulas)")
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        fixture.render("Edit $\\rule{1pt}{1em}$ \(formulas)")
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        #expect(PreviewMath.debugFormulas(on: label).count == before)
     }
 
     @Test("Inline formulas taller than the cap show their source") @MainActor
@@ -536,7 +597,7 @@ struct MathPreviewWidgetTests {
         #expect(!fixture.labels().contains { $0.text.contains("Row 0") && $0.text.contains("Row 1 ") })
     }
 
-    @Test("Formulas in a coalesced heading are sized like the heading") @MainActor
+    @Test("Formulas in a heading are sized like the heading") @MainActor
     func formulasInCoalescedHeadingAreSizedLikeTheHeading() throws {
         let fixture = try Fixture(suffix: "heading-size", markdown: "# Euler $e^x$\n\nBody $e^x$ text.\n\n- item $e^x$")
         let formulas = fixture.labels().flatMap { PreviewMath.debugFormulas(on: $0) }
@@ -619,7 +680,6 @@ struct MathPreviewWidgetTests {
 
     @Test("Changing a heading's level resizes its formula") @MainActor
     func changingAHeadingsLevelResizesItsFormula() throws {
-        // The code block keeps the heading a row of its own, sized by CSS.
         let fixture = try Fixture(suffix: "heading-level", markdown: "# Title $x$\n\n```\ncode\n```")
         let label = try #require(fixture.labels().first { $0.text.hasPrefix("Title") })
         let large = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize

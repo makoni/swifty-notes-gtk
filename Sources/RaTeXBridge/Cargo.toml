@@ -30,7 +30,8 @@ ratex-cairo = { version = "=0.1.15", features = ["embed-fonts"] }
 ratex-types = "=0.1.15"
 ratex-unicode-font = "=0.1.15"
 # To tell, as ratex-cairo does when it draws, which glyphs come out as
-# colour-emoji images.
+# colour-emoji images. On every RaTeX bump, check emoji_image_count in
+# src/lib.rs against ratex-cairo's render_glyph / try_draw_emoji_png.
 ratex-font = "=0.1.15"
 ratex-font-loader = "=0.1.15"
 # Same majors as ratex-cairo uses, so the types line up.

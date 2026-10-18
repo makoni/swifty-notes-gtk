@@ -13,7 +13,7 @@ import Foundation
 ///
 /// Per label it also:
 /// - sizes formulas from the label's font (and any `size=` span around the
-///   formula, as in coalesced headings),
+///   formula, as in the single-label layout's headings),
 /// - draws them in the label's current colour, so theme switches need no
 ///   relayout,
 /// - copies `$tex$` instead of U+FFFC,
@@ -57,7 +57,6 @@ enum PreviewMath {
         if state.originalMarkup != markup {
             state.originalMarkup = markup
             state.markerSizes = nil
-            state.drawnFormulaCap = .max
         }
         // A new render tries again formulas refused only at the memory limit
         // (they may fit now); every other decision stands, so a note full of
@@ -126,10 +125,18 @@ enum PreviewMath {
     static func refreshFontSizes(under root: Widget) -> Bool {
         var refreshed = false
         forEachMathLabel(under: root) { label, state in
+            // Allocated a width clearly unlike the one the formula budget
+            // assumed (the label was not allocated yet, or was resized).
+            let width = Double(gtk_widget_get_width(label.widgetPointer))
+            let resized = !state.isDisplayBlock
+                && ((width > 0 && abs(width - state.budgetWidth) > max(16, width * 0.1)) || surfaceScale(of: label) != state.budgetScale)
             let pixels = fontPixels(of: label)
-            guard abs(pixels - state.measuredFontPixels) > 0.01 else { return }
+            let fontChanged = abs(pixels - state.measuredFontPixels) > 0.01
+            guard fontChanged || resized else { return }
             state.measuredFontPixels = pixels
-            guard abs(pixels - state.baseFontPixels) > 0.01 else { return }
+            // A budget-limited label estimated its size with the old font
+            // during the immediate rescale; estimate again with the new one.
+            guard resized || state.isBudgetLimited || abs(pixels - state.baseFontPixels) > 0.01 else { return }
             state.baseFontPixels = pixels
             layOut(label, state: state)
             refreshed = true
@@ -214,27 +221,95 @@ enum PreviewMath {
     static let maxInlineFormulaWidth = 2048.0
     static let maxFormulaArea = 2048.0 * 2048.0
 
-    /// GTK draws each formula (a Pango shape) into a node as large as the
-    /// whole label, and GPU renderers rasterise those one by one — so a
-    /// label's formulas cost its area each, in (video) memory. A label draws
-    /// as many as fit this many bytes; the rest show their source. Text
-    /// with formulas is kept in small labels for the same reason.
-    static let drawnFormulaBudget = 64.0 * 1024 * 1024
+    /// GTK draws each formula (a Pango shape) into a cairo node as large as
+    /// the whole label — `gsk_pango_renderer_draw_shape` in GTK's
+    /// gskpango.c gives every shape the layout's extents — and the GL and
+    /// Vulkan renderers rasterise each one, clipped to what is on screen. So
+    /// a formula costs about the visible part of its label, in (video)
+    /// memory. A label draws as many as fit this many bytes; the rest show
+    /// their source. Text with formulas is kept in labels of its own for the
+    /// same reason (``mayShareLabel(_:)``). One drawing node per label
+    /// would remove the need; GTK offers labels no hook for it.
+    static let drawnFormulaBudget = 128.0 * 1024 * 1024
 
-    /// How many formulas `label` may draw within ``drawnFormulaBudget``,
-    /// going by its current layout (a GPU renderer clips what it rasterises
-    /// to the window, so a label counts at most a large screen's area).
-    private static func drawnFormulaAllowance(for label: Label) -> Int {
-        guard let layout = gtk_label_get_layout(label.opaquePointer) else { return .max }
+    /// Whether `text` may be joined with other text into one label: not
+    /// when it has formulas (see ``drawnFormulaBudget``).
+    static func mayShareLabel(_ text: RenderedText) -> Bool {
+        text.mathSpans.isEmpty
+    }
+
+    /// How many of `formulas` (in order) `label` may draw within
+    /// ``drawnFormulaBudget``, and the width that assumed. The size is
+    /// estimated rather than read from the layout, which before the label
+    /// is allocated is laid out at width zero: the label's width (or, not
+    /// allocated yet, its scrolled window's), the text's height at that
+    /// width, plus what each formula adds above a line's height, clipped to
+    /// the visible height. Display blocks hold one formula and are exempt.
+    private static func drawnFormulaAllowance(
+        for label: Label, state: MathLabelState, formulas: [MathFormula?]
+    ) -> (allowance: Int, width: Double) {
+        guard !state.isDisplayBlock, let layout = gtk_label_get_layout(label.opaquePointer) else { return (.max, 0) }
+        var scroller: UnsafeMutablePointer<GtkWidget>? = gtk_widget_get_parent(label.widgetPointer)
+        while let current = scroller,
+              g_type_check_instance_is_a(UnsafeMutableRawPointer(current).assumingMemoryBound(to: GTypeInstance.self),
+                                         gtk_scrolled_window_get_type()) == 0
+        {
+            scroller = gtk_widget_get_parent(current)
+        }
+        let ownWidth = Double(gtk_widget_get_width(label.widgetPointer))
+        let scrollerWidth = scroller.map { Double(gtk_widget_get_width($0)) } ?? 0
+        let width = ownWidth > 0 ? ownWidth : (scrollerWidth > 0 ? scrollerWidth : 1280)
+        let scrollerHeight = scroller.map { Double(gtk_widget_get_height($0)) } ?? 0
+        let visibleHeight = scrollerHeight > 0 ? scrollerHeight : 2160
+        let scale = surfaceScale(of: label)
+
+        // The text at that width, without the formula shapes of the last
+        // layout (their room is added below).
+        guard let copy = pango_layout_copy(layout) else { return (.max, width) }
+        defer { g_object_unref(UnsafeMutableRawPointer(copy)) }
+        if let attributes = pango_layout_get_attributes(copy), let textOnly = pango_attr_list_copy(attributes) {
+            if let removed = pango_attr_list_filter(textOnly, { attribute, _ in
+                attribute?.pointee.klass.pointee.type == PANGO_ATTR_SHAPE ? 1 : 0
+            }, nil) {
+                pango_attr_list_unref(removed)
+            }
+            pango_layout_set_attributes(copy, textOnly)
+            pango_attr_list_unref(textOnly)
+        }
+        pango_layout_set_width(copy, Int32(min(width, 100_000) * Double(PANGO_SCALE)))
         var ink = PangoRectangle()
         var logical = PangoRectangle()
-        pango_layout_get_pixel_extents(layout, &ink, &logical)
-        var scale = 1.0
-        if let native = gtk_widget_get_native(label.widgetPointer), let surface = gtk_native_get_surface(native) {
-            scale = max(1, gdk_surface_get_scale(surface))
+        pango_layout_get_pixel_extents(copy, &ink, &logical)
+        let lineHeight = Double(logical.height) / Double(max(1, pango_layout_get_line_count(copy)))
+        // GTK sizes the nodes by the layout's ink, which text can push far
+        // past its logical box (a stack of combining marks); prose never
+        // inks several times its own box, so such a label draws no formulas.
+        let inkArea = Double(ink.width) * Double(ink.height)
+        let logicalArea = Double(max(1, logical.width)) * Double(max(1, logical.height))
+        if inkArea > 250_000, inkArea > 4 * logicalArea {
+            return (0, width)
         }
-        let area = min(Double(max(1, logical.width)) * Double(max(1, logical.height)), 3840 * 2160)
-        return max(1, Int(drawnFormulaBudget / (area * scale * scale * 4)))
+        let textWidth = max(width, Double(max(ink.x + ink.width, logical.x + logical.width) - min(ink.x, logical.x)))
+        let textHeight = Double(max(ink.y + ink.height, logical.y + logical.height) - min(ink.y, logical.y))
+
+        var height = textHeight
+        var allowance = 0
+        for formula in formulas.compactMap(\.self) {
+            height += max(0, formula.height + 2 * max(2, (formula.pixelSize * 0.1).rounded(.up)) - lineHeight)
+            let bytes = Double(allowance + 1) * textWidth * min(height, visibleHeight) * scale * scale * 4
+            if bytes > drawnFormulaBudget, allowance > 0 { break }
+            allowance += 1
+        }
+        return (allowance, width)
+    }
+
+    /// The device pixels per pixel of the window `label` is in (1 before it
+    /// is in one).
+    private static func surfaceScale(of label: Label) -> Double {
+        guard let native = gtk_widget_get_native(label.widgetPointer), let surface = gtk_native_get_surface(native) else {
+            return 1
+        }
+        return max(1, gdk_surface_get_scale(surface))
     }
 
     static func isDrawable(_ formula: MathFormula, inline: Bool) -> Bool {
@@ -281,7 +356,11 @@ enum PreviewMath {
         // Only the formulas the label holds now.
         state.decisions = decisions
         // Past the label's budget the rest show their source.
-        let allowance = min(drawnFormulaAllowance(for: label), state.drawnFormulaCap)
+        let budget = drawnFormulaAllowance(for: label, state: state, formulas: formulas)
+        state.budgetWidth = budget.width
+        state.budgetScale = surfaceScale(of: label)
+        let allowance = budget.allowance
+        state.isBudgetLimited = formulas.lazy.compactMap(\.self).count > allowance
         var drawn = 0
         formulas = formulas.map { formula in
             guard let formula else { return nil }
@@ -340,16 +419,6 @@ enum PreviewMath {
         installShapeRenderer(on: label)
         installCopyHandler(on: label)
         label.setAccessibleLabel(state.accessibleText(labelText: text))
-
-        // The budget went by the layout before these formulas took their
-        // room; tall ones can make the label far larger. Measured again, a
-        // smaller allowance lays the label out once more — the cap only ever
-        // comes down, so the count does not swing between layouts.
-        let measured = drawnFormulaAllowance(for: label)
-        if min(drawn, allowance) > measured {
-            state.drawnFormulaCap = measured
-            layOut(label, state: state, applyingWhilePostponed: applyingWhilePostponed)
-        }
     }
 
     /// The label markup with every formula the engine could not draw
@@ -383,7 +452,7 @@ enum PreviewMath {
     }
 
     /// The font size in pixels at each marker, from the size and scale
-    /// attributes the markup puts around it (coalesced headings use
+    /// attributes the markup puts around it (the single-label layout's headings use
     /// `size="x-large"` spans); markers outside any such span use
     /// `basePixels`.
     private static func markerFontPixels(in markup: String, basePixels: Double) -> [Double] {
@@ -640,10 +709,15 @@ final class MathLabelState {
     /// The font size of each marker for a base size, which takes a parse of
     /// the markup to find.
     var markerSizes: (basePixels: Double, sizes: [Double])?
-    /// How many formulas the label may draw at most, lowered when its
-    /// finished layout turns out larger than the budget assumed; reset when
-    /// its text changes.
-    var drawnFormulaCap = Int.max
+    /// The width the drawn-formula budget assumed (see
+    /// ``PreviewMath/drawnFormulaBudget``); the label is laid out again
+    /// once it is allocated a clearly different one.
+    var budgetWidth = 0.0
+    /// The window scale the budget assumed; a move to a screen with another
+    /// one lays the label out again.
+    var budgetScale = 1.0
+    /// Whether the budget left some of the label's formulas as source.
+    var isBudgetLimited = false
     var baseFontPixels = 0.0
     /// The label's font size when last read: formulas follow its changes.
     var measuredFontPixels = 0.0

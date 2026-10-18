@@ -57,25 +57,24 @@ void ratex_bridge_free(ratex_bridge_formula *formula);
 /* The most bytes one formula may keep; larger ones are refused. */
 size_t ratex_bridge_max_formula_bytes(void);
 
-/* Diagnostics: 1 when an emoji is drawn as a colour image here (not from a
- * fallback font that has it), else 0. */
-int ratex_bridge_draws_emoji_images(void);
-
-/* Diagnostics: estimated bytes all live (not yet freed) formulas keep. */
+/* Estimated bytes all live (not yet freed) formulas keep together; past
+ * their limit (192 MiB) ratex_bridge_parse refuses new formulas. */
 size_t ratex_bridge_live_bytes(void);
 
 /*
- * Sets how many estimated bytes all live formulas may keep together (192 MiB
- * by default); past it ratex_bridge_parse refuses new formulas until some
- * are freed. Returns the previous limit.
- */
-size_t ratex_bridge_set_live_bytes_limit(size_t limit);
-
-/*
- * Whether the last error on the calling thread was the memory limit above:
- * the same formula may parse once others are freed. 1 or 0.
+ * Whether the last error on the calling thread was that memory limit: the
+ * same formula may parse once others are freed. 1 or 0.
  */
 int ratex_bridge_last_error_is_transient(void);
+
+/* ---- For tests and diagnostics; the app does not call these. ---- */
+
+/* Sets the limit on ratex_bridge_live_bytes() and returns the old one. */
+size_t ratex_bridge_set_live_bytes_limit(size_t limit);
+
+/* 1 when an emoji is drawn as a colour image here (not from a fallback
+ * font that has it), else 0. Lays a formula out on every call. */
+int ratex_bridge_draws_emoji_images(void);
 
 /*
  * The last error on the calling thread, or NULL. Valid until the next bridge
