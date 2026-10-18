@@ -291,7 +291,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = true
-        row.setAccessibleLabel(trashedNote.note.title)
+        row.setAccessibleLabel(MathInlineText.readable(trashedNote.note.title))
 
         let rowBox = Box(orientation: .vertical, spacing: 2)
         rowBox.setMargins(8)
@@ -323,7 +323,7 @@ struct NotesSidebar {
         let row = ListBoxRow()
         row.activatable = true
         row.selectable = true
-        row.setAccessibleLabel(noteItem.note.title)
+        row.setAccessibleLabel(MathInlineText.readable(noteItem.note.title))
 
         let rowBox = Box(orientation: .vertical, spacing: 2)
         rowBox.setMargins(8)
@@ -360,7 +360,7 @@ struct NotesSidebar {
     static func titleLabelLayout(for note: Note) -> TitleLabelLayout {
         TitleLabelLayout(
             text: note.title,
-            tooltipText: note.title,
+            tooltipText: MathInlineText.readable(note.title),
             ellipsize: PANGO_ELLIPSIZE_END,
             wrap: false,
             lines: 1,
@@ -371,7 +371,9 @@ struct NotesSidebar {
     /// ``titleLabelLayout(for:)`` to a fresh `Label`.
     static func makeTitleLabel(for note: Note) -> Label {
         let layout = titleLabelLayout(for: note)
-        let title = Label(layout.text)
+        let title = Label("")
+        // Formulas in the title are drawn, as in the preview.
+        PreviewMath.show(layout.text, in: title)
         title.xalign = 0
         title.ellipsize = layout.ellipsize
         title.lines = layout.lines

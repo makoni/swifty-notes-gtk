@@ -304,8 +304,7 @@ final class CommandPaletteWindow {
 
         let leafLabel = Label("")
         if query.isEmpty {
-            leafLabel.useMarkup = false
-            leafLabel.text = heading.text
+            PreviewMath.show(heading.text, in: leafLabel)
         } else {
             // `label.markup` parses the Pango `<span>` highlight;
             // `label.text` would strip it back to literal angle

@@ -647,6 +647,180 @@ struct MathPreviewWidgetTests {
         #expect(label.text.contains("$\\nosuchmacro{\(count - 1)}$"))
     }
 
+    @Test("Formulas are still drawn after the preview is moved to another parent") @MainActor
+    func formulasAreStillDrawnAfterThePreviewIsMovedToAnotherParent() throws {
+        // Switching Split ↔ Preview moves the preview between containers; GTK
+        // then gives its labels a new Pango context.
+        let fixture = try Fixture(suffix: "reparent", markdown: "$\\blacksquare\\blacksquare\\blacksquare$")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        func ink() -> Int {
+            var count = 0
+            forEachRenderedPixel(of: label) { _, _, _, a in
+                if a > 200 { count += 1 }
+            }
+            return count
+        }
+        pumpUntil(timeout: .milliseconds(500)) { ink() > 150 }
+        #expect(ink() > 150, "drawn before the move")
+        let box = Box(orientation: .vertical)
+        fixture.window.setContent(box)
+        box.append(fixture.preview.rootScroll)
+        MainContext.pump(for: .milliseconds(100))
+        box.remove(fixture.preview.rootScroll)
+        fixture.window.setContent(fixture.preview.rootScroll)
+        pumpUntil(timeout: .milliseconds(500)) { ink() > 150 }
+        #expect(ink() > 150, "drawn after the move")
+    }
+
+    @Test("Formulas stay drawn when the main window switches between view modes") @MainActor
+    func formulasStayDrawnWhenTheMainWindowSwitchesBetweenViewModes() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "# Squares\n\n$\\blacksquare\\blacksquare\\blacksquare$")
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.math.viewmodes")
+        try app.register()
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+        window.debugLoadInitialNotes()
+        // Wide enough for the editor and the preview side by side.
+        window.window.setDefaultSize(width: 1400, height: 900)
+        window.present()
+        window.debugSelectDisplayedNote(at: 0)
+
+        func formulaInk() -> Int {
+            _ = window.debugPreviewText // renders a pending refresh
+            var labels: [Label] = []
+            var stack: [Widget] = [window.preview.rootScroll]
+            while let widget = stack.popLast() {
+                if let label = widget.tryCast(Label.self), label.hasCSSClass("preview-paragraph-label") {
+                    labels.append(label)
+                }
+                stack.append(contentsOf: widget.children())
+            }
+            var count = 0
+            for label in labels where !PreviewMath.debugFormulas(on: label).isEmpty {
+                forEachRenderedPixel(of: label) { _, _, _, a in
+                    if a > 200 { count += 1 }
+                }
+            }
+            return count
+        }
+        for (step, mode) in [EditorViewMode.split, .preview, .split, .editor, .split, .preview].enumerated() {
+            window.setViewMode(mode, animated: false)
+            guard mode != .editor else {
+                MainContext.pump(for: .milliseconds(100))
+                continue
+            }
+            pumpUntil(timeout: .seconds(2)) { formulaInk() > 150 }
+            #expect(formulaInk() > 150, "formulas drawn in \(mode) (step \(step))")
+        }
+        // Other changes around the preview: the sidebars, the colour scheme.
+        let styleManager = StyleManager.default
+        let originalScheme = styleManager.colorScheme
+        defer { styleManager.colorScheme = originalScheme }
+        let changes: [(String, () -> Void)] = [
+            ("sidebar hidden", { window.toggleSidebarVisibility() }),
+            ("sidebar shown", { window.toggleSidebarVisibility() }),
+            ("outline toggled", { window.toggleOutlineVisibility() }),
+            ("outline toggled back", { window.toggleOutlineVisibility() }),
+            ("dark scheme", { styleManager.colorScheme = .forceDark }),
+            ("light scheme", { styleManager.colorScheme = .forceLight }),
+        ]
+        for (name, change) in changes {
+            change()
+            MainContext.pump(for: .milliseconds(100))
+            pumpUntil(timeout: .seconds(2)) { formulaInk() > 150 }
+            #expect(formulaInk() > 150, "formulas drawn after \(name)")
+        }
+    }
+
+    @Test("A note title's formulas are drawn in the sidebar, outline and breadcrumb, and read in the subtitle") @MainActor
+    func aNoteTitlesFormulasAreDrawnOutsideThePreview() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let repository = NotesRepository(notesDirectory: temp)
+        _ = try repository.createNote(initialContent: "# Formulas $e^{i\\pi} + 1 = 0$\n\nBody.")
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.math.titles")
+        try app.register()
+        let window = MainWindow(
+            application: app,
+            state: AppState(),
+            stateStore: WorkspaceStateStore(stateFileURL: temp.appendingPathComponent("workspace.json", isDirectory: false)),
+            repository: repository,
+            renderer: MarkdownRenderer(),
+            autosave: AutosaveCoordinator(),
+        )
+        window.debugLoadInitialNotes()
+        window.window.setDefaultSize(width: 1400, height: 900)
+        window.present()
+        window.debugSelectDisplayedNote(at: 0)
+        _ = window.debugPreviewText
+        MainContext.pump(for: .milliseconds(200))
+
+        func drawnTeX(under root: Widget) -> [String] {
+            var found: [String] = []
+            var stack: [Widget] = [root]
+            while let widget = stack.popLast() {
+                if let label = widget.tryCast(Label.self) {
+                    found += PreviewMath.debugFormulas(on: label).map(\.tex)
+                }
+                stack.append(contentsOf: widget.children())
+            }
+            return found
+        }
+        let tex = "e^{i\\pi} + 1 = 0"
+        #expect(drawnTeX(under: window.sidebar.root) == [tex], "sidebar")
+        #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "outline")
+        #expect(drawnTeX(under: window.breadcrumb.root).contains(tex), "breadcrumb")
+        #expect(window.debugHeaderSubtitle.hasPrefix("Formulas e^{iπ} + 1 = 0"), "\(window.debugHeaderSubtitle)")
+    }
+
+    @Test("Formulas stay drawn when an opened file's window switches view modes") @MainActor
+    func formulasStayDrawnWhenAnOpenedFilesWindowSwitchesViewModes() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let fileURL = temp.appendingPathComponent("Formulas.md", isDirectory: false)
+        try "# Squares\n\n$\\blacksquare\\blacksquare\\blacksquare$".write(to: fileURL, atomically: true, encoding: .utf8)
+        let app = Application(id: "me.spaceinbox.swiftynotes.tests.math.external")
+        try app.register()
+        let window = try ExternalDocumentWindow(
+            application: app, fileURL: fileURL, renderer: MarkdownRenderer(), autosave: AutosaveCoordinator()
+        )
+        window.window.setDefaultSize(width: 1400, height: 900)
+        window.present()
+
+        func formulaInk() -> Int {
+            var count = 0
+            var stack: [Widget] = [window.preview.rootScroll]
+            while let widget = stack.popLast() {
+                if let label = widget.tryCast(Label.self), !PreviewMath.debugFormulas(on: label).isEmpty {
+                    forEachRenderedPixel(of: label) { _, _, _, a in
+                        if a > 200 { count += 1 }
+                    }
+                }
+                stack.append(contentsOf: widget.children())
+            }
+            return count
+        }
+        for (step, mode) in [EditorViewMode.split, .preview, .split, .editor, .preview].enumerated() {
+            window.debugSetViewMode(mode)
+            guard mode != .editor else {
+                MainContext.pump(for: .milliseconds(100))
+                continue
+            }
+            pumpUntil(timeout: .seconds(2)) { formulaInk() > 150 }
+            #expect(formulaInk() > 150, "formulas drawn in \(mode) (step \(step))")
+        }
+    }
+
     @Test("Formulas are painted, in the label's colour, and follow a colour change") @MainActor
     func formulasArePaintedInTheLabelsColour() throws {
         // Only a formula: the label's text, drawn in the same colour, must

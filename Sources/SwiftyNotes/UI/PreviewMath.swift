@@ -31,6 +31,7 @@ enum PreviewMath {
 
     private static let stateKey = "swifty-notes-preview-math"
     private static let copyHandlerKey = "swifty-notes-preview-math-copy"
+    private static let shapeRendererKey = "swifty-notes-preview-math-drawer"
 
     /// Installs (or refreshes) the formulas of `label`. `spans` are the
     /// label's formulas in markup order. A label whose markup holds a
@@ -67,6 +68,14 @@ enum PreviewMath {
         state.measuredFontPixels = state.baseFontPixels
         layOut(label, state: state)
         return true
+    }
+
+    /// Shows `text` — a note's title, a heading — in `label`, drawing its
+    /// formulas as the preview does (and dropping any it drew before).
+    static func show(_ text: String, in label: Label) {
+        let math = MathInlineText.markup(for: text)
+        label.markup = math.markup
+        install(on: label, spans: math.spans)
     }
 
     /// Lays out formulas that a render pass postponed when it ran out of
@@ -674,9 +683,29 @@ enum PreviewMath {
 
     // MARK: - Drawing
 
+    /// Sets the formula drawer on the label's Pango context — again each
+    /// time the label is mapped: moving it to another parent (Split ↔
+    /// Preview) gives it a new context without the drawer, and the formulas'
+    /// room would stay empty.
     private static func installShapeRenderer(on label: Label) {
         let context = gtk_widget_get_pango_context(label.widgetPointer)
         pango_cairo_context_set_shape_renderer(context, drawFormulaShape, nil, nil)
+        let object = UnsafeMutablePointer<GObject>(label.opaquePointer)
+        guard g_object_get_data(object, shapeRendererKey) == nil else { return }
+        g_object_set_data(object, shapeRendererKey, UnsafeMutableRawPointer(bitPattern: 1))
+        let onMap: @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer?) -> Void = { widget, _ in
+            guard let widget else { return }
+            let context = gtk_widget_get_pango_context(widget.assumingMemoryBound(to: GtkWidget.self))
+            pango_cairo_context_set_shape_renderer(context, drawFormulaShape, nil, nil)
+        }
+        g_signal_connect_data(
+            UnsafeMutableRawPointer(label.opaquePointer),
+            "map",
+            unsafeBitCast(onMap, to: GCallback.self),
+            nil,
+            nil,
+            GConnectFlags(rawValue: 0)
+        )
     }
 
     // MARK: - Copy
@@ -961,4 +990,11 @@ private func drawFormulaShape(
     cairo_translate(cairo, x + shape.horizontalPadding, top)
     shape.formula.draw(on: UnsafeMutableRawPointer(cairo), red: red, green: green, blue: blue, alpha: alpha)
     cairo_restore(cairo)
+    if logsFormulaDraws {
+        FileHandle.standardError.write(Data("swiftynotes-debug: formula drawn \(shape.formula.tex)\n".utf8))
+    }
 }
+
+/// Lets the black-box UI tests see formulas being drawn, which the
+/// accessibility tree cannot show.
+private let logsFormulaDraws = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_LOG_FORMULA_DRAWS"] == "1"

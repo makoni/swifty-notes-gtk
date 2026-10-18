@@ -451,7 +451,7 @@ extension MainWindow {
                 refreshDirectorySnapshot()
                 renderSelection()
                 persistWorkspaceState()
-                toastOverlay.showToast(String(format: "Imported %@".localized, note.title))
+                toastOverlay.showToast(String(format: "Imported %@".localized, MathInlineText.readable(note.title)))
             } catch {
                 presentError(
                     heading: "Could not import note".localized,
@@ -559,10 +559,10 @@ extension MainWindow {
 
     private func exportSuccessMessage(for note: Note, outcome: NoteExportOutcome) -> String {
         guard outcome.assetsCopied > 0 else {
-            return String(format: "Exported %@".localized, note.title)
+            return String(format: "Exported %@".localized, MathInlineText.readable(note.title))
         }
         let suffix = nlocalized("asset", "assets", count: UInt(outcome.assetsCopied))
-        return String(format: "Exported %@ with %d %@".localized, note.title, outcome.assetsCopied, suffix)
+        return String(format: "Exported %@ with %d %@".localized, MathInlineText.readable(note.title), outcome.assetsCopied, suffix)
     }
 
     private func presentAssetsCollisionConfirmation(for note: Note, destination: URL) {

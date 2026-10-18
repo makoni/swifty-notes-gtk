@@ -1091,7 +1091,7 @@ private extension ExternalDocumentWindow {
 
         do {
             let importedNote = try importIntoLibrary(fileURL)
-            toastOverlay.showToast(String(format: "Imported %@ into library".localized, importedNote.title))
+            toastOverlay.showToast(String(format: "Imported %@ into library".localized, MathInlineText.readable(importedNote.title)))
         } catch {
             presentError(
                 heading: "Could not import file into library".localized,

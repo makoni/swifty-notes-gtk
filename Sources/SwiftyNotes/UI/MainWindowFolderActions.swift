@@ -299,7 +299,7 @@ extension MainWindow {
 
         let dialog = AlertDialog(
             heading: "Move note".localized,
-            body: String(format: "Choose a destination folder for \"%@\"." .localized, note.title),
+            body: String(format: "Choose a destination folder for \"%@\"." .localized, MathInlineText.readable(note.title)),
         )
 
         let listBox = ListBox()

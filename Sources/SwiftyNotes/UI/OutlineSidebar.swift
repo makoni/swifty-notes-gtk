@@ -305,13 +305,13 @@ struct OutlineSidebar {
 
     private func makeRow(for heading: Heading, anyH2HasChildren: Bool) -> (ListBoxRow, Label) {
         let row = ListBoxRow()
-        row.setAccessibleLabel(heading.text)
+        row.setAccessibleLabel(MathInlineText.readable(heading.text))
 
         let label = Label("")
         label.xalign = 0
         label.hexpand = true
         label.ellipsize = .end
-        label.tooltipText = heading.text
+        label.tooltipText = MathInlineText.readable(heading.text)
         // Pango markup highlights query matches in the row text. With
         // no query the label is a plain non-markup string so an
         // ampersand or angle bracket in the heading doesn't accidentally
@@ -321,8 +321,9 @@ struct OutlineSidebar {
         // bug.
         let trimmedQuery = renderState.query.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedQuery.isEmpty {
-            label.useMarkup = false
-            label.text = heading.text
+            // Formulas in the heading are drawn, as in the preview; the
+            // markup escapes the rest.
+            PreviewMath.show(heading.text, in: label)
         } else {
             label.markup = pangoHighlightedMarkup(heading.text, query: trimmedQuery)
         }

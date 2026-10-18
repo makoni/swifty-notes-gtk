@@ -61,7 +61,10 @@ final class BreadcrumbStrip {
         lastSection = section
         lastLeaf = leaf
 
-        label.markup = Self.buildMarkup(docTitle: docTitle, section: section, leaf: leaf)
+        // Formulas in the title and headings are drawn, as in the preview.
+        let built = Self.buildMathMarkup(docTitle: docTitle, section: section, leaf: leaf)
+        label.markup = built.markup
+        PreviewMath.install(on: label, spans: built.spans)
         // Visibility: hide the whole strip if there's nothing to show.
         label.visible = !docTitle.isEmpty || section?.isEmpty == false || leaf?.isEmpty == false
     }
@@ -97,17 +100,29 @@ final class BreadcrumbStrip {
     /// CSS-resolved foreground / muted tokens by way of opacity spans —
     /// avoids hard-coding hex values that wouldn't track theme changes.
     static func buildMarkup(docTitle: String, section: String?, leaf: String?) -> String {
+        buildMathMarkup(docTitle: docTitle, section: section, leaf: leaf).markup
+    }
+
+    /// ``buildMarkup(docTitle:section:leaf:)`` with a formula marker per
+    /// formula in the segments, and those formulas in order.
+    static func buildMathMarkup(docTitle: String, section: String?, leaf: String?) -> (markup: String, spans: [MathSpan]) {
         var pieces: [String] = []
+        var spans: [MathSpan] = []
+        func segment(_ text: String) -> String {
+            let math = MathInlineText.markup(for: text)
+            spans += math.spans
+            return math.markup
+        }
         if !docTitle.isEmpty {
-            pieces.append("<span alpha=\"60%\">\(pangoEscape(docTitle))</span>")
+            pieces.append("<span alpha=\"60%\">\(segment(docTitle))</span>")
         }
         if let section, !section.isEmpty {
             let renderedSection: String
             if let leaf, !leaf.isEmpty {
-                renderedSection = "<span alpha=\"60%\">\(pangoEscape(section))</span>"
+                renderedSection = "<span alpha=\"60%\">\(segment(section))</span>"
             } else {
                 // No leaf — the section is the current focus, render full-weight.
-                renderedSection = "<span weight=\"500\">\(pangoEscape(section))</span>"
+                renderedSection = "<span weight=\"500\">\(segment(section))</span>"
             }
             if !pieces.isEmpty {
                 pieces.append(separator)
@@ -118,9 +133,9 @@ final class BreadcrumbStrip {
             if !pieces.isEmpty {
                 pieces.append(separator)
             }
-            pieces.append("<span weight=\"500\">\(pangoEscape(leaf))</span>")
+            pieces.append("<span weight=\"500\">\(segment(leaf))</span>")
         }
-        return pieces.joined(separator: " ")
+        return (pieces.joined(separator: " "), spans)
     }
 
     /// Pango-escaped chevron `›` with a dim alpha matching the design's

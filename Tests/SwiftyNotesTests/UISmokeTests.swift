@@ -121,6 +121,71 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
+    @Test("Formulas stay drawn when switching between Split, Preview and Editor under headless wayland")
+    func formulasStayDrawnWhenSwitchingViewModesUnderHeadlessWayland() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            app_stderr_log = os.environ["APP_STDERR_LOG"]
+
+            def draws():
+                return open(app_stderr_log, "r", encoding="utf-8").read().count("swiftynotes-debug: formula drawn")
+
+            wait_until(lambda: draws() > 0, "formulas drawn in split", timeout=20)
+
+            def toggle(name):
+                # The view-mode toggle is the button holding the label of
+                # that name (an icon and a label inside).
+                for node in walk(frame):
+                    if (node.name or "") != name:
+                        continue
+                    candidate = node
+                    for _ in range(3):
+                        try:
+                            action = candidate.queryAction()
+                            names = [action.getName(i) for i in range(action.nActions)]
+                        except Exception:
+                            names = []
+                        if candidate.getRoleName() in ("toggle button", "push button", "button") or "click" in names:
+                            return candidate
+                        candidate = candidate.parent
+                        if candidate is None:
+                            break
+                raise AssertionError(f"no '{name}' toggle")
+
+            # Each switch moves the preview to another container; its
+            # formulas must be drawn again there.
+            for mode in ["Preview", "Split", "Editor", "Split", "Preview"]:
+                before = draws()
+                toggle(mode).queryAction().doAction(0)
+                if mode == "Editor":
+                    time.sleep(1)
+                    continue
+                wait_until(lambda: draws() > before, f"formulas drawn again after switching to {mode}", timeout=10)
+            """,
+            prepare: { xdgDataHome, xdgStateHome, _ in
+                let notesDirectory = xdgDataHome
+                    .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                    .appendingPathComponent("notes", isDirectory: true)
+                let repository = NotesRepository(notesDirectory: notesDirectory)
+                let note = try repository.createNote(
+                    initialContent: "# Formulas $e^{i\\pi} + 1 = 0$\n\nRoots $x = \\frac{-b}{2a}$ and $\\alpha + \\beta$."
+                )
+                let stateFileURL = xdgStateHome
+                    .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                    .appendingPathComponent("workspace.json", isDirectory: false)
+                try WorkspaceStateStore(stateFileURL: stateFileURL).save(WorkspaceState(
+                    selectedNoteID: note.id,
+                    viewMode: .split,
+                    windowWidth: 1400,
+                    windowHeight: 900,
+                ))
+            },
+            environment: ["SWIFTY_NOTES_DEBUG_LOG_FORMULA_DRAWS": "1"],
+        )
+        expectUIScriptSucceeded(result)
+    }
+
     @Test("App autosave clears unsaved status under headless wayland")
     func appAutosaveClearsUnsavedStatusUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(

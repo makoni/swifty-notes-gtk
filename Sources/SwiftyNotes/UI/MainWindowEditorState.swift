@@ -30,7 +30,8 @@ extension MainWindow {
         let saveState = editor.buffer.modified ? "Unsaved changes".localized : "Saved".localized
         let wordLabel = String(format: nlocalized("%d word", "%d words", count: UInt(wordCount)), wordCount)
         let separator = " • "
-        headerTitle.subtitle = selected.title + separator + saveState + separator + wordLabel
+        // A window subtitle cannot draw formulas; they read as plain text.
+        headerTitle.subtitle = MathInlineText.readable(selected.title) + separator + saveState + separator + wordLabel
     }
 
     func saveSelectedNoteNow() {
