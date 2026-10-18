@@ -344,9 +344,7 @@ struct MathPreviewWidgetTests {
         #expect(drawn > 0)
         #expect(drawn < 600, "\(drawn) drawn")
         // …and not far fewer than the budget allows.
-        let width = Double(label.width)
-        let visible = Double(fixture.preview.rootScroll.height)
-        let allowed = PreviewMath.drawnFormulaBudget / (width * visible * 4)
+        let allowed = PreviewMath.drawnFormulaBudget / (nodeArea(of: label) * 4)
         #expect(Double(drawn) >= allowed / 2, "\(drawn) drawn, about \(Int(allowed)) allowed")
         // The rest show their source.
         #expect(label.text.contains("$\\frac{a_{599}}{b}$"))
@@ -369,9 +367,8 @@ struct MathPreviewWidgetTests {
         var ink = PangoRectangle()
         var logical = PangoRectangle()
         pango_layout_get_pixel_extents(layout, &ink, &logical)
-        // GPU renderers rasterise only the visible part of each node.
-        let visible = Double(fixture.preview.rootScroll.height)
-        let area = Double(logical.width) * min(Double(logical.height), visible)
+        // A renderer rasterises each node at most the monitor's size.
+        let area = min(Double(logical.width) * Double(logical.height), monitorArea(of: label))
         #expect(drawn > 0)
         #expect(Double(drawn) * area * 4 <= PreviewMath.drawnFormulaBudget * 1.05, "\(drawn) drawn in \(logical.width)×\(logical.height)")
         #expect(Double(drawn) * area * 4 >= PreviewMath.drawnFormulaBudget / 2, "\(drawn) drawn in \(logical.width)×\(logical.height)")
@@ -379,16 +376,24 @@ struct MathPreviewWidgetTests {
 
     @Test(
         "The budget holds for wide and for many small formulas, the same after an edit",
-        arguments: ["sums", "rules", "fractions"]
+        arguments: ["sums", "rules", "fractions", "empty-rules", "double-spaced"]
     ) @MainActor
     func theBudgetHoldsForWideAndManySmallFormulas(kind: String) throws {
         let formulas = switch kind {
         case "sums": (0..<200).map { n in "$" + (0..<40).map { "x_{\($0)}" }.joined(separator: "+") + "+n_{\(n)}$" }
         // Each wider than half the label: a line of its own.
         case "rules": (0..<150).map { "$\\rule{60em}{0.5em}_{\($0)}$" }
+        // Next to nothing drawn, but long as source: the label grows as
+        // formulas are dropped.
+        case "empty-rules": (0..<520).map { _ in "$\\rule{0pt}{0pt}$" }
         default: (0..<300).map { "$\\frac{a_{\($0)}}{b}$" }
         }
         let fixture = try Fixture(suffix: "budget-\(kind)", markdown: "")
+        if kind == "double-spaced" {
+            // CSS line-height, which the estimate has to take from the label.
+            fixture.preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 200)
+        }
+        defer { fixture.preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100) }
         func render(_ end: String) {
             MathRenderer.withParseBudget(.seconds(60)) {
                 fixture.preview.render(blocks: MarkdownRenderer().blocks(
@@ -400,8 +405,7 @@ struct MathPreviewWidgetTests {
         func cost() throws -> (drawn: Int, bytes: Double) {
             let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
             let drawn = PreviewMath.debugFormulas(on: label).count
-            let visible = Double(fixture.preview.rootScroll.height)
-            return (drawn, Double(drawn) * Double(label.width) * min(Double(label.height), visible) * 4)
+            return (drawn, Double(drawn) * nodeArea(of: label) * 4)
         }
         render(" end.")
         let first = try cost()
@@ -411,6 +415,36 @@ struct MathPreviewWidgetTests {
         render(" end!")
         let edited = try cost()
         #expect(edited.drawn == first.drawn)
+    }
+
+    @Test("A window grown after the render stays within the budget") @MainActor
+    func aWindowGrownAfterTheRenderStaysWithinTheBudget() throws {
+        // Fits easily in a small window; maximised, each formula's node may
+        // cover far more.
+        let prose = (0..<170).map { "$x_{\($0)}$ and some words between them" }.joined(separator: " ")
+        let fixture = try Fixture(suffix: "budget-grow", markdown: prose, size: (400, 300))
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        gtk_window_maximize(UnsafeMutableRawPointer(fixture.window.opaquePointer).assumingMemoryBound(to: GtkWindow.self))
+        MainContext.pump(for: .milliseconds(200))
+        pumpUntil(timeout: .seconds(3)) { !fixture.preview.debugMathFontRefreshPending }
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(label.width > 600, "the window grew: label \(label.width) px wide")
+        let drawn = PreviewMath.debugFormulas(on: label).count
+        #expect(Double(drawn) * nodeArea(of: label) * 4 <= PreviewMath.drawnFormulaBudget * 1.1, "\(drawn) drawn")
+    }
+
+    @Test("Zooming in keeps a label within the budget") @MainActor
+    func zoomingInKeepsALabelWithinTheBudget() throws {
+        let prose = (0..<90).map { "$\\frac{a_{\($0)}}{b}$ with some prose" }.joined(separator: " ")
+        let fixture = try Fixture(suffix: "budget-zoom-in", markdown: prose)
+        let preview = fixture.preview
+        pumpUntil(timeout: .seconds(2)) { !preview.debugMathFontRefreshPending }
+        defer { preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100) }
+        preview.applyTypography(zoomPercent: 200, lineSpacingPercent: 100)
+        pumpUntil(timeout: .seconds(3)) { !preview.debugMathFontRefreshPending }
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let drawn = PreviewMath.debugFormulas(on: label).count
+        #expect(Double(drawn) * nodeArea(of: label) * 4 <= PreviewMath.drawnFormulaBudget * 1.1, "\(drawn) drawn")
     }
 
     @Test("Text inking far past its box draws no formulas") @MainActor
@@ -795,13 +829,18 @@ struct MathPreviewWidgetTests {
         let preview: MarkdownPreview
         let window: ApplicationWindow
 
-        init(suffix: String, markdown: String, configure: (MarkdownPreview) -> Void = { _ in }) throws {
+        init(
+            suffix: String,
+            markdown: String,
+            size: (width: Int, height: Int) = (700, 600),
+            configure: (MarkdownPreview) -> Void = { _ in }
+        ) throws {
             app = Application(id: "me.spaceinbox.swiftynotes.tests.math.\(suffix)")
             try app.register()
             preview = MarkdownPreview(remoteImageLoader: { _, _ in })
             configure(preview)
             window = ApplicationWindow(application: app)
-            window.setDefaultSize(width: 700, height: 600)
+            window.setDefaultSize(width: size.width, height: size.height)
             window.setContent(preview.rootScroll)
             preview.attach(to: window)
             window.present()
@@ -894,6 +933,26 @@ struct MathPreviewWidgetTests {
                 visit(Int(bytes[i + 2]), Int(bytes[i + 1]), Int(bytes[i]), Int(bytes[i + 3]))
             }
         }
+    }
+
+    /// The area of the monitor `widget`'s window is on (what a renderer
+    /// rasterises of a node at most).
+    @MainActor
+    private func monitorArea(of widget: Widget) -> Double {
+        guard let native = gtk_widget_get_native(widget.widgetPointer),
+              let surface = gtk_native_get_surface(native),
+              let monitor = gdk_display_get_monitor_at_surface(gdk_surface_get_display(surface), surface)
+        else { return 3840 * 2160 }
+        var geometry = GdkRectangle()
+        gdk_monitor_get_geometry(monitor, &geometry)
+        return Double(geometry.width) * Double(geometry.height)
+    }
+
+    /// What one formula's node costs in pixels: the label, at most the
+    /// monitor.
+    @MainActor
+    private func nodeArea(of label: Label) -> Double {
+        min(Double(label.width) * Double(label.height), monitorArea(of: label))
     }
 
     @MainActor

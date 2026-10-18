@@ -129,26 +129,31 @@ enum PreviewMath {
             // The formula budget assumed another width, visible height or
             // scale (allocated since, resized, moved to another screen):
             // only labels the budget could bind (or did) care.
-            if state.isBudgetSensitive || state.isBudgetLimited {
+            if !state.isDisplayBlock, !state.entries.isEmpty || state.isBudgetLimited {
                 let frame = budgetFrame(of: label)
                 let assumed = state.budgetFrame
-                func differs(_ new: Double, _ old: Double) -> Bool {
-                    abs(new - old) > max(16, new * 0.1)
+                if state.isBudgetSensitive || state.isBudgetLimited {
+                    // The estimate went by the width; a few percent off
+                    // (margins, a scrollbar, a resize) is worth a re-estimate.
+                    needsLayout = abs(frame.width - assumed.width) > max(4, frame.width * 0.02)
+                        || frame.clipArea != assumed.clipArea || frame.scale != assumed.scale
+                } else if frame.clipArea != assumed.clipArea || frame.scale != assumed.scale {
+                    // Another monitor: drawing everything may no longer fit.
+                    let ceiling = frame.clipArea * frame.scale * frame.scale * 4
+                    needsLayout = Double(state.entries.count) * ceiling > drawnFormulaBudget
                 }
-                needsLayout = differs(frame.width, assumed.width) || differs(frame.visibleHeight, assumed.visibleHeight)
-                    || frame.scale != assumed.scale
             }
             let pixels = fontPixels(of: label)
             if abs(pixels - state.measuredFontPixels) > 0.01 {
                 state.measuredFontPixels = pixels
                 // A new font (after a zoom step's immediate rescale the base
-                // is already right); a budget-limited label estimated its
-                // size with the old font, so estimates again.
+                // is already right); a label the budget could bind estimated
+                // its size with the old font, so estimates again.
                 if abs(pixels - state.baseFontPixels) > 0.01 {
                     state.baseFontPixels = pixels
                     needsLayout = true
                 }
-                needsLayout = needsLayout || state.isBudgetLimited
+                needsLayout = needsLayout || state.isBudgetSensitive || state.isBudgetLimited
             }
             guard needsLayout else { return }
             layOut(label, state: state)
@@ -251,38 +256,47 @@ enum PreviewMath {
         text.mathSpans.isEmpty
     }
 
-    /// The width, visible height and scale a label's formula budget goes
-    /// by: its own width (before allocation, its scrolled window's) and its
-    /// scrolled window's height — what a GPU renderer rasterises at most.
-    private static func budgetFrame(of label: Label) -> (width: Double, visibleHeight: Double, scale: Double) {
+    /// The width, clip area and scale a label's formula budget goes by: its
+    /// own width (before allocation, its scrolled window's), and the area of
+    /// the monitor its window is on — what a GPU renderer rasterises of a
+    /// node at most, however the window is resized.
+    private static func budgetFrame(of label: Label) -> (width: Double, clipArea: Double, scale: Double) {
         let scroller = gtk_widget_get_ancestor(label.widgetPointer, gtk_scrolled_window_get_type())
         let ownWidth = Double(gtk_widget_get_width(label.widgetPointer))
         let scrollerWidth = scroller.map { Double(gtk_widget_get_width($0)) } ?? 0
-        let scrollerHeight = scroller.map { Double(gtk_widget_get_height($0)) } ?? 0
-        return (
-            ownWidth > 0 ? ownWidth : (scrollerWidth > 0 ? scrollerWidth : 1280),
-            scrollerHeight > 0 ? scrollerHeight : 2160,
-            surfaceScale(of: label)
-        )
+        var clipArea = 3840.0 * 2160
+        if let native = gtk_widget_get_native(label.widgetPointer),
+           let surface = gtk_native_get_surface(native),
+           let monitor = gdk_display_get_monitor_at_surface(gdk_surface_get_display(surface), surface)
+        {
+            var geometry = GdkRectangle()
+            gdk_monitor_get_geometry(monitor, &geometry)
+            if geometry.width > 0, geometry.height > 0 {
+                clipArea = Double(geometry.width) * Double(geometry.height)
+            }
+        }
+        return (ownWidth > 0 ? ownWidth : (scrollerWidth > 0 ? scrollerWidth : 1280), clipArea, surfaceScale(of: label))
     }
 
     /// How many of `formulas` (in order) `label` may draw within
-    /// ``drawnFormulaBudget``. Each costs at most the visible part of the
-    /// label, so a label that fits even then draws them all without
-    /// further ado — nearly every label. Otherwise the label is laid out
-    /// apart, as it will look (the formulas drawn, the rest as source), at
-    /// the width it gets: never from its live layout, which before
-    /// allocation is laid out at width zero and otherwise shows the last
-    /// decision. Display blocks hold one formula and are exempt.
+    /// ``drawnFormulaBudget``. A formula costs the label's area, but never
+    /// more than the monitor's (the most a renderer rasterises); a label
+    /// that fits even at that draws them all without further ado — nearly
+    /// every label. Otherwise the label is laid out apart, as it will look
+    /// (the formulas drawn, the rest as source), at the width it gets:
+    /// never from its live layout, which before allocation is laid out at
+    /// width zero and otherwise shows the last decision. Text area hardly
+    /// changes when a resize rewraps it, so the decision holds while the
+    /// window grows. Display blocks hold one formula and are exempt.
     private static func drawnFormulaAllowance(
         for label: Label,
         state: MathLabelState,
         formulas: [MathFormula?],
-        frame: (width: Double, visibleHeight: Double, scale: Double)
+        frame: (width: Double, clipArea: Double, scale: Double)
     ) -> Int {
         let count = formulas.lazy.compactMap(\.self).count
         let bytesPerPixel = frame.scale * frame.scale * 4
-        let ceiling = frame.width * frame.visibleHeight * bytesPerPixel
+        let ceiling = frame.clipArea * bytesPerPixel
         guard !state.isDisplayBlock, count > 0, Double(count) * ceiling > drawnFormulaBudget else { return .max }
 
         // The bytes one formula costs with the first `drawn` of them drawn,
@@ -305,23 +319,27 @@ enum PreviewMath {
             let right = max(extents.ink.x + extents.ink.width, extents.logical.x + extents.logical.width)
             let top = min(extents.ink.y, extents.logical.y)
             let bottom = max(extents.ink.y + extents.ink.height, extents.logical.y + extents.logical.height)
-            let width = max(frame.width, Double(right - left))
-            return width * min(Double(bottom - top), frame.visibleHeight) * bytesPerPixel
+            let area = max(frame.width, Double(right - left)) * Double(bottom - top)
+            return min(area, frame.clipArea) * bytesPerPixel
         }
 
-        // Always within budget, whatever the layout: each formula costs at
-        // most the visible part of the label.
-        let surelyFits = Int(drawnFormulaBudget / ceiling)
+        // Always within budget, whatever the layout.
+        let surelyFits = max(1, min(count, Int(drawnFormulaBudget / ceiling)))
         guard let costAll = costPerFormula(drawing: count) else { return 0 }
+        guard costAll.isFinite, costAll > 0 else { return costAll > 0 ? surelyFits : count }
         var allowance = min(count, Int(drawnFormulaBudget / costAll))
-        if allowance < count {
-            // Fewer drawn, the rest as source: the label changes; check once.
+        // Fewer drawn, the rest show their source and the label grows:
+        // check again until it fits (the allowance only shrinks), a few
+        // times at most, then fall back to what surely fits.
+        var checks = 0
+        while allowance < count, allowance > surelyFits {
             guard let cost = costPerFormula(drawing: allowance) else { return 0 }
-            if Double(allowance) * cost > drawnFormulaBudget {
-                allowance = Int(drawnFormulaBudget / cost)
-            }
+            guard cost.isFinite, cost > 0 else { allowance = surelyFits; break }
+            if Double(allowance) * cost <= drawnFormulaBudget { break }
+            checks += 1
+            allowance = checks < 4 ? Int(drawnFormulaBudget / cost) : surelyFits
         }
-        return max(allowance, min(count, surelyFits), 1)
+        return max(allowance, surelyFits)
     }
 
     /// The ink and logical extents `label` would have with `formulas`
@@ -343,9 +361,26 @@ enum PreviewMath {
         pango_layout_set_wrap(layout, gtk_label_get_wrap_mode(label.opaquePointer))
         pango_layout_set_width(layout, Int32(min(width, 100_000) * Double(PANGO_SCALE)))
 
-        // The drawn formulas' room, as their shapes will take it.
+        // The drawn formulas' room, as their shapes will take it, and the
+        // line-height and letter-spacing GtkLabel sets on its own layout
+        // from CSS — not part of the Pango context.
         let attributes = pango_layout_get_attributes(layout).map { pango_attr_list_copy($0) } ?? pango_attr_list_new()
         defer { pango_attr_list_unref(attributes) }
+        if let live = gtk_label_get_layout(label.opaquePointer).flatMap({ pango_layout_get_attributes($0) }),
+           let list = pango_attr_list_get_attributes(live)
+        {
+            var node: UnsafeMutablePointer<GSList>? = list
+            while let current = node {
+                if let attribute = current.pointee.data?.assumingMemoryBound(to: PangoAttribute.self),
+                   [PANGO_ATTR_LINE_HEIGHT, PANGO_ATTR_ABSOLUTE_LINE_HEIGHT, PANGO_ATTR_LETTER_SPACING]
+                       .contains(attribute.pointee.klass.pointee.type)
+                {
+                    pango_attr_list_insert(attributes, pango_attribute_copy(attribute))
+                }
+                node = current.pointee.next
+            }
+            g_slist_free_full(list) { pango_attribute_destroy($0?.assumingMemoryBound(to: PangoAttribute.self)) }
+        }
         let text = String(cString: pango_layout_get_text(layout))
         var drawn = formulas.lazy.compactMap(\.self).makeIterator()
         var byteIndex = 0
@@ -784,10 +819,10 @@ final class MathLabelState {
     /// The font size of each marker for a base size, which takes a parse of
     /// the markup to find.
     var markerSizes: (basePixels: Double, sizes: [Double])?
-    /// The width, visible height and scale the drawn-formula budget assumed
+    /// The width, clip area and scale the drawn-formula budget assumed
     /// (see ``PreviewMath/drawnFormulaBudget``); the label is laid out again
     /// when they change clearly (allocation, a resize, another screen).
-    var budgetFrame: (width: Double, visibleHeight: Double, scale: Double) = (0, 0, 1)
+    var budgetFrame: (width: Double, clipArea: Double, scale: Double) = (0, 0, 1)
     /// Whether the budget could bind (the label was estimated), and whether
     /// it left some of the label's formulas as source.
     var isBudgetSensitive = false
