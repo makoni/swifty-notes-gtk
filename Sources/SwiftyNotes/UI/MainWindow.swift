@@ -240,6 +240,7 @@ final class MainWindow {
         },
     )
     var isRestoringPreviewPaneLayout = false
+    var previewPaneSettleTickID: UInt?
     var previewAnimationID: SourceID?
     var isPreviewPaneAttached = false
     var suppressViewModeToggleChange = false
@@ -535,9 +536,9 @@ final class MainWindow {
         outlineSplitView.sidebarPosition = .end
         outlineSplitView.enableShowGesture = false
         outlineSplitView.enableHideGesture = false
-        outlineSplitView.minSidebarWidth = 220
-        outlineSplitView.maxSidebarWidth = 320
-        outlineSplitView.sidebarWidthFraction = 0.18
+        outlineSplitView.minSidebarWidth = Double(Self.minimumOutlineWidth)
+        outlineSplitView.maxSidebarWidth = Double(Self.maximumOutlineWidth)
+        outlineSplitView.sidebarWidthFraction = Self.outlineWidthFraction
         outlineSplitView.sidebar = outlineSidebar.root
         outlineSplitView.content = splitView
         outlineSplitView.showSidebar = state.isOutlineVisible
@@ -773,6 +774,15 @@ final class MainWindow {
     static let minimumEditorWidth = 320
     static let editorFormattingCompactWidthThreshold = 520
     static let previewAnimationDuration = 220
+    static let outlineWidthFraction = 0.18
+    static let minimumOutlineWidth = 220
+    static let maximumOutlineWidth = 320
+
+    /// The Outline's width in a window `windowWidth` wide: the share of the
+    /// window its split view gives it, within its bounds.
+    static func outlineWidth(forWindowWidth windowWidth: Int) -> Int {
+        min(max(Int(Double(windowWidth) * outlineWidthFraction), minimumOutlineWidth), maximumOutlineWidth)
+    }
 
     /// Returns the on-disk path to a bundled icon SVG (e.g. `table-symbolic`)
     /// shipped under the resource bundle's `Icons/` directory. Used for

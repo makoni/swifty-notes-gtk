@@ -757,8 +757,48 @@ extension MainWindow {
         isRestoringPreviewPaneLayout = true
         editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
         refreshEditorFormattingToolbarLayout()
-        MainContext.idle { [weak self] in
-            self?.isRestoringPreviewPaneLayout = false
+        settlePreviewPanePosition()
+    }
+
+    /// Sets the divider again once the pane has been laid out with the
+    /// preview: GtkPaned moves it by however much the pane's width changed
+    /// while the preview was away (a sidebar or the Outline toggled in
+    /// Editor mode), and the room is only known for sure after that layout
+    /// — or once a sidebar still sliding in or out has stopped.
+    private func settlePreviewPanePosition() {
+        cancelPreviewPaneSettle()
+        var frames = 0
+        var lastWidth = -1
+        var steadyFrames = 0
+        previewPaneSettleTickID = editorPreviewPane.addTickCallback { [weak self] in
+            guard let self else { return false }
+            frames += 1
+            let width = editorPreviewPane.width
+            steadyFrames = width == lastWidth ? steadyFrames + 1 : 0
+            lastWidth = width
+            guard frames >= 2 else { return true }
+            let position = resolvedVisiblePreviewPosition(totalWidth: currentPreviewContainerWidth)
+            if editorPreviewPane.position != position {
+                editorPreviewPane.position = position
+                refreshEditorFormattingToolbarLayout()
+            }
+            // Done once the room holds still (a sidebar sliding in or out
+            // has finished), or after about a second.
+            guard steadyFrames < 3, frames < 60 else {
+                previewPaneSettleTickID = nil
+                MainContext.idle { [weak self] in
+                    self?.isRestoringPreviewPaneLayout = false
+                }
+                return false
+            }
+            return true
+        }
+    }
+
+    private func cancelPreviewPaneSettle() {
+        if let previewPaneSettleTickID {
+            editorPreviewPane.removeTickCallback(previewPaneSettleTickID)
+            self.previewPaneSettleTickID = nil
         }
     }
 
@@ -817,18 +857,22 @@ extension MainWindow {
     }
 
     func stopPreviewAnimation() {
+        cancelPreviewPaneSettle()
         if let previewAnimationID {
             MainContext.cancel(sourceId: previewAnimationID)
             self.previewAnimationID = nil
         }
     }
 
+    /// The editor and preview's room: the window less the sidebar and the
+    /// Outline beside them.
     var currentPreviewContainerWidth: Int {
-        max(
+        let outlineWidth = currentOutlineWidth
+        return max(
             editorPreviewPane.width,
-            window.width > 0 ? window.width - currentSidebarWidth : 0,
-            window.defaultWidth - 280,
-            state.preferredWindowWidth - 280,
+            window.width > 0 ? window.width - currentSidebarWidth - outlineWidth : 0,
+            window.defaultWidth - 280 - outlineWidth,
+            state.preferredWindowWidth - 280 - outlineWidth,
         )
     }
 
@@ -852,7 +896,7 @@ extension MainWindow {
 
     func handlePreviewPaneMoved() {
         guard state.viewMode == .split, isPreviewPaneAttached, !isRestoringPreviewPaneLayout else { return }
-        let totalWidth = max(editorPreviewPane.width, window.width - currentSidebarWidth, window.defaultWidth - 280)
+        let totalWidth = currentPreviewContainerWidth
         guard totalWidth >= Self.minimumPreviewWidth + Self.minimumEditorWidth else { return }
         let previewWidth = totalWidth - editorPreviewPane.position
         guard previewWidth >= Self.minimumPreviewWidth else { return }
@@ -862,5 +906,13 @@ extension MainWindow {
 
     var currentSidebarWidth: Int {
         splitView.showSidebar ? sidebar.root.width : 0
+    }
+
+    /// The Outline's width while shown — as allocated, or as the split view
+    /// will size it before the first allocation.
+    var currentOutlineWidth: Int {
+        guard outlineSplitView.showSidebar else { return 0 }
+        if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
+        return Self.outlineWidth(forWindowWidth: window.width > 0 ? window.width : max(window.defaultWidth, state.preferredWindowWidth))
     }
 }

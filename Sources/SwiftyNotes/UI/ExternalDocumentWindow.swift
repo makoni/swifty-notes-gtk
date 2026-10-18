@@ -174,6 +174,7 @@ final class ExternalDocumentWindow {
     private var previewAnimationID: SourceID?
     private var isPreviewPaneAttached = false
     private var isRestoringPreviewPaneLayout = false
+    private var previewPaneSettleTickID: UInt?
     private var suppressEditorChange = false
     private var suppressViewModeToggleChange = false
     private var hasPresented = false
@@ -336,9 +337,9 @@ private extension ExternalDocumentWindow {
         outlineSplitView.sidebarPosition = .end
         outlineSplitView.enableShowGesture = false
         outlineSplitView.enableHideGesture = false
-        outlineSplitView.minSidebarWidth = 220
-        outlineSplitView.maxSidebarWidth = 320
-        outlineSplitView.sidebarWidthFraction = 0.18
+        outlineSplitView.minSidebarWidth = Double(MainWindow.minimumOutlineWidth)
+        outlineSplitView.maxSidebarWidth = Double(MainWindow.maximumOutlineWidth)
+        outlineSplitView.sidebarWidthFraction = MainWindow.outlineWidthFraction
         outlineSplitView.sidebar = outlineSidebar.root
         outlineSplitView.content = contentHost
         outlineSplitView.showSidebar = false
@@ -799,8 +800,48 @@ private extension ExternalDocumentWindow {
         isRestoringPreviewPaneLayout = true
         editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
         refreshEditorFormattingToolbarLayout()
-        MainContext.idle { [weak self] in
-            self?.isRestoringPreviewPaneLayout = false
+        settlePreviewPanePosition()
+    }
+
+    /// Sets the divider again once the pane has been laid out with the
+    /// preview: GtkPaned moves it by however much the pane's width changed
+    /// while the preview was away (an Outline shown in Editor mode), and
+    /// the room is only known for sure after that layout — or once the
+    /// Outline still sliding in or out has stopped.
+    private func settlePreviewPanePosition() {
+        cancelPreviewPaneSettle()
+        var frames = 0
+        var lastWidth = -1
+        var steadyFrames = 0
+        previewPaneSettleTickID = editorPreviewPane.addTickCallback { [weak self] in
+            guard let self else { return false }
+            frames += 1
+            let width = editorPreviewPane.width
+            steadyFrames = width == lastWidth ? steadyFrames + 1 : 0
+            lastWidth = width
+            guard frames >= 2 else { return true }
+            let position = resolvedVisiblePreviewPosition(totalWidth: currentPreviewContainerWidth)
+            if editorPreviewPane.position != position {
+                editorPreviewPane.position = position
+                refreshEditorFormattingToolbarLayout()
+            }
+            // Done once the room holds still (a sidebar sliding in or out
+            // has finished), or after about a second.
+            guard steadyFrames < 3, frames < 60 else {
+                previewPaneSettleTickID = nil
+                MainContext.idle { [weak self] in
+                    self?.isRestoringPreviewPaneLayout = false
+                }
+                return false
+            }
+            return true
+        }
+    }
+
+    private func cancelPreviewPaneSettle() {
+        if let previewPaneSettleTickID {
+            editorPreviewPane.removeTickCallback(previewPaneSettleTickID)
+            self.previewPaneSettleTickID = nil
         }
     }
 
@@ -859,19 +900,31 @@ private extension ExternalDocumentWindow {
     }
 
     func stopPreviewAnimation() {
+        cancelPreviewPaneSettle()
         if let previewAnimationID {
             MainContext.cancel(sourceId: previewAnimationID)
             self.previewAnimationID = nil
         }
     }
 
+    /// The editor and preview's room: the window less the Outline beside
+    /// them.
     var currentPreviewContainerWidth: Int {
-        max(
+        let outlineWidth = currentOutlineWidth
+        return max(
             editorPreviewPane.width,
             contentHost.width,
-            window.width,
-            window.defaultWidth,
+            window.width - outlineWidth,
+            window.defaultWidth - outlineWidth,
         )
+    }
+
+    /// The Outline's width while shown — as allocated, or as the split view
+    /// will size it before the first allocation.
+    var currentOutlineWidth: Int {
+        guard outlineSplitView.showSidebar else { return 0 }
+        if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
+        return MainWindow.outlineWidth(forWindowWidth: max(window.width, window.defaultWidth))
     }
 
     var canAnimatePreviewPane: Bool {
@@ -889,7 +942,7 @@ private extension ExternalDocumentWindow {
 
     func handlePreviewPaneMoved() {
         guard viewMode == .split, isPreviewPaneAttached, !isRestoringPreviewPaneLayout else { return }
-        let totalWidth = max(editorPreviewPane.width, contentHost.width, window.width, window.defaultWidth)
+        let totalWidth = currentPreviewContainerWidth
         guard totalWidth >= MainWindow.minimumPreviewWidth + MainWindow.minimumEditorWidth else { return }
         let previewWidth = totalWidth - editorPreviewPane.position
         guard previewWidth >= MainWindow.minimumPreviewWidth else { return }
