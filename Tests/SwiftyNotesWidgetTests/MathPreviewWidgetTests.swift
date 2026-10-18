@@ -155,11 +155,15 @@ struct MathPreviewWidgetTests {
         // on a later frame while GTK restyles the label.
         let zoomed = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
         var smallestSeen = zoomed
+        var ticks = 0
         _ = label.addTickCallback {
+            ticks += 1
             smallestSeen = min(smallestSeen, PreviewMath.debugFormulas(on: label).first?.pixelSize ?? 0)
             return fixture.preview.debugMathFontRefreshPending
         }
         pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        #expect(ticks > 0, "frames ran while GTK restyled")
+        #expect(!fixture.preview.debugMathFontRefreshPending)
         let after = try #require(PreviewMath.debugFormulas(on: label).first).pixelSize
         #expect(abs(after / before - 1.5) < 0.05, "formula size \(before) → \(after)")
         #expect(smallestSeen > before * 1.3, "a frame showed \(smallestSeen), the old size was \(before)")
@@ -223,12 +227,18 @@ struct MathPreviewWidgetTests {
         #expect(preview.debugAppliedHighlightTexts == ["needle"])
         // Paragraph → heading rebuilds the row, freeing its label.
         fixture.render("# A needle $x$ here.\n\n```\nc\n```")
+        // The overlay forgets the freed label…
+        #expect(preview.debugHighlightedLabelPointers.isEmpty)
         defer { preview.applyTypography(zoomPercent: 100, lineSpacingPercent: 100) }
         // Re-applies the last highlights; reaching the freed label crashed.
         preview.applyTypography(zoomPercent: 150, lineSpacingPercent: 100)
         MainContext.pump(for: .milliseconds(100))
         let heading = try #require(fixture.labels().first { $0.text.hasPrefix("A needle") })
         #expect(PreviewMath.debugFormulas(on: heading).map(\.tex) == ["x"])
+        // …and the same matches apply afresh to the new one.
+        let again = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: again, activeIndex: 0)
+        #expect(preview.debugHighlightedLabelPointers == [heading.opaquePointer])
     }
 
     @Test("A formula refused at the memory limit is drawn after the next edit") @MainActor
@@ -248,6 +258,11 @@ struct MathPreviewWidgetTests {
     @Test("Broken formulas are not parsed again on the next edit") @MainActor
     func brokenFormulasAreNotParsedAgainOnTheNextEdit() throws {
         let fixture = try Fixture(suffix: "broken-no-reparse", markdown: "")
+        // Leave the engine's "transient" flag set, as a memory refusal would:
+        // the label must not take it for its own formulas.
+        let previous = ratex_bridge_set_live_bytes_limit(0)
+        _ = MathRenderer.formula(tex: "t_{flag}", isDisplay: false, pixelSize: 20)
+        ratex_bridge_set_live_bytes_limit(previous)
         // More than the formula cache holds, so only the label remembers.
         let formulas = (0..<(MathRenderer.cacheLimit + 88)).map { "$\\nosuchmacro{e\($0)}$" }.joined(separator: " ")
         MathRenderer.withParseBudget(.seconds(30)) {
@@ -416,7 +431,9 @@ struct MathPreviewWidgetTests {
 
     @Test("Formulas are painted, in the label's colour, and follow a colour change") @MainActor
     func formulasArePaintedInTheLabelsColour() throws {
-        let fixture = try Fixture(suffix: "paint", markdown: "Square $\\blacksquare\\blacksquare$ here.")
+        // Only a formula: the label's text, drawn in the same colour, must
+        // not stand in for formula ink.
+        let fixture = try Fixture(suffix: "paint", markdown: "$\\blacksquare\\blacksquare$")
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         let provider = CSSProvider.loadGlobal(".math-test-red { color: rgb(255, 0, 0); } .math-test-blue { color: rgb(0, 0, 255); }")
         _ = provider
@@ -438,21 +455,49 @@ struct MathPreviewWidgetTests {
 
     @Test("A formula in a link takes the link's colour") @MainActor
     func aFormulaInALinkTakesTheLinksColour() throws {
-        let fixture = try Fixture(suffix: "link-colour", markdown: "[$\\blacksquare\\blacksquare\\blacksquare$](https://example.org)")
-        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
-        // Ink far from the label's own (text) colour is the link colour.
-        var labelColor = GdkRGBA()
-        gtk_widget_get_color(label.widgetPointer, &labelColor)
-        let text = (Int(labelColor.red * 255), Int(labelColor.green * 255), Int(labelColor.blue * 255))
-        var linkColoured = 0
-        pumpUntil(timeout: .milliseconds(500)) {
-            linkColoured = 0
+        let fixture = try Fixture(suffix: "link-colour", markdown: "[$\\blacksquare\\blacksquare\\blacksquare$](https://example.org)\n\n```\nc\n```\n\nPlain $\\blacksquare\\blacksquare\\blacksquare$")
+        let paragraphs = fixture.labels(withCSSClass: "preview-paragraph-label")
+        let linked = try #require(paragraphs.first { !$0.text.contains("Plain") })
+        let plain = try #require(paragraphs.first { $0.text.contains("Plain") })
+        /// The most common opaque colour in the label: the squares' ink.
+        func inkColour(of label: Label) -> (Int, Int, Int)? {
+            var counts: [Int: Int] = [:]
             forEachRenderedPixel(of: label) { r, g, b, a in
-                if a > 200, abs(r - text.0) + abs(g - text.1) + abs(b - text.2) > 120 { linkColoured += 1 }
+                if a > 230 { counts[(r / 16) << 8 | (g / 16) << 4 | (b / 16), default: 0] += 1 }
             }
-            return linkColoured > 150
+            guard let top = counts.max(by: { $0.value < $1.value }), top.value > 150 else { return nil }
+            return (top.key >> 8 * 16, (top.key >> 4 & 15) * 16, (top.key & 15) * 16)
         }
-        #expect(linkColoured > 150, "\(linkColoured) pixels not in the text colour")
+        pumpUntil(timeout: .milliseconds(500)) { inkColour(of: linked) != nil && inkColour(of: plain) != nil }
+        let link = try #require(inkColour(of: linked))
+        let text = try #require(inkColour(of: plain))
+        // Adwaita draws links in an accent colour, text in a grey.
+        let difference = abs(link.0 - text.0) + abs(link.1 - text.1) + abs(link.2 - text.2)
+        #expect(difference > 80, "link ink \(link), text ink \(text)")
+    }
+
+    @Test("A search hit after a formula starting with a combining mark lands on its word") @MainActor
+    func aSearchHitAfterAFormulaStartingWithACombiningMarkLandsOnItsWord() throws {
+        // `$` and the mark make one character in the plain text.
+        let fixture = try Fixture(suffix: "combining-search", markdown: "a $\u{301}x$ c needle.")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        try #require(PreviewMath.debugFormulas(on: label).count == 1)
+        let preview = fixture.preview
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        #expect(preview.debugAppliedHighlightTexts == ["needle"])
+    }
+
+    @Test("A long note with formulas keeps one label per block") @MainActor
+    func aLongNoteWithFormulasKeepsOneLabelPerBlock() throws {
+        let markdown = (0..<170).map { "Row \($0) $x_{\($0)}$." }.joined(separator: "\n\n")
+        let fixture = try Fixture(suffix: "long-math-note", markdown: "")
+        MathRenderer.withParseBudget(.seconds(60)) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: markdown, darkAppearance: false))
+        }
+        MainContext.pump(for: .milliseconds(200))
+        // Not the single-label layout, whose label would be the whole note.
+        #expect(!fixture.labels().contains { $0.text.contains("Row 0") && $0.text.contains("Row 1 ") })
     }
 
     @Test("Formulas in a coalesced heading are sized like the heading") @MainActor
@@ -630,9 +675,7 @@ struct MathPreviewWidgetTests {
         }
     }
 
-    /// Draws the label's layout (with its shape renderer, as GTK does) onto
-    /// a black-free transparent surface and counts strongly red and blue
-    /// pixels; the plain text draws in the cairo source, set to green here.
+    /// Counts strongly red and blue pixels in `label` as GTK renders it.
     @MainActor
     private func paintedColours(of label: Label) -> (red: Int, blue: Int) {
         var counts = (red: 0, blue: 0)

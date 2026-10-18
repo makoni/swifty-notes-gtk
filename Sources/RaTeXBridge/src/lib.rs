@@ -137,10 +137,10 @@ fn emoji_image_count(list: &DisplayList) -> usize {
     if !candidates {
         return 0;
     }
-    let Ok(fonts) = ratex_font_loader::load_fonts_for_items_lazy("", &list.items) else {
-        return 0;
-    };
-    let mut faces: HashMap<FontId, Option<FontRef<'_>>> = HashMap::new();
+    // Each font on its own: the loader fails as a whole when one fallback
+    // font is missing, and a font that cannot be read counts as lacking the
+    // character (the safe side for a limit).
+    let mut fonts: HashMap<FontId, Option<ratex_font_loader::FontSet>> = HashMap::new();
     let mut verdicts: HashMap<(FontId, u32), bool> = HashMap::new();
     let mut count = 0;
     for item in &list.items {
@@ -151,11 +151,21 @@ fn emoji_image_count(list: &DisplayList) -> usize {
             if !ratex_unicode_font::is_emoji_candidate(ch) {
                 return false;
             }
-            let face = faces.entry(font_id).or_insert_with(|| {
-                fonts
-                    .get(&font_id)
-                    .and_then(|bytes| FontRef::try_from_slice_and_index(bytes, ratex_font_loader::font_face_index(font_id)).ok())
+            let set = fonts.entry(font_id).or_insert_with(|| {
+                let probe = DisplayItem::GlyphPath {
+                    x: 0.0,
+                    y: 0.0,
+                    scale: 1.0,
+                    font: font_id.as_str().to_string(),
+                    char_code: u32::from(ch),
+                    color: DEFAULT_COLOR_STAND_IN,
+                };
+                ratex_font_loader::load_fonts_for_items_lazy("", std::slice::from_ref(&probe)).ok()
             });
+            let face = set
+                .as_ref()
+                .and_then(|set| set.get(&font_id))
+                .and_then(|bytes| FontRef::try_from_slice_and_index(bytes, ratex_font_loader::font_face_index(font_id)).ok());
             let katex_has_it = font_id != FontId::EmojiFallback
                 && face.as_ref().is_some_and(|face| face.glyph_id(ch).0 != 0);
             !katex_has_it && ratex_unicode_font::emoji_png_raster_for_char(ch, 32.0).is_some()
@@ -557,11 +567,17 @@ pub unsafe extern "C" fn ratex_bridge_free(formula: *mut Formula) {
     });
 }
 
-/// Diagnostics: whether emoji are drawn as colour images here (an emoji
-/// font RaTeX can read was found), which is what the emoji limit is for.
+/// Diagnostics: whether an emoji is drawn as a colour image here (rather
+/// than from a fallback font that has it, or not at all), which is what the
+/// emoji limit is for.
 #[no_mangle]
 pub extern "C" fn ratex_bridge_draws_emoji_images() -> c_int {
-    guarded(0, || c_int::from(ratex_unicode_font::emoji_png_raster_for_char('😀', 32.0).is_some()))
+    guarded(0, || {
+        let Ok(nodes) = parse("😀") else { return 0 };
+        let options = LayoutOptions::default().with_style(MathStyle::Text).with_color(DEFAULT_COLOR_STAND_IN);
+        let tree = layout_with_fallback_metrics(&nodes, &options, Arc::new(fallback_metrics("😀")));
+        c_int::from(emoji_image_count(&to_display_list(&tree)) > 0)
+    })
 }
 
 /// The most bytes one formula may keep.

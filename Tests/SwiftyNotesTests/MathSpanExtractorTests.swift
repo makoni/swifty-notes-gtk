@@ -314,6 +314,16 @@ struct MathSpanExtractorTests {
         #expect(ContinuousClock.now - start < .milliseconds(1500))
     }
 
+    @Test("The backtick record still finds every code span")
+    func theBacktickRecordStillFindsEveryCodeSpan() {
+        // An unclosed `` scans the paragraph first; the ` span after it
+        // must still be found.
+        #expect(extract("`` x ` $a$ `").spans.isEmpty)
+        // A closer found early is not a scan of the whole paragraph.
+        #expect(extract("`a` `` $b$ ``").spans.isEmpty)
+        #expect(extract("`` x ` $a$ ` and $c$").spans == [MathSpan(tex: "c", isDisplay: false)])
+    }
+
     @Test("Backtick runs of many lengths stay fast")
     func backtickRunsOfManyLengthsStayFast() {
         // Each run length used to search to the end of the text.

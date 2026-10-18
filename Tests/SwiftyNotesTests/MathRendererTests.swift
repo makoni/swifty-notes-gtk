@@ -217,6 +217,8 @@ struct MathRendererTests {
         #expect(MathRenderer.formula(tex: String(repeating: "⏰", count: 40), isDisplay: false, pixelSize: 20) == nil)
         // Digits, `#`, `*` and arrows have emoji PNGs but KaTeX draws them.
         #expect(MathRenderer.formula(tex: String(repeating: "\\leftrightarrow", count: 40), isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit", count: 40), isDisplay: false, pixelSize: 20) != nil)
+        #expect(MathRenderer.formula(tex: String(repeating: "⭐", count: 40), isDisplay: false, pixelSize: 20) == nil)
         #expect(MathRenderer.formula(tex: String(repeating: "1234567890", count: 10) + "\\#*", isDisplay: false, pixelSize: 20) != nil)
         #expect(MathRenderer.formula(tex: String(repeating: "\\spadesuit\\heartsuit\\checkmark", count: 20), isDisplay: false, pixelSize: 20) != nil)
     }
@@ -260,6 +262,18 @@ struct MathRendererTests {
         // A real parse error is not transient.
         #expect(MathRenderer.formula(tex: "\\frac{", isDisplay: false, pixelSize: 20) == nil)
         #expect(ratex_bridge_last_error_is_transient() == 0)
+    }
+
+    @Test("A formula that would cross the memory limit after layout is refused")
+    func aFormulaThatWouldCrossTheMemoryLimitAfterLayoutIsRefused() {
+        // Below the limit before parsing, over it once the drawing is known.
+        let previous = ratex_bridge_set_live_bytes_limit(ratex_bridge_live_bytes() + 100)
+        defer { ratex_bridge_set_live_bytes_limit(previous) }
+        let tex = "\\overbrace{a}"
+        let handle = tex.withCString { ratex_bridge_parse($0, strlen($0), 0, 20) }
+        #expect(handle == nil)
+        #expect(ratex_bridge_last_error_is_transient() == 1)
+        if let handle { ratex_bridge_free(handle) }
     }
 
     @Test("At the memory limit, cached formulas no label holds make room")
