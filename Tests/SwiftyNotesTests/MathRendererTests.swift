@@ -206,7 +206,7 @@ struct MathRendererTests {
         #expect(ratex_bridge_live_bytes() < before + 16 * 1024)
     }
 
-    @Test("A formula drawing many emoji is refused", .enabled(if: FileManager.default.fileExists(atPath: "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf")))
+    @Test("A formula drawing many emoji is refused", .enabled(if: ratex_bridge_draws_emoji_images() != 0))
     func aFormulaDrawingManyEmojiIsRefused() {
         // Each emoji is a PNG decoded on every draw.
         #expect(MathRenderer.formula(tex: String(repeating: "😀", count: 40), isDisplay: false, pixelSize: 20) == nil)

@@ -557,6 +557,13 @@ pub unsafe extern "C" fn ratex_bridge_free(formula: *mut Formula) {
     });
 }
 
+/// Diagnostics: whether emoji are drawn as colour images here (an emoji
+/// font RaTeX can read was found), which is what the emoji limit is for.
+#[no_mangle]
+pub extern "C" fn ratex_bridge_draws_emoji_images() -> c_int {
+    guarded(0, || c_int::from(ratex_unicode_font::emoji_png_raster_for_char('😀', 32.0).is_some()))
+}
+
 /// The most bytes one formula may keep.
 #[no_mangle]
 pub extern "C" fn ratex_bridge_max_formula_bytes() -> usize {

@@ -213,6 +213,29 @@ enum PreviewMath {
     static let maxInlineFormulaWidth = 2048.0
     static let maxFormulaArea = 2048.0 * 2048.0
 
+    /// GTK draws each formula (a Pango shape) into a node as large as the
+    /// whole label, and GPU renderers rasterise those one by one — so a
+    /// label's formulas cost its area each, in (video) memory. A label draws
+    /// as many as fit this many bytes; the rest show their source. Text
+    /// with formulas is kept in small labels for the same reason.
+    static let drawnFormulaBudget = 64.0 * 1024 * 1024
+
+    /// How many formulas `label` may draw within ``drawnFormulaBudget``,
+    /// going by its current layout (a GPU renderer clips what it rasterises
+    /// to the window, so a label counts at most a large screen's area).
+    private static func drawnFormulaAllowance(for label: Label) -> Int {
+        guard let layout = gtk_label_get_layout(label.opaquePointer) else { return .max }
+        var ink = PangoRectangle()
+        var logical = PangoRectangle()
+        pango_layout_get_pixel_extents(layout, &ink, &logical)
+        var scale = 1.0
+        if let native = gtk_widget_get_native(label.widgetPointer), let surface = gtk_native_get_surface(native) {
+            scale = max(1, gdk_surface_get_scale(surface))
+        }
+        let area = min(Double(max(1, logical.width)) * Double(max(1, logical.height)), 3840 * 2160)
+        return max(1, Int(drawnFormulaBudget / (area * scale * scale * 4)))
+    }
+
     static func isDrawable(_ formula: MathFormula, inline: Bool) -> Bool {
         formula.width * formula.height <= maxFormulaArea && (!inline || formula.width <= maxInlineFormulaWidth)
     }
@@ -255,6 +278,14 @@ enum PreviewMath {
         }
         // Only the formulas the label holds now.
         state.decisions = decisions
+        // Past the label's budget the rest show their source.
+        let allowance = drawnFormulaAllowance(for: label)
+        var drawn = 0
+        formulas = formulas.map { formula in
+            guard let formula else { return nil }
+            drawn += 1
+            return drawn <= allowance ? formula : nil
+        }
         if state.hasPostponedFormulas, !applyingWhilePostponed {
             return
         }

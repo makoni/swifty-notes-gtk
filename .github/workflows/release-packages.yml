@@ -65,6 +65,7 @@ jobs:
             libgtksourceview-5-dev \
             libspelling-1-dev \
             locales \
+            xdotool \
             xvfb \
             rustc-1.91 \
             cargo-1.91

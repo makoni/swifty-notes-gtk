@@ -768,7 +768,12 @@ final class MarkdownPreview {
                 var segments: [RichTextSegment] = [.heading(level: level, text: text)]
                 var coalescedBlockIndices: [Int] = [index]
                 index += 1
-                while index < blocks.count, case let .paragraph(pText) = blocks[index] {
+                // Text with formulas stays in labels of its own (see
+                // PreviewMath.drawnFormulaBudget): GTK draws each formula
+                // over the whole label.
+                while text.mathSpans.isEmpty, index < blocks.count, case let .paragraph(pText) = blocks[index],
+                      pText.mathSpans.isEmpty
+                {
                     segments.append(.paragraph(text: pText))
                     blockToRowIndex[index] = runStartRow
                     coalescedBlockIndices.append(index)
@@ -1381,7 +1386,10 @@ final class MarkdownPreview {
         let forcedByEnvironment = ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_FORCE_CUSTOM_TEXT_PREVIEW"]
             .map { ["1", "true", "yes"].contains($0.lowercased()) } ?? false
         let forced = debugForceCustomTextLayout || forcedByEnvironment
-        let wantsCustomTextLayout = forced || rows.count >= 160
+        // A note with formulas keeps one label per block: GTK draws each
+        // formula over the whole label (see PreviewMath.drawnFormulaBudget),
+        // and here that label would be the whole note.
+        let wantsCustomTextLayout = forced || (rows.count >= 160 && rows.allSatisfy { $0.mathSpans.isEmpty })
         return wantsCustomTextLayout && rows.allSatisfy(\.supportsCustomTextLayout)
     }
 
@@ -1596,8 +1604,10 @@ final class MarkdownPreview {
         case let .paragraph(text):
             var texts = [text]
             index += 1
-            while index < blocks.count {
-                guard case let .paragraph(nextText) = blocks[index] else { break }
+            // Text with formulas is not joined with more text (see
+            // PreviewMath.drawnFormulaBudget).
+            while text.mathSpans.isEmpty, index < blocks.count {
+                guard case let .paragraph(nextText) = blocks[index], nextText.mathSpans.isEmpty else { break }
                 texts.append(nextText)
                 index += 1
             }
@@ -1605,8 +1615,8 @@ final class MarkdownPreview {
         case let .blockquote(text):
             var texts = [text]
             index += 1
-            while index < blocks.count {
-                guard case let .blockquote(nextText) = blocks[index] else { break }
+            while text.mathSpans.isEmpty, index < blocks.count {
+                guard case let .blockquote(nextText) = blocks[index], nextText.mathSpans.isEmpty else { break }
                 texts.append(nextText)
                 index += 1
             }

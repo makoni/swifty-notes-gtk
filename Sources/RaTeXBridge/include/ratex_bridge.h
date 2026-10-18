@@ -57,6 +57,10 @@ void ratex_bridge_free(ratex_bridge_formula *formula);
 /* The most bytes one formula may keep; larger ones are refused. */
 size_t ratex_bridge_max_formula_bytes(void);
 
+/* Diagnostics: 1 when emoji are drawn as colour images (an emoji font the
+ * engine can read was found), else 0. */
+int ratex_bridge_draws_emoji_images(void);
+
 /* Diagnostics: estimated bytes all live (not yet freed) formulas keep. */
 size_t ratex_bridge_live_bytes(void);
 

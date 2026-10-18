@@ -278,6 +278,31 @@ struct MathPreviewWidgetTests {
         #expect(preview.debugAppliedHighlightTexts == ["needle"])
     }
 
+    @Test("Text with formulas keeps a label of its own") @MainActor
+    func textWithFormulasKeepsALabelOfItsOwn() throws {
+        // GTK draws each formula over its whole label, so such labels stay small.
+        let fixture = try Fixture(suffix: "own-label", markdown: "# Head\n\nPlain one.\n\nWith $x$ math.\n\nPlain two.")
+        let texts = fixture.labels().map(\.text)
+        #expect(texts.contains("With \u{FFFC} math."), "\(texts)")
+        #expect(!texts.contains { $0.contains("\u{FFFC}") && $0.contains("Plain") }, "\(texts)")
+    }
+
+    @Test("A label draws only the formulas its budget allows") @MainActor
+    func aLabelDrawsOnlyTheFormulasItsBudgetAllows() throws {
+        let formulas = (0..<600).map { "$\\frac{a_{\($0)}}{b}$" }.joined(separator: " ")
+        let fixture = try Fixture(suffix: "budget", markdown: "")
+        MathRenderer.withParseBudget(.seconds(60)) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: "Many \(formulas) end.", darkAppearance: false))
+        }
+        MainContext.pump(for: .milliseconds(100))
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let drawn = PreviewMath.debugFormulas(on: label).count
+        #expect(drawn > 0)
+        #expect(drawn < 600, "\(drawn) drawn")
+        // The rest show their source.
+        #expect(label.text.contains("$\\frac{a_{599}}{b}$"))
+    }
+
     @Test("Editing a paragraph re-installs its formulas") @MainActor
     func editingParagraphReinstallsFormulas() throws {
         let fixture = try Fixture(suffix: "edit", markdown: "Text $a$ here.\n\nSecond paragraph.")
@@ -285,7 +310,8 @@ struct MathPreviewWidgetTests {
         let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["a", "b"])
         #expect(PreviewMath.debugShapeAttributeCount(on: label) == 2)
-        #expect(gtkAccessibleLabelMismatch(of: label, expected: "Text $a$ and $b$ here.\n\nSecond paragraph.") == nil)
+        // A paragraph with formulas is a label of its own.
+        #expect(gtkAccessibleLabelMismatch(of: label, expected: "Text $a$ and $b$ here.") == nil)
         fixture.render("Text without math.\n\nSecond paragraph.")
         let plain = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
         #expect(PreviewMath.debugFormulas(on: plain).isEmpty)
