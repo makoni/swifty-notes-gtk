@@ -57,6 +57,7 @@ enum PreviewMath {
         if state.originalMarkup != markup {
             state.originalMarkup = markup
             state.markerSizes = nil
+            state.drawnFormulaCap = .max
         }
         // A new render tries again formulas refused only at the memory limit
         // (they may fit now); every other decision stands, so a note full of
@@ -206,10 +207,10 @@ enum PreviewMath {
 
     // MARK: - Layout
 
-    /// Formulas wider than this inline, or larger than ``maxFormulaArea``,
-    /// show their source: GTK renders label content into textures, and a
-    /// formula thousands of pixels wide (`\hspace{600em}`) costs tens of
-    /// megabytes there.
+    /// Formulas wider or taller than this inline, or larger than
+    /// ``maxFormulaArea``, show their source: GTK renders label content into
+    /// textures, and a formula thousands of pixels across (`\hspace{600em}`,
+    /// `\rule{0pt}{200em}`) costs tens of megabytes there.
     static let maxInlineFormulaWidth = 2048.0
     static let maxFormulaArea = 2048.0 * 2048.0
 
@@ -237,7 +238,8 @@ enum PreviewMath {
     }
 
     static func isDrawable(_ formula: MathFormula, inline: Bool) -> Bool {
-        formula.width * formula.height <= maxFormulaArea && (!inline || formula.width <= maxInlineFormulaWidth)
+        formula.width * formula.height <= maxFormulaArea
+            && (!inline || (formula.width <= maxInlineFormulaWidth && formula.height <= maxInlineFormulaWidth))
     }
 
     private static func layOut(_ label: Label, state: MathLabelState, applyingWhilePostponed: Bool = true) {
@@ -279,7 +281,7 @@ enum PreviewMath {
         // Only the formulas the label holds now.
         state.decisions = decisions
         // Past the label's budget the rest show their source.
-        let allowance = drawnFormulaAllowance(for: label)
+        let allowance = min(drawnFormulaAllowance(for: label), state.drawnFormulaCap)
         var drawn = 0
         formulas = formulas.map { formula in
             guard let formula else { return nil }
@@ -338,6 +340,16 @@ enum PreviewMath {
         installShapeRenderer(on: label)
         installCopyHandler(on: label)
         label.setAccessibleLabel(state.accessibleText(labelText: text))
+
+        // The budget went by the layout before these formulas took their
+        // room; tall ones can make the label far larger. Measured again, a
+        // smaller allowance lays the label out once more — the cap only ever
+        // comes down, so the count does not swing between layouts.
+        let measured = drawnFormulaAllowance(for: label)
+        if min(drawn, allowance) > measured {
+            state.drawnFormulaCap = measured
+            layOut(label, state: state, applyingWhilePostponed: applyingWhilePostponed)
+        }
     }
 
     /// The label markup with every formula the engine could not draw
@@ -628,6 +640,10 @@ final class MathLabelState {
     /// The font size of each marker for a base size, which takes a parse of
     /// the markup to find.
     var markerSizes: (basePixels: Double, sizes: [Double])?
+    /// How many formulas the label may draw at most, lowered when its
+    /// finished layout turns out larger than the budget assumed; reset when
+    /// its text changes.
+    var drawnFormulaCap = Int.max
     var baseFontPixels = 0.0
     /// The label's font size when last read: formulas follow its changes.
     var measuredFontPixels = 0.0

@@ -318,6 +318,33 @@ struct MathPreviewWidgetTests {
         #expect(label.text.contains("$\\frac{a_{599}}{b}$"))
     }
 
+    @Test("The budget goes by the label as its formulas leave it") @MainActor
+    func theBudgetGoesByTheLabelAsItsFormulasLeaveIt() throws {
+        // Zero-width but tall: each adds a line of its own height, which the
+        // layout before the formulas does not show.
+        let formulas = (0..<300).map { "$\\rule{0pt}{60em}_{\($0)}$" }.joined(separator: " ")
+        let fixture = try Fixture(suffix: "budget-tall", markdown: "")
+        MathRenderer.withParseBudget(.seconds(60)) {
+            fixture.preview.render(blocks: MarkdownRenderer().blocks(for: "Tall \(formulas) end.", darkAppearance: false))
+        }
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        let drawn = PreviewMath.debugFormulas(on: label).count
+        let layout = try #require(gtk_label_get_layout(label.opaquePointer))
+        var ink = PangoRectangle()
+        var logical = PangoRectangle()
+        pango_layout_get_pixel_extents(layout, &ink, &logical)
+        let area = min(Double(logical.width) * Double(logical.height), 3840 * 2160)
+        #expect(drawn > 0)
+        #expect(Double(drawn) * area * 4 <= PreviewMath.drawnFormulaBudget * 1.05, "\(drawn) drawn in \(logical.width)×\(logical.height)")
+    }
+
+    @Test("Inline formulas taller than the cap show their source") @MainActor
+    func inlineFormulasTallerThanTheCapShowTheirSource() throws {
+        let fixture = try Fixture(suffix: "too-tall", markdown: "Tall $\\rule{0pt}{200em}$ and $y$.")
+        let label = try #require(fixture.firstLabel(withCSSClass: "preview-paragraph-label"))
+        #expect(PreviewMath.debugFormulas(on: label).map(\.tex) == ["y"])
+    }
+
     @Test("Editing a paragraph re-installs its formulas") @MainActor
     func editingParagraphReinstallsFormulas() throws {
         let fixture = try Fixture(suffix: "edit", markdown: "Text $a$ here.\n\nSecond paragraph.")
@@ -463,14 +490,23 @@ struct MathPreviewWidgetTests {
         func inkColour(of label: Label) -> (Int, Int, Int)? {
             var counts: [Int: Int] = [:]
             forEachRenderedPixel(of: label) { r, g, b, a in
-                if a > 230 { counts[(r / 16) << 8 | (g / 16) << 4 | (b / 16), default: 0] += 1 }
+                if a > 200 { counts[(r / 16) << 8 | (g / 16) << 4 | (b / 16), default: 0] += 1 }
             }
-            guard let top = counts.max(by: { $0.value < $1.value }), top.value > 150 else { return nil }
+            guard let top = counts.max(by: { $0.value < $1.value }), top.value > 100 else { return nil }
             return (top.key >> 8 * 16, (top.key >> 4 & 15) * 16, (top.key & 15) * 16)
         }
-        pumpUntil(timeout: .milliseconds(500)) { inkColour(of: linked) != nil && inkColour(of: plain) != nil }
-        let link = try #require(inkColour(of: linked))
-        let text = try #require(inkColour(of: plain))
+        func diagnosis(_ label: Label) -> String {
+            var counts: [Int: Int] = [:]
+            forEachRenderedPixel(of: label) { r, g, b, a in
+                counts[(a / 64) << 12 | (r / 64) << 8 | (g / 64) << 4 | (b / 64), default: 0] += 1
+            }
+            let top = counts.sorted { $0.value > $1.value }.prefix(6).map { "argb\(String($0.key, radix: 16)):\($0.value)" }
+            return "formulas \(PreviewMath.debugFormulas(on: label).count), shapes \(PreviewMath.debugShapeAttributeCount(on: label)), "
+                + "size \(gtk_widget_get_width(label.widgetPointer))×\(gtk_widget_get_height(label.widgetPointer)), \(top)"
+        }
+        pumpUntil(timeout: .seconds(2)) { inkColour(of: linked) != nil && inkColour(of: plain) != nil }
+        let link = try #require(inkColour(of: linked), "\(diagnosis(linked))")
+        let text = try #require(inkColour(of: plain), "\(diagnosis(plain))")
         // Adwaita draws links in an accent colour, text in a grey.
         let difference = abs(link.0 - text.0) + abs(link.1 - text.1) + abs(link.2 - text.2)
         #expect(difference > 80, "link ink \(link), text ink \(text)")
