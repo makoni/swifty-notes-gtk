@@ -121,24 +121,34 @@ fn guarded<T>(fallback: T, body: impl FnOnce() -> T) -> T {
 /// names, which never land on these fractions.
 const DEFAULT_COLOR_STAND_IN: Color = Color { r: 1.0 / 512.0, g: 3.0 / 512.0, b: 5.0 / 512.0, a: 1.0 };
 
-/// A laid-out formula. It keeps only its display list, laid out once with
-/// `DEFAULT_COLOR_STAND_IN`, plus a copy recoloured for the colour it was
-/// last drawn in (the theme can change between draws); the parse tree,
-/// which macros can make far larger than the drawing, is not kept.
+/// A laid-out formula. It keeps only its display list, in the colour it was
+/// last drawn in, and which items take the default colour (the theme can
+/// change between draws); the parse tree, which macros can make far larger
+/// than the drawing, is not kept.
 pub struct Formula {
-    base: DisplayList,
+    list: Mutex<(Color, DisplayList)>,
+    /// Per item: whether it is drawn in the default colour.
+    default_colored: Vec<bool>,
     font_px: f64,
     width: f64,
     height: f64,
     depth: f64,
-    cached: Mutex<Option<(Color, Arc<DisplayList>)>>,
-    /// The bytes this formula holds of the live total (zero until counted).
+    /// The bytes this formula holds of the live total.
     cost: usize,
 }
 
 impl Drop for Formula {
     fn drop(&mut self) {
         LIVE_BYTES.fetch_sub(self.cost, Ordering::Relaxed);
+    }
+}
+
+fn item_color(item: &mut DisplayItem) -> &mut Color {
+    match item {
+        DisplayItem::GlyphPath { color, .. }
+        | DisplayItem::Line { color, .. }
+        | DisplayItem::Rect { color, .. }
+        | DisplayItem::Path { color, .. } => color,
     }
 }
 
@@ -155,37 +165,21 @@ fn display_list_bytes(list: &DisplayList) -> usize {
     bytes
 }
 
-/// Bytes a formula keeps: its display list twice (the base and the
-/// recoloured copy) and some bookkeeping.
-fn formula_cost(list: &DisplayList) -> usize {
-    2 * display_list_bytes(list) + 1024
-}
-
 impl Formula {
-    fn display_list(&self, color: Color) -> Arc<DisplayList> {
-        let mut cached = self.cached.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let Some((cached_color, list)) = cached.as_ref() {
-            if *cached_color == color {
-                return Arc::clone(list);
+    /// Runs `body` with the display list in `color`, recolouring the
+    /// default-coloured items first if the colour changed.
+    fn with_display_list<T>(&self, color: Color, body: impl FnOnce(&DisplayList) -> T) -> T {
+        let mut guard = self.list.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let (current, list) = &mut *guard;
+        if *current != color {
+            for (item, &is_default) in list.items.iter_mut().zip(&self.default_colored) {
+                if is_default {
+                    *item_color(item) = color;
+                }
             }
+            *current = color;
         }
-        // Drop the old copy before making the new one.
-        *cached = None;
-        let mut list = self.base.clone();
-        for item in &mut list.items {
-            let item_color = match item {
-                DisplayItem::GlyphPath { color, .. }
-                | DisplayItem::Line { color, .. }
-                | DisplayItem::Rect { color, .. }
-                | DisplayItem::Path { color, .. } => color,
-            };
-            if *item_color == DEFAULT_COLOR_STAND_IN {
-                *item_color = color;
-            }
-        }
-        let list = Arc::new(list);
-        *cached = Some((color, Arc::clone(&list)));
-        list
+        body(list)
     }
 }
 
@@ -250,10 +244,11 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
     let options = LayoutOptions::default().with_style(style).with_color(DEFAULT_COLOR_STAND_IN);
     let tree = layout_with_fallback_metrics(&nodes, &options, Arc::new(fallback_metrics(tex)));
     validate_layout(&tree).map_err(|error| format!("layout rejected: {error}"))?;
-    let list = to_display_list(&tree);
+    let mut list = to_display_list(&tree);
     // The tree and the layout are dropped here; only the list stays.
     drop(tree);
     drop(nodes);
+    let default_colored: Vec<bool> = list.items.iter_mut().map(|item| *item_color(item) == DEFAULT_COLOR_STAND_IN).collect();
     let width = list.width * font_px;
     let height = (list.height + list.depth) * font_px;
     let depth = list.depth * font_px;
@@ -261,7 +256,7 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
     if !sane(width) || !sane(height) || !sane(depth) || depth > height {
         return Err(format!("formula box {width}×{height} px is out of range"));
     }
-    let cost = formula_cost(&list);
+    let cost = display_list_bytes(&list) + default_colored.capacity() + 1024;
     if cost > MAX_FORMULA_BYTES {
         return Err(format!("formula needs about {} KiB, more than {} KiB", cost / 1024, MAX_FORMULA_BYTES / 1024));
     }
@@ -273,7 +268,15 @@ fn parse_formula(tex: &str, display: bool, font_px: f64) -> Result<Formula, Stri
         set_last_error_transient(true);
         return Err("formula memory limit reached".to_string());
     }
-    Ok(Formula { base: list, font_px, width, height, depth, cached: Mutex::new(None), cost })
+    Ok(Formula {
+        list: Mutex::new((DEFAULT_COLOR_STAND_IN, list)),
+        default_colored,
+        font_px,
+        width,
+        height,
+        depth,
+        cost,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -461,7 +464,7 @@ pub unsafe extern "C" fn ratex_bridge_draw(
         }
         let unit = |value: f64| if value.is_finite() { value.clamp(0.0, 1.0) as f32 } else { 0.0 };
         let color = Color::new(unit(red), unit(green), unit(blue), unit(alpha));
-        let list = formula.display_list(color);
+
         // from_raw_none takes its own reference and drops it again, so the
         // caller keeps ownership of the context.
         let context = cairo::Context::from_raw_none(cr.cast::<cairo::ffi::cairo_t>());
@@ -470,7 +473,7 @@ pub unsafe extern "C" fn ratex_bridge_draw(
             return -1;
         }
         let options = CairoOptions { font_size: formula.font_px, padding: 0.0, font_dir: None };
-        let result = render_to_cairo(&context, &list, &options);
+        let result = formula.with_display_list(color, |list| render_to_cairo(&context, list, &options));
         let _ = context.restore();
         match result {
             Ok(()) => 0,

@@ -96,11 +96,21 @@ enum MathSpanExtractor {
         var scalars = markdown.unicodeScalars.map(sanitized)
         neutralizeReservedEntities(in: &scalars)
         let lines = lineBounds(scalars)
-        let blankLines = lines.filter { isBlankLine(scalars: scalars, line: $0) }
+        // A quoted line holding nothing but `>` markers is blank inside the quote.
+        let blankLines = lines.filter { line in
+            isBlankLine(scalars: scalars, line: line)
+                || isBlankLine(scalars: scalars, line: LineBounds(
+                    start: quoteMarkers(scalars: scalars, from: line.start, end: line.contentEnd, maxDepth: .max).end,
+                    contentEnd: line.contentEnd,
+                    end: line.end,
+                ))
+        }
         var spans: [LocatedSpan] = []
         var output: [Unicode.Scalar] = []
-        /// The column list item content starts at, while in a list.
-        var listContentIndent: Int?
+        /// The columns the content of each open list item starts at,
+        /// outermost first.
+        var listIndents: [Int] = []
+        var listContentIndent: Int? { listIndents.last }
         /// The indent of the indented code block being copied, if any.
         var codeIndent: Int?
         var previousLineWasBlank = true
@@ -175,10 +185,13 @@ enum MathSpanExtractor {
             previousLineWasBlank = isBlank
             if isBlank { continue }
             if let indent = listItemContentIndent(scalars: scalars, line: line, inList: listContentIndent != nil) {
-                listContentIndent = indent
-            } else if let indent = listContentIndent, width < indent, previousLineWasBlankBefore {
-                // Back at the margin after a blank line: the list is over.
-                listContentIndent = nil
+                // A marker belongs to the item whose content it is indented into.
+                while let last = listIndents.last, last > width { listIndents.removeLast() }
+                listIndents.append(indent)
+            } else if previousLineWasBlankBefore {
+                // After a blank line, a line belongs to the innermost item it
+                // is indented far enough for (none: the list is over).
+                while let last = listIndents.last, width < last { listIndents.removeLast() }
             }
         }
         flushFreeText()
@@ -647,6 +660,9 @@ enum MathSpanExtractor {
     private static func strippingQuoteMarkers(
         scalars: [Unicode.Scalar], range: Range<Int>, openedAt: Int, freeStart: Int,
     ) -> (scalars: [Unicode.Scalar], lineBreaks: [ArraySlice<Unicode.Scalar>]) {
+        // Only a span over several lines has markers to strip; finding the
+        // line start for every span would make a long line quadratic.
+        guard scalars[range].contains("\n") else { return (Array(scalars[range]), []) }
         var lineStart = openedAt
         while lineStart > freeStart, scalars[lineStart - 1] != "\n" { lineStart -= 1 }
         let depth = quoteMarkers(scalars: scalars, from: lineStart, end: openedAt, maxDepth: .max).depth
@@ -787,23 +803,62 @@ enum MathSpanExtractor {
     /// (`<a href=…>`, `</a>`, `<br/>`), on the same line, or nil. The tag
     /// name must be ASCII and end at a space, `/` or `>`, so prose such as
     /// `x <y, $z$ > 1` is not taken for a tag.
-    private static func htmlTagEnd(scalars: [Unicode.Scalar], after start: Int, end: Int) -> Int? {
+    private static func htmlTagEnd(scalars: [Unicode.Scalar], after start: Int, end lineEnd: Int) -> Int? {
+        // CommonMark's grammar, kept to one line: `</name>` or
+        // `<name attr="v" attr2=v attr3>`; prose such as `a <b and $x > y$`
+        // fails at `$x`, which cannot start an attribute name.
+        let end = min(lineEnd, start + maxConstructScan)
         var j = start
-        if j < end, scalars[j] == "/" { j += 1 }
-        guard j < end, scalars[j].isASCII, scalars[j].properties.isAlphabetic else { return nil }
-        while j < end, scalars[j].isASCII, scalars[j].properties.isAlphabetic || scalars[j].properties.numericType != nil || scalars[j] == "-" {
-            j += 1
+        func isASCIILetter(_ scalar: Unicode.Scalar) -> Bool {
+            scalar.isASCII && scalar.properties.isAlphabetic
         }
-        guard j < end, [" ", "\t", "/", ">"].contains(scalars[j]) else { return nil }
-        let limit = min(end, start + maxConstructScan)
-        while j < limit {
-            switch scalars[j] {
-            case ">": return j
-            case "\n", "<": return nil
-            default: j += 1
+        func isASCIIDigit(_ scalar: Unicode.Scalar) -> Bool {
+            ("0"..."9").contains(scalar)
+        }
+        func skipSpaces() -> Bool {
+            let from = j
+            while j < end, scalars[j] == " " || scalars[j] == "\t" { j += 1 }
+            return j > from
+        }
+        let isClosing = j < end && scalars[j] == "/"
+        if isClosing { j += 1 }
+        guard j < end, isASCIILetter(scalars[j]) else { return nil }
+        while j < end, isASCIILetter(scalars[j]) || isASCIIDigit(scalars[j]) || scalars[j] == "-" { j += 1 }
+        if isClosing {
+            _ = skipSpaces()
+            return j < end && scalars[j] == ">" ? j : nil
+        }
+        while true {
+            let spaced = skipSpaces()
+            guard j < end else { return nil }
+            if scalars[j] == ">" { return j }
+            if scalars[j] == "/" {
+                return j + 1 < end && scalars[j + 1] == ">" ? j + 1 : nil
+            }
+            // An attribute: name, then optionally `=` and a value.
+            guard spaced, isASCIILetter(scalars[j]) || scalars[j] == "_" || scalars[j] == ":" else { return nil }
+            while j < end, isASCIILetter(scalars[j]) || isASCIIDigit(scalars[j]) || "_.:-".unicodeScalars.contains(scalars[j]) { j += 1 }
+            let afterName = j
+            _ = skipSpaces()
+            guard j < end, scalars[j] == "=" else {
+                j = afterName
+                continue
+            }
+            j += 1
+            _ = skipSpaces()
+            guard j < end else { return nil }
+            if scalars[j] == "\"" || scalars[j] == "'" {
+                let quote = scalars[j]
+                j += 1
+                while j < end, scalars[j] != quote { j += 1 }
+                guard j < end else { return nil }
+                j += 1
+            } else {
+                let valueStart = j
+                while j < end, !" \t\"'=<>`".unicodeScalars.contains(scalars[j]) { j += 1 }
+                guard j > valueStart else { return nil }
             }
         }
-        return nil
     }
 
     /// The end of a bare `http://`, `https://` or `www.` URL starting at

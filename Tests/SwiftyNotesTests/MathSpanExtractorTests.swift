@@ -273,6 +273,34 @@ struct MathSpanExtractorTests {
         }
     }
 
+    @Test("A less-than sign before a word in prose is not an HTML tag")
+    func aLessThanSignBeforeAWordInProseIsNotAnHtmlTag() {
+        #expect(extract("if a <b and $x > y$ then").spans == [MathSpan(tex: "x > y", isDisplay: false)])
+        #expect(extract("values <n then $n > 0$ holds").spans == [MathSpan(tex: "n > 0", isDisplay: false)])
+        // Real tags still hide their attributes.
+        #expect(extract("<img alt='$a$' src=x.png/> and <span title=\"$b$\" data-x>t</span> $c$").spans
+            == [MathSpan(tex: "c", isDisplay: false)])
+    }
+
+    @Test("Back in an outer list item after a nested one")
+    func backInAnOuterListItemAfterANestedOne() {
+        let markdown = "- outer\n  - inner\n\n  back in outer\n\n    $x^2$ continuation"
+        #expect(extract(markdown).spans == [MathSpan(tex: "x^2", isDisplay: false)])
+    }
+
+    @Test("A line of only quote markers ends display math in a quote")
+    func aLineOfOnlyQuoteMarkersEndsDisplayMathInAQuote() {
+        #expect(extract("> $$a\n>\n> b$$").spans.isEmpty)
+    }
+
+    @Test("A long line of formulas extracts in linear time")
+    func aLongLineOfFormulasExtractsInLinearTime() {
+        let line = String(repeating: "$a$ ", count: 25000)
+        let start = ContinuousClock.now
+        #expect(MathSpanExtractor.extract(from: line).spans.count == 25000)
+        #expect(ContinuousClock.now - start < .milliseconds(1500))
+    }
+
     @Test("A fence indented four spaces is code, not a fence")
     func aFenceIndentedFourSpacesIsCodeNotAFence() {
         let result = extract("    ```math\n    x\n    ```")
