@@ -7,25 +7,36 @@ import Foundation
 enum MathInlineText {
     /// Pango markup for `text` with one formula marker (U+FFFC) per formula,
     /// and the formulas in order; `spans` is empty when there are none, and
-    /// the markup is then just the escaped text.
-    static func markup(for text: String) -> (markup: String, spans: [MathSpan]) {
-        let extraction = MathSpanExtractor.extract(from: text)
-        guard !extraction.spans.isEmpty else { return (pangoEscape(text), []) }
-        var markup = ""
-        var spans: [MathSpan] = []
-        var cursor = extraction.markdown.unicodeScalars.startIndex
-        let scalars = extraction.markdown.unicodeScalars
-        for occurrence in MathSpanExtractor.spanIndices(in: extraction.markdown) {
-            let start = scalars.index(scalars.startIndex, offsetBy: occurrence.range.lowerBound)
-            let end = scalars.index(scalars.startIndex, offsetBy: occurrence.range.upperBound)
-            markup += escapedText(scalars[cursor..<start])
-            if occurrence.index < extraction.spans.count {
-                markup.unicodeScalars.append(MathSpanExtractor.formulaMarker)
-                spans.append(extraction.spans[occurrence.index])
-            }
-            cursor = end
+    /// the markup is then just the escaped text. The first case-insensitive
+    /// match of `query`, if any, is highlighted as the outline and palette
+    /// filters do — a formula the match touches as a whole.
+    static func markup(for text: String, highlighting query: String = "") -> (markup: String, spans: [MathSpan]) {
+        let spans = MathSpanExtractor.extract(from: text).spans
+        let sources = MathSpanExtractor.sourceRanges(in: text)
+        guard !spans.isEmpty, sources.count == spans.count else {
+            return (pangoHighlightedMarkup(text, query: query), [])
         }
-        markup += escapedText(scalars[cursor...])
+        let scalars = Array(text.unicodeScalars)
+        let hit = firstMatch(of: query, in: text)
+        var markup = ""
+        func appendText(_ range: Range<Int>) {
+            guard let hit, hit.overlaps(range) else {
+                markup += escapedText(scalars[range])
+                return
+            }
+            let lit = range.clamped(to: hit)
+            markup += escapedText(scalars[range.lowerBound..<lit.lowerBound])
+            markup += pangoHighlightOpenTag + escapedText(scalars[lit]) + "</span>"
+            markup += escapedText(scalars[lit.upperBound..<range.upperBound])
+        }
+        let marker = String(MathSpanExtractor.formulaMarker)
+        var cursor = 0
+        for source in sources {
+            appendText(cursor..<source.lowerBound)
+            markup += hit?.overlaps(source) == true ? pangoHighlightOpenTag + marker + "</span>" : marker
+            cursor = source.upperBound
+        }
+        appendText(cursor..<scalars.count)
         return (markup, spans)
     }
 
@@ -43,10 +54,19 @@ enum MathInlineText {
     /// Text around formulas in markup: escaped, and a stray U+FFFC (an
     /// object replacement character in the title) made U+FFFD so only
     /// formulas own a marker.
-    private static func escapedText(_ scalars: Substring.UnicodeScalarView) -> String {
+    private static func escapedText(_ scalars: ArraySlice<Unicode.Scalar>) -> String {
         var text = String.UnicodeScalarView()
         text.append(contentsOf: scalars.map { $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0 })
         return pangoEscape(String(text))
+    }
+
+    /// The first case-insensitive match of `query` in `text`, in Unicode
+    /// scalars; found in `text` itself, as ``pangoHighlightedMarkup(_:query:)``
+    /// does.
+    private static func firstMatch(of query: String, in text: String) -> Range<Int>? {
+        guard !query.isEmpty, let range = text.range(of: query, options: .caseInsensitive) else { return nil }
+        let start = text.unicodeScalars.distance(from: text.startIndex, to: range.lowerBound)
+        return start..<(start + text.unicodeScalars.distance(from: range.lowerBound, to: range.upperBound))
     }
 
     // MARK: - Readable TeX

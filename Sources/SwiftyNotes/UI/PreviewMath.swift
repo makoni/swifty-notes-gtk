@@ -71,11 +71,40 @@ enum PreviewMath {
     }
 
     /// Shows `text` — a note's title, a heading — in `label`, drawing its
-    /// formulas as the preview does (and dropping any it drew before).
-    static func show(_ text: String, in label: Label) {
-        let math = MathInlineText.markup(for: text)
-        label.markup = math.markup
-        install(on: label, spans: math.spans)
+    /// formulas as the preview does (and dropping any it drew before), with
+    /// the first match of `query` highlighted.
+    static func show(_ text: String, in label: Label, highlighting query: String = "") {
+        let math = MathInlineText.markup(for: text, highlighting: query)
+        show(markup: math.markup, spans: math.spans, in: label)
+    }
+
+    /// Shows `markup`, whose formula markers stand for `spans`, in a label
+    /// outside the preview, drawing the formulas; they follow the label's
+    /// font, which is only known once the label is styled where it is shown
+    /// and changes with the desktop font. (The preview refreshes its own.)
+    static func show(markup: String, spans: [MathSpan], in label: Label) {
+        label.markup = markup
+        install(on: label, spans: spans)
+        guard let state = state(of: label), !state.followsFont else { return }
+        state.followsFont = true
+        let widget = UnsafeMutableRawPointer(label.widgetPointer)
+        // `state` lives as long as the label draws formulas; the handler
+        // goes with it.
+        observeDesktopFontSettings(owner: state) {
+            refreshFontSizesSoon(of: widget)
+        }
+    }
+
+    /// Refreshes the formula sizes of a label over its next few frames, by
+    /// which GTK has styled it anew.
+    private static func refreshFontSizesSoon(of widget: UnsafeMutableRawPointer) {
+        let label = Widget(borrowing: widget)
+        var frames = 0
+        label.addTickCallback {
+            frames += 1
+            refreshFontSizes(under: label)
+            return frames < 10
+        }
     }
 
     /// Lays out formulas that a render pass postponed when it ran out of
@@ -210,6 +239,11 @@ enum PreviewMath {
     static func sourceText(of label: Label, selection: Range<Int>? = nil) -> String {
         guard let state = state(of: label) else { return label.text }
         return state.sourceText(labelText: label.text, scalarRange: selection)
+    }
+
+    /// The pixel size of the label's own font (tests).
+    static func debugFontPixels(of label: Label) -> Double {
+        fontPixels(of: label)
     }
 
     /// The formulas `label` draws, in order (tests).
@@ -697,6 +731,13 @@ enum PreviewMath {
             guard let widget else { return }
             let context = gtk_widget_get_pango_context(widget.assumingMemoryBound(to: GtkWidget.self))
             pango_cairo_context_set_shape_renderer(context, drawFormulaShape, nil, nil)
+            MainActor.assumeIsolated {
+                // Outside the preview a label is laid out before it is
+                // styled where it is shown (an outline row's font).
+                if PreviewMath.state(ofPointer: OpaquePointer(widget))?.followsFont == true {
+                    PreviewMath.refreshFontSizesSoon(of: widget)
+                }
+            }
         }
         g_signal_connect_data(
             UnsafeMutableRawPointer(label.opaquePointer),
@@ -833,6 +874,9 @@ final class MathLabelState {
     }
 
     var originalMarkup = ""
+    /// A label outside the preview, whose formulas follow its font on their
+    /// own (``PreviewMath/show(markup:spans:in:)``).
+    var followsFont = false
     var spans: [MathSpan] = []
     var fallbackSpans: [MathSpan] = []
     var entries: [Entry] = []

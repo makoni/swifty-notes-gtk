@@ -312,21 +312,10 @@ struct OutlineSidebar {
         label.hexpand = true
         label.ellipsize = .end
         label.tooltipText = MathInlineText.readable(heading.text)
-        // Pango markup highlights query matches in the row text. With
-        // no query the label is a plain non-markup string so an
-        // ampersand or angle bracket in the heading doesn't accidentally
-        // turn into entity-escape territory. `label.markup` is the
-        // only setter that actually parses Pango syntax — `label.text`
-        // strips markup, which was the source of the "raw <span...>"
-        // bug.
+        // Formulas in the heading are drawn, as in the preview, and the
+        // filter's match is highlighted; the markup escapes the rest.
         let trimmedQuery = renderState.query.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedQuery.isEmpty {
-            // Formulas in the heading are drawn, as in the preview; the
-            // markup escapes the rest.
-            PreviewMath.show(heading.text, in: label)
-        } else {
-            label.markup = pangoHighlightedMarkup(heading.text, query: trimmedQuery)
-        }
+        PreviewMath.show(heading.text, in: label, highlighting: trimmedQuery)
 
         row.addCSSClass("sn-out")
         row.addCSSClass("sn-out-h\(heading.level)")

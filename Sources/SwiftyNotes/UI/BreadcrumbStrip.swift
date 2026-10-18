@@ -63,8 +63,7 @@ final class BreadcrumbStrip {
 
         // Formulas in the title and headings are drawn, as in the preview.
         let built = Self.buildMathMarkup(docTitle: docTitle, section: section, leaf: leaf)
-        label.markup = built.markup
-        PreviewMath.install(on: label, spans: built.spans)
+        PreviewMath.show(markup: built.markup, spans: built.spans, in: label)
         // Visibility: hide the whole strip if there's nothing to show.
         label.visible = !docTitle.isEmpty || section?.isEmpty == false || leaf?.isEmpty == false
     }

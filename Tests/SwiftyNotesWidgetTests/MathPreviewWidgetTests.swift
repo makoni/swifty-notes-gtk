@@ -778,6 +778,43 @@ struct MathPreviewWidgetTests {
         let tex = "e^{i\\pi} + 1 = 0"
         #expect(drawnTeX(under: window.sidebar.root) == [tex], "sidebar")
         #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "outline")
+        // Formulas are sized like the text around them (KaTeX's 1.21 em),
+        // also after the desktop font changes.
+        func formulaSizes() -> [(label: Double, formula: Double)] {
+            var found: [(Double, Double)] = []
+            for root in [window.sidebar.root, window.outlineSidebar.root, window.breadcrumb.root] {
+                var stack: [Widget] = [root]
+                while let widget = stack.popLast() {
+                    if let label = widget.tryCast(Label.self) {
+                        for formula in PreviewMath.debugFormulas(on: label) {
+                            found.append((PreviewMath.debugFontPixels(of: label) * PreviewMath.formulaScale, formula.pixelSize))
+                        }
+                    }
+                    stack.append(contentsOf: widget.children())
+                }
+            }
+            return found
+        }
+        func expectSizedLikeText(_ step: String) {
+            let sizes = formulaSizes()
+            #expect(sizes.count >= 3, "\(step)")
+            for size in sizes {
+                #expect(abs(size.label - size.formula) < 0.5, "\(step): \(sizes)")
+            }
+        }
+        expectSizedLikeText("shown")
+        // Well after any refresh that showing the labels started.
+        MainContext.pump(for: .milliseconds(600))
+        let originalFont = desktopFontName
+        defer { desktopFontName = originalFont }
+        desktopFontName = "Sans 21"
+        pumpUntil(timeout: .seconds(2)) { formulaSizes().allSatisfy { abs($0.label - $0.formula) < 0.5 } && (formulaSizes().first?.formula ?? 0) > 30 }
+        expectSizedLikeText("after a desktop font change")
+
+        // Filtering keeps the formula drawn, the match on it highlighted.
+        window.outlineSidebar.setQuery("pi")
+        #expect(drawnTeX(under: window.outlineSidebar.root) == [tex], "filtered outline")
+        window.outlineSidebar.setQuery("")
         #expect(drawnTeX(under: window.breadcrumb.root).contains(tex), "breadcrumb")
         #expect(window.debugHeaderSubtitle.hasPrefix("Formulas e^{iπ} + 1 = 0"), "\(window.debugHeaderSubtitle)")
     }
@@ -1074,6 +1111,27 @@ struct MathPreviewWidgetTests {
             MainActor.assumeIsolated {
                 window.close()
             }
+        }
+    }
+
+    /// GtkSettings' `gtk-font-name`, the desktop's interface font.
+    @MainActor
+    private var desktopFontName: String? {
+        get {
+            let settings = UnsafeMutableRawPointer(gtk_settings_get_default()!).assumingMemoryBound(to: GObject.self)
+            var value = GValue()
+            g_value_init(&value, g_type_from_name("gchararray"))
+            defer { g_value_unset(&value) }
+            g_object_get_property(settings, "gtk-font-name", &value)
+            return g_value_get_string(&value).map { String(cString: $0) }
+        }
+        nonmutating set {
+            let settings = UnsafeMutableRawPointer(gtk_settings_get_default()!).assumingMemoryBound(to: GObject.self)
+            var value = GValue()
+            g_value_init(&value, g_type_from_name("gchararray"))
+            defer { g_value_unset(&value) }
+            g_value_set_string(&value, newValue)
+            g_object_set_property(settings, "gtk-font-name", &value)
         }
     }
 

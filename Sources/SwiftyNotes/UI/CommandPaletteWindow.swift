@@ -295,7 +295,7 @@ final class CommandPaletteWindow {
         let parentLabel = Label("")
         parentLabel.addCSSClass(.dimLabel)
         if let parent = parentText[heading.id], heading.level >= 3 {
-            parentLabel.text = "\(parent) ›"
+            PreviewMath.show("\(parent) ›", in: parentLabel)
             parentLabel.visible = true
         } else {
             parentLabel.visible = false
@@ -303,14 +303,7 @@ final class CommandPaletteWindow {
         parentLabel.marginEnd = 4
 
         let leafLabel = Label("")
-        if query.isEmpty {
-            PreviewMath.show(heading.text, in: leafLabel)
-        } else {
-            // `label.markup` parses the Pango `<span>` highlight;
-            // `label.text` would strip it back to literal angle
-            // brackets. Same fix the outline rows use.
-            leafLabel.markup = pangoHighlightedMarkup(heading.text, query: query)
-        }
+        PreviewMath.show(heading.text, in: leafLabel, highlighting: query)
         leafLabel.ellipsize = .end
         leafLabel.hexpand = true
         leafLabel.xalign = 0

@@ -33,8 +33,11 @@ func pangoHighlightedMarkup(_ text: String, query: String) -> String {
     let pre = String(text[..<range.lowerBound])
     let hit = String(text[range])
     let post = String(text[range.upperBound...])
-    return "\(pangoEscape(pre))<span background=\"#f5c211\" foreground=\"#1e1e1e\">\(pangoEscape(hit))</span>\(pangoEscape(post))"
+    return "\(pangoEscape(pre))\(pangoHighlightOpenTag)\(pangoEscape(hit))</span>\(pangoEscape(post))"
 }
+
+/// Opens the filter-match highlight of ``pangoHighlightedMarkup(_:query:)``.
+let pangoHighlightOpenTag = "<span background=\"#f5c211\" foreground=\"#1e1e1e\">"
 
 private func escapedForMarkup(_ text: String, quotes: Bool) -> String {
     var result = String.UnicodeScalarView()
