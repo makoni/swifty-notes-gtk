@@ -793,6 +793,15 @@ struct MathPreviewWidgetTests {
             stack.append(contentsOf: widget.children())
         }
         #expect(tooltips.contains("Formulas e^{iπ} + 1 = 0"), "\(tooltips)")
+        // Screen readers hear the title's formula as text, not TeX.
+        var sidebarTitles: [Label] = []
+        var sidebarStack: [Widget] = [window.sidebar.root]
+        while let widget = sidebarStack.popLast() {
+            if let label = widget.tryCast(Label.self), !PreviewMath.debugFormulas(on: label).isEmpty { sidebarTitles.append(label) }
+            sidebarStack.append(contentsOf: widget.children())
+        }
+        let sidebarTitle = try #require(sidebarTitles.first)
+        #expect(gtkAccessibleLabelMismatch(of: sidebarTitle, expected: "Formulas e^{iπ} + 1 = 0") == nil)
         // Formulas are sized like the text around them (KaTeX's 1.21 em),
         // also after the desktop font changes.
         func formulaSizes() -> [(label: Double, formula: Double)] {
@@ -866,11 +875,12 @@ struct MathPreviewWidgetTests {
         pumpUntil(timeout: .seconds(2)) { drawnTeX().count == 3 }
         #expect(drawnTeX() == ["\\alpha", "\\pi r^2", "\\pi r^2"])
         // Filtered, the matching rows still draw (the match on the formula
-        // highlighted), rather than show their TeX.
+        // highlighted), rather than show their TeX. "pi" keeps both: the H3
+        // matches through its parent.
         palette.debugSetQuery("pi")
-        #expect(palette.debugItems.map(\.id).contains("area"))
-        pumpUntil(timeout: .seconds(2)) { drawnTeX().contains("\\pi r^2") }
-        #expect(drawnTeX().contains("\\pi r^2"), "\(drawnTeX())")
+        #expect(Set(palette.debugItems.map(\.id)) == ["area", "angle"])
+        pumpUntil(timeout: .seconds(2)) { drawnTeX().count == 3 }
+        #expect(drawnTeX() == ["\\alpha", "\\pi r^2", "\\pi r^2"])
     }
 
     @Test("A title label draws its formula's ink") @MainActor
