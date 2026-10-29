@@ -161,6 +161,10 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         self.recentOutlineJumps = recentOutlineJumps
     }
 
+    private static func plausibleSize(_ size: Int) -> Int {
+        min(max(size, 0), 100_000)
+    }
+
     /// The Outline's width in versions that counted it in the preview's
     /// room — frozen, whatever the layout does now.
     private static func legacyOutlineWidth(forWindowWidth windowWidth: Int) -> Int {
@@ -213,9 +217,13 @@ public struct WorkspaceState: Codable, Equatable, Sendable {
         }
         searchQuery = try container.decodeIfPresent(String.self, forKey: .searchQuery) ?? ""
         sortMode = try container.decodeIfPresent(NotesSortMode.self, forKey: .sortMode) ?? .newestFirst
-        windowWidth = try container.decodeIfPresent(Int.self, forKey: .windowWidth) ?? 1400
-        windowHeight = try container.decodeIfPresent(Int.self, forKey: .windowHeight) ?? 800
-        previewWidth = try container.decodeIfPresent(Int.self, forKey: .previewWidth) ?? WorkspaceState.defaultPreviewWidth
+        // Sizes within what a screen could hold: the file may have been
+        // edited or damaged, and arithmetic on an Int near its limits traps.
+        windowWidth = Self.plausibleSize(try container.decodeIfPresent(Int.self, forKey: .windowWidth) ?? 1400)
+        windowHeight = Self.plausibleSize(try container.decodeIfPresent(Int.self, forKey: .windowHeight) ?? 800)
+        previewWidth = Self.plausibleSize(
+            try container.decodeIfPresent(Int.self, forKey: .previewWidth) ?? WorkspaceState.defaultPreviewWidth
+        )
         lastTableRows = try max(1, container.decodeIfPresent(Int.self, forKey: .lastTableRows) ?? WorkspaceState.defaultLastTableRows)
         lastTableCols = try max(1, container.decodeIfPresent(Int.self, forKey: .lastTableCols) ?? WorkspaceState.defaultLastTableCols)
         lastTableAlignments = try container.decodeIfPresent([MarkdownTableAlignment].self, forKey: .lastTableAlignments) ?? []

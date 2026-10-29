@@ -91,7 +91,10 @@ struct PreviewPaneLayoutTests {
         MainContext.pump(for: .milliseconds(500))
         window.state.setPreferredPreviewWidth(WorkspaceState.defaultPreviewWidth)
         window.setViewMode(.split, animated: false)
-        MainContext.pump(for: .milliseconds(30))
+        // Several frames in, the room still the same: on CI's xvfb the
+        // slide starts this late, and a settle that called the room steady
+        // by then left the preview at its clamped width.
+        MainContext.pump(for: .milliseconds(150))
         window.toggleSidebarVisibility()
         expectPreviewWidth("room grown while settling")
         #expect(window.state.preferredPreviewWidth == WorkspaceState.defaultPreviewWidth)

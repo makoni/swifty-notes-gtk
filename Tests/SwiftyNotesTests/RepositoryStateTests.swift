@@ -1045,6 +1045,15 @@ struct RepositoryStateTests {
         #expect(decoded.previewWidth == 560)
     }
 
+    @Test("Sizes from a damaged workspace file stay within a screen's reach")
+    func sizesFromADamagedWorkspaceFileStayInReach() throws {
+        let json = #"{"windowWidth": -9223372036854775808, "windowHeight": 9223372036854775807, "previewWidth": -5, "previewWidthExcludesOutline": true}"#
+        let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
+        #expect(decoded.windowWidth == 0)
+        #expect(decoded.windowHeight == 100_000)
+        #expect(decoded.previewWidth == 0)
+    }
+
     @Test("A preview width saved before the Outline existed keeps its width")
     func aPreviewWidthSavedBeforeTheOutlineKeepsItsWidth() throws {
         let json = #"{"windowWidth": 1400, "previewWidth": 812}"#

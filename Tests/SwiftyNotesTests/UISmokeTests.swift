@@ -782,7 +782,7 @@ private func runWaylandUIScript(
 
     let temp = temporaryDirectory()
     try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: temp) }
+    defer { removeUnlessMountedInto(temp) }
 
     let runtimeDirectory = temp.appendingPathComponent("runtime", isDirectory: true)
     let xdgDataHome = temp.appendingPathComponent("xdg-data", isDirectory: true)
@@ -849,6 +849,13 @@ private func runWaylandUIScript(
       kill -9 "$WESTON_PID" 2>/dev/null || true
       wait "$APP_PID" 2>/dev/null || true
       wait "$WESTON_PID" 2>/dev/null || true
+      # A document portal or gvfs started for this session mounts FUSE file
+      # systems here that lead into the user's real folders: unmount them
+      # before anything deletes this directory. (No mount at all is the
+      # usual case: grep finding nothing must not fail the script.)
+      { findmnt -rn -o TARGET 2>/dev/null | grep "^$XDG_RUNTIME_DIR/" || true; } | sort -r | while read -r mount; do
+        fusermount3 -uz "$mount" 2>/dev/null || fusermount -uz "$mount" 2>/dev/null || true
+      done
     }
     trap cleanup EXIT INT TERM
     export APP_PID
@@ -958,6 +965,26 @@ private func runWaylandUIScript(
             "XDG_CONFIG_HOME": xdgConfigHome.path(),
         ].merging(environment) { _, new in new },
     )
+}
+
+/// Deletes `directory` — unless a file system is still mounted inside it.
+/// A session's document portal mounts a FUSE file system in its runtime
+/// directory that leads into the user's real folders; deleting through it
+/// deletes those.
+private func removeUnlessMountedInto(_ directory: URL) {
+    let path = directory.standardizedFileURL.path(percentEncoded: false)
+    let prefix = path.hasSuffix("/") ? path : path + "/"
+    let mounts = (try? String(contentsOfFile: "/proc/self/mountinfo", encoding: .utf8)) ?? ""
+    let isMountedInto = mounts.split(separator: "\n").contains { line in
+        let fields = line.split(separator: " ")
+        // Field 5 is the mount point, with spaces escaped as \040.
+        return fields.count > 4 && String(fields[4]).replacingOccurrences(of: "\\040", with: " ").hasPrefix(prefix)
+    }
+    guard !isMountedInto else {
+        FileHandle.standardError.write(Data("UISmokeTests: a file system is still mounted in \(path); left in place\n".utf8))
+        return
+    }
+    try? FileManager.default.removeItem(at: directory)
 }
 
 /// The `EXTENT <name> x=<int> w=<int>` lines a layout script prints.
