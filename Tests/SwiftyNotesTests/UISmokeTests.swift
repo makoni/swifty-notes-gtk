@@ -162,12 +162,14 @@ struct UISmokeTests {
                 # Frames left over from the last mode (Split slides in) must
                 # not count for the next one.
                 last = draws()
-                while True:
+                deadline = time.time() + 10
+                while time.time() < deadline:
                     time.sleep(0.3)
                     now = draws()
                     if now == last:
                         return now
                     last = now
+                raise AssertionError("formulas never stopped being redrawn")
 
             for mode in ["Preview", "Split", "Editor", "Split", "Preview"]:
                 before = settled_draws()
@@ -852,8 +854,10 @@ private func runWaylandUIScript(
       # A document portal or gvfs started for this session mounts FUSE file
       # systems here that lead into the user's real folders: unmount them
       # before anything deletes this directory. (No mount at all is the
-      # usual case: grep finding nothing must not fail the script.)
-      { findmnt -rn -o TARGET 2>/dev/null | grep "^$XDG_RUNTIME_DIR/" || true; } | sort -r | while read -r mount; do
+      # usual case: finding nothing must not fail the script. findmnt
+      # lists real paths, without the trailing slash this one has.)
+      runtime_dir="$(realpath "$XDG_RUNTIME_DIR")"
+      { findmnt -rn -o TARGET 2>/dev/null || true; } | awk -v dir="$runtime_dir/" 'index($0, dir) == 1' | sort -r | while read -r mount; do
         fusermount3 -uz "$mount" 2>/dev/null || fusermount -uz "$mount" 2>/dev/null || true
       done
     }
@@ -965,26 +969,6 @@ private func runWaylandUIScript(
             "XDG_CONFIG_HOME": xdgConfigHome.path(),
         ].merging(environment) { _, new in new },
     )
-}
-
-/// Deletes `directory` — unless a file system is still mounted inside it.
-/// A session's document portal mounts a FUSE file system in its runtime
-/// directory that leads into the user's real folders; deleting through it
-/// deletes those.
-private func removeUnlessMountedInto(_ directory: URL) {
-    let path = directory.standardizedFileURL.path(percentEncoded: false)
-    let prefix = path.hasSuffix("/") ? path : path + "/"
-    let mounts = (try? String(contentsOfFile: "/proc/self/mountinfo", encoding: .utf8)) ?? ""
-    let isMountedInto = mounts.split(separator: "\n").contains { line in
-        let fields = line.split(separator: " ")
-        // Field 5 is the mount point, with spaces escaped as \040.
-        return fields.count > 4 && String(fields[4]).replacingOccurrences(of: "\\040", with: " ").hasPrefix(prefix)
-    }
-    guard !isMountedInto else {
-        FileHandle.standardError.write(Data("UISmokeTests: a file system is still mounted in \(path); left in place\n".utf8))
-        return
-    }
-    try? FileManager.default.removeItem(at: directory)
 }
 
 /// The `EXTENT <name> x=<int> w=<int>` lines a layout script prints.

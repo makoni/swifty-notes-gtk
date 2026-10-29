@@ -206,12 +206,7 @@ final class PreviewPaneDivider {
             lastWidth = width
             guard frames >= 2 else { return true }
             place(at: editorWidth(forRoom: roomWidth))
-            // A sidebar toggled just before may start sliding a few frames
-            // later (frames come unevenly, on CI's xvfb especially): a room
-            // that holds still counts only once a slide would have begun.
-            let elapsed = ContinuousClock.now - startedAt
-            let isSteady = steadyFrames >= 3 && elapsed >= Self.settleMinimum
-            guard !isSteady, elapsed < Self.settleMaximum else {
+            guard !Self.isSettled(steadyFrames: steadyFrames, elapsed: ContinuousClock.now - startedAt) else {
                 settleTickID = nil
                 // After the layout that follows the last placement.
                 MainContext.idle { [weak self] in
@@ -226,8 +221,16 @@ final class PreviewPaneDivider {
 
     /// How long a settle watches at least — longer than a sidebar's slide
     /// (250 ms) — and at most.
-    private static let settleMinimum: Duration = .milliseconds(400)
-    private static let settleMaximum: Duration = .milliseconds(1500)
+    nonisolated static let settleMinimum: Duration = .milliseconds(400)
+    nonisolated static let settleMaximum: Duration = .milliseconds(1500)
+
+    /// Whether a settle `elapsed` in, the room still for `steadyFrames`
+    /// frames, is over. A sidebar toggled just before may start sliding a
+    /// few frames later (frames come unevenly, on CI's xvfb especially): a
+    /// room that holds still counts only once a slide would have begun.
+    nonisolated static func isSettled(steadyFrames: Int, elapsed: Duration) -> Bool {
+        elapsed >= settleMaximum || (steadyFrames >= 3 && elapsed >= settleMinimum)
+    }
 
     private func cancelSettle() {
         if let settleTickID {

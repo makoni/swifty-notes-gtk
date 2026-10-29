@@ -95,7 +95,22 @@ struct PreviewPaneLayoutTests {
         // slide starts this late, and a settle that called the room steady
         // by then left the preview at its clamped width.
         MainContext.pump(for: .milliseconds(150))
+        let narrowRoom = window.editorPreviewPane.width
         window.toggleSidebarVisibility()
+        // Checked once the room has grown and holds still, however late the
+        // slide starts: checked earlier, it would pass with the bug.
+        let clock = ContinuousClock()
+        var lastRoom = narrowRoom
+        var stillSince = clock.now
+        Self.waitUntil(timeout: .seconds(3)) {
+            let room = window.editorPreviewPane.width
+            if room != lastRoom {
+                lastRoom = room
+                stillSince = clock.now
+            }
+            return room > narrowRoom + 100 && clock.now - stillSince >= .milliseconds(150)
+        }
+        #expect(window.editorPreviewPane.width > narrowRoom + 100, "the sidebar did not slide out")
         expectPreviewWidth("room grown while settling")
         #expect(window.state.preferredPreviewWidth == WorkspaceState.defaultPreviewWidth)
     }
@@ -166,6 +181,7 @@ struct PreviewPaneLayoutTests {
         window.setViewMode(.split, animated: false)
         let divider = window.previewPaneDivider
         Self.waitUntil(timeout: .seconds(2)) { window.editorPreviewPane.width > 0 && !divider.isRestoring }
+        #expect(!divider.isRestoring, "the launch settle never ended")
         MainContext.pump(for: .milliseconds(200))
 
         // Shown, the room is the pane's own width, not the window-based
@@ -198,6 +214,7 @@ struct PreviewPaneLayoutTests {
         MainContext.pump(for: .milliseconds(100))
         window.setViewMode(.split, animated: true)
         #expect(divider.isRestoring, "sliding in")
+        #expect(!divider.isSettling, "a settle, not a slide")
         divider.pointerPressed(atX: Double(window.editorPreviewPane.position))
         #expect(!divider.isRestoring)
         let grabbedAt = window.editorPreviewPane.position
@@ -217,6 +234,21 @@ struct PreviewPaneLayoutTests {
         #expect(divider.isRestoring, "a press where the handle would be left to right")
         divider.pointerPressed(atX: mirroredHandle)
         #expect(!divider.isRestoring, "a press on the mirrored handle")
+    }
+
+    @Test("A settle ends once the room holds still past its minimum, or at its maximum")
+    func aSettleEndsOnceTheRoomHoldsStillPastItsMinimum() {
+        let minimum = PreviewPaneDivider.settleMinimum
+        let maximum = PreviewPaneDivider.settleMaximum
+        let oneMillisecond = Duration.milliseconds(1)
+        // Still, but a slide toggled just before may not have begun yet.
+        #expect(!PreviewPaneDivider.isSettled(steadyFrames: 10, elapsed: minimum - oneMillisecond))
+        #expect(PreviewPaneDivider.isSettled(steadyFrames: 3, elapsed: minimum))
+        // Past the minimum, but the room has not held still long enough.
+        #expect(!PreviewPaneDivider.isSettled(steadyFrames: 2, elapsed: minimum))
+        #expect(!PreviewPaneDivider.isSettled(steadyFrames: 0, elapsed: maximum - oneMillisecond))
+        // A room that never holds still stops the settle at the maximum.
+        #expect(PreviewPaneDivider.isSettled(steadyFrames: 0, elapsed: maximum))
     }
 
     @MainActor

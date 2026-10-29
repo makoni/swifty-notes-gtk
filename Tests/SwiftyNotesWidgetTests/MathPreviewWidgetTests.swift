@@ -1077,6 +1077,9 @@ struct MathPreviewWidgetTests {
     func theTitleCatchUpSkipsTheQueueWithoutBudget() throws {
         let fixture = try Fixture(suffix: "title-catch-up-walk", markdown: "")
         _ = fixture
+        // A cached formula is no parse: the forced one a period would allow
+        // one per tick.
+        MathRenderer.removeAllCachedFormulas()
         var calls = 0
         // A stand-in for the drawer: each layout parses one new formula and
         // leaves the label waiting, as when the budget runs out.
