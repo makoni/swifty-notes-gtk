@@ -28,14 +28,13 @@ let pangoHighlightOpenTag = "<span background=\"#f5c211\" foreground=\"#1e1e1e\"
 
 private func escapedForMarkup(_ text: String, quotes: Bool) -> String {
     var result = String.UnicodeScalarView()
-    for scalar in text.unicodeScalars {
+    // GTK reads the markup as a C string: a NUL would end it mid-tag.
+    for scalar in text.replacingNULs().unicodeScalars {
         switch scalar {
         case "&": result.append(contentsOf: "&amp;".unicodeScalars)
         case "<": result.append(contentsOf: "&lt;".unicodeScalars)
         case ">": result.append(contentsOf: "&gt;".unicodeScalars)
         case "\"" where quotes: result.append(contentsOf: "&quot;".unicodeScalars)
-        // GTK reads the markup as a C string: a NUL would end it mid-tag.
-        case "\u{0}": result.append("\u{FFFD}")
         default: result.append(scalar)
         }
     }

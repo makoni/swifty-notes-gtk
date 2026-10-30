@@ -117,4 +117,23 @@ struct MarkdownOutlineExtractorTests {
         #expect(headings.map(\.text) == ["Real"])
         #expect(headings.map(\.line) == [6])
     }
+
+    @Test("A formula opened in a heading cannot swallow the next heading")
+    func aFormulaOpenedInAHeadingCannotSwallowTheNextHeading() {
+        let markdown = "# One $x\n# Two y$"
+        let blocks = MarkdownRenderer().blocks(for: markdown, darkAppearance: false)
+        let headings = MarkdownOutlineExtractor.extract(markdown: markdown, blocks: blocks)
+        #expect(headings.map(\.text) == ["One $x", "Two y$"])
+        #expect(headings.map(\.line) == [1, 2])
+    }
+
+    @Test("The outline from an extraction the caller has matches the outline from the text")
+    func theOutlineFromAnExtractionMatchesTheOutlineFromTheText() {
+        let markdown = "# A $x$\n\n$$\n# not a heading\n$$\n\n## B\n"
+        let extraction = MathSpanExtractor.extract(from: markdown)
+        let blocks = HTMLPreviewDocumentBuilder(darkAppearance: false).render(extraction: extraction)
+        let headings = MarkdownOutlineExtractor.extract(extraction: extraction, blocks: blocks)
+        #expect(headings == MarkdownOutlineExtractor.extract(markdown: markdown, blocks: blocks))
+        #expect(headings.map(\.line) == [1, 7])
+    }
 }

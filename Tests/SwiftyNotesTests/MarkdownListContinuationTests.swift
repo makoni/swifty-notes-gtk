@@ -153,6 +153,29 @@ extension MarkdownFormattingTests {
         #expect(continuation("```\n- a\n```\n- b‸") == "```\n- a\n```\n- b\n- ‸")
     }
 
+    @Test("A fence of the other character does not close a code block")
+    func aFenceOfTheOtherCharacterDoesNotCloseACodeBlock() {
+        #expect(continuation("~~~\n```\n- item‸") == nil)
+        #expect(continuation("```\n~~~\n- item‸") == nil)
+    }
+
+    @Test("A fence inside indented code opens no code block")
+    func aFenceInsideIndentedCodeOpensNoCodeBlock() {
+        #expect(continuation("    ```\n\n- item‸") == "    ```\n\n- item\n- ‸")
+    }
+
+    @Test("Return inside indented code or a math fence falls back to a plain newline")
+    func returnInsideIndentedCodeOrAMathFenceFallsBackToAPlainNewline() {
+        #expect(continuation("Text\n\n    - item‸") == nil)
+        #expect(continuation("```math\n- x‸") == nil)
+    }
+
+    @Test("Code blocks are found in code points before the caret line")
+    func codeBlocksAreFoundInCodePointsBeforeTheCaretLine() {
+        // 👍🏽 is one character but two code points.
+        #expect(continuation("👍🏽\n```\nx\n```\n- b‸") == "👍🏽\n```\nx\n```\n- b\n- ‸")
+    }
+
     // MARK: - Tables
 
     @Test("Return appends an empty row to the table")

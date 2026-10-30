@@ -632,4 +632,31 @@ struct MathRenderingPipelineTests {
             }
         }
     }
+
+    @Test("Inline math stays inside its list item")
+    func inlineMathStaysInsideItsListItem() {
+        let blocks = blocks(for: "- one $a\n- two b$ end")
+        #expect(blocks.count == 2)
+        #expect(blocks.map(\.text) == ["- one $a", "- two b$ end"])
+        #expect(blocks.allSatisfy { block in
+            guard case let .listItem(text, _, _, _, _) = block else { return false }
+            return text.mathSpans.isEmpty
+        })
+    }
+
+    @Test("Inline math opened in a heading does not swallow the next line")
+    func inlineMathOpenedInAHeadingDoesNotSwallowTheNextLine() {
+        let blocks = blocks(for: "# Heading $x\ny$ tail")
+        #expect(blocks.map(\.text) == ["Heading $x", "y$ tail"])
+        #expect(blocks.first?.style == .heading(level: 1))
+    }
+
+    @Test("Rendering from an extraction the caller has matches rendering the text")
+    func renderingFromAnExtractionMatchesRenderingTheText() {
+        let markdown = "# Euler $e^{i\\pi}$\n\n- $a$\n- b\n\n$$\nx^2\n$$\n"
+        let builder = HTMLPreviewDocumentBuilder(darkAppearance: false)
+        #expect(builder.render(extraction: MathSpanExtractor.extract(from: markdown)) == blocks(for: markdown))
+        var incremental = IncrementalPreviewBlockBuilder()
+        #expect(incremental.blocks(for: MathSpanExtractor.extract(from: markdown), darkAppearance: false) == blocks(for: markdown))
+    }
 }

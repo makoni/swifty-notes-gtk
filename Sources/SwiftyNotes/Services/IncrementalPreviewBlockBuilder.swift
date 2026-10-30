@@ -73,6 +73,29 @@ struct IncrementalPreviewBlockBuilder {
         darkAppearance: Bool,
         renderEmojiShortcodes: Bool = true,
     ) -> [RenderedBlock] {
+        blocks(for: markdown, extraction: nil, darkAppearance: darkAppearance, renderEmojiShortcodes: renderEmojiShortcodes)
+    }
+
+    /// The same, from the math extraction of the markdown, for a caller that
+    /// already has one (the outline and the spell checker read it too): a
+    /// full render uses it rather than extracting the note again.
+    mutating func blocks(
+        for extraction: MathSpanExtractor.Extraction,
+        darkAppearance: Bool,
+        renderEmojiShortcodes: Bool = true,
+    ) -> [RenderedBlock] {
+        blocks(
+            for: extraction.source, extraction: extraction,
+            darkAppearance: darkAppearance, renderEmojiShortcodes: renderEmojiShortcodes,
+        )
+    }
+
+    private mutating func blocks(
+        for markdown: String,
+        extraction: MathSpanExtractor.Extraction?,
+        darkAppearance: Bool,
+        renderEmojiShortcodes: Bool,
+    ) -> [RenderedBlock] {
         if let snapshot,
            snapshot.markdown == markdown,
            snapshot.darkAppearance == darkAppearance,
@@ -106,7 +129,7 @@ struct IncrementalPreviewBlockBuilder {
         }
 
         let fullyRendered = Self.fullRender(
-            markdown: markdown,
+            extraction: extraction ?? MathSpanExtractor.extract(from: markdown),
             darkAppearance: darkAppearance,
             renderEmojiShortcodes: renderEmojiShortcodes,
         )
@@ -122,12 +145,12 @@ struct IncrementalPreviewBlockBuilder {
     }
 
     private static func fullRender(
-        markdown: String,
+        extraction: MathSpanExtractor.Extraction,
         darkAppearance: Bool,
         renderEmojiShortcodes: Bool,
     ) -> [RenderedBlock] {
         HTMLPreviewDocumentBuilder(darkAppearance: darkAppearance, renderEmojiShortcodes: renderEmojiShortcodes)
-            .render(markdown: markdown)
+            .render(extraction: extraction)
     }
 
     private static func validatedSegments(for markdown: String, blocks: [RenderedBlock]) -> [Segment]? {
@@ -185,7 +208,7 @@ struct IncrementalPreviewBlockBuilder {
         renderEmojiShortcodes: Bool,
     ) -> RenderedBlock? {
         let rendered = fullRender(
-            markdown: segment.markdown,
+            extraction: MathSpanExtractor.extract(from: segment.markdown),
             darkAppearance: darkAppearance,
             renderEmojiShortcodes: renderEmojiShortcodes,
         )

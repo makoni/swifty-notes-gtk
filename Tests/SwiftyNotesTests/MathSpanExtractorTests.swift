@@ -5,7 +5,7 @@ import Testing
 struct MathSpanExtractorTests {
     /// Runs the extractor and asserts the line-structure invariant on the
     /// way: the output must have exactly the input's line count.
-    private func extract(_ markdown: String) -> (markdown: String, spans: [MathSpan]) {
+    private func extract(_ markdown: String) -> MathSpanExtractor.Extraction {
         let result = MathSpanExtractor.extract(from: markdown)
         #expect(
             markdown.components(separatedBy: "\n").count == result.markdown.components(separatedBy: "\n").count,
@@ -244,11 +244,19 @@ struct MathSpanExtractorTests {
         for _ in 0..<3000 {
             let markdown = (0..<next(24)).map { _ in pieces[next(pieces.count)] }.joined()
             let result = extract(markdown)
-            #expect(MathSpanExtractor.sourceRanges(in: markdown).count == result.spans.count)
+            #expect(result.located.map(\.span) == result.spans)
             // Every span starts at a delimiter: `$`, or a fence's backtick or tilde.
             let scalars = Array(markdown.unicodeScalars)
-            for range in MathSpanExtractor.sourceRanges(in: markdown) {
+            for range in result.located.map(\.source) {
                 #expect(["$", "`", "~"].contains(scalars[range.lowerBound]), "\(markdown.debugDescription)")
+            }
+            // Code blocks are in order, apart, and start at a line start.
+            for (block, next) in zip(result.codeBlocks, result.codeBlocks.dropFirst()) {
+                #expect(block.upperBound <= next.lowerBound, "\(markdown.debugDescription)")
+            }
+            for block in result.codeBlocks {
+                #expect(block.upperBound <= scalars.count)
+                #expect(block.lowerBound == 0 || scalars[block.lowerBound - 1] == "\n", "\(markdown.debugDescription)")
             }
         }
     }
@@ -339,5 +347,96 @@ struct MathSpanExtractorTests {
         let result = extract("    ```math\n    x\n    ```")
         #expect(result.spans.isEmpty)
         #expect(result.markdown == "    ```math\n    x\n    ```")
+    }
+
+    // MARK: - Block boundaries
+
+    @Test("Inline math opened on a heading ends with the heading's line")
+    func inlineMathOpenedOnAHeadingEndsWithTheHeadingsLine() {
+        let markdown = "# Heading $x\ny$ tail"
+        let result = extract(markdown)
+        #expect(result.spans.isEmpty)
+        #expect(result.markdown == markdown)
+        // Display math opened after text on a heading line too.
+        #expect(extract("## A $$x\ny$$ b").spans.isEmpty)
+        // Math inside the heading's line still counts.
+        #expect(extract("# Heading $x$\ny$ tail").spans == [MathSpan(tex: "x", isDisplay: false)])
+    }
+
+    @Test("Inline math does not continue into the next list item")
+    func inlineMathDoesNotContinueIntoTheNextListItem() {
+        let markdown = "- one $a\n- two b$ end"
+        let result = extract(markdown)
+        #expect(result.spans.isEmpty)
+        #expect(result.markdown == markdown)
+        #expect(extract("1. one $a\n2. two b$ end").spans.isEmpty)
+        #expect(extract("- one\n  - two $a\n  - three b$").spans.isEmpty)
+    }
+
+    @Test("Inline math does not continue into a new block of another kind")
+    func inlineMathDoesNotContinueIntoANewBlockOfAnotherKind() {
+        // A heading, a thematic break, a setext underline, a quote.
+        #expect(extract("text $a\n# b$").spans.isEmpty)
+        #expect(extract("text $a\n***\nb$").spans.isEmpty)
+        #expect(extract("text $a\n===\nb$").spans.isEmpty)
+        #expect(extract("text $a\n> b$").spans.isEmpty)
+        #expect(extract("> text $a\n> > b$").spans.isEmpty)
+        // A list item interrupting a paragraph.
+        #expect(extract("text $a\n- b$").spans.isEmpty)
+        #expect(extract("> - one $a\n> - two b$").spans.isEmpty)
+    }
+
+    @Test("Inline math still spans a paragraph's continuation lines")
+    func inlineMathStillSpansAParagraphsContinuationLines() {
+        let span = [MathSpan(tex: "a b", isDisplay: false)]
+        #expect(extract("text $a\nb$").spans == span)
+        // A list item's lazy or indented continuation.
+        #expect(extract("- one $a\n  b$").spans == [MathSpan(tex: "a   b", isDisplay: false)])
+        #expect(extract("- one $a\nb$").spans == span)
+        // Lines that cannot interrupt a paragraph: an ordered item not
+        // numbered 1, an empty item, a `#` not followed by a space.
+        #expect(extract("text $a\n2. b$").spans == [MathSpan(tex: "a 2. b", isDisplay: false)])
+        #expect(extract("text $a\n#b$").spans == [MathSpan(tex: "a #b", isDisplay: false)])
+        // A quote's lazy continuation.
+        #expect(extract("> text $a\nb$").spans == span)
+    }
+
+    @Test("Display math opening its line keeps TeX lines that look like blocks")
+    func displayMathOpeningItsLineKeepsTeXLinesThatLookLikeBlocks() {
+        #expect(extract("$$\na\n- b\n# c\n$$").spans == [MathSpan(tex: "a\n- b\n# c", isDisplay: true)])
+        #expect(extract("> $$\n> a\n> - b\n> $$").spans == [MathSpan(tex: "a\n- b", isDisplay: true)])
+        // After text on its line, display math stays in that line's block.
+        #expect(extract("- one $$a\n- two b$$").spans.isEmpty)
+    }
+
+    @Test("Line numbers survive a span cut at a block boundary")
+    func lineNumbersSurviveASpanCutAtABlockBoundary() {
+        // The helper checks the line count; the lines themselves are
+        // unchanged, so the second item stays an item.
+        let result = extract("- one $a\n- two $b$ end")
+        #expect(result.spans == [MathSpan(tex: "b", isDisplay: false)])
+        #expect(result.markdown.components(separatedBy: "\n").first == "- one $a")
+    }
+
+    // MARK: - Code blocks
+
+    @Test("Code blocks are located, fences and indented code alike")
+    func codeBlocksAreLocatedFencesAndIndentedCodeAlike() {
+        func blocks(_ markdown: String) -> [String] {
+            let scalars = Array(markdown.unicodeScalars)
+            return extract(markdown).codeBlocks.map { String(String.UnicodeScalarView(scalars[$0])) }
+        }
+        #expect(blocks("a\n```\nx\n```\nb") == ["```\nx\n```\n"])
+        #expect(blocks("a\n~~~js\nx\n~~~") == ["~~~js\nx\n~~~"])
+        // Unclosed: to the end.
+        #expect(blocks("a\n```\nx $y$") == ["```\nx $y$"])
+        // A `math` fence is a block too (and a span).
+        #expect(blocks("```math\nx\n```\n") == ["```math\nx\n```\n"])
+        // Indented code ends with its last non-blank line.
+        #expect(blocks("a\n\n    x\n\n    y\n\nb") == ["    x\n\n    y\n"])
+        // Indented four past a list item's content, not past the margin.
+        #expect(blocks("- a\n\n    b").isEmpty)
+        // A fence inside indented code is code, not a fence.
+        #expect(blocks("    ```\n    x\n\ntext") == ["    ```\n    x\n"])
     }
 }

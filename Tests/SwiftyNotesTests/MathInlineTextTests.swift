@@ -89,6 +89,15 @@ struct MathInlineTextTests {
         #expect(result.markup.unicodeScalars.filter { $0 == MathSpanExtractor.formulaMarker }.count == 1)
     }
 
+    @Test("Each marker sits where its own formula was written")
+    func eachMarkerSitsWhereItsOwnFormulaWasWritten() {
+        // A code span's dollars and an escaped one are not formulas, so the
+        // markers must not drift onto them.
+        let result = MathInlineText.markup(for: "`$a$` \\$ $b$ and $$c$$!")
+        #expect(result.markup == "`$a$` \\$ \u{FFFC} and \u{FFFC}!")
+        #expect(result.spans == [MathSpan(tex: "b", isDisplay: false), MathSpan(tex: "c", isDisplay: true)])
+    }
+
     @Test("A stray object replacement character without formulas is not a marker")
     func aStrayObjectReplacementCharacterWithoutFormulasIsNotAMarker() {
         let result = MathInlineText.markup(for: "Odd \u{FFFC} title", highlighting: "odd")

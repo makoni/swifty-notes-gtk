@@ -46,6 +46,11 @@ public struct MathSpan: Sendable, Equatable {
 ///   The close must be the *first* `$` after the open — if that candidate
 ///   is invalid the open `$` is literal, which is what keeps `$5 and $10`
 ///   and `$20,000 and $30,000` out of math.
+/// - Inline math, and `$$` after text on its line, stays inside one block
+///   (as in pandoc and markdown-it): it never continues into a line that
+///   starts a list item, a heading, a thematic break or setext underline,
+///   or a deeper quote, and one opened on an ATX heading ends with that
+///   line. `$$` opening its line may hold such lines — they are TeX.
 ///
 /// Verbatim regions (never math):
 /// - Fenced code blocks: opening fence of ≥3 `` ` `` or `~` at ≤3 leading
@@ -69,31 +74,38 @@ public struct MathSpan: Sendable, Equatable {
 enum MathSpanExtractor {
     // MARK: - API
 
-    /// Replaces every math span with a placeholder and returns the spans
-    /// in order.
-    static func extract(from markdown: String) -> (markdown: String, spans: [MathSpan]) {
-        let extraction = extractWithSourceRanges(from: markdown)
-        return (extraction.markdown, extraction.spans.map(\.span))
-    }
-
-    /// Where each math span sits in `markdown`, delimiters included, as
-    /// ranges of Unicode scalars — for tools that work on the source, such as
-    /// the editor's spell checker, which should leave TeX alone.
-    static func sourceRanges(in markdown: String) -> [Range<Int>] {
-        extractWithSourceRanges(from: markdown).spans.map(\.source)
-    }
-
-    private struct LocatedSpan {
+    /// One math span with where it sits in the source.
+    struct LocatedSpan: Sendable, Equatable {
         let span: MathSpan
         /// Scalar range of the span's source, delimiters included.
         let source: Range<Int>
     }
 
-    private static func extractWithSourceRanges(from markdown: String) -> (markdown: String, spans: [LocatedSpan]) {
+    /// What one pass over a note finds. Ranges count Unicode scalars of
+    /// ``source``, the unit `GtkTextBuffer` offsets count in, so tools that
+    /// work on the source — the editor's spell checker — use them directly.
+    struct Extraction: Sendable {
+        /// The markdown the pass read.
+        let source: String
+        /// ``source`` with every span replaced by its placeholder.
+        let markdown: String
+        /// The spans in order, each with where it sits in ``source``.
+        let located: [LocatedSpan]
+        /// The spans in order.
+        let spans: [MathSpan]
+        /// Fenced code blocks — a `math` fence too, which is TeX rather than
+        /// prose — and indented code blocks, in order, each from the start of
+        /// its first line to the end of its last (line break included).
+        let codeBlocks: [Range<Int>]
+    }
+
+    /// Replaces every math span with a placeholder and returns the spans
+    /// in order, located in the source.
+    static func extract(from markdown: String) -> Extraction {
         // Sanitise the source before generating placeholders, so only the
         // extractor's own placeholders survive (one scalar in, one out: line
         // structure and positions are unchanged).
-        var scalars = markdown.unicodeScalars.map(sanitized)
+        var scalars = Array(markdown.replacingScalars(where: isReserved).unicodeScalars)
         neutralizeReservedEntities(in: &scalars)
         let lines = lineBounds(scalars)
         // A quoted line holding nothing but `>` markers is blank inside the quote.
@@ -107,12 +119,20 @@ enum MathSpanExtractor {
         }
         var spans: [LocatedSpan] = []
         var output: [Unicode.Scalar] = []
+        var codeBlocks: [Range<Int>] = []
+        /// Starts of the free lines an inline span may not continue into
+        /// (see ``blockBoundary(scalars:line:inList:quoteDepth:previousQuoteDepth:)``),
+        /// in document order.
+        var boundaries: [Int] = []
+        var previousQuoteDepth = 0
         /// The columns the content of each open list item starts at,
         /// outermost first.
         var listIndents: [Int] = []
         var listContentIndent: Int? { listIndents.last }
         /// The indent of the indented code block being copied, if any.
         var codeIndent: Int?
+        /// Where that block starts, to the end of its last non-blank line.
+        var codeBlock: Range<Int>?
         var previousLineWasBlank = true
         var freeStart: Int?
         var freeEnd: Int?
@@ -122,13 +142,23 @@ enum MathSpanExtractor {
             guard let start = freeStart, let end = freeEnd else { return }
             freeStart = nil
             freeEnd = nil
-            scanFreeText(scalars: scalars, range: start..<end, blankLines: blankLines, spans: &spans, output: &output)
+            scanFreeText(
+                scalars: scalars, range: start..<end, lines: lines, blankLines: blankLines, boundaries: boundaries,
+                spans: &spans, output: &output,
+            )
+        }
+
+        func closeCodeBlock() {
+            if let block = codeBlock { codeBlocks.append(block) }
+            codeBlock = nil
+            codeIndent = nil
         }
 
         for line in lines {
             if let current = fence {
                 if isClosingFence(scalars: scalars, line: line, state: current) {
                     emitFence(scalars: scalars, state: current, blockEnd: line.end, spans: &spans, output: &output)
+                    codeBlocks.append(current.blockStart..<line.end)
                     fence = nil
                 } else {
                     fence = FenceState(
@@ -149,10 +179,11 @@ enum MathSpanExtractor {
             if let indent = codeIndent {
                 if isBlank || width >= indent {
                     output.append(contentsOf: scalars[line.start..<line.end])
+                    if !isBlank, let block = codeBlock { codeBlock = block.lowerBound..<line.end }
                     previousLineWasBlank = isBlank
                     continue
                 }
-                codeIndent = nil
+                closeCodeBlock()
             }
 
             if let open = fenceOpenInfo(scalars: scalars, line: line, inList: listContentIndent != nil) {
@@ -173,6 +204,7 @@ enum MathSpanExtractor {
                 flushFreeText()
                 output.append(contentsOf: scalars[line.start..<line.end])
                 codeIndent = requiredIndent
+                codeBlock = line.start..<line.end
                 previousLineWasBlank = false
                 continue
             }
@@ -183,7 +215,21 @@ enum MathSpanExtractor {
             freeEnd = line.end
             let previousLineWasBlankBefore = previousLineWasBlank
             previousLineWasBlank = isBlank
+            let quote = quoteMarkers(scalars: scalars, from: line.start, end: line.contentEnd, maxDepth: .max)
+            defer { previousQuoteDepth = quote.depth }
             if isBlank { continue }
+            switch blockBoundary(
+                scalars: scalars, line: LineBounds(start: quote.end, contentEnd: line.contentEnd, end: line.end),
+                inList: listContentIndent != nil, quoteDepth: quote.depth, previousQuoteDepth: previousQuoteDepth,
+            ) {
+            case .none:
+                break
+            case .startsBlock:
+                boundaries.append(line.start)
+            case .wholeBlock:
+                boundaries.append(line.start)
+                boundaries.append(line.end)
+            }
             if let indent = listItemContentIndent(scalars: scalars, line: line, inList: listContentIndent != nil) {
                 // A marker belongs to the item whose content it is indented into.
                 while let last = listIndents.last, last > width { listIndents.removeLast() }
@@ -195,17 +241,21 @@ enum MathSpanExtractor {
             }
         }
         flushFreeText()
+        closeCodeBlock()
 
         if let current = fence {
             emitFence(scalars: scalars, state: current, blockEnd: scalars.count, spans: &spans, output: &output)
+            codeBlocks.append(current.blockStart..<scalars.count)
         }
 
-        return (string(from: output), spans)
+        return Extraction(
+            source: markdown, markdown: string(from: output), located: spans, spans: spans.map(\.span),
+            codeBlocks: codeBlocks,
+        )
     }
 
     /// The character the preview puts where an inline formula is drawn.
     static let formulaMarker: Unicode.Scalar = "\u{FFFC}"
-    private static let replacementCharacter: Unicode.Scalar = "\u{FFFD}"
 
     /// Placeholders are built from the noncharacters U+FDD0–U+FDEF, which
     /// Unicode reserves for a program's internal use: U+FDD0 opens, U+FDD1
@@ -220,16 +270,16 @@ enum MathSpanExtractor {
     /// another formula's TeX into place. No real text holds them, so
     /// nothing else (code, private-use icons) is touched; a stray formula
     /// marker U+FFFC is dealt with where the markup is built.
-    private static func sanitized(_ scalar: Unicode.Scalar) -> Unicode.Scalar {
-        reservedRange.contains(scalar.value) ? replacementCharacter : scalar
+    private static func isReserved(_ scalar: Unicode.Scalar) -> Bool {
+        reservedRange.contains(scalar.value)
     }
 
-    /// `tex` with any formula marker U+FFFC turned into U+FFFD: a formula
-    /// that does not draw shows its TeX in the label, where the marker
+    /// `text` with any formula marker U+FFFC turned into U+FFFD: only a
+    /// formula may own a marker, and a stray one in the text beside it — or
+    /// in the TeX of a formula that does not draw and shows its source —
     /// would be taken for another formula.
-    private static func markerFree(_ tex: String) -> String {
-        guard tex.unicodeScalars.contains(formulaMarker) else { return tex }
-        return String(String.UnicodeScalarView(tex.unicodeScalars.map { $0 == formulaMarker ? replacementCharacter : $0 }))
+    static func markerFree(_ text: String) -> String {
+        text.replacingScalars { $0 == formulaMarker }
     }
 
     /// Numeric character references (`&#xFDD0;`, `&#64976;`) to the same
@@ -251,12 +301,12 @@ enum MathSpanExtractor {
             }
             guard j > digitsStart, j < scalars.count, scalars[j] == ";",
                   let value = UInt32(String(String.UnicodeScalarView(scalars[digitsStart..<j])), radix: isHex ? 16 : 10),
-                  let reserved = Unicode.Scalar(value), sanitized(reserved) != reserved
+                  let reserved = Unicode.Scalar(value), isReserved(reserved)
             else {
                 i += 1
                 continue
             }
-            let digits = String(replacementCharacter.value, radix: isHex ? 16 : 10, uppercase: true)
+            let digits = String(Unicode.Scalar.replacementCharacter.value, radix: isHex ? 16 : 10, uppercase: true)
             let padded = String(repeating: "0", count: max(0, (j - digitsStart) - digits.count)) + digits
             scalars.replaceSubrange(digitsStart..<j, with: padded.unicodeScalars.suffix(j - digitsStart))
             i = j + 1
@@ -338,7 +388,9 @@ enum MathSpanExtractor {
     private static func scanFreeText(
         scalars: [Unicode.Scalar],
         range: Range<Int>,
+        lines: [LineBounds],
         blankLines: [LineBounds],
+        boundaries: [Int],
         spans: inout [LocatedSpan],
         output: inout [Unicode.Scalar],
     ) {
@@ -415,8 +467,14 @@ enum MathSpanExtractor {
 
             if s.value == 0x24 { // `$`
                 if i + 1 < end, scalars[i + 1].value == 0x24 {
-                    // Display attempt.
-                    if let close = findDisplayClose(scalars: scalars, from: i + 2, end: end, blankLines: blankLines) {
+                    // Display attempt. `$$` opening its line is display math
+                    // of its own, which only a blank line ends; one after
+                    // text on its line is part of that line's block.
+                    let isBlock = opensLine(scalars: scalars, at: i, lines: lines)
+                    if let close = findDisplayClose(
+                        scalars: scalars, from: i + 2, end: end, blankLines: blankLines,
+                        boundaries: isBlock ? [] : boundaries,
+                    ) {
                         let content = strippingQuoteMarkers(scalars: scalars, range: (i + 2)..<close, openedAt: i, freeStart: range.lowerBound)
                         let tex = trimmedTeX(content.scalars)
                         if tex.isEmpty {
@@ -435,7 +493,9 @@ enum MathSpanExtractor {
                 }
                 // Inline attempt.
                 if i + 1 < end, !isWhitespaceScalar(scalars[i + 1]) {
-                    if let close = findInlineClose(scalars: scalars, from: i + 1, end: end, blankLines: blankLines) {
+                    if let close = findInlineClose(
+                        scalars: scalars, from: i + 1, end: end, blankLines: blankLines, boundaries: boundaries,
+                    ) {
                         let content = strippingQuoteMarkers(scalars: scalars, range: (i + 1)..<close, openedAt: i, freeStart: range.lowerBound)
                         let tex = string(from: content.scalars)
                             .replacingOccurrences(of: "\n", with: " ")
@@ -457,7 +517,12 @@ enum MathSpanExtractor {
 
     // MARK: - Delimiter search
 
-    private static func findDisplayClose(scalars: [Unicode.Scalar], from: Int, end: Int, blankLines: [LineBounds]) -> Int? {
+    /// The `$$` closing display math whose content starts at `from`, or nil.
+    /// The span may not cross a blank line, nor continue into a line in
+    /// `boundaries` (see ``findInlineClose(scalars:from:end:blankLines:boundaries:)``).
+    private static func findDisplayClose(
+        scalars: [Unicode.Scalar], from: Int, end: Int, blankLines: [LineBounds], boundaries: [Int],
+    ) -> Int? {
         var j = from
         while j + 1 < end {
             // `\$` is a dollar inside the TeX, never the closing delimiter.
@@ -466,16 +531,23 @@ enum MathSpanExtractor {
                 continue
             }
             if scalars[j].value == 0x24, scalars[j + 1].value == 0x24 {
-                // Once a blank line is crossed, every later candidate is
-                // equally invalid — stop.
-                return containsBlankLine(blankLines, range: from..<j) ? nil : j
+                // Once a blank line or a block boundary is crossed, every
+                // later candidate is equally invalid — stop.
+                return containsBlankLine(blankLines, range: from..<j) || crossesBoundary(boundaries, range: from..<j) ? nil : j
             }
             j += 1
         }
         return nil
     }
 
-    private static func findInlineClose(scalars: [Unicode.Scalar], from: Int, end: Int, blankLines: [LineBounds]) -> Int? {
+    /// The `$` closing inline math whose content starts at `from`, or nil.
+    /// Inline math stays inside one block, as in pandoc and markdown-it: the
+    /// span may not cross a blank line, nor continue into a line in
+    /// `boundaries` — one that starts another block (a list item, a
+    /// heading, a quote) or follows a heading, which is a line of its own.
+    private static func findInlineClose(
+        scalars: [Unicode.Scalar], from: Int, end: Int, blankLines: [LineBounds], boundaries: [Int],
+    ) -> Int? {
         var j = from
         while j < end {
             if scalars[j].value == 0x5C {
@@ -490,7 +562,7 @@ enum MathSpanExtractor {
                 if prevIsSpace || afterIsDigit {
                     return nil
                 }
-                return containsBlankLine(blankLines, range: from..<j) ? nil : j
+                return containsBlankLine(blankLines, range: from..<j) || crossesBoundary(boundaries, range: from..<j) ? nil : j
             }
             j += 1
         }
@@ -779,6 +851,104 @@ enum MathSpanExtractor {
             if blankLines[middle].start < range.lowerBound { low = middle + 1 } else { high = middle }
         }
         return low < blankLines.count && blankLines[low].contentEnd <= range.upperBound
+    }
+
+    /// Whether a line starting at one of `boundaries` (in document order)
+    /// begins inside `range` — the span reaches into that line.
+    private static func crossesBoundary(_ boundaries: [Int], range: Range<Int>) -> Bool {
+        var low = 0
+        var high = boundaries.count
+        while low < high {
+            let middle = (low + high) / 2
+            if boundaries[middle] <= range.lowerBound { low = middle + 1 } else { high = middle }
+        }
+        return low < boundaries.count && boundaries[low] < range.upperBound
+    }
+
+    /// Whether the scalar at `index` is the first on its line past any
+    /// blockquote markers and indentation.
+    private static func opensLine(scalars: [Unicode.Scalar], at index: Int, lines: [LineBounds]) -> Bool {
+        var low = 0
+        var high = lines.count
+        while low < high {
+            let middle = (low + high) / 2
+            if lines[middle].end <= index { low = middle + 1 } else { high = middle }
+        }
+        guard low < lines.count else { return false }
+        var j = quoteMarkers(scalars: scalars, from: lines[low].start, end: index, maxDepth: .max).end
+        while j < index, scalars[j] == " " || scalars[j] == "\t" { j += 1 }
+        return j == index
+    }
+
+    /// What a free line is to an inline math span that reaches it.
+    private enum BlockBoundary {
+        /// A continuation of the paragraph the span is in.
+        case none
+        /// The start of another block: a span may not continue into it.
+        case startsBlock
+        /// A block of one line (an ATX heading): a span may neither continue
+        /// into it nor out of it.
+        case wholeBlock
+    }
+
+    /// Whether `line` — its content past the blockquote markers, which
+    /// number `quoteDepth` — starts a block a paragraph cannot run into: a
+    /// deeper quote, an ATX heading, a thematic break or setext underline,
+    /// or a list item (outside a list, only one that may interrupt a
+    /// paragraph: a bullet or `1.` with content). Fences and indented code
+    /// end the free text before the scan, so they need no entry.
+    private static func blockBoundary(
+        scalars: [Unicode.Scalar], line: LineBounds, inList: Bool, quoteDepth: Int, previousQuoteDepth: Int,
+    ) -> BlockBoundary {
+        var i = line.start
+        while i < line.contentEnd, i - line.start < 4, scalars[i] == " " { i += 1 }
+        let indent = i - line.start
+        guard i < line.contentEnd else { return quoteDepth > previousQuoteDepth ? .startsBlock : .none }
+        let first = scalars[i]
+
+        if indent <= 3, first == "#" {
+            var j = i
+            while j < line.contentEnd, scalars[j] == "#" { j += 1 }
+            if j - i <= 6, j == line.contentEnd || scalars[j] == " " || scalars[j] == "\t" {
+                return .wholeBlock
+            }
+        }
+        if indent <= 3, first == "-" || first == "*" || first == "_" || first == "=" {
+            // A setext underline: a run of `=` or `-`, then only spaces.
+            var runEnd = i
+            while runEnd < line.contentEnd, scalars[runEnd] == first { runEnd += 1 }
+            if first == "=" || first == "-", isTrailingSpaceOnly(scalars: scalars, from: runEnd, end: line.contentEnd) {
+                return .startsBlock
+            }
+            // A thematic break: three or more of `-`, `*` or `_`, with
+            // spaces between allowed.
+            var count = 0
+            var j = i
+            while j < line.contentEnd, scalars[j] == first || scalars[j] == " " || scalars[j] == "\t" {
+                if scalars[j] == first { count += 1 }
+                j += 1
+            }
+            if first != "=", count >= 3, j == line.contentEnd { return .startsBlock }
+        }
+        if quoteDepth > previousQuoteDepth { return .startsBlock }
+        if let contentIndent = listItemContentIndent(scalars: scalars, line: line, inList: inList) {
+            if inList { return .startsBlock }
+            // Outside a list, only a bullet or an ordered item numbered 1
+            // with content can interrupt a paragraph.
+            let contentStart = line.start + contentIndent
+            let hasContent = contentStart < line.contentEnd
+                && !isBlankLine(scalars: scalars, line: LineBounds(start: contentStart, contentEnd: line.contentEnd, end: line.end))
+            let isBullet = first == "-" || first == "*" || first == "+"
+            let isOne = first == "1" && i + 1 < line.contentEnd && (scalars[i + 1] == "." || scalars[i + 1] == ")")
+            if hasContent, isBullet || isOne { return .startsBlock }
+        }
+        return .none
+    }
+
+    private static func isTrailingSpaceOnly(scalars: [Unicode.Scalar], from: Int, end: Int) -> Bool {
+        var j = from
+        while j < end, scalars[j] == " " || scalars[j] == "\t" { j += 1 }
+        return j == end
     }
 
     private static func leadingWidth(scalars: [Unicode.Scalar], line: LineBounds) -> Int {

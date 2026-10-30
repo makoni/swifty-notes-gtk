@@ -42,11 +42,16 @@ final class HTMLPreviewDocumentBuilder {
     }
 
     func render(markdown: String) -> [RenderedBlock] {
+        render(extraction: MathSpanExtractor.extract(from: markdown))
+    }
+
+    /// Renders the markdown an extraction was made from, for a caller that
+    /// already has one (the outline and the spell checker read it too).
+    func render(extraction: MathSpanExtractor.Extraction) -> [RenderedBlock] {
         // Math must be cut out before any Markdown processing: CommonMark
         // mangles TeX (`$x^*$` emphasis, `\{` → `{`, `\\` → `\`). The
         // extracted source keeps its line structure, so the line-based
         // scanners below (task lists, list metadata) still line up.
-        let extraction = MathSpanExtractor.extract(from: markdown)
         let source = extraction.markdown
         mathSpans = extraction.spans
         listItemMetadata = collectListItemMetadata(from: source)
@@ -945,10 +950,7 @@ final class HTMLPreviewDocumentBuilder {
         // `mathSpans` stay in step.
         // A U+FFFC written in the note, or decoded from an entity
         // (`&#xFFFC;`), becomes U+FFFD: only a formula may own a marker.
-        let markerFree = String(String.UnicodeScalarView(text.markup.unicodeScalars.map {
-            $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0
-        }))
-        let markup = replacingPlaceholders(inMarkup: markerFree) { index, insideTag in
+        let markup = replacingPlaceholders(inMarkup: MathSpanExtractor.markerFree(text.markup)) { index, insideTag in
             guard index < mathSpans.count else { return nil }
             let span = mathSpans[index]
             if insideTag { return pangoEscapeAttribute(delimitedSource(of: span)) }

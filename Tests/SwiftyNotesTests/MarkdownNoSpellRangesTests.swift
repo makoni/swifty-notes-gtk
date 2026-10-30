@@ -98,4 +98,55 @@ struct MarkdownNoSpellRangesTests {
         let scalars = Array(text.unicodeScalars)
         #expect(ranges.map { String(String.UnicodeScalarView(scalars[$0])) } == ["`code`", "$x$"])
     }
+
+    private func covered(_ text: String) -> [String] {
+        let scalars = Array(text.unicodeScalars)
+        return MarkdownNoSpellRanges.ranges(in: text).map { String(String.UnicodeScalarView(scalars[$0])) }
+    }
+
+    @Test("A fence inside an indented code block is code, not a fence that runs on")
+    func aFenceInsideAnIndentedCodeBlockIsCodeNotAFenceThatRunsOn() {
+        // An unclosed ``` used to swallow the prose after the code block.
+        let text = "Intro\n\n    ```\n    let x = 1\n\nSome prose wrods."
+        #expect(covered(text) == ["    ```\n    let x = 1\n"])
+    }
+
+    @Test("Indented code blocks are skipped")
+    func indentedCodeBlocksAreSkipped() {
+        #expect(covered("Prose\n\n    misspeled code\n\nMore") == ["    misspeled code\n"])
+        // Indented text in a list item is the item's paragraph, not code.
+        #expect(covered("- item\n\n    more wrods").isEmpty)
+    }
+
+    @Test("Tilde fences are skipped and close only on tildes")
+    func tildeFencesAreSkippedAndCloseOnlyOnTildes() {
+        let text = "~~~\nfirst\n```\nsecond\n~~~\nProse"
+        #expect(covered(text) == ["~~~\nfirst\n```\nsecond\n~~~\n"])
+        // A backtick fence is not closed by tildes either.
+        #expect(covered("```\na\n~~~\nb\n```\nProse") == ["```\na\n~~~\nb\n```\n"])
+    }
+
+    @Test("A fence line with an info string does not close the fence")
+    func aFenceLineWithAnInfoStringDoesNotCloseTheFence() {
+        // It is content; the bare fence after it closes the block.
+        let text = "```\na\n```js\nb\n```\nProse"
+        #expect(covered(text) == ["```\na\n```js\nb\n```\n"])
+    }
+
+    @Test("An unclosed tilde fence runs to the end like a backtick one")
+    func anUnclosedTildeFenceRunsToTheEnd() {
+        let text = "Prose\n~~~\ncode wrods"
+        #expect(covered(text) == ["~~~\ncode wrods"])
+    }
+
+    @Test("A math fence is one range, not two")
+    func aMathFenceIsOneRangeNotTwo() {
+        #expect(covered("```math\n\\alpha\n```\nProse") == ["```math\n\\alpha\n```\n"])
+    }
+
+    @Test("Ranges from an extraction the caller has match ranges from the text")
+    func rangesFromAnExtractionMatchRangesFromTheText() {
+        let text = "Café `code` $x$\n\n```\ncode\n```\n\n    more\n"
+        #expect(MarkdownNoSpellRanges.ranges(in: MathSpanExtractor.extract(from: text)) == MarkdownNoSpellRanges.ranges(in: text))
+    }
 }

@@ -15,14 +15,12 @@ enum MathInlineText {
     /// not cost a whole page of formulas.
     static func markup(for text: String, highlighting query: String = "") -> (markup: String, spans: [MathSpan]) {
         let text = shortened(text)
-        let extracted = MathSpanExtractor.extract(from: text).spans
-        let sources = MathSpanExtractor.sourceRanges(in: text)
         // The formulas drawn, with where each sits in `text`; the others
         // stay their source.
-        let drawn = sources.count == extracted.count
-            ? Array(zip(extracted, sources).filter { $0.0.tex.utf8.count <= maxFormulaBytes }.prefix(maxFormulas))
-            : []
-        let spans = drawn.map(\.0)
+        let drawn = MathSpanExtractor.extract(from: text).located
+            .filter { $0.span.tex.utf8.count <= maxFormulaBytes }
+            .prefix(maxFormulas)
+        let spans = drawn.map(\.span)
         let scalars = Array(text.unicodeScalars)
         let hit = firstMatch(of: query, in: text)
         var markup = ""
@@ -38,7 +36,7 @@ enum MathInlineText {
         }
         let marker = String(MathSpanExtractor.formulaMarker)
         var cursor = 0
-        for source in drawn.map(\.1) {
+        for source in drawn.map(\.source) {
             appendText(cursor..<source.lowerBound)
             markup += hit?.overlaps(source) == true ? pangoHighlightOpenTag + marker + "</span>" : marker
             cursor = source.upperBound
@@ -82,9 +80,7 @@ enum MathInlineText {
     /// object replacement character in the title) made U+FFFD so only
     /// formulas own a marker.
     private static func escapedText(_ scalars: ArraySlice<Unicode.Scalar>) -> String {
-        var text = String.UnicodeScalarView()
-        text.append(contentsOf: scalars.map { $0 == MathSpanExtractor.formulaMarker ? "\u{FFFD}" : $0 })
-        return pangoEscape(String(text))
+        pangoEscape(MathSpanExtractor.markerFree(String(String.UnicodeScalarView(scalars))))
     }
 
     /// The first case-insensitive match of `query` in `text`, in Unicode
