@@ -14,6 +14,23 @@ struct MathSpanExtractorTests {
         return result
     }
 
+    @Test("A long note read again is not extracted again; another text is")
+    func aLongNoteReadAgainIsNotExtractedAgain() {
+        let note = String(repeating: "Area $\\pi r^2$ of a circle.\n\n", count: 60)
+        #expect(note.utf8.count >= MathSpanExtractor.minimumCachedLength)
+        let first = MathSpanExtractor.extract(from: note)
+        let passes = MathSpanExtractor.debugLongPassCount
+        // The preview, the outline and the spell checker after one edit.
+        let again = MathSpanExtractor.extract(from: note)
+        _ = MathSpanExtractor.extract(from: "A short title $x$")
+        let third = MathSpanExtractor.extract(from: note)
+        #expect(MathSpanExtractor.debugLongPassCount == passes)
+        #expect(again.spans == first.spans && third.markdown == first.markdown)
+        let edited = MathSpanExtractor.extract(from: note + "More $y$.")
+        #expect(MathSpanExtractor.debugLongPassCount == passes + 1)
+        #expect(edited.spans.count == first.spans.count + 1)
+    }
+
     @Test("Roots produce two inline spans")
     func rootsProduceTwoInlineSpans() {
         let result = extract("Roots $x^*$ and $y^*$ here")

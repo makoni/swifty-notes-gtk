@@ -10,6 +10,7 @@ LongStringLayoutTests
 MainWindowActionsTests
 MainWindowCoreTests
 MarkdownFormattingTests
+MarkdownListContinuationTests
 MarkdownNoSpellRangesTests
 MarkdownOutlineExtractorTests
 MarkdownSearchEngineTests
@@ -27,5 +28,6 @@ PreviewBlockTextSpansTests
 PreviewPaneLayoutTests
 PreviewSearchHighlightTests
 PreviewTypographyTests
+ReplacementCharacterTests
 RepositoryStateTests
 SettingsStoreTests

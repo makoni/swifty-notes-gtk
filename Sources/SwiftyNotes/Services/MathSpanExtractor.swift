@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// One TeX math span cut out of the markdown source before parsing, so
 /// the CommonMark layer cannot mangle it (`$x^*$` emphasis, `\{` → `{`,
@@ -101,7 +102,37 @@ enum MathSpanExtractor {
 
     /// Replaces every math span with a placeholder and returns the spans
     /// in order, located in the source.
+    ///
+    /// After an edit the preview, the outline and the spell checker each
+    /// read the note's whole text: the last long text's pass is kept, so one
+    /// pass serves them all. (Short texts — titles — are cheap, and would
+    /// only push it out.)
     static func extract(from markdown: String) -> Extraction {
+        guard markdown.utf8.count >= minimumCachedLength else { return extractAnew(from: markdown) }
+        if let cached = lastLongExtraction.withLock({ $0 }), cached.source == markdown {
+            return cached
+        }
+        #if DEBUG
+        longPassCount.withLock { $0 += 1 }
+        #endif
+        let extraction = extractAnew(from: markdown)
+        lastLongExtraction.withLock { $0 = extraction }
+        return extraction
+    }
+
+    static let minimumCachedLength = 1024
+    private static let lastLongExtraction = Mutex<Extraction?>(nil)
+
+    #if DEBUG
+    /// How many passes over long texts ran (tests).
+    static var debugLongPassCount: Int {
+        longPassCount.withLock { $0 }
+    }
+
+    private static let longPassCount = Mutex(0)
+    #endif
+
+    private static func extractAnew(from markdown: String) -> Extraction {
         // Sanitise the source before generating placeholders, so only the
         // extractor's own placeholders survive (one scalar in, one out: line
         // structure and positions are unchanged).
