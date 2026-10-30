@@ -1,6 +1,6 @@
 app-id: me.spaceinbox.swiftynotes
 runtime: org.gnome.Platform
-runtime-version: "50"
+runtime-version: "51"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.swift6
@@ -21,7 +21,7 @@ build-options:
   prepend-ld-library-path: /usr/lib/sdk/swift6/lib
 
 modules:
-  # GNOME Platform 50 doesn't ship libspelling-1 dev headers in the SDK, so
+  # GNOME Platform 51 doesn't ship libspelling-1 dev headers in the SDK, so
   # build it from source before our app module compiles the CSpelling shim.
   # Pinned to the latest stable tag at the time of writing.
   - name: libspelling
