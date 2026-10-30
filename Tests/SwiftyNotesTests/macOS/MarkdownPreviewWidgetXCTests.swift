@@ -1283,6 +1283,45 @@ final class MarkdownPreviewWidgetXCTests: XCTestCase {
         return data
     }
 
+    // MARK: - Math (mirrors of MathPreviewWidgetTests)
+
+    @MainActor func test_inline_formulas_are_drawn_over_their_markers_in_the_paragraph_label() throws {
+        let preview = MarkdownPreview(remoteImageLoader: { _, _ in })
+        preview.render(blocks: MarkdownRenderer().blocks(for: "Roots $x^*$ and $\\frac{a}{b}$ here.", darkAppearance: false))
+        pumpMainContext(for: .milliseconds(60))
+        let labels = mathLabels(under: preview.rootScroll)
+        XCTAssertEqual(labels.count, 1)
+        guard let label = labels.first else { return }
+        XCTAssertEqual(label.text, "Roots \u{FFFC} and \u{FFFC} here.")
+        XCTAssertEqual(PreviewMath.debugFormulas(on: label).map(\.tex), ["x^*", "\\frac{a}{b}"])
+        XCTAssertEqual(PreviewMath.debugShapeAttributeCount(on: label), 2)
+    }
+
+    @MainActor func test_a_title_label_draws_its_formulas_and_reads_them_as_text() throws {
+        let label = Label("")
+        PreviewMath.show("Euler $e^{i\\pi} + 1 = 0$", in: label)
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while PreviewMath.debugFormulas(on: label).isEmpty, clock.now < deadline {
+            MainContext.pump(for: .milliseconds(20))
+        }
+        XCTAssertEqual(PreviewMath.debugFormulas(on: label).map(\.tex), ["e^{i\\pi} + 1 = 0"])
+        XCTAssertEqual(MathInlineText.readable("Euler $e^{i\\pi} + 1 = 0$"), "Euler e^(iπ) + 1 = 0")
+    }
+
+    @MainActor
+    private func mathLabels(under root: Widget) -> [Label] {
+        var found: [Label] = []
+        var stack: [Widget] = [root]
+        while let widget = stack.popLast() {
+            if let label = widget.tryCast(Label.self), PreviewMath.drawsFormulas(label.opaquePointer) {
+                found.append(label)
+            }
+            stack.append(contentsOf: widget.children())
+        }
+        return found
+    }
+
     @MainActor
     private func pumpMainContext(for duration: Duration) {
         MainContext.pump(for: duration)

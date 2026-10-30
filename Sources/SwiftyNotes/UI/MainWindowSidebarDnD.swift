@@ -182,7 +182,7 @@ extension MainWindow {
             refreshSidebar()
             refreshDirectorySnapshot()
             persistWorkspaceState()
-            toastOverlay.showToast("Folder moved".localized)
+            toastOverlay.showPlainToast("Folder moved".localized)
         } catch {
             presentError(
                 heading: "Could not move folder".localized,

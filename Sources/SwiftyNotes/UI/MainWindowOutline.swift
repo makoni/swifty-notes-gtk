@@ -38,7 +38,7 @@ extension MainWindow {
     /// underneath them.
     func openCommandPalette() {
         guard !currentHeadings.isEmpty else {
-            toastOverlay.addToast(Toast(title: "No headings to jump to.".localized))
+            toastOverlay.addToast(Toast.plain("No headings to jump to.".localized))
             return
         }
         // If a palette is already showing (rapid double-press of

@@ -15,7 +15,7 @@ enum MarkdownListContinuation {
         let caretLine = lines[caretLineIndex]
         let caretLineText = substring(in: text, range: caretLine)
 
-        guard !isInsideFencedCodeBlock(text: text, upToLine: caretLineIndex, lines: lines) else { return nil }
+        guard !isInsideCodeBlock(text: text, lineStart: caretLine.lowerBound) else { return nil }
 
         if isTableRow(caretLineText) {
             return tableEdit(text: text, lines: lines, caretLineIndex: caretLineIndex)
@@ -230,23 +230,12 @@ enum MarkdownListContinuation {
         return max(0, lines.count - 1)
     }
 
-    private static func isFenceLine(_ line: String) -> Bool {
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-        return trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~")
-    }
-
-    /// Counts the fence lines from the document start to the caret's line
-    /// (itself included): an odd count means the caret sits inside a fence.
-    private static func isInsideFencedCodeBlock(
-        text: String,
-        upToLine lineIndex: Int,
-        lines: [Range<Int>],
-    ) -> Bool {
-        var fences = 0
-        for range in lines[0 ... lineIndex] where isFenceLine(substring(in: text, range: range)) {
-            fences += 1
-        }
-        return fences % 2 == 1
+    /// Whether the line starting at `lineStart` (a character offset) lies
+    /// in a code block — fenced, `math` or indented — found as the preview
+    /// and the spell checker find them: a list marker there is code.
+    private static func isInsideCodeBlock(text: String, lineStart: Int) -> Bool {
+        let scalarOffset = text[..<index(at: lineStart, in: text)].unicodeScalars.count
+        return MathSpanExtractor.extract(from: text).codeBlocks.contains { $0.contains(scalarOffset) }
     }
 
     private static func substring(in text: String, range: Range<Int>) -> String {

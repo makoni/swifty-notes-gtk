@@ -224,7 +224,6 @@ struct OutlineSidebar {
         searchEntry.setAccessibleLabel("Filter Outline".localized)
     }
 
-
     private func rerender() {
         let visible = OutlineFilter.visible(
             headings: renderState.allHeadings,
@@ -305,27 +304,17 @@ struct OutlineSidebar {
 
     private func makeRow(for heading: Heading, anyH2HasChildren: Bool) -> (ListBoxRow, Label) {
         let row = ListBoxRow()
-        row.setAccessibleLabel(heading.text)
+        row.setAccessibleLabel(MathInlineText.readable(heading.text))
 
         let label = Label("")
         label.xalign = 0
         label.hexpand = true
         label.ellipsize = .end
-        label.tooltipText = heading.text
-        // Pango markup highlights query matches in the row text. With
-        // no query the label is a plain non-markup string so an
-        // ampersand or angle bracket in the heading doesn't accidentally
-        // turn into entity-escape territory. `label.markup` is the
-        // only setter that actually parses Pango syntax — `label.text`
-        // strips markup, which was the source of the "raw <span...>"
-        // bug.
+        label.tooltipText = MathInlineText.readable(heading.text)
+        // Formulas in the heading are drawn, as in the preview, and the
+        // filter's match is highlighted; the markup escapes the rest.
         let trimmedQuery = renderState.query.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedQuery.isEmpty {
-            label.useMarkup = false
-            label.text = heading.text
-        } else {
-            label.markup = Self.highlightedMarkup(heading.text, query: trimmedQuery)
-        }
+        TitleMath.show(heading.text, in: label, highlighting: trimmedQuery)
 
         row.addCSSClass("sn-out")
         row.addCSSClass("sn-out-h\(heading.level)")
@@ -427,20 +416,6 @@ struct OutlineSidebar {
         }
     }
 
-    private static func highlightedMarkup(_ text: String, query: String) -> String {
-        let lowerText = text.lowercased()
-        let lowerQuery = query.lowercased()
-        guard let range = lowerText.range(of: lowerQuery) else {
-            return PangoMarkup.escape(text)
-        }
-        let pre = String(text[..<range.lowerBound])
-        let hit = String(text[range])
-        let post = String(text[range.upperBound...])
-        return "\(PangoMarkup.escape(pre))<span background=\"#f5c211\" foreground=\"#1e1e1e\">\(PangoMarkup.escape(hit))</span>\(PangoMarkup.escape(post))"
-    }
-
-    /// Pango entity escape — same five entities the swift-adwaita
-    /// preview's HTML builder uses (see ``MarkdownRendererHTMLBuilder``).
     // MARK: — Internal handler hook
 
     /// Wired by `MainWindow.wireSignals` so chevron clicks can call

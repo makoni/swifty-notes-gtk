@@ -580,6 +580,9 @@ msgstr "Naar kop springen…"
 msgid "Jump-to-heading results"
 msgstr "Resultaten van ‘Naar kop springen’"
 
+msgid "KaTeX fonts"
+msgstr "KaTeX-lettertypen"
+
 msgid "Language"
 msgstr "Taal"
 

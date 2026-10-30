@@ -59,13 +59,19 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            fonts-dejavu-core \
+            fonts-noto-color-emoji \
             gettext \
             libadwaita-1-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
             libspelling-1-dev \
             locales \
-            xvfb
+            webp-pixbuf-loader \
+            xdotool \
+            xvfb \
+            rustc-1.91 \
+            cargo-1.91
 
       - name: Generate a locale
         # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
@@ -74,11 +80,29 @@ jobs:
         # will do; it need not be the language selected.
         run: sudo locale-gen en_US.UTF-8
 
+      # The math engine (RaTeX) is Rust; see ci.yml for why 1.91.
+      - name: Build the math engine
+        run: |
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+          PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
+
+      # The same suites as ci.yml, from scripts/core-test-suites.txt, and
+      # the preview widget suites.
       - name: Verify project
+        env:
+          # Colour emoji (fonts-noto-color-emoji) are drawn as images only
+          # where the engine's text fallback font lacks them; left to guess,
+          # it picks one here that has them. With DejaVu Serif the emoji
+          # limit's tests run instead of skipping themselves.
+          RATEX_UNICODE_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
+          SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           swift build
+          suites="$(paste -sd '|' scripts/core-test-suites.txt)"
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter '$suites' --no-parallel"
+          xvfb-run -a dbus-run-session -- bash -lc \
+            "swift test --filter 'MarkdownPreviewWidgetTests|MathPreviewWidgetTests' --no-parallel"
 
   prepare-install-roots:
     name: Prepare install root (${{ matrix.arch }})
@@ -113,9 +137,24 @@ jobs:
             libcurl4-openssl-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
-            libspelling-1-dev
+            libspelling-1-dev \
+            rustc-1.91 \
+            cargo-1.91
+
+      # The math engine (RaTeX) is Rust; see ci.yml for why 1.91.
+      - name: Build the math engine
+        run: |
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+          PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
 
       - name: Verify project
+        env:
+          # Colour emoji (fonts-noto-color-emoji) are drawn as images only
+          # where the engine's text fallback font lacks them; left to guess,
+          # it picks one here that has them. With DejaVu Serif the emoji
+          # limit's tests run instead of skipping themselves.
+          RATEX_UNICODE_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
+          SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           swift build
           swift test --filter 'CLICommandTests|CLITests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel

@@ -301,6 +301,17 @@ swifty_notes_search_apply_tag(gpointer source_buffer, gpointer tag,
     }
 }
 
+// GTK has no getter for a widget's accessible properties, and the test
+// helper that reads them, gtk_test_accessible_check_property, is variadic,
+// which Swift cannot call. NULL when the accessible label is `expected`,
+// otherwise the label GTK has (free it with g_free). Used by the tests.
+static inline char *
+swifty_notes_accessible_label_mismatch(gpointer widget, const char *expected) {
+    return gtk_test_accessible_check_property(GTK_ACCESSIBLE(widget),
+                                              GTK_ACCESSIBLE_PROPERTY_LABEL,
+                                              expected);
+}
+
 // ---------------------------------------------------------------------------
 // The gettext helpers that used to live here (textdomain, bindtextdomain,
 // bind_textdomain_codeset, the _nl_msg_cat_cntr bump and the LC_MESSAGES

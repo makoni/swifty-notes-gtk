@@ -14,13 +14,19 @@ import Markdown
 /// the two — we never crash on mismatch.
 enum MarkdownOutlineExtractor {
     static func extract(markdown: String, blocks: [RenderedBlock]) -> [Heading] {
+        extract(extraction: MathSpanExtractor.extract(from: markdown), blocks: blocks)
+    }
+
+    /// The same, from the math extraction of the markdown, for a caller that
+    /// already has one (the renderer takes it too).
+    static func extract(extraction: MathSpanExtractor.Extraction, blocks: [RenderedBlock]) -> [Heading] {
         let blockHeadings = blocks.enumerated().compactMap { idx, block -> (Int, String, Int)? in
             guard case let .heading(level, text) = block else { return nil }
             return (level, text.plainText, idx)
         }
         guard !blockHeadings.isEmpty else { return [] }
 
-        let lines = headingLines(in: markdown)
+        let lines = headingLines(in: extraction)
 
         var occurrences: [String: Int] = [:]
         var result: [Heading] = []
@@ -42,8 +48,11 @@ enum MarkdownOutlineExtractor {
     /// 1-based source line of each heading in document order, via
     /// swift-markdown. Falls back to `1` if the parser didn't attach a
     /// range (defensive — every CommonMark heading has one in practice).
-    private static func headingLines(in markdown: String) -> [Int] {
-        let document = Document(parsing: markdown)
+    private static func headingLines(in extraction: MathSpanExtractor.Extraction) -> [Int] {
+        // Parse the source with its math cut out (line numbers unchanged), as
+        // the renderer does: a `#` line or setext underline inside `$$…$$` is
+        // TeX, not a heading.
+        let document = Document(parsing: extraction.markdown)
         var lines: [Int] = []
         for child in document.children {
             collectHeadingLines(from: child, into: &lines)

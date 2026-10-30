@@ -1,5 +1,6 @@
 import Adwaita
 import Foundation
+import MathEngine
 
 #if canImport(Darwin)
 import Darwin
@@ -274,6 +275,9 @@ public enum SwiftyNotesLauncher {
             }
             exit(cliResult.exitCode)
         }
+        // The GUI only (the CLI draws no formulas). It sets an environment
+        // variable, so it has to run before GTK starts any thread.
+        MathRenderer.configureTextFallbackFont()
 
         // Only the GUI path reports this. `initializeLocalization` runs before
         // command dispatch, so warning there would prepend a line to the stderr

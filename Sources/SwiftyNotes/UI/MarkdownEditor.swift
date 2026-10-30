@@ -103,7 +103,8 @@ struct MarkdownEditor {
     ) {
         guard let tagPointer else { return }
         let text = buffer.text
-        let totalLength = text.count
+        // GtkTextBuffer offsets count code points.
+        let totalLength = text.unicodeScalars.count
         guard totalLength > 0 else { return }
         swifty_notes_spelling_remove_no_spell_tag(
             bufferPointer,
@@ -122,6 +123,10 @@ struct MarkdownEditor {
     }
 
     func setText(_ text: String) {
+        // GtkTextBuffer refuses text holding a NUL and takes none of it; the
+        // editor stayed empty, and the next keystroke saved that over the
+        // note. A NUL shows (and is saved) as U+FFFD instead.
+        let text = text.replacingNULs()
         if buffer.text != text {
             buffer.text = text
             buffer.modified = false

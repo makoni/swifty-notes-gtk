@@ -119,6 +119,8 @@ public enum MarkdownSearchEngine {
              let .paragraph(text),
              let .blockquote(text):
             return text.plainText
+        case let .math(tex):
+            return tex
         case let .codeBlock(code, _):
             return code
         case let .listItem(text, _, _, _, _):

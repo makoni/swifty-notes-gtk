@@ -571,6 +571,9 @@ msgstr "跳至標題…"
 msgid "Jump-to-heading results"
 msgstr "跳至標題的結果"
 
+msgid "KaTeX fonts"
+msgstr "KaTeX 字型"
+
 msgid "Language"
 msgstr "語言"
 

@@ -42,6 +42,33 @@ func sourceDependency(
     return .package(url: remoteURL, from: minimumVersion)
 }
 
+// The RaTeX math engine is Rust, built outside SwiftPM by
+// scripts/build-ratex-bridge.sh into build/ratex-bridge/ — run that script
+// before the first `swift build` (and after changing Sources/RaTeXBridge).
+// Without it the link fails with "cannot find -lratex_bridge".
+//
+// The system libraries the static library needs are listed here rather
+// than read from the build: SwiftPM caches this manifest by its contents,
+// so anything it read from build/ would go stale. The build script reads
+// these lists back, between the BEGIN and END lines, and fails if cargo
+// asks for anything else.
+let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
+// BEGIN math bridge system libraries
+#if os(macOS)
+let mathBridgeSystemLibraries = [
+    "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lintl", "-lcairo-gobject", "-lcairo",
+    "-liconv", "-framework", "CoreFoundation",
+]
+#else
+let mathBridgeSystemLibraries = [
+    "-lgio-2.0", "-lgobject-2.0", "-lglib-2.0", "-lcairo-gobject", "-lcairo", "-lfontconfig",
+    "-lgcc_s", "-lutil", "-lrt", "-lpthread", "-lm", "-ldl",
+]
+#endif
+// END math bridge system libraries
+let mathBridgeLinkerFlags = ["-L\(packageDirectory)/build/ratex-bridge/lib", "-lratex_bridge"]
+    + mathBridgeSystemLibraries
+
 let package = Package(
     name: "swifty-notes-gtk",
     platforms: [
@@ -120,6 +147,7 @@ let package = Package(
         )
     ],
     targets: [
+        .systemLibrary(name: "CRaTeXBridge", path: "Sources/RaTeXBridge"),
         .systemLibrary(
             name: "CSpelling",
             pkgConfig: "libspelling-1",
@@ -127,12 +155,20 @@ let package = Package(
                 .apt(["libspelling-1-dev"])
             ]
         ),
+        // The math engine's Swift wrapper, with the Rust library's link
+        // settings: the rest of the app reaches the engine only through it.
+        .target(
+            name: "MathEngine",
+            dependencies: ["CRaTeXBridge"],
+            linkerSettings: [.unsafeFlags(mathBridgeLinkerFlags)]
+        ),
         .target(
             name: "SwiftyNotes",
             dependencies: [
                 .product(name: "Adwaita", package: "swift-adwaita"),
                 .product(name: "Markdown", package: "swift-markdown"),
                 "CSpelling",
+                "MathEngine",
             ],
             resources: [
                 // The `locale/` directory is inside the target so SwiftPM
@@ -166,13 +202,18 @@ let package = Package(
             dependencies: ["SwiftyNotes"],
             path: "Sources/SwiftyNotesApp"
         ),
+        // The engine on its own, without the app (Adwaita only for cairo).
+        .testTarget(
+            name: "MathEngineTests",
+            dependencies: ["MathEngine", .product(name: "Adwaita", package: "swift-adwaita")]
+        ),
         .testTarget(
             name: "SwiftyNotesTests",
-            dependencies: ["SwiftyNotes"]
+            dependencies: ["SwiftyNotes", "MathEngine"]
         ),
         .testTarget(
             name: "SwiftyNotesWidgetTests",
-            dependencies: ["SwiftyNotes"],
+            dependencies: ["SwiftyNotes", "MathEngine"],
             path: "Tests/SwiftyNotesWidgetTests"
         )
     ]

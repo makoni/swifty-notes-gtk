@@ -121,6 +121,87 @@ struct UISmokeTests {
         expectUIScriptSucceeded(result)
     }
 
+    @Test("Formulas stay drawn when switching between Split, Preview and Editor under headless wayland")
+    func formulasStayDrawnWhenSwitchingViewModesUnderHeadlessWayland() throws {
+        let result = try runWaylandUIScript(
+            """
+            frame = wait_for_frame()
+            app_stderr_log = os.environ["APP_STDERR_LOG"]
+
+            def draws():
+                # A formula only the preview shows: the title's is drawn
+                # in the breadcrumb and sidebar too.
+                log = open(app_stderr_log, "r", encoding="utf-8").read()
+                return log.count("swiftynotes-debug: formula drawn x = \\\\frac{-b}{2a}")
+
+            wait_until(lambda: draws() > 0, "formulas drawn in split", timeout=20)
+
+            def toggle(name):
+                # The view-mode toggle is the button holding the label of
+                # that name (an icon and a label inside).
+                for node in walk(frame):
+                    if (node.name or "") != name:
+                        continue
+                    candidate = node
+                    for _ in range(3):
+                        try:
+                            action = candidate.queryAction()
+                            names = [action.getName(i) for i in range(action.nActions)]
+                        except Exception:
+                            names = []
+                        if candidate.getRoleName() in ("toggle button", "push button", "button") or "click" in names:
+                            return candidate
+                        candidate = candidate.parent
+                        if candidate is None:
+                            break
+                raise AssertionError(f"no '{name}' toggle")
+
+            # Each switch moves the preview to another container; its
+            # formulas must be drawn again there.
+            def settled_draws():
+                # Frames left over from the last mode (Split slides in) must
+                # not count for the next one.
+                last = draws()
+                deadline = time.time() + 10
+                while time.time() < deadline:
+                    time.sleep(0.3)
+                    now = draws()
+                    if now == last:
+                        return now
+                    last = now
+                raise AssertionError("formulas never stopped being redrawn")
+
+            for mode in ["Preview", "Split", "Editor", "Split", "Preview"]:
+                before = settled_draws()
+                toggle(mode).queryAction().doAction(0)
+                if mode == "Editor":
+                    time.sleep(1)
+                    continue
+                wait_until(lambda: draws() > before, f"formulas drawn again after switching to {mode}", timeout=10)
+            """,
+            prepare: { xdgDataHome, xdgStateHome, _ in
+                let notesDirectory = xdgDataHome
+                    .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                    .appendingPathComponent("notes", isDirectory: true)
+                let repository = NotesRepository(notesDirectory: notesDirectory)
+                let note = try repository.createNote(
+                    initialContent: "# Formulas $e^{i\\pi} + 1 = 0$\n\nRoots $x = \\frac{-b}{2a}$ and $\\alpha + \\beta$."
+                )
+                let stateFileURL = xdgStateHome
+                    .appendingPathComponent(AppIdentity.identifier, isDirectory: true)
+                    .appendingPathComponent("workspace.json", isDirectory: false)
+                try WorkspaceStateStore(stateFileURL: stateFileURL).save(WorkspaceState(
+                    selectedNoteID: note.id,
+                    viewMode: .split,
+                    windowWidth: 1400,
+                    windowHeight: 900,
+                ))
+            },
+            environment: ["SWIFTY_NOTES_DEBUG_LOG_FORMULA_DRAWS": "1"],
+        )
+        expectUIScriptSucceeded(result)
+    }
+
     @Test("App autosave clears unsaved status under headless wayland")
     func appAutosaveClearsUnsavedStatusUnderHeadlessWayland() throws {
         let result = try runWaylandUIScript(
@@ -400,13 +481,20 @@ struct UISmokeTests {
             ENGLISH = ("Notes Sidebar", "Outline Sidebar")
             ARABIC = ("شريط الملاحظات الجانبي", "شريط المخطط الجانبي")
 
+            def switch_language():
+                # The app switches once this file appears: the tree has
+                # been read, however long that took.
+                open(os.path.join(os.environ["XDG_RUNTIME_DIR"], "switch-language"), "w").close()
+
             wait_for(ENGLISH[0])
             report("ltr", *ENGLISH)
+            switch_language()
 
             wait_for(ARABIC[0])
             report("rtl", *ARABIC)
             names = visible_names(frame)
             assert ENGLISH[0] not in names, f"English label survived the switch: {names}"
+            switch_language()
 
             wait_for(ENGLISH[0])
             report("back", *ENGLISH)
@@ -423,7 +511,9 @@ struct UISmokeTests {
                 "SWIFTY_NOTES_DEBUG_OPEN_SETTINGS_DELAY_MS": "400",
                 "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_ON_LAUNCH": "ar",
                 "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN": "en",
-                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_DELAY_MS": "1200",
+                // Each switch waits for the script (AT-SPI walks are slow on
+                // CI, and a fixed delay raced them).
+                "SWIFTY_NOTES_DEBUG_SET_LANGUAGE_GATE": "switch-language",
             ],
         )
         expectUIScriptSucceeded(result)
@@ -694,7 +784,7 @@ private func runWaylandUIScript(
 
     let temp = temporaryDirectory()
     try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: temp) }
+    defer { removeUnlessMountedInto(temp) }
 
     let runtimeDirectory = temp.appendingPathComponent("runtime", isDirectory: true)
     let xdgDataHome = temp.appendingPathComponent("xdg-data", isDirectory: true)
@@ -761,6 +851,15 @@ private func runWaylandUIScript(
       kill -9 "$WESTON_PID" 2>/dev/null || true
       wait "$APP_PID" 2>/dev/null || true
       wait "$WESTON_PID" 2>/dev/null || true
+      # A document portal or gvfs started for this session mounts FUSE file
+      # systems here that lead into the user's real folders: unmount them
+      # before anything deletes this directory. (No mount at all is the
+      # usual case: finding nothing must not fail the script. findmnt
+      # lists real paths, without the trailing slash this one has.)
+      runtime_dir="$(realpath "$XDG_RUNTIME_DIR")"
+      { findmnt -rn -o TARGET 2>/dev/null || true; } | awk -v dir="$runtime_dir/" 'index($0, dir) == 1' | sort -r | while read -r mount; do
+        fusermount3 -uz "$mount" 2>/dev/null || fusermount -uz "$mount" 2>/dev/null || true
+      done
     }
     trap cleanup EXIT INT TERM
     export APP_PID

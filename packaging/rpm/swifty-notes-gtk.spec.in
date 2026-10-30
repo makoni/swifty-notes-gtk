@@ -24,6 +24,7 @@ cp -a usr %{buildroot}/
 
 %files
 %license /usr/share/licenses/swifty-notes-gtk/LICENSE
+%license /usr/share/licenses/swifty-notes-gtk/ratex/
 /usr/bin/swiftynotes
 %dir /usr/libexec/swifty-notes
 /usr/libexec/swifty-notes/swiftynotes

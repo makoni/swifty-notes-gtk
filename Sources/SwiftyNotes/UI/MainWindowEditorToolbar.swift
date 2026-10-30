@@ -92,12 +92,7 @@ extension MainWindow {
 
     private func resolvedEditorFormattingToolbarWidth() -> Int {
         if state.viewMode == .split {
-            let totalWidth = currentPreviewContainerWidth
-            let previewWidth = Self.resolvedPreviewWidth(
-                storedWidth: state.preferredPreviewWidth,
-                availableWidth: totalWidth,
-            )
-            return max(totalWidth - previewWidth, Self.minimumEditorWidth)
+            return previewPaneDivider.editorWidth(forRoom: currentPreviewContainerWidth)
         }
 
         let allocatedWidth = max(editorFormattingToolbar.scrolled.width, editorContent.width, editorPreviewPane.width)

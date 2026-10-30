@@ -74,8 +74,13 @@ parts:
     build-packages:
       - appstream
       - binutils
+      # The math engine (RaTeX) is Rust: noble's default rustc (1.75) is too
+      # old for its dependencies, so take the versioned 1.91 toolchain from
+      # noble-updates, plus a C compiler for the crates' build scripts.
+      - cargo-1.91
       - curl
       - desktop-file-utils
+      - gcc
       # msgfmt, for the translated desktop entry and AppStream metainfo that
       # scripts/render-metadata.sh renders during assemble-install-root.sh.
       # Launchpad installs nothing but what is listed here, so a tool that
@@ -98,6 +103,9 @@ parts:
       - libxml2-dev
       - libz3-dev
       - pkg-config
+      # Collects the Rust crates' licence files (scripts/build-ratex-bridge.sh).
+      - python3
+      - rustc-1.91
       - tzdata
       - unzip
       - zlib1g-dev
@@ -168,6 +176,6 @@ parts:
       rm -rf "${GNUPGHOME}" swift.tar.gz swift.tar.gz.sig
       unset GNUPGHOME
 
-      export PATH="${swift_toolchain_dir}/usr/bin:${PATH}"
+      export PATH="${swift_toolchain_dir}/usr/bin:/usr/lib/rust-1.91/bin:${PATH}"
 
       packaging/release/assemble-install-root.sh --dest "${CRAFT_PART_INSTALL}" --prefix /usr

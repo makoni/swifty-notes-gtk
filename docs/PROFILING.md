@@ -18,7 +18,21 @@ document they were written in:
   virtualized `ListView` so only visible rows are realized. Both
   thresholds can be forced for testing with
   `SWIFTY_NOTES_DEBUG_FORCE_CUSTOM_TEXT_PREVIEW` and
-  `SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW`.
+  `SWIFTY_NOTES_DEBUG_FORCE_VIRTUALIZED_PREVIEW`. Text with LaTeX
+  formulas is the exception: it never coalesces, and a note with
+  formulas never takes the single-label layout (GTK draws each formula
+  into a node the size of its whole label; see `PreviewMath`).
+- Parsing formulas is paced, so a profile of a math-heavy note shows
+  it spread over frames rather than in one long step. The preview
+  spends up to 400 ms per render and 16 ms per frame after that, and a
+  frame that runs over (one heavy formula) waits as long again before
+  the next. Titles and headings outside the preview (sidebar, outline,
+  breadcrumb, palette) share `TitleMathScheduler`: 50 ms of every
+  100 ms, renewed only in a later main-loop pass, at least one formula
+  per period from a 16 ms catch-up timer, and an overrunning parse is
+  charged to the period. Expect up to half of the main thread on
+  parsing while a long note's outline catches up; more than that is a
+  bug.
 - Per-frame texture conversion for image blocks was identified as a
   secondary cost and never pursued, on the grounds that the two
   changes above moved the frame budget far enough.

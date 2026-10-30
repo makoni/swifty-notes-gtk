@@ -25,6 +25,9 @@ jobs:
   build-and-core-test:
     name: Build and core test (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    # A test that never returns (a parse that hangs in the math engine)
+    # would otherwise hold the runner for GitHub's six hours.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +53,8 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            fonts-dejavu-core \
+            fonts-noto-color-emoji \
             gettext \
             libadwaita-1-dev \
             libgtk-4-dev \
@@ -58,7 +63,9 @@ jobs:
             locales \
             webp-pixbuf-loader \
             xdotool \
-            xvfb
+            xvfb \
+            rustc-1.91 \
+            cargo-1.91
 
       - name: Generate a locale
         # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
@@ -69,6 +76,29 @@ jobs:
 
       - name: Compile locale files
         run: bash scripts/build-locales.sh
+
+      # The math engine (RaTeX) is Rust. Ubuntu 24.04's default rustc is 1.75,
+      # older than its dependencies accept (1.88); noble-updates ships
+      # versioned toolchains, which install under /usr/lib/rust-<version>.
+      - name: Cache the math engine build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            build/ratex-bridge/target
+          key: ratex-${{ matrix.arch }}-rust-1.91-${{ hashFiles('Sources/RaTeXBridge/Cargo.lock', 'Sources/RaTeXBridge/Cargo.toml', 'Sources/RaTeXBridge/src/**') }}
+
+      - name: Build the math engine
+        run: |
+          echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
+          PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
+
+      # The Flatpak build has no network and takes the crates from this file;
+      # a Cargo.lock change without regenerating it would only fail at release.
+      - name: Check the Flatpak crate list matches Cargo.lock
+        run: |
+          python3 scripts/generate-flatpak-cargo-sources.py
+          git diff --exit-code flatpak/ratex-cargo-sources.json
 
       - name: Build project
         run: swift build
@@ -82,19 +112,45 @@ jobs:
       - name: Build project (release)
         run: swift build -c release
 
+      # The suites CI runs are listed once, in scripts/core-test-suites.txt
+      # (release-packages.yml runs the same list).
       - name: Run core test suites
+        env:
+          # Colour emoji (fonts-noto-color-emoji) are drawn as images only
+          # where the engine's text fallback font lacks them; left to guess,
+          # it picks one here that has them. With DejaVu Serif the emoji
+          # limit's tests run instead of skipping themselves.
+          RATEX_UNICODE_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
+          SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
+          suites="$(paste -sd '|' scripts/core-test-suites.txt)"
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|NoteModelAndRendererTests|PreviewTypographyTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter '$suites' --no-parallel"
 
       - name: Run MarkdownPreview widget tests
         run: |
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'MarkdownPreviewWidgetTests' --no-parallel"
+            "swift test --filter 'MarkdownPreviewWidgetTests|MathPreviewWidgetTests' --no-parallel"
 
   build-macos:
-    name: Build on macOS
-    runs-on: macos-26
+    name: Build on macOS (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # What release-macos.yml ships with: macOS 26 and Xcode 26.4.1
+          # (Swift 6.3). The default Xcode there is 26.2 (Swift 6.2).
+          - name: macOS 26, Xcode 26.4.1
+            runner: macos-26
+            xcode: /Applications/Xcode_26.4.1.app
+          # The Xcode 27 image (macOS 27, Swift 6.4), as a compile check
+          # only: release builds stay on macOS 26, because Homebrew bottles on
+          # macOS 27 are built for 27 and the app would no longer start on 26.
+          - name: macOS 27, Xcode 27
+            runner: xcode-27
+            xcode: ""
     # Verifies the package compiles against the Homebrew GTK4 / libadwaita /
     # libspelling stack on Apple Silicon. Tests are NOT run in CI: GitHub-
     # hosted macOS runners are headless (no WindowServer session), and the
@@ -108,10 +164,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      # macos-26's default Xcode is 26.2 (Swift 6.2). Pick 26.4.1 to match
-      # the swift-tools-version in Package.swift and what local devs use.
-      - name: Select Xcode 26.4.1 (Swift 6.3)
-        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
+      - name: Select Xcode
+        if: matrix.xcode != ''
+        run: sudo xcode-select -s "${{ matrix.xcode }}"
 
       - name: Install GTK + libspelling stack via Homebrew
         run: brew install libadwaita gettext gtksourceview5 libspelling pkgconf
@@ -121,6 +176,16 @@ jobs:
 
       - name: Swift version
         run: swift --version
+
+      # The image ships rustup; the toolchain is pinned to what the Linux
+      # builds use (Ubuntu's rustc-1.91).
+      - name: Build the math engine
+        env:
+          RUSTUP_TOOLCHAIN: "1.91"
+        run: |
+          rustup toolchain install 1.91 --profile minimal
+          cargo --version
+          bash scripts/build-ratex-bridge.sh
 
       - name: Build
         run: swift build
@@ -150,9 +215,25 @@ jobs:
             DEVELOPMENT_TEAM= \
             build
 
+      - name: Build Xcode .app target (Release)
+        # The configuration release-macos.yml ships, linking the math
+        # engine the way the DMG does; still ad-hoc signed, no bundling.
+        if: matrix.runner == 'macos-26'
+        run: |
+          xcodebuild \
+            -project packaging/macos/swiftynotes.xcodeproj \
+            -scheme swiftynotes \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= \
+            build
+
   ui-smoke-tests:
     name: UI smoke tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: build-and-core-test
 
     steps:
@@ -175,13 +256,18 @@ jobs:
             libspelling-1-dev \
             locales \
             python3-pyatspi \
-            weston
+            weston \
+            rustc-1.91 \
+            cargo-1.91
 
       - name: Generate a locale
         # gettext ignores LANGUAGE entirely while LC_MESSAGES names the C
         # locale, so the interface-language tests need some real locale to
         # exist — any one will do; it need not be the language selected.
         run: sudo locale-gen en_US.UTF-8
+
+      - name: Build the math engine
+        run: PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
 
       - name: Run Wayland smoke tests
         run: |

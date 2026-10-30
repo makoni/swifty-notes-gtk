@@ -60,7 +60,7 @@ final class MainWindow {
         keyCaptureWindow: window,
         viewMode: { [weak self] in self?.state.viewMode ?? .split },
         presentToast: { [weak self] message in
-            self?.toastOverlay.addToast(Toast(title: message))
+            self?.toastOverlay.addToast(Toast.plain(message))
         },
     )
     /// Built lazily in `wireSignals` (deferred so the editor / preview
@@ -239,9 +239,17 @@ final class MainWindow {
             self?.syncPreviewScroll()
         },
     )
-    var isRestoringPreviewPaneLayout = false
-    var previewAnimationID: SourceID?
-    var isPreviewPaneAttached = false
+    lazy var previewPaneDivider = PreviewPaneDivider(
+        pane: editorPreviewPane,
+        previewContent: previewPaneContent,
+        host: .init(
+            estimatedRoomWidth: { [weak self] in self?.estimatedPreviewContainerWidth ?? 0 },
+            isSplit: { [weak self] in self?.state.viewMode == .split },
+            preferredPreviewWidth: { [weak self] in self?.state.preferredPreviewWidth ?? WorkspaceState.defaultPreviewWidth },
+            setPreferredPreviewWidth: { [weak self] in self?.state.setPreferredPreviewWidth($0) },
+            editorWidthChanged: { [weak self] in self?.updateEditorFormattingToolbarLayout(forWidth: $0) },
+        ),
+    )
     var suppressViewModeToggleChange = false
     /// Convenience accessor used by debug tests; delegates to the toolbar.
     var editorFormattingButtons: [MarkdownFormattingAction: Button] {
@@ -457,6 +465,8 @@ final class MainWindow {
         installEditorClipboardImagePaste()
 
         trashedNoteBanner.buttonLabel = "Restore".localized
+        // The title holds the note's title, which is text, not markup.
+        trashedNoteBanner.useMarkup = false
         trashedNoteBanner.revealed = false
         trashedNoteBanner.onButtonClicked { [weak self] in
             guard let self, let id = previewedTrashedNoteID else { return }
@@ -535,9 +545,9 @@ final class MainWindow {
         outlineSplitView.sidebarPosition = .end
         outlineSplitView.enableShowGesture = false
         outlineSplitView.enableHideGesture = false
-        outlineSplitView.minSidebarWidth = 220
-        outlineSplitView.maxSidebarWidth = 320
-        outlineSplitView.sidebarWidthFraction = 0.18
+        outlineSplitView.minSidebarWidth = Double(PaneLayout.minimumOutlineWidth)
+        outlineSplitView.maxSidebarWidth = Double(PaneLayout.maximumOutlineWidth)
+        outlineSplitView.sidebarWidthFraction = PaneLayout.outlineWidthFraction
         outlineSplitView.sidebar = outlineSidebar.root
         outlineSplitView.content = splitView
         outlineSplitView.showSidebar = state.isOutlineVisible
@@ -686,9 +696,8 @@ final class MainWindow {
             self?.refreshPreview()
         }
 
-        editorPreviewPane.onPositionChanged { [weak self] in
-            self?.handlePreviewPaneMoved()
-        }
+        // Places the divider and remembers the width the user drags to.
+        _ = previewPaneDivider
 
         editorFormattingToolbar.scrolled.onSizeAllocate { [weak self] width, _ in
             self?.updateEditorFormattingToolbarLayout(forWidth: width)
@@ -769,10 +778,7 @@ final class MainWindow {
         )
     }
 
-    static let minimumPreviewWidth = 360
-    static let minimumEditorWidth = 320
     static let editorFormattingCompactWidthThreshold = 520
-    static let previewAnimationDuration = 220
 
     /// Returns the on-disk path to a bundled icon SVG (e.g. `table-symbolic`)
     /// shipped under the resource bundle's `Icons/` directory. Used for
@@ -1047,18 +1053,4 @@ final class MainWindow {
         try process.run()
     }
 
-    static func resolvedPreviewWidth(storedWidth: Int, availableWidth: Int) -> Int {
-        let boundedAvailableWidth = max(availableWidth, minimumPreviewWidth + minimumEditorWidth)
-        let maximumPreviewWidth = max(boundedAvailableWidth - minimumEditorWidth, minimumPreviewWidth)
-        let comfortablePreviewWidth = min(
-            max(Int(Double(boundedAvailableWidth) * 0.34), WorkspaceState.defaultPreviewWidth),
-            maximumPreviewWidth,
-        )
-        let requestedWidth: Int = if storedWidth == WorkspaceState.legacyDefaultPreviewWidth {
-            max(storedWidth, comfortablePreviewWidth)
-        } else {
-            storedWidth
-        }
-        return min(max(requestedWidth, minimumPreviewWidth), maximumPreviewWidth)
-    }
 }

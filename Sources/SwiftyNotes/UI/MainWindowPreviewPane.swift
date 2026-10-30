@@ -247,7 +247,7 @@ extension MainWindow {
         }
 
         hasScheduledDebugLanguageSwitch = true
-        MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds)) { [weak self] in
+        afterDebugLanguageSwitchGate { [weak self] in
             guard let self else { return }
             selectDebugLanguage(language)
             let followUps = (ProcessInfo.processInfo.environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_THEN"] ?? "")
@@ -281,10 +281,32 @@ extension MainWindow {
     private func selectDebugLanguagesInSequence(_ languages: [AppLanguage]) {
         guard let next = languages.first else { return }
         let rest = Array(languages.dropFirst())
-        MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds)) { [weak self] in
+        afterDebugLanguageSwitchGate { [weak self] in
             guard let self else { return }
             selectDebugLanguage(next)
             selectDebugLanguagesInSequence(rest)
+        }
+    }
+
+    /// Runs `switchLanguage` after the delay — or, with
+    /// `SWIFTY_NOTES_DEBUG_SET_LANGUAGE_GATE=<name>`, once a file of that
+    /// name appears in `$XDG_RUNTIME_DIR` (it is removed again): a test that
+    /// reads the interface over AT-SPI says when it is done with a
+    /// language, however slow the reading is.
+    private func afterDebugLanguageSwitchGate(_ switchLanguage: @escaping @MainActor () -> Void) {
+        let environment = ProcessInfo.processInfo.environment
+        guard let name = environment["SWIFTY_NOTES_DEBUG_SET_LANGUAGE_GATE"], !name.isEmpty,
+              let runtimeDirectory = environment["XDG_RUNTIME_DIR"]
+        else {
+            MainContext.delay(for: .milliseconds(debugLanguageSwitchDelayMilliseconds), switchLanguage)
+            return
+        }
+        let gate = URL(fileURLWithPath: runtimeDirectory, isDirectory: true).appendingPathComponent(name)
+        _ = MainContext.timeout(every: .milliseconds(100)) {
+            guard FileManager.default.fileExists(atPath: gate.path) else { return true }
+            try? FileManager.default.removeItem(at: gate)
+            switchLanguage()
+            return false
         }
     }
     #endif
@@ -730,137 +752,59 @@ extension MainWindow {
 
     func showPreviewPane(animated: Bool) {
         showEditorContent()
-        attachPreviewPane()
-        if animated, canAnimatePreviewPane {
-            let totalWidth = currentPreviewContainerWidth
-            let targetPosition = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
-            editorPreviewPane.position = totalWidth
-            animatePreviewPane(to: targetPosition)
-            return
-        }
-        restorePreviewPaneLayout()
+        previewPaneDivider.show(animated: animated)
     }
 
     func hidePreviewPane(animated: Bool) {
         showEditorContent()
-        guard isPreviewPaneAttached else { return }
-        guard animated, canAnimatePreviewPane else {
-            detachPreviewPane()
-            return
-        }
-        animatePreviewPane(to: currentPreviewContainerWidth)
+        previewPaneDivider.hide(animated: animated)
     }
 
     func restorePreviewPaneLayout() {
-        guard state.viewMode == .split else { return }
-        let totalWidth = currentPreviewContainerWidth
-        isRestoringPreviewPaneLayout = true
-        editorPreviewPane.position = resolvedVisiblePreviewPosition(totalWidth: totalWidth)
-        refreshEditorFormattingToolbarLayout()
-        MainContext.idle { [weak self] in
-            self?.isRestoringPreviewPaneLayout = false
-        }
-    }
-
-    func attachPreviewPane() {
-        guard !isPreviewPaneAttached else { return }
-        editorPreviewPane.endChild = previewPaneContent
-        isPreviewPaneAttached = true
+        previewPaneDivider.restore()
     }
 
     func detachPreviewPane() {
-        guard isPreviewPaneAttached else { return }
-        stopPreviewAnimation()
-        editorPreviewPane.endChild = nil
-        isPreviewPaneAttached = false
-    }
-
-    func animatePreviewPane(to targetPosition: Int) {
-        stopPreviewAnimation()
-        let startPosition = editorPreviewPane.position
-        guard startPosition != targetPosition else {
-            isRestoringPreviewPaneLayout = false
-            if state.viewMode != .split {
-                schedulePreviewDetachIfNeeded()
-            }
-            return
-        }
-
-        isRestoringPreviewPaneLayout = true
-        let startedAt = Date()
-        let duration = Double(Self.previewAnimationDuration) / 1000
-        previewAnimationID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
-            guard let self else { return false }
-            let elapsed = Date().timeIntervalSince(startedAt)
-            let progress = min(max(elapsed / duration, 0), 1)
-            let easedProgress = 1 - pow(1 - progress, 3)
-            let position = Double(startPosition) + (Double(targetPosition - startPosition) * easedProgress)
-            editorPreviewPane.position = Int(position.rounded())
-            if progress < 1 {
-                return true
-            }
-
-            previewAnimationID = nil
-            isRestoringPreviewPaneLayout = false
-            if state.viewMode != .split {
-                schedulePreviewDetachIfNeeded()
-            }
-            return false
-        }
-    }
-
-    func schedulePreviewDetachIfNeeded() {
-        MainContext.delay(for: .milliseconds(1)) { [weak self] in
-            guard let self, state.viewMode != .split else { return }
-            detachPreviewPane()
-        }
+        previewPaneDivider.detach()
     }
 
     func stopPreviewAnimation() {
-        if let previewAnimationID {
-            MainContext.cancel(sourceId: previewAnimationID)
-            self.previewAnimationID = nil
-        }
+        previewPaneDivider.stopAnimation()
     }
 
+    var isPreviewPaneAttached: Bool {
+        previewPaneDivider.isPreviewAttached
+    }
+
+    /// The room the editor and preview share (see
+    /// ``PreviewPaneDivider/roomWidth``).
     var currentPreviewContainerWidth: Int {
-        max(
+        previewPaneDivider.roomWidth
+    }
+
+    /// That room estimated from the window: the window less the sidebar and
+    /// the Outline beside them.
+    var estimatedPreviewContainerWidth: Int {
+        let outlineWidth = currentOutlineWidth
+        return max(
             editorPreviewPane.width,
-            window.width > 0 ? window.width - currentSidebarWidth : 0,
-            window.defaultWidth - 280,
-            state.preferredWindowWidth - 280,
+            window.width > 0 ? window.width - currentSidebarWidth - outlineWidth : 0,
+            window.defaultWidth - 280 - outlineWidth,
+            state.preferredWindowWidth - 280 - outlineWidth,
         )
-    }
-
-    var canAnimatePreviewPane: Bool {
-        editorPreviewPane.parent != nil && editorPreviewPane.width > 0 && editorPreviewPane.height > 0
-    }
-
-    func resolvedVisiblePreviewPosition(totalWidth: Int) -> Int {
-        let previewWidth = Self.resolvedPreviewWidth(
-            storedWidth: state.preferredPreviewWidth,
-            availableWidth: totalWidth,
-        )
-        if state.preferredPreviewWidth == WorkspaceState.legacyDefaultPreviewWidth,
-           previewWidth > state.preferredPreviewWidth
-        {
-            state.setPreferredPreviewWidth(previewWidth)
-        }
-        preview.rootScroll.minContentWidth = Self.minimumPreviewWidth
-        return max(totalWidth - previewWidth, Self.minimumEditorWidth)
-    }
-
-    func handlePreviewPaneMoved() {
-        guard state.viewMode == .split, isPreviewPaneAttached, !isRestoringPreviewPaneLayout else { return }
-        let totalWidth = max(editorPreviewPane.width, window.width - currentSidebarWidth, window.defaultWidth - 280)
-        guard totalWidth >= Self.minimumPreviewWidth + Self.minimumEditorWidth else { return }
-        let previewWidth = totalWidth - editorPreviewPane.position
-        guard previewWidth >= Self.minimumPreviewWidth else { return }
-        state.setPreferredPreviewWidth(previewWidth)
-        updateEditorFormattingToolbarLayout(forWidth: editorPreviewPane.position)
     }
 
     var currentSidebarWidth: Int {
         splitView.showSidebar ? sidebar.root.width : 0
+    }
+
+    /// The Outline's width while shown — as allocated, or as the split view
+    /// will size it before the first allocation.
+    var currentOutlineWidth: Int {
+        PaneLayout.outlineWidth(
+            isShown: outlineSplitView.showSidebar,
+            allocatedWidth: outlineSidebar.root.width,
+            windowWidth: window.width > 0 ? window.width : max(window.defaultWidth, state.preferredWindowWidth),
+        )
     }
 }

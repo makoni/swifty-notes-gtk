@@ -176,14 +176,3 @@ final class HTMLNode {
         }
     }
 }
-
-func pangoEscape(_ text: String) -> String {
-    text
-        .replacingOccurrences(of: "&", with: "&amp;")
-        .replacingOccurrences(of: "<", with: "&lt;")
-        .replacingOccurrences(of: ">", with: "&gt;")
-}
-
-func pangoEscapeAttribute(_ text: String) -> String {
-    pangoEscape(text).replacingOccurrences(of: "\"", with: "&quot;")
-}

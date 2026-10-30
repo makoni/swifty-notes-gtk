@@ -61,7 +61,14 @@ final class BreadcrumbStrip {
         lastSection = section
         lastLeaf = leaf
 
-        label.markup = Self.buildMarkup(docTitle: docTitle, section: section, leaf: leaf)
+        // Formulas in the title and headings are drawn, as in the preview.
+        let built = Self.buildMathMarkup(docTitle: docTitle, section: section, leaf: leaf)
+        TitleMath.show(
+            markup: built.markup,
+            spans: built.spans,
+            in: label,
+            accessibleText: Self.readableText(docTitle: docTitle, section: section, leaf: leaf),
+        )
         // Visibility: hide the whole strip if there's nothing to show.
         label.visible = !docTitle.isEmpty || section?.isEmpty == false || leaf?.isEmpty == false
     }
@@ -96,18 +103,26 @@ final class BreadcrumbStrip {
     /// reads as a "passive you-are-here" cue. The colors use Adwaita's
     /// CSS-resolved foreground / muted tokens by way of opacity spans —
     /// avoids hard-coding hex values that wouldn't track theme changes.
-    static func buildMarkup(docTitle: String, section: String?, leaf: String?) -> String {
+    /// Each formula in the segments is a marker in the markup; `spans` are
+    /// those formulas in order.
+    static func buildMathMarkup(docTitle: String, section: String?, leaf: String?) -> (markup: String, spans: [MathSpan]) {
         var pieces: [String] = []
+        var spans: [MathSpan] = []
+        func segment(_ text: String) -> String {
+            let math = MathInlineText.markup(for: text)
+            spans += math.spans
+            return math.markup
+        }
         if !docTitle.isEmpty {
-            pieces.append("<span alpha=\"60%\">\(PangoMarkup.escape(docTitle))</span>")
+            pieces.append("<span alpha=\"60%\">\(segment(docTitle))</span>")
         }
         if let section, !section.isEmpty {
             let renderedSection: String
             if let leaf, !leaf.isEmpty {
-                renderedSection = "<span alpha=\"60%\">\(PangoMarkup.escape(section))</span>"
+                renderedSection = "<span alpha=\"60%\">\(segment(section))</span>"
             } else {
                 // No leaf — the section is the current focus, render full-weight.
-                renderedSection = "<span weight=\"500\">\(PangoMarkup.escape(section))</span>"
+                renderedSection = "<span weight=\"500\">\(segment(section))</span>"
             }
             if !pieces.isEmpty {
                 pieces.append(separator)
@@ -118,9 +133,18 @@ final class BreadcrumbStrip {
             if !pieces.isEmpty {
                 pieces.append(separator)
             }
-            pieces.append("<span weight=\"500\">\(PangoMarkup.escape(leaf))</span>")
+            pieces.append("<span weight=\"500\">\(segment(leaf))</span>")
         }
-        return pieces.joined(separator: " ")
+        return (pieces.joined(separator: " "), spans)
+    }
+
+    /// The strip read as plain text, segment by segment: read as one, a `$`
+    /// in one segment would pair with one in the next.
+    static func readableText(docTitle: String, section: String?, leaf: String?) -> String {
+        [docTitle, section ?? "", leaf ?? ""]
+            .filter { !$0.isEmpty }
+            .map(MathInlineText.readable)
+            .joined(separator: " › ")
     }
 
     /// Pango-escaped chevron `›` with a dim alpha matching the design's
