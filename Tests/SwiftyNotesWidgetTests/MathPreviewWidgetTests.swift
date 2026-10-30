@@ -201,6 +201,83 @@ struct MathPreviewWidgetTests {
         #expect(preview.debugAppliedHighlightTexts == ["needle", "needle"])
     }
 
+    @Test("A note without formulas does not refresh formula sizes") @MainActor
+    func aNoteWithoutFormulasDoesNotRefreshFormulaSizes() throws {
+        let fixture = try Fixture(suffix: "no-math-refresh", markdown: "Plain text, no formulas.")
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        fixture.preview.scheduleMathFontRefresh()
+        #expect(!fixture.preview.debugMathFontRefreshPending)
+        fixture.render("Now $x$ has one.")
+        fixture.preview.scheduleMathFontRefresh()
+        #expect(fixture.preview.debugMathFontRefreshPending)
+    }
+
+    @Test("The preview's labels together draw formulas within one total, and get room back as labels go") @MainActor
+    func formulaLabelsTogetherStayWithinOneTotal() throws {
+        let paragraphs = (0..<6).map { row in (0..<5).map { "$x_{\(row * 10 + $0)}$" }.joined(separator: " ") + " text." }
+        let note = paragraphs.joined(separator: "\n\n")
+        let fixture = try Fixture(suffix: "total-budget", markdown: "")
+        let budget = PreviewMath.drawnFormulaTotalBudget
+        defer { PreviewMath.drawnFormulaTotalBudget = budget }
+        func drawnCounts() -> [Int] {
+            fixture.labels(withCSSClass: "preview-paragraph-label").map { PreviewMath.debugFormulas(on: $0).count }
+        }
+
+        // Other tests' windows may still hold some.
+        let before = PreviewMath.grantedFormulaBytes
+        // What the note costs with every formula drawn, once laid out.
+        fixture.render(note)
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        #expect(drawnCounts() == Array(repeating: 5, count: 6))
+        let everything = PreviewMath.grantedFormulaBytes - before
+        #expect(everything > 0)
+
+        // Room for about half: the first labels draw theirs, later ones
+        // show the rest as source, and the total holds.
+        fixture.render("")
+        #expect(PreviewMath.grantedFormulaBytes == before, "an empty preview holds nothing")
+        PreviewMath.drawnFormulaTotalBudget = before + everything / 2
+        fixture.render(note)
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        let halved = drawnCounts()
+        #expect(halved.first == 5)
+        #expect(halved.reduce(0, +) < 30, "\(halved)")
+        #expect(halved.reduce(0, +) >= 12, "\(halved)")
+        #expect(PreviewMath.grantedFormulaBytes <= PreviewMath.drawnFormulaTotalBudget * 1.01)
+        #expect(fixture.labels(withCSSClass: "preview-paragraph-label").contains(where: PreviewMath.debugIsHeldBackByTotal))
+
+        // Dropping the first paragraphs gives their share back; the ones
+        // held back draw more.
+        fixture.render(paragraphs.suffix(3).joined(separator: "\n\n"))
+        pumpUntil(timeout: .seconds(2)) { !fixture.preview.debugMathFontRefreshPending }
+        #expect(drawnCounts() == [5, 5, 5], "\(drawnCounts())")
+        #expect(PreviewMath.grantedFormulaBytes <= PreviewMath.drawnFormulaTotalBudget * 1.01)
+
+        fixture.render("")
+        #expect(PreviewMath.grantedFormulaBytes == before)
+    }
+
+    @Test("A paragraph with formulas edited in place gets its search highlight back") @MainActor
+    func aParagraphEditedInPlaceGetsItsSearchHighlightBack() throws {
+        let fixture = try Fixture(suffix: "search-in-place", markdown: "First $x^2$ then needle.\n\nOther text.")
+        let preview = fixture.preview
+        let label = try #require(fixture.labels().first { $0.text.contains("needle") })
+        let matches = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: matches, activeIndex: 0)
+        let highlighted = attributeCount(on: label)
+
+        // Typing in the paragraph: updated in place, its formulas laid out
+        // again (which replaces the label's attributes); the search bar
+        // then applies its matches again, as after every render.
+        preview.render(blocks: MarkdownRenderer().blocks(for: "First $x^2$ then needle!\n\nOther text.", darkAppearance: false))
+        #expect(fixture.labels().contains { $0.opaquePointer == label.opaquePointer }, "updated in place")
+        let again = MarkdownSearchEngine.search(blocks: preview.debugLastRenderedBlocks, query: "needle", options: .init())
+        preview.applySearchHighlights(matches: again, activeIndex: 0)
+        #expect(attributeCount(on: label) == highlighted)
+        #expect(preview.debugAppliedHighlightTexts == ["needle"])
+        #expect(PreviewMath.debugShapeAttributeCount(on: label) == 1)
+    }
+
     @Test("Zooming keeps the search highlights") @MainActor
     func zoomingKeepsSearchHighlights() throws {
         let fixture = try Fixture(suffix: "search-zoom", markdown: "Formula $x^2$ then needle.")
@@ -1046,8 +1123,7 @@ struct MathPreviewWidgetTests {
         // The next pass, straight after, must not parse again at once.
         var postponed = false
         PreviewMath.titleScheduler.withBudget(fromCatchUpPass: true) {
-            _ = MathRenderer.formula(tex: "\\theta_8", isDisplay: false, pixelSize: 16)
-            postponed = MathRenderer.lastLookupWasPostponed
+            postponed = MathRenderer.lookup(tex: "\\theta_8", isDisplay: false, pixelSize: 16).isPostponed
         }
         #expect(postponed, "a second forced parse ran back to back")
         // Passes that parse nothing do not hold the period back: once the
@@ -1058,8 +1134,7 @@ struct MathPreviewWidgetTests {
         }
         var parsedLater = false
         PreviewMath.titleScheduler.withBudget(fromCatchUpPass: true) {
-            _ = MathRenderer.formula(tex: "\\theta_8", isDisplay: false, pixelSize: 16)
-            parsedLater = !MathRenderer.lastLookupWasPostponed
+            parsedLater = !MathRenderer.lookup(tex: "\\theta_8", isDisplay: false, pixelSize: 16).isPostponed
         }
         #expect(parsedLater, "the period never renewed")
     }

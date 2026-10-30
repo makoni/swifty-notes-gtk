@@ -251,6 +251,16 @@ struct PreviewPaneLayoutTests {
         #expect(PreviewPaneDivider.isSettled(steadyFrames: 0, elapsed: maximum))
     }
 
+    @Test("The Outline's width is none while hidden, as allocated, else as its split view will size it")
+    func theOutlinesWidthFollowsItsState() {
+        #expect(PaneLayout.outlineWidth(isShown: false, allocatedWidth: 260, windowWidth: 1400) == 0)
+        #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 260, windowWidth: 1400) == 260)
+        // Not allocated yet: 18 % of the window, within 220…320 px.
+        #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 0, windowWidth: 1400) == 252)
+        #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 0, windowWidth: 800) == 220)
+        #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 0, windowWidth: 3000) == 320)
+    }
+
     @MainActor
     private static func waitUntil(
         timeout: Duration,

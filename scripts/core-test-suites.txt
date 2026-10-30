@@ -2,6 +2,7 @@ BreadcrumbStripTests
 CLICommandTests
 CLITests
 ExtractorTests
+GObjectWeakReferenceTests
 LanguageSwitchingTests
 LocalizationCatalogTests
 LocalizationTests

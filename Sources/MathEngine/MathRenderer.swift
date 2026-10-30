@@ -52,6 +52,26 @@ public final class MathFormula: @unchecked Sendable {
     }
 }
 
+/// What looking a formula up found.
+public enum MathLookup {
+    case formula(MathFormula)
+    /// The TeX does not parse, is too long or lays out absurdly large.
+    case failed
+    /// The pass ran out of parse budget; a later pass parses it.
+    case postponed
+    /// The formulas alive hold the engine's memory limit, so it may parse
+    /// later (unlike a formula that does not).
+    case refusedForMemory
+
+    public var formula: MathFormula? {
+        if case let .formula(formula) = self { formula } else { nil }
+    }
+
+    public var isPostponed: Bool {
+        if case .postponed = self { true } else { false }
+    }
+}
+
 /// Front door to the math engine for the preview.
 ///
 /// Parsing is synchronous and runs on the main actor, so the work is
@@ -76,16 +96,6 @@ public enum MathRenderer {
     private static var parseMustProgress = false
     private static var parsedInBudget = false
 
-    /// Set when a lookup returned nil only because the pass ran out of parse
-    /// budget, so the caller can tell a postponed formula from a broken one;
-    /// cleared by the next lookup.
-    public private(set) static var lastLookupWasPostponed = false
-
-    /// Set when a lookup returned nil because the formulas alive held the
-    /// engine's memory limit, so it may succeed later (unlike a formula
-    /// that does not parse); cleared by the next lookup.
-    public private(set) static var lastLookupWasTransient = false
-
     private struct CacheEntry {
         let formula: MathFormula?
         var lastUse: Int
@@ -99,23 +109,26 @@ public enum MathRenderer {
         let quarterPixels: Int
     }
 
-    /// The formula for `tex` at `pixelSize` pixels per em, or nil when the
-    /// TeX does not parse, is too long or lays out absurdly large.
+    /// The formula for `tex` at `pixelSize` pixels per em, or nil when it
+    /// is not drawn now (see ``lookup(tex:isDisplay:pixelSize:)`` for why).
     public static func formula(tex: String, isDisplay: Bool, pixelSize: Double) -> MathFormula? {
-        lastLookupWasPostponed = false
-        lastLookupWasTransient = false
-        guard pixelSize.isFinite, pixelSize >= 1, pixelSize <= 1024 else { return nil }
-        guard !tex.utf8.isEmpty, tex.utf8.count <= maxTeXBytes else { return nil }
+        lookup(tex: tex, isDisplay: isDisplay, pixelSize: pixelSize).formula
+    }
+
+    /// The formula for `tex` at `pixelSize` pixels per em, or why there is
+    /// none.
+    public static func lookup(tex: String, isDisplay: Bool, pixelSize: Double) -> MathLookup {
+        guard pixelSize.isFinite, pixelSize >= 1, pixelSize <= 1024 else { return .failed }
+        guard !tex.utf8.isEmpty, tex.utf8.count <= maxTeXBytes else { return .failed }
         let key = CacheKey(tex: tex, isDisplay: isDisplay, quarterPixels: Int((pixelSize * 4).rounded()))
         useCounter += 1
         if let cached = cache[key] {
             cache[key]?.lastUse = useCounter
-            return cached.formula
+            return cached.formula.map(MathLookup.formula) ?? .failed
         }
         if let parseDeadline, ContinuousClock.now >= parseDeadline, !(parseMustProgress && !parsedInBudget) {
             // Out of time for this pass; not cached, so a later pass parses it.
-            lastLookupWasPostponed = true
-            return nil
+            return .postponed
         }
         parsedInBudget = true
         var formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
@@ -128,12 +141,11 @@ public enum MathRenderer {
             formula = parse(tex: tex, isDisplay: isDisplay, pixelSize: Double(key.quarterPixels) / 4)
             // Still refused: not cached, as it may draw once memory frees.
             if formula == nil, ratex_bridge_last_error_is_transient() != 0 {
-                lastLookupWasTransient = true
-                return nil
+                return .refusedForMemory
             }
         }
         store(formula, for: key)
-        return formula
+        return formula.map(MathLookup.formula) ?? .failed
     }
 
     /// Points the engine at a serif system font (chosen through fontconfig,
@@ -162,7 +174,7 @@ public enum MathRenderer {
     /// parsed whatever the time, so passes that follow one another always
     /// get through the postponed formulas.
     public static func withParseBudget<Result>(
-        _ duration: Duration = .milliseconds(400),
+        _ duration: Duration,
         guaranteeingProgress: Bool = false,
         _ body: () throws -> Result
     ) rethrows -> Result {

@@ -202,6 +202,11 @@ let package = Package(
             dependencies: ["SwiftyNotes"],
             path: "Sources/SwiftyNotesApp"
         ),
+        // The engine on its own, without the app (Adwaita only for cairo).
+        .testTarget(
+            name: "MathEngineTests",
+            dependencies: ["MathEngine", .product(name: "Adwaita", package: "swift-adwaita")]
+        ),
         .testTarget(
             name: "SwiftyNotesTests",
             dependencies: ["SwiftyNotes", "MathEngine"]

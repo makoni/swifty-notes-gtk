@@ -239,6 +239,9 @@ final class PreviewPaneDivider {
         }
     }
 
+    /// How long the preview slides in or out.
+    private static let slideDuration: Duration = .milliseconds(220)
+
     private func animate(to target: Int) {
         stopAnimation()
         let start = pane.position
@@ -249,7 +252,7 @@ final class PreviewPaneDivider {
         }
         isRestoring = true
         let startedAt = Date()
-        let duration = Double(PaneLayout.previewAnimationDuration) / 1000
+        let duration = Self.slideDuration / .seconds(1)
         animationID = MainContext.timeout(every: .milliseconds(16)) { [weak self] in
             guard let self else { return false }
             let progress = min(max(Date().timeIntervalSince(startedAt) / duration, 0), 1)

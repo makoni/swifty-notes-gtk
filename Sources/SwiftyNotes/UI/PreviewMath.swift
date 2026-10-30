@@ -230,6 +230,8 @@ enum PreviewMath {
                 }
                 needsLayout = needsLayout || state.isBudgetSensitive || state.isBudgetLimited
             }
+            // Held back by the preview's total, which has room again.
+            needsLayout = needsLayout || mayDrawMoreNow(state)
             guard needsLayout else { return }
             layOut(label, state: state)
             refreshed = true
@@ -279,6 +281,11 @@ enum PreviewMath {
     }
 
     #if DEBUG
+    /// Whether the label was held back by the preview's total (tests).
+    static func debugIsHeldBackByTotal(_ label: Label) -> Bool {
+        state(of: label)?.heldBackSinceRelease != nil
+    }
+
     /// Whether the preview may have formulas waiting for parse budget (tests).
     static var debugMayHavePostponedFormulas: Bool {
         mayHavePostponedFormulas
@@ -297,21 +304,12 @@ enum PreviewMath {
     /// How many formula shape attributes the label's attribute list holds
     /// right now (tests: overlays must keep them).
     static func debugShapeAttributeCount(on label: Label) -> Int {
-        guard let list = gtk_label_get_attributes(label.opaquePointer),
-              let attributes = pango_attr_list_get_attributes(list)
-        else {
-            return 0
-        }
-        defer { g_slist_free_full(attributes) { pango_attribute_destroy($0?.assumingMemoryBound(to: PangoAttribute.self)) } }
+        guard let list = gtk_label_get_attributes(label.opaquePointer) else { return 0 }
         var count = 0
-        var node: UnsafeMutablePointer<GSList>? = attributes
-        while let current = node {
-            if let attribute = current.pointee.data?.assumingMemoryBound(to: PangoAttribute.self),
-               attribute.pointee.klass.pointee.type == PANGO_ATTR_SHAPE
-            {
+        forEachAttribute(in: list) { attribute in
+            if attribute.pointee.klass.pointee.type == PANGO_ATTR_SHAPE {
                 count += 1
             }
-            node = current.pointee.next
         }
         return count
     }
@@ -336,6 +334,79 @@ enum PreviewMath {
     /// same reason (``mayShareLabel(_:)``). One drawing node per label
     /// would remove the need; GTK offers labels no hook for it.
     static let drawnFormulaBudget = 128.0 * 1024 * 1024
+
+    /// What all the preview's formula labels may draw together, in bytes as
+    /// ``drawnFormulaBudget`` counts them: a note of many short paragraphs,
+    /// each within its label's budget, would otherwise add up to gigabytes
+    /// (and the note reopens at launch). Labels take their share in the
+    /// order they are laid out; one the total held back shows the rest of
+    /// its formulas as source, and tries again once a label gives some back.
+    /// Labels outside the preview are bounded otherwise and do not count.
+    static var drawnFormulaTotalBudget = 1024.0 * 1024 * 1024
+
+    /// What the formula labels hold of ``drawnFormulaTotalBudget`` now.
+    private(set) static var grantedFormulaBytes = 0.0
+    /// Counts the times a label gave some of it back, so a label held back
+    /// since the last one knows to try again.
+    private static var grantReleases = 0
+
+    /// How many of `formulas` (at most `limit`) `label` may draw within what
+    /// the other labels leave of ``drawnFormulaTotalBudget``, and the bytes
+    /// that many cost.
+    private static func totalAllowance(
+        for label: Label,
+        state: MathLabelState,
+        formulas: [MathFormula?],
+        upTo limit: Int,
+        frame: (width: Double, clipArea: Double, scale: Double)
+    ) -> (allowance: Int, bytes: Double) {
+        let count = min(formulas.lazy.compactMap(\.self).count, limit)
+        guard !state.isOutsidePreview, count > 0 else { return (.max, 0) }
+        let bytesPerPixel = frame.scale * frame.scale * 4
+        let area: Double
+        if state.isDisplayBlock, let formula = formulas.lazy.compactMap(\.self).first {
+            // The label holds the formula alone.
+            let rect = MathShape.rect(for: formula)
+            area = Double(rect.width) * Double(rect.height) / Double(PANGO_SCALE * PANGO_SCALE)
+        } else if gtk_widget_get_height(label.widgetPointer) > 0 {
+            // Allocated: each formula's node is about the label.
+            area = Double(gtk_widget_get_width(label.widgetPointer)) * Double(gtk_widget_get_height(label.widgetPointer))
+        } else if let extents = estimatedExtents(of: label, state: state, formulas: formulas, width: frame.width) {
+            area = max(frame.width, Double(extents.logical.width)) * Double(max(extents.ink.height, extents.logical.height))
+        } else {
+            area = frame.clipArea
+        }
+        let costPerFormula = min(area, frame.clipArea) * bytesPerPixel
+        guard costPerFormula > 0 else { return (.max, 0) }
+        let left = max(0, drawnFormulaTotalBudget - (grantedFormulaBytes - state.grantedBytes))
+        let allowance = min(count, Int(left / costPerFormula))
+        return (allowance == count ? .max : allowance, Double(allowance) * costPerFormula)
+    }
+
+    /// Records what `state`'s label draws now as its share of the total.
+    private static func grant(_ bytes: Double, to state: MathLabelState, heldBack: Bool) {
+        if bytes < state.grantedBytes {
+            grantReleases += 1
+        }
+        grantedFormulaBytes += bytes - state.grantedBytes
+        state.grantedBytes = bytes
+        state.heldBackSinceRelease = heldBack ? grantReleases : nil
+    }
+
+    /// A label stops drawing formulas (an edit removed them, or it was
+    /// freed): its share goes back.
+    fileprivate static func releaseGrant(of state: MathLabelState) {
+        guard state.grantedBytes > 0 else { return }
+        grantedFormulaBytes = max(0, grantedFormulaBytes - state.grantedBytes)
+        state.grantedBytes = 0
+        grantReleases += 1
+    }
+
+    /// Whether `state`'s label was held back by the total and some has been
+    /// given back since.
+    private static func mayDrawMoreNow(_ state: MathLabelState) -> Bool {
+        state.heldBackSinceRelease.map { $0 != grantReleases } ?? false
+    }
 
     /// Whether `text` may be joined with other text into one label: not
     /// when it has formulas (see ``drawnFormulaBudget``).
@@ -460,34 +531,21 @@ enum PreviewMath {
         // from CSS — not part of the Pango context.
         let attributes = pango_layout_get_attributes(layout).map { pango_attr_list_copy($0) } ?? pango_attr_list_new()
         defer { pango_attr_list_unref(attributes) }
-        if let live = gtk_label_get_layout(label.opaquePointer).flatMap({ pango_layout_get_attributes($0) }),
-           let list = pango_attr_list_get_attributes(live)
-        {
-            var node: UnsafeMutablePointer<GSList>? = list
-            while let current = node {
-                if let attribute = current.pointee.data?.assumingMemoryBound(to: PangoAttribute.self),
-                   [PANGO_ATTR_LINE_HEIGHT, PANGO_ATTR_ABSOLUTE_LINE_HEIGHT, PANGO_ATTR_LETTER_SPACING]
-                       .contains(attribute.pointee.klass.pointee.type)
+        if let live = gtk_label_get_layout(label.opaquePointer).flatMap({ pango_layout_get_attributes($0) }) {
+            forEachAttribute(in: live) { attribute in
+                if [PANGO_ATTR_LINE_HEIGHT, PANGO_ATTR_ABSOLUTE_LINE_HEIGHT, PANGO_ATTR_LETTER_SPACING]
+                    .contains(attribute.pointee.klass.pointee.type)
                 {
                     pango_attr_list_insert(attributes, pango_attribute_copy(attribute))
                 }
-                node = current.pointee.next
             }
-            g_slist_free_full(list) { pango_attribute_destroy($0?.assumingMemoryBound(to: PangoAttribute.self)) }
         }
         let text = String(cString: pango_layout_get_text(layout))
         var drawn = formulas.lazy.compactMap(\.self).makeIterator()
         var byteIndex = 0
         for scalar in text.unicodeScalars {
             if scalar == MathSpanExtractor.formulaMarker, let formula = drawn.next() {
-                let padX = max(1, (formula.pixelSize * 0.04).rounded(.up))
-                let padY = max(2, (formula.pixelSize * 0.1).rounded(.up))
-                var rect = PangoRectangle(
-                    x: 0,
-                    y: Int32(-((formula.ascent + padY) * Double(PANGO_SCALE)).rounded(.up)),
-                    width: Int32(((formula.width + 2 * padX) * Double(PANGO_SCALE)).rounded(.up)),
-                    height: Int32(((formula.height + 2 * padY) * Double(PANGO_SCALE)).rounded(.up))
-                )
+                var rect = MathShape.rect(for: formula)
                 if let shape = pango_attr_shape_new(&rect, &rect) {
                     shape.pointee.start_index = guint(byteIndex)
                     shape.pointee.end_index = guint(byteIndex + scalar.utf8.count)
@@ -501,6 +559,20 @@ enum PreviewMath {
         var logical = PangoRectangle()
         pango_layout_get_pixel_extents(layout, &ink, &logical)
         return (ink, logical)
+    }
+
+    /// Calls `body` with each attribute of `list` — a copy, freed after the
+    /// call (copy what is kept).
+    private static func forEachAttribute(in list: OpaquePointer, _ body: (UnsafeMutablePointer<PangoAttribute>) -> Void) {
+        guard let attributes = pango_attr_list_get_attributes(list) else { return }
+        defer { g_slist_free_full(attributes) { pango_attribute_destroy($0?.assumingMemoryBound(to: PangoAttribute.self)) } }
+        var node: UnsafeMutablePointer<GSList>? = attributes
+        while let current = node {
+            if let attribute = current.pointee.data?.assumingMemoryBound(to: PangoAttribute.self) {
+                body(attribute)
+            }
+            node = current.pointee.next
+        }
     }
 
     /// The device pixels per pixel of the window `label` is in (1 before it
@@ -547,28 +619,34 @@ enum PreviewMath {
                 decisions[key] = decided
                 continue
             }
-            let formula = MathRenderer.formula(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels)
-                .flatMap { isDrawable($0, inline: !state.isDisplayBlock) ? $0 : nil }
+            let lookup = MathRenderer.lookup(tex: span.tex, isDisplay: isDisplay, pixelSize: pixels)
+            let formula = lookup.formula.flatMap { isDrawable($0, inline: !state.isDisplayBlock) ? $0 : nil }
             formulas.append(formula)
-            if MathRenderer.lastLookupWasPostponed {
+            switch lookup {
+            case .postponed:
                 state.hasPostponedFormulas = true
                 // Labels outside the preview catch up on their own; the
                 // preview's flag only spares its row binds a tree walk.
                 if !state.isOutsidePreview {
                     mayHavePostponedFormulas = true
                 }
-            } else {
-                decisions[key] = .init(formula: formula, isRetryable: MathRenderer.lastLookupWasTransient)
+            case .refusedForMemory:
+                decisions[key] = .init(formula: nil, isRetryable: true)
+            case .formula, .failed:
+                decisions[key] = .init(formula: formula, isRetryable: false)
             }
         }
         // Only the formulas the label holds now.
         state.decisions = decisions
-        // Past the label's budget the rest show their source.
+        // Past the label's budget the rest show their source, and past what
+        // is left of the preview's.
         let frame = budgetFrame(of: label)
-        let allowance = drawnFormulaAllowance(for: label, state: state, formulas: formulas, frame: frame)
+        let labelAllowance = drawnFormulaAllowance(for: label, state: state, formulas: formulas, frame: frame)
+        let total = totalAllowance(for: label, state: state, formulas: formulas, upTo: labelAllowance, frame: frame)
+        let allowance = min(labelAllowance, total.allowance)
         state.budgetFrame = frame
-        state.isBudgetSensitive = allowance != .max
-        state.isBudgetLimited = formulas.lazy.compactMap(\.self).count > allowance
+        state.isBudgetSensitive = labelAllowance != .max
+        state.isBudgetLimited = formulas.lazy.compactMap(\.self).count > labelAllowance
         var drawn = 0
         formulas = formulas.map { formula in
             guard let formula else { return nil }
@@ -578,6 +656,7 @@ enum PreviewMath {
         if state.hasPostponedFormulas, !applyingWhilePostponed {
             return
         }
+        grant(total.bytes, to: state, heldBack: total.allowance < labelAllowance && total.allowance < drawn)
         let markup = markupReplacingFailedFormulas(
             in: state.originalMarkup,
             spans: state.spans,
@@ -812,7 +891,12 @@ enum PreviewMath {
             Unmanaged.passRetained(state).toOpaque(),
             { raw in
                 guard let raw else { return }
-                Unmanaged<MathLabelState>.fromOpaque(raw).release()
+                let state = Unmanaged<MathLabelState>.fromOpaque(raw).takeRetainedValue()
+                // Freed with the label or detached from it, on the main
+                // thread GTK runs on.
+                MainActor.assumeIsolated {
+                    PreviewMath.releaseGrant(of: state)
+                }
             }
         )
         return state
@@ -842,25 +926,58 @@ enum PreviewMath {
 final class MathShape {
     let formula: MathFormula
     let span: MathSpan
-    /// The label drawing this formula. Not retained: the attribute that
-    /// holds the shape lives inside that label's layout.
-    let label: UnsafeMutablePointer<GtkWidget>
+    /// The label drawing this formula, whose colour it takes where the
+    /// renderer gives none. Weak: the attribute holding the shape lives in
+    /// that label's layout, but a copy of the attributes could outlive it.
+    private let label: GObjectWeakReference
 
     init(formula: MathFormula, span: MathSpan, label: UnsafeMutablePointer<GtkWidget>) {
         self.formula = formula
         self.span = span
-        self.label = label
+        self.label = GObjectWeakReference(UnsafeMutableRawPointer(label))
+    }
+
+    /// The label's current colour; opaque black once the label is gone.
+    var labelColor: GdkRGBA {
+        label.withObject { object in
+            var color = GdkRGBA(red: 0, green: 0, blue: 0, alpha: 1)
+            if let object {
+                gtk_widget_get_color(object.assumingMemoryBound(to: GtkWidget.self), &color)
+            }
+            return color
+        }
+    }
+
+    var horizontalPadding: Double {
+        Self.horizontalPadding(for: formula)
+    }
+
+    var verticalPadding: Double {
+        Self.verticalPadding(for: formula)
     }
 
     /// Room around the formula's box: the ink of fractions and limits runs a
     /// pixel or two past the box the engine reports, and without this two
     /// lines of tall formulas touch.
-    var horizontalPadding: Double {
+    static func horizontalPadding(for formula: MathFormula) -> Double {
         max(1, (formula.pixelSize * 0.04).rounded(.up))
     }
 
-    var verticalPadding: Double {
+    static func verticalPadding(for formula: MathFormula) -> Double {
         max(2, (formula.pixelSize * 0.1).rounded(.up))
+    }
+
+    /// The room the formula's shape takes in a Pango layout, padding
+    /// included, its origin on the baseline (Pango units).
+    static func rect(for formula: MathFormula) -> PangoRectangle {
+        let padX = horizontalPadding(for: formula)
+        let padY = verticalPadding(for: formula)
+        return PangoRectangle(
+            x: 0,
+            y: Int32(-((formula.ascent + padY) * Double(PANGO_SCALE)).rounded(.up)),
+            width: Int32(((formula.width + 2 * padX) * Double(PANGO_SCALE)).rounded(.up)),
+            height: Int32(((formula.height + 2 * padY) * Double(PANGO_SCALE)).rounded(.up))
+        )
     }
 }
 
@@ -920,18 +1037,14 @@ final class MathLabelState {
     var measuredFontPixels = 0.0
     var isDisplayBlock = false
     var hasPostponedFormulas = false
+    /// The label's share of ``PreviewMath/drawnFormulaTotalBudget``.
+    var grantedBytes = 0.0
+    /// Set when the total held the label back: the release count then.
+    var heldBackSinceRelease: Int?
 
     func appendShapes(to attributes: TextAttributes) {
         for entry in entries {
-            let formula = entry.shape.formula
-            let padX = entry.shape.horizontalPadding
-            let padY = entry.shape.verticalPadding
-            var rect = PangoRectangle(
-                x: 0,
-                y: Int32(-((formula.ascent + padY) * Double(PANGO_SCALE)).rounded(.up)),
-                width: Int32(((formula.width + 2 * padX) * Double(PANGO_SCALE)).rounded(.up)),
-                height: Int32(((formula.height + 2 * padY) * Double(PANGO_SCALE)).rounded(.up))
-            )
+            var rect = MathShape.rect(for: entry.shape.formula)
             let data = Unmanaged.passRetained(entry.shape).toOpaque()
             guard let attribute = pango_attr_shape_new_with_data(&rect, &rect, data, retainShape, releaseShape) else {
                 Unmanaged<MathShape>.fromOpaque(data).release()
@@ -1038,8 +1151,7 @@ private func drawFormulaShape(
     var blue = 0.0
     var alpha = 0.0
     if cairo_pattern_get_rgba(cairo_get_source(cairo), &red, &green, &blue, &alpha) != CAIRO_STATUS_SUCCESS {
-        var color = GdkRGBA()
-        gtk_widget_get_color(shape.label, &color)
+        let color = shape.labelColor
         (red, green, blue, alpha) = (Double(color.red), Double(color.green), Double(color.blue), Double(color.alpha))
     }
     cairo_save(cairo)

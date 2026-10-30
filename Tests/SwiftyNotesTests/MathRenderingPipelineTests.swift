@@ -1,4 +1,5 @@
 import Foundation
+import MathEngine
 import Testing
 @testable import SwiftyNotes
 
@@ -616,5 +617,19 @@ struct MathRenderingPipelineTests {
     /// A reserved noncharacter, which Swift string literals do not accept.
     private func reserved(_ value: UInt32) -> String {
         String(Unicode.Scalar(value)!)
+    }
+
+    @Test("Every formula in the bundled notes renders") @MainActor
+    func everyFormulaInTheBundledNotesRenders() {
+        for content in [MarkdownShowcaseSeed.content, SwiftyNotesOverviewSeed.content] {
+            let spans = MathSpanExtractor.extract(from: content).spans
+            #expect(!spans.isEmpty)
+            for span in spans {
+                #expect(
+                    MathRenderer.formula(tex: span.tex, isDisplay: span.isDisplay, pixelSize: 18) != nil,
+                    "\(span.tex): \(MathRenderer.lastError ?? "")"
+                )
+            }
+        }
     }
 }

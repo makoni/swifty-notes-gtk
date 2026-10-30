@@ -18,8 +18,8 @@ final class TitleMathScheduler {
     /// - Parameter layOut: lays a label's postponed formulas out (within
     ///   the budget the scheduler has opened).
     init(
-        budget: Duration = .milliseconds(50),
-        period: Duration = .milliseconds(100),
+        budget: Duration = MathParseBudgets.titles,
+        period: Duration = MathParseBudgets.titlePeriod,
         layOut: @escaping (Label, MathLabelState) -> Void
     ) {
         self.period = ParseBudgetPeriod(budget: budget, period: period)

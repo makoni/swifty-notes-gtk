@@ -787,10 +787,6 @@ private extension ExternalDocumentWindow {
         previewPaneDivider.hide(animated: animated)
     }
 
-    func restorePreviewPaneLayout() {
-        previewPaneDivider.restore()
-    }
-
     func detachPreviewPane() {
         previewPaneDivider.detach()
     }
@@ -824,9 +820,11 @@ private extension ExternalDocumentWindow {
     /// The Outline's width while shown — as allocated, or as the split view
     /// will size it before the first allocation.
     var currentOutlineWidth: Int {
-        guard outlineSplitView.showSidebar else { return 0 }
-        if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
-        return PaneLayout.outlineWidth(forWindowWidth: max(window.width, window.defaultWidth))
+        PaneLayout.outlineWidth(
+            isShown: outlineSplitView.showSidebar,
+            allocatedWidth: outlineSidebar.root.width,
+            windowWidth: max(window.width, window.defaultWidth),
+        )
     }
 }
 

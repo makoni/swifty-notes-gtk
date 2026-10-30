@@ -1,5 +1,23 @@
 import Foundation
 
+/// How long formula parsing may hold the main loop, everywhere it happens.
+/// Formulas a budget leaves unparsed show their source until a later pass.
+enum MathParseBudgets {
+    /// A full render of the preview.
+    static let render: Duration = .milliseconds(400)
+    /// A zoom step, laying the preview's formulas out again at once.
+    static let zoomStep: Duration = .milliseconds(100)
+    /// Each frame of a pass after the render — postponed formulas, a font
+    /// refresh; a postponed pass always finishes at least one formula.
+    static let followUpFrame: Duration = .milliseconds(16)
+    /// What the row binds of one frame of the virtualized preview share.
+    static let rowBindsPerFrame: Duration = .milliseconds(50)
+    /// Titles and headings outside the preview, shared per period
+    /// (``ParseBudgetPeriod``).
+    static let titles: Duration = .milliseconds(50)
+    static let titlePeriod: Duration = .milliseconds(100)
+}
+
 /// The time formula parsing may take, out of each period, for labels that
 /// share one budget (titles and headings outside the preview): the rest of
 /// the period is the UI's.

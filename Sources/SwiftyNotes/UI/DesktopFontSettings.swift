@@ -42,21 +42,11 @@ final class DesktopFontSettings {
     private func connectIfNeeded() {
         guard !isConnected, let settings = gtk_settings_get_default() else { return }
         isConnected = true
-        let callback: @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer?, UnsafeMutableRawPointer?) -> Void = {
-            _, _, _ in
-            MainActor.assumeIsolated {
-                DesktopFontSettings.shared.notifyObservers()
+        // The default GtkSettings lives as long as the display.
+        for property in ["gtk-font-name", "gtk-xft-dpi"] {
+            SignalHelper.onNotify(GObjectRef(borrowing: UnsafeMutableRawPointer(settings)), property: .custom(property)) { [weak self] in
+                self?.notifyObservers()
             }
-        }
-        for property in ["notify::gtk-font-name", "notify::gtk-xft-dpi"] {
-            g_signal_connect_data(
-                UnsafeMutableRawPointer(settings),
-                property,
-                unsafeBitCast(callback, to: GCallback.self),
-                nil,
-                nil,
-                GConnectFlags(rawValue: 0)
-            )
         }
     }
 }

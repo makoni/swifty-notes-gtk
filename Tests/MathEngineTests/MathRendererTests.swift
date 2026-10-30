@@ -2,7 +2,6 @@ import CAdwaita
 import CRaTeXBridge
 import Foundation
 @testable import MathEngine
-@testable import SwiftyNotes
 import Testing
 
 /// The RaTeX engine behind ``MathRenderer``.
@@ -191,8 +190,7 @@ struct MathRendererTests {
     func aPassThatMustProgressParsesItsFirstFormula() {
         MathRenderer.withParseBudget(.zero, guaranteeingProgress: true) {
             #expect(MathRenderer.formula(tex: "p_1", isDisplay: false, pixelSize: 20) != nil)
-            #expect(MathRenderer.formula(tex: "p_2", isDisplay: false, pixelSize: 20) == nil)
-            #expect(MathRenderer.lastLookupWasPostponed)
+            #expect(MathRenderer.lookup(tex: "p_2", isDisplay: false, pixelSize: 20).isPostponed)
         }
     }
 
@@ -310,20 +308,6 @@ struct MathRendererTests {
         #expect(FileManager.default.fileExists(atPath: path), "\(spec)")
     }
     #endif
-
-    @Test("Every formula in the bundled notes renders")
-    func everyFormulaInTheBundledNotesRenders() {
-        for content in [MarkdownShowcaseSeed.content, SwiftyNotesOverviewSeed.content] {
-            let spans = MathSpanExtractor.extract(from: content).spans
-            #expect(!spans.isEmpty)
-            for span in spans {
-                #expect(
-                    MathRenderer.formula(tex: span.tex, isDisplay: span.isDisplay, pixelSize: 18) != nil,
-                    "\(span.tex): \(MathRenderer.lastError ?? "")"
-                )
-            }
-        }
-    }
 
     /// Draws `formula` with the given default colour on a transparent
     /// surface and counts strongly coloured pixels.

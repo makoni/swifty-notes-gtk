@@ -801,9 +801,10 @@ extension MainWindow {
     /// The Outline's width while shown — as allocated, or as the split view
     /// will size it before the first allocation.
     var currentOutlineWidth: Int {
-        guard outlineSplitView.showSidebar else { return 0 }
-        if outlineSidebar.root.width > 0 { return outlineSidebar.root.width }
-        let windowWidth = window.width > 0 ? window.width : max(window.defaultWidth, state.preferredWindowWidth)
-        return PaneLayout.outlineWidth(forWindowWidth: windowWidth)
+        PaneLayout.outlineWidth(
+            isShown: outlineSplitView.showSidebar,
+            allocatedWidth: outlineSidebar.root.width,
+            windowWidth: window.width > 0 ? window.width : max(window.defaultWidth, state.preferredWindowWidth),
+        )
     }
 }

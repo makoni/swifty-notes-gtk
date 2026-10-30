@@ -287,7 +287,14 @@ final class MarkdownPreview {
     private var animatedImagePlayers: [PreviewAnimatedImagePlayer] = []
     private var lastObservedPreviewWidth: Int = -1
     private var lastRenderedBlocks: [RenderedBlock] = []
-    private var renderedRows: [PreviewRow] = []
+    private var renderedRows: [PreviewRow] = [] {
+        didSet {
+            rendersMath = renderedRows.contains { !$0.mathSpans.isEmpty }
+        }
+    }
+
+    /// Whether the rendered rows have formulas.
+    private var rendersMath = false
     /// Maps `RenderedBlock` index (the same one stored on
     /// ``Heading.blockIndex``) to the matching ``PreviewRow`` index
     /// in `container.children()`. Populated by ``makeRows`` so the
@@ -590,16 +597,17 @@ final class MarkdownPreview {
     }
 
     /// The window surface whose scale the preview follows (see the
-    /// formula budget in ``PreviewMath``).
-    private var observedSurface: UnsafeMutableRawPointer?
+    /// formula budget in ``PreviewMath``). Weak: a surface realized again
+    /// may land where the old one was, and still needs a handler.
+    private var observedSurface: GObjectWeakReference?
 
     private func observeSurfaceScale() {
         guard let native = gtk_widget_get_native(rootScroll.widgetPointer),
               let surface = gtk_native_get_surface(native)
         else { return }
         let pointer = UnsafeMutableRawPointer(surface)
-        guard pointer != observedSurface else { return }
-        observedSurface = pointer
+        guard observedSurface?.withObject({ $0 == pointer }) != true else { return }
+        observedSurface = GObjectWeakReference(pointer)
         SignalHelper.onNotify(GObjectRef(borrowing: pointer), property: .custom("scale")) { [weak self] in
             self?.scheduleMathFontRefresh()
         }
@@ -615,7 +623,7 @@ final class MarkdownPreview {
     }
 
     func render(blocks: [RenderedBlock], baseDirectory: URL? = nil) {
-        MathRenderer.withParseBudget {
+        MathRenderer.withParseBudget(MathParseBudgets.render) {
             renderWithinParseBudget(blocks: blocks, baseDirectory: baseDirectory)
         }
         schedulePostponedMathPass()
@@ -638,11 +646,11 @@ final class MarkdownPreview {
             // leaves as long again to the UI before the next.
             let started = ContinuousClock.now
             guard started >= resumeAt else { return true }
-            let stillPostponed = MathRenderer.withParseBudget(Self.followUpParseBudget, guaranteeingProgress: true) {
+            let stillPostponed = MathRenderer.withParseBudget(MathParseBudgets.followUpFrame, guaranteeingProgress: true) {
                 PreviewMath.layOutPostponedFormulas(under: rootScroll.child ?? container)
             }
             let spent = ContinuousClock.now - started
-            resumeAt = FrameCatchUp.next(after: started, spent: spent, budget: Self.followUpParseBudget)
+            resumeAt = FrameCatchUp.next(after: started, spent: spent, budget: MathParseBudgets.followUpFrame)
             reapplySearchHighlights()
             if !stillPostponed {
                 postponedMathPassScheduled = false
@@ -650,10 +658,6 @@ final class MarkdownPreview {
             return stillPostponed
         }
     }
-
-    /// What a pass after the render — a postponed one, a font refresh —
-    /// may spend parsing per frame; it always finishes at least one formula.
-    private static let followUpParseBudget: Duration = .milliseconds(16)
 
     /// When the parse budget the row binds of this frame share runs out;
     /// the first bind of a frame starts it.
@@ -663,7 +667,7 @@ final class MarkdownPreview {
         if let deadline = currentBindParseDeadline, ContinuousClock.now < deadline + .milliseconds(100) {
             return deadline
         }
-        let deadline = ContinuousClock.now + .milliseconds(50)
+        let deadline = ContinuousClock.now + MathParseBudgets.rowBindsPerFrame
         currentBindParseDeadline = deadline
         rootScroll.addTickCallback { [weak self] in
             self?.currentBindParseDeadline = nil
@@ -1587,6 +1591,12 @@ final class MarkdownPreview {
             // shapes point at stale offsets either way.
             if !newRows[offset].mathSpans.isEmpty || !oldRows[offset].mathSpans.isEmpty {
                 installMath(in: widget, spans: newRows[offset].mathSpans)
+                // That replaced the labels' attributes, search highlights
+                // included: the next apply paints them again even if the
+                // matches look the same.
+                lastAppliedMatches = []
+                lastAppliedActiveIndex = nil
+                lastAppliedNonEmpty = false
                 // A heading whose level changed gets its new font only on
                 // GTK's next style pass; check the formula sizes then.
                 scheduleMathFontRefresh()
@@ -2397,7 +2407,7 @@ final class MarkdownPreview {
         // out again at once (the text follows when GTK restyles on the next
         // frame), then checks against the restyled fonts.
         if previewZoomPercent != previousZoomPercent {
-            MathRenderer.withParseBudget(.milliseconds(100)) {
+            MathRenderer.withParseBudget(MathParseBudgets.zoomStep) {
                 PreviewMath.rescale(
                     under: rootScroll.child ?? container,
                     by: Double(previewZoomPercent) / Double(previousZoomPercent)
@@ -2413,13 +2423,16 @@ final class MarkdownPreview {
     /// GTK restyles, or the desktop's font settings — checking for a few
     /// frames, since GTK applies a new font during a frame's style pass.
     func scheduleMathFontRefresh() {
+        // A note without formulas has none to refresh: walking its whole
+        // preview each frame of a resize would be for nothing.
+        guard rendersMath else { return }
         mathFontRefreshTicks = 0
         guard !mathFontRefreshScheduled else { return }
         mathFontRefreshScheduled = true
         rootScroll.addTickCallback { [weak self] in
             guard let self else { return false }
             mathFontRefreshTicks += 1
-            let refreshed = MathRenderer.withParseBudget(Self.followUpParseBudget) {
+            let refreshed = MathRenderer.withParseBudget(MathParseBudgets.followUpFrame) {
                 PreviewMath.refreshFontSizes(under: rootScroll.child ?? container)
             }
             if refreshed {
