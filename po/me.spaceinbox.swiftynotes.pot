@@ -6,7 +6,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: swifty-notes-gtk\n"
 "Language: \n"
-"POT-Creation-Date: 2026-10-17 21:28+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 
 msgid " The notes will move to Trash so you can restore them."
 msgstr ""
@@ -1268,20 +1268,24 @@ msgid "preview"
 msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.metainfo.xml.in:26
+msgid "math"
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:28
 msgid "cli"
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:27
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:29
 msgid "automation"
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:30
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:32
 msgid ""
 "Swifty Notes is a native GTK/libadwaita Markdown notes application for Linux "
 "written in Swift."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:31
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:33
 msgid ""
 "The desktop app is the primary experience: write, organize, and preview "
 "Markdown notes with native GTK widgets, autosave, remembered workspace "
@@ -1289,74 +1293,149 @@ msgid ""
 "indentation, and appearance."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:32
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:34
 msgid ""
 "The included CLI works on the same file-backed notes so shell scripts, "
 "automation, and AI agents can safely inspect or update notes without a "
 "separate database or background service."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:34
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:36
 msgid "Create, rename, duplicate, export, and delete Markdown notes."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:35
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:37
 msgid ""
 "Autosave edits, remember workspace state, and keep note-local image assets "
 "together with each note."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:36
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:38
 msgid ""
 "Adjust editor font size and other writing preferences to fit different "
 "screens and workflows."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:37
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:39
 msgid ""
 "Choose where notes are stored, including a cloud-synced folder, so the same "
 "plain files can stay in sync across devices."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:38
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:40
 msgid ""
 "Import images with drag and drop and render Markdown with a native GTK "
 "preview instead of a web view."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:39
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:41
+msgid ""
+"Write formulas in LaTeX and see them drawn natively in the preview, in note "
+"titles and in the outline."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:42
+msgid ""
+"Find your way through long notes with the outline panel, and find and "
+"replace text in the editor or the preview."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:43
+msgid ""
+"Format with the toolbar or keyboard shortcuts; lists, quotes and tables "
+"continue when you press Enter."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:44
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:45
 msgid ""
 "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, "
 "and AI agents."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:40
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:46
 msgid ""
 "Switch the interface language between the system default and any language "
 "the build ships, without restarting the app."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:49
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:55
 msgid ""
 "Split view with the sidebar, formatting toolbar, live preview, and outline."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:53
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:59
 msgid ""
 "Native Markdown preview with the document outline for navigating long notes."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:57
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:63
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:68
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:74
+msgid ""
+"Swifty Notes now draws mathematical formulas, and writing and reading notes "
+"gets quicker."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:76
+msgid ""
+"Formulas written in LaTeX appear in the preview as real mathematics: put one "
+"between single dollar signs inside a sentence, or between double dollar "
+"signs on lines of their own. Fractions, roots, matrices, aligned equations "
+"and chemical formulas are drawn natively, and also in note titles, the "
+"outline and the breadcrumb. A formula that cannot be read shows its source "
+"instead."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:77
+msgid ""
+"Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line "
+"spacing in Settings."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:78
+msgid ""
+"Choose whether Markdown files you open from your file manager start in the "
+"editor, side by side with the preview, or in the preview alone."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:79
+msgid ""
+"Pressing Enter in a list, a quote or a table continues it with the next "
+"item, line or row; pressing Enter on an empty one ends it."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:80
+msgid ""
+"Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, "
+"Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O "
+"numbered list."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:81
+msgid ""
+"A note containing a null character no longer opens empty, which could save "
+"over its text. The preview keeps its width beside the outline, and note "
+"titles with special characters show correctly in notifications."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:82
+msgid ""
+"The Snap package now includes the spell-checking library it needs to start."
+msgstr ""
+
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:88
 msgid ""
 "Swifty Notes now speaks your language: thirteen of them, and switching "
 "between them takes effect straight away."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:70
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:90
 msgid ""
 "The interface is available in Arabic, German, Spanish, French, Hebrew, "
 "Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified "
@@ -1365,33 +1444,33 @@ msgid ""
 "retranslates on the spot: no restart, and nothing you had open is lost."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:71
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:91
 msgid ""
 "Arabic and Hebrew read right to left. The notes sidebar moves to the right, "
 "the outline panel to the left, and the toolbar and the editor follow. "
 "Switching back to a left-to-right language puts everything where it was."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:72
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:92
 msgid ""
 "Dates in the notes list now follow the language you are reading in. They "
 "used to stay English however the interface was set."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:73
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:93
 msgid ""
 "Picking a language now works on systems that have no locale of their own "
 "configured, such as Flatpak sandboxes and minimal containers, where the "
 "setting previously appeared to do nothing at all."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:74
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:94
 msgid ""
 "The name and summary shown in your software centre are translated too, so "
 "Swifty Notes is easier to find in your own language."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:75
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:95
 msgid ""
 "Swifty Notes is now published as an AppImage too, for systems where one self-"
 "contained file is easier than a package. On one, the Update button can fetch "
@@ -1399,7 +1478,7 @@ msgid ""
 "AppImage updater is installed."
 msgstr ""
 
-#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:76
+#: data/me.spaceinbox.swiftynotes.metainfo.xml.in:96
 msgid "Renaming the seeded showcase note no longer strands its image."
 msgstr ""
 
@@ -1408,7 +1487,7 @@ msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.desktop.in:9
-msgid "notes;markdown;editor;text;cli;automation;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
 msgstr ""
 
 #: data/me.spaceinbox.swiftynotes.desktop.in:15

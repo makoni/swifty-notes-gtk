@@ -45,12 +45,13 @@ LINUXDEPLOY_SHA256_x86_64="c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544c
 LINUXDEPLOY_SHA256_aarch64="620095110d693282b8ebeb244a95b5e911cf8f65f76c88b4b47d16ae6346fcff"
 LINUXDEPLOY_PLUGIN_GTK_COMMIT="7a3fbc31a9e5075073ff8790f26effbac5f84453"
 LINUXDEPLOY_PLUGIN_GTK_SHA256="b0f4cbc684a0103a9651f0955b635eaea0096b3a66c0f5a2c2aa337960375171"
-# github.com/AppImage/type2-runtime, tag `continuous`, published 2026-06-23.
+# github.com/AppImage/type2-runtime, tag `continuous`, published 2026-10-19
+# (built from main at fedfad5; extraction directories are now mode 0700).
 # Static-pie with libfuse linked in: it needs only a `fusermount` on PATH,
 # which is what makes it work on distros that stopped shipping libfuse2.
 APPIMAGE_RUNTIME_TAG="continuous"
-APPIMAGE_RUNTIME_SHA256_x86_64="1cc49bcf1e2ccd593c379adb17c9f85a36d619088296504de95b1d06215aebbf"
-APPIMAGE_RUNTIME_SHA256_aarch64="7d5d772b7c32f0c84caf0a452a3072a5709027d7eac5856feb89a7a7a8881372"
+APPIMAGE_RUNTIME_SHA256_x86_64="617aa77314d57c8b8e4fae9c3f0b35af7b30d5529cb69e98f64f92510ed98a46"
+APPIMAGE_RUNTIME_SHA256_aarch64="9a72a744d221576c9347ec074243acc5c3c7568896b12714e0e82e9f0bf47900"
 
 # LibreOffice/dictionaries at the same commit the Flatpak manifest pins, and
 # the same language list, so the two packages offer the same spell-check

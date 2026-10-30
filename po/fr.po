@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: French\n"
@@ -1250,6 +1250,9 @@ msgstr "éditeur"
 msgid "preview"
 msgstr "aperçu"
 
+msgid "math"
+msgstr "mathématiques"
+
 msgid "cli"
 msgstr "cli"
 
@@ -1280,6 +1283,18 @@ msgstr "Choisir l’emplacement des notes, y compris un dossier synchronisé dan
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "Importer des images par glisser-déposer et afficher le Markdown dans un aperçu GTK natif plutôt que dans une vue web."
 
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "Écrivez des formules en LaTeX et voyez-les dessinées nativement dans l’aperçu, dans les titres des notes et dans le plan."
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "Repérez-vous dans les longues notes grâce au panneau du plan, et recherchez et remplacez du texte dans l’éditeur ou l’aperçu."
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "Mettez en forme avec la barre d’outils ou des raccourcis clavier ; listes, citations et tableaux se prolongent quand vous appuyez sur Entrée."
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "Zoomez dans l’aperçu et réglez son interligne selon votre écran."
+
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "Utiliser la ligne de commande pour automatiser les notes en JSON depuis des scripts, des chaînes shell et des agents IA."
 
@@ -1294,6 +1309,30 @@ msgstr "Aperçu Markdown natif avec le plan du document pour naviguer dans les l
 
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "Éditeur complet avec la barre de mise en forme et le panneau de plan du document."
+
+msgid "Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker."
+msgstr "Swifty Notes dessine désormais les formules mathématiques, et écrire et lire ses notes va plus vite."
+
+msgid "Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead."
+msgstr "Les formules écrites en LaTeX apparaissent dans l’aperçu comme de vraies mathématiques : placez-en une entre des signes dollar simples dans une phrase, ou entre des signes dollar doubles sur des lignes à part. Fractions, racines, matrices, équations alignées et formules chimiques sont dessinées nativement, y compris dans les titres des notes, le plan et le fil d’Ariane. Une formule illisible affiche son code source à la place."
+
+msgid "Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings."
+msgstr "Zoomez dans l’aperçu avec Ctrl et la molette de la souris, et réglez son zoom et son interligne dans les Préférences."
+
+msgid "Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone."
+msgstr "Choisissez si les fichiers Markdown ouverts depuis votre gestionnaire de fichiers démarrent dans l’éditeur, à côté de l’aperçu ou dans l’aperçu seul."
+
+msgid "Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it."
+msgstr "Appuyer sur Entrée dans une liste, une citation ou un tableau le prolonge avec l’élément, la ligne ou la rangée suivante ; appuyer sur Entrée sur un élément vide le termine."
+
+msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
+msgstr "Raccourcis clavier de mise en forme : Ctrl+B gras, Ctrl+I italique, Ctrl+K lien, Ctrl+E code, Ctrl+Maj+Q citation, Ctrl+Maj+L liste à puces et Ctrl+Maj+O liste numérotée."
+
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "Une note contenant un caractère nul ne s’ouvre plus vide, ce qui pouvait écraser son texte. L’aperçu garde sa largeur à côté du plan, et les titres de notes contenant des caractères spéciaux s’affichent correctement dans les notifications."
+
+msgid "The Snap package now includes the spell-checking library it needs to start."
+msgstr "Le paquet Snap inclut désormais la bibliothèque de correction orthographique dont il a besoin pour démarrer."
 
 msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
 msgstr "Swifty Notes parle désormais votre langue – treize d’entre elles, et le changement prend effet immédiatement."
@@ -1322,8 +1361,8 @@ msgstr "Renommer la note de démonstration n’abandonne plus son image."
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "Notes Markdown GTK natives, avec aperçu et automatisation en ligne de commande"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "notes;markdown;éditeur;texte;cli;automatisation;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "notes;markdown;éditeur;texte;cli;automatisation;mathématiques;LaTeX;"
 
 msgid "New Window"
 msgstr "Nouvelle fenêtre"

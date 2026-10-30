@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Hebrew\n"
@@ -1250,6 +1250,9 @@ msgstr "עורך"
 msgid "preview"
 msgstr "תצוגה מקדימה"
 
+msgid "math"
+msgstr "מתמטיקה"
+
 msgid "cli"
 msgstr "שורת פקודה"
 
@@ -1280,6 +1283,18 @@ msgstr "בחירת מקום האחסון של הפתקים, כולל תיקיי�
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "ייבוא תמונות בגרירה והצגת Markdown בתצוגה מקדימה מקורית של GTK במקום תצוגת רשת."
 
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "כתבו נוסחאות ב־LaTeX וראו אותן מצוירות באופן מקורי בתצוגה המקדימה, בכותרות הפתקים ובמתאר."
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "התמצאו בפתקים ארוכים בעזרת חלונית המתאר, וחפשו והחליפו טקסט בעורך או בתצוגה המקדימה."
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "עצבו מסרגל הכלים או בקיצורי מקלדת; רשימות, ציטוטים וטבלאות ממשיכים כשמקישים Enter."
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "הגדילו את התצוגה המקדימה והתאימו את הרווח בין השורות למסך שלכם."
+
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "שימוש בשורת הפקודה לאוטומציה של פתקים בפורמט JSON מתוך סקריפטים, צינורות מעטפת וסוכני בינה מלאכותית."
 
@@ -1294,6 +1309,30 @@ msgstr "תצוגה מקדימה מקורית של Markdown עם מתאר המס�
 
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "עורך מלא עם סרגל העיצוב ולוח מתאר המסמך."
+
+msgid "Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker."
+msgstr "Swifty Notes מצייר עכשיו נוסחאות מתמטיות, וכתיבה וקריאה של פתקים מהירות יותר."
+
+msgid "Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead."
+msgstr "נוסחאות שנכתבו ב־LaTeX מופיעות בתצוגה המקדימה כמתמטיקה של ממש: שימו נוסחה בין סימני דולר בודדים בתוך משפט, או בין סימני דולר כפולים בשורות נפרדות. שברים, שורשים, מטריצות, משוואות מיושרות ונוסחאות כימיות מצוירים באופן מקורי, גם בכותרות הפתקים, במתאר ובשורת הניווט. נוסחה שלא ניתן לקרוא מוצגת כטקסט המקור שלה."
+
+msgid "Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings."
+msgstr "הגדילו את התצוגה המקדימה עם Ctrl וגלגלת העכבר, וקבעו את הזום ואת הרווח בין השורות בהגדרות."
+
+msgid "Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone."
+msgstr "בחרו אם קובצי Markdown שאתם פותחים ממנהל הקבצים יתחילו בעורך, לצד התצוגה המקדימה או בתצוגה המקדימה בלבד."
+
+msgid "Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it."
+msgstr "הקשה על Enter ברשימה, בציטוט או בטבלה ממשיכה אותם בפריט, בשורה או ברשומה הבאים; הקשה על Enter בפריט ריק מסיימת אותם."
+
+msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
+msgstr "קיצורי מקלדת לעיצוב: Ctrl+B מודגש, Ctrl+I נטוי, Ctrl+K קישור, Ctrl+E קוד, Ctrl+Shift+Q ציטוט, Ctrl+Shift+L רשימת תבליטים ו־Ctrl+Shift+O רשימה ממוספרת."
+
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "פתק שמכיל תו אפס כבר לא נפתח ריק, דבר שעלול היה לדרוס את הטקסט שלו. התצוגה המקדימה שומרת על רוחבה לצד המתאר, וכותרות פתקים עם תווים מיוחדים מוצגות כראוי בהתראות."
+
+msgid "The Snap package now includes the spell-checking library it needs to start."
+msgstr "חבילת ה־Snap כוללת עכשיו את ספריית בדיקת האיות שהיא צריכה כדי לפעול."
 
 msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
 msgstr "‏Swifty Notes מדבר עכשיו בשפה שלך: שלוש עשרה שפות, והמעבר ביניהן נכנס לתוקף מיד."
@@ -1322,8 +1361,8 @@ msgstr "שינוי שם של פתק ההדגמה המצורף כבר לא משא
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "פתקי Markdown מקוריים ל־GTK עם תצוגה מקדימה ואוטומציה משורת הפקודה"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "פתקים;markdown;עורך;טקסט;שורת פקודה;אוטומציה;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "פתקים;markdown;עורך;טקסט;שורת פקודה;אוטומציה;מתמטיקה;LaTeX;"
 
 msgid "New Window"
 msgstr "חלון חדש"
