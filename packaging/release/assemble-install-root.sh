@@ -103,8 +103,13 @@ cd "$repo_root"
 math_bridge_prefix="${repo_root}/build/ratex-bridge"
 bash scripts/build-ratex-bridge.sh
 
-swift build -c release --static-swift-stdlib
-build_dir="$(swift build -c release --static-swift-stdlib --show-bin-path)"
+# SwiftPM 6.4's default build system (Swift Build) does not link the
+# libraries a static Foundation pulls in (CoreFoundation, _FoundationICU,
+# Synchronization, …): the link fails with thousands of undefined symbols.
+# The native build system still does.
+static_build=(swift build -c release --static-swift-stdlib --build-system native)
+"${static_build[@]}"
+build_dir="$("${static_build[@]}" --show-bin-path)"
 binary_path="${build_dir}/swiftynotes"
 resources_dir="${build_dir}/swifty-notes-gtk_SwiftyNotes.resources"
 
