@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-30 12:27+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Italian\n"
@@ -1250,6 +1250,9 @@ msgstr "editor"
 msgid "preview"
 msgstr "anteprima"
 
+msgid "math"
+msgstr "matematica"
+
 msgid "cli"
 msgstr "cli"
 
@@ -1279,6 +1282,18 @@ msgstr "Scegli dove salvare le note, anche in una cartella sincronizzata nel clo
 
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "Importa immagini trascinandole e visualizza il Markdown con un'anteprima GTK nativa invece che con una vista web."
+
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "Scrivi formule in LaTeX e guardale disegnate in modo nativo nell’anteprima, nei titoli delle note e nella struttura."
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "Orientati nelle note lunghe con il pannello della struttura, e cerca e sostituisci testo nell’editor o nell’anteprima."
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "Formatta con la barra degli strumenti o con le scorciatoie da tastiera; elenchi, citazioni e tabelle proseguono quando premi Invio."
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "Ingrandisci l’anteprima e regola la sua interlinea in base al tuo schermo."
 
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "Usa la riga di comando per automatizzare le note in JSON da script, pipeline di shell e agenti di IA."
@@ -1313,8 +1328,8 @@ msgstr "Premere Invio in un elenco, una citazione o una tabella la prosegue con 
 msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
 msgstr "Scorciatoie da tastiera per la formattazione: Ctrl+B grassetto, Ctrl+I corsivo, Ctrl+K collegamento, Ctrl+E codice, Ctrl+Maiusc+Q citazione, Ctrl+Maiusc+L elenco puntato e Ctrl+Maiusc+O elenco numerato."
 
-msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
-msgstr "Una nota che contiene un carattere nullo non si apre più vuota, cosa che poteva sovrascriverne il testo. L’anteprima mantiene la sua larghezza accanto alla struttura, e i titoli delle note con simboli come < o & appaiono correttamente nelle notifiche."
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "Una nota che contiene un carattere nullo non si apre più vuota, cosa che poteva sovrascriverne il testo. L’anteprima mantiene la sua larghezza accanto alla struttura, e i titoli delle note con caratteri speciali appaiono correttamente nelle notifiche."
 
 msgid "The Snap package now includes the spell-checking library it needs to start."
 msgstr "Il pacchetto Snap ora include la libreria di controllo ortografico di cui ha bisogno per avviarsi."
@@ -1346,8 +1361,8 @@ msgstr "Rinominare la nota dimostrativa non lascia più la sua immagine scollega
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "Note Markdown native per GTK, con anteprima e automazione da riga di comando"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "note;markdown;editor;testo;cli;automazione;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "note;markdown;editor;testo;cli;automazione;matematica;LaTeX;"
 
 msgid "New Window"
 msgstr "Nuova finestra"

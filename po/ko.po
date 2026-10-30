@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-30 12:27+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Korean\n"
@@ -1239,6 +1239,9 @@ msgstr "편집기"
 msgid "preview"
 msgstr "미리 보기"
 
+msgid "math"
+msgstr "수학"
+
 msgid "cli"
 msgstr "cli"
 
@@ -1268,6 +1271,18 @@ msgstr "클라우드 동기화 폴더를 포함해 노트를 저장할 위치를
 
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "이미지를 끌어 놓아 가져오고, 웹 뷰가 아닌 네이티브 GTK 미리 보기로 마크다운을 표시합니다."
+
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "LaTeX로 수식을 작성하면 미리 보기, 노트 제목, 개요에 네이티브로 그려집니다."
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "개요 패널로 긴 노트를 쉽게 탐색하고, 편집기나 미리 보기에서 텍스트를 찾아 바꿀 수 있습니다."
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "도구 모음이나 단축키로 서식을 지정하고, Enter 키를 누르면 목록·인용문·표가 이어집니다."
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "미리 보기를 확대/축소하고 화면에 맞게 줄 간격을 설정하세요."
 
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "스크립트와 셸 파이프라인, AI 에이전트에서 명령줄로 JSON에 어울리는 노트 자동화를 수행합니다."
@@ -1302,8 +1317,8 @@ msgstr "목록, 인용문, 표에서 Enter 키를 누르면 다음 항목, 줄, 
 msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
 msgstr "서식 지정 단축키: Ctrl+B 굵게, Ctrl+I 기울임, Ctrl+K 링크, Ctrl+E 코드, Ctrl+Shift+Q 인용문, Ctrl+Shift+L 글머리 기호 목록, Ctrl+Shift+O 번호 매기기 목록."
 
-msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
-msgstr "널 문자가 포함된 노트가 빈 채로 열려 내용이 덮어쓰일 수 있던 문제를 고쳤습니다. 미리 보기는 개요 옆에서도 너비를 유지하며, < 또는 & 같은 기호가 들어간 노트 제목이 알림에 올바르게 표시됩니다."
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "널 문자가 포함된 노트가 빈 채로 열려 내용이 덮어쓰일 수 있던 문제를 고쳤습니다. 미리 보기는 개요 옆에서도 너비를 유지하며, 특수 문자가 들어간 노트 제목이 알림에 올바르게 표시됩니다."
 
 msgid "The Snap package now includes the spell-checking library it needs to start."
 msgstr "Snap 패키지에 실행에 필요한 맞춤법 검사 라이브러리가 포함되었습니다."
@@ -1335,8 +1350,8 @@ msgstr "함께 제공되는 예시 노트의 이름을 바꿔도 그 이미지�
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "미리 보기와 명령줄 자동화를 갖춘 네이티브 GTK 마크다운 노트"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "노트;메모;마크다운;편집기;텍스트;cli;자동화;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "노트;메모;마크다운;편집기;텍스트;cli;자동화;수학;LaTeX;"
 
 msgid "New Window"
 msgstr "새 창"

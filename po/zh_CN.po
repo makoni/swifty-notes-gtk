@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-30 12:27+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Simplified Chinese\n"
@@ -1239,6 +1239,9 @@ msgstr "编辑器"
 msgid "preview"
 msgstr "预览"
 
+msgid "math"
+msgstr "数学"
+
 msgid "cli"
 msgstr "cli"
 
@@ -1268,6 +1271,18 @@ msgstr "自由选择笔记的存放位置，包括云同步文件夹，让同一
 
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "拖放导入图片，并用原生 GTK 预览而非网页视图来渲染 Markdown。"
+
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "用 LaTeX 书写公式，在预览、笔记标题和大纲中都能看到原生绘制的效果。"
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "借助大纲面板浏览长篇笔记，并在编辑器或预览中查找和替换文本。"
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "通过工具栏或键盘快捷键设置格式；按 Enter 时列表、引用和表格会自动接续。"
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "缩放预览，并根据屏幕调整行间距。"
 
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "在脚本、shell 管道和 AI 智能体中，用命令行完成便于 JSON 处理的笔记自动化。"
@@ -1302,8 +1317,8 @@ msgstr "在列表、引用或表格中按 Enter 会接续下一项、下一行�
 msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
 msgstr "格式快捷键：Ctrl+B 粗体、Ctrl+I 斜体、Ctrl+K 链接、Ctrl+E 代码、Ctrl+Shift+Q 引用、Ctrl+Shift+L 项目符号列表、Ctrl+Shift+O 编号列表。"
 
-msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
-msgstr "含有空字符的笔记不再以空白打开，以前这可能导致其内容被覆盖。预览在大纲旁边能保持宽度，含有 < 或 & 等符号的笔记标题在通知中也能正确显示。"
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "含有空字符的笔记不再以空白打开，以前这可能导致其内容被覆盖。预览在大纲旁边能保持宽度，含有特殊字符的笔记标题在通知中也能正确显示。"
 
 msgid "The Snap package now includes the spell-checking library it needs to start."
 msgstr "Snap 软件包现在包含了启动所需的拼写检查库。"
@@ -1335,8 +1350,8 @@ msgstr "重命名随附的示例笔记后，它的图片不会再失去关联。
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "带预览和命令行自动化的原生 GTK Markdown 笔记"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "笔记;markdown;编辑器;文本;cli;自动化;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "笔记;markdown;编辑器;文本;cli;自动化;数学;LaTeX;"
 
 msgid "New Window"
 msgstr "新建窗口"

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-30 12:27+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-04 16:30+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: German\n"
@@ -1250,6 +1250,9 @@ msgstr "Editor"
 msgid "preview"
 msgstr "Vorschau"
 
+msgid "math"
+msgstr "Mathematik"
+
 msgid "cli"
 msgstr "CLI"
 
@@ -1279,6 +1282,18 @@ msgstr "Den Speicherort der Notizen frei wählen, auch einen mit der Cloud abgeg
 
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "Bilder per Ziehen und Ablegen einfügen und Markdown mit einer nativen GTK-Vorschau statt einer Web-Ansicht darstellen."
+
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "Schreiben Sie Formeln in LaTeX und sehen Sie sie nativ gezeichnet – in der Vorschau, in Notiztiteln und in der Gliederung."
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "Finden Sie sich in langen Notizen mit der Gliederung zurecht, und suchen und ersetzen Sie Text im Editor oder in der Vorschau."
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "Formatieren Sie über die Werkzeugleiste oder Tastenkürzel; Listen, Zitate und Tabellen setzen sich mit der Eingabetaste fort."
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "Zoomen Sie die Vorschau und stellen Sie ihren Zeilenabstand passend zu Ihrem Bildschirm ein."
 
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "Die Befehlszeile für JSON-freundliche Automatisierung aus Skripten, Shell-Pipelines und von KI-Agenten nutzen."
@@ -1313,8 +1328,8 @@ msgstr "Die Eingabetaste in einer Liste, einem Zitat oder einer Tabelle setzt si
 msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
 msgstr "Tastenkürzel zum Formatieren: Strg+B Fett, Strg+I Kursiv, Strg+K Link, Strg+E Code, Strg+Umschalt+Q Zitat, Strg+Umschalt+L Aufzählung und Strg+Umschalt+O nummerierte Liste."
 
-msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
-msgstr "Eine Notiz mit einem Nullzeichen öffnet sich nicht mehr leer, was ihren Text überschreiben konnte. Die Vorschau behält ihre Breite neben der Gliederung, und Notiztitel mit Zeichen wie < oder & erscheinen in Benachrichtigungen richtig."
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "Eine Notiz mit einem Nullzeichen öffnet sich nicht mehr leer, was ihren Text überschreiben konnte. Die Vorschau behält ihre Breite neben der Gliederung, und Notiztitel mit Sonderzeichen erscheinen in Benachrichtigungen richtig."
 
 msgid "The Snap package now includes the spell-checking library it needs to start."
 msgstr "Das Snap-Paket enthält jetzt die Rechtschreibbibliothek, die es zum Starten braucht."
@@ -1346,8 +1361,8 @@ msgstr "Das Umbenennen der mitgelieferten Beispielnotiz lässt ihr Bild nicht me
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "Native GTK-Notizen in Markdown mit Vorschau und CLI-Automatisierung"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "Notizen;Markdown;Editor;Text;CLI;Automatisierung;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "Notizen;Markdown;Editor;Text;CLI;Automatisierung;Mathematik;LaTeX;"
 
 msgid "New Window"
 msgstr "Neues Fenster"

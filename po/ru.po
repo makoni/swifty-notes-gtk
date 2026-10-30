@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-30 12:27+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-08-04 21:34+0300\n"
 "Last-Translator: Sergey Armodin <support@spaceinbox.me>\n"
 "Language-Team: Russian\n"
@@ -1263,6 +1263,9 @@ msgstr "редактор"
 msgid "preview"
 msgstr "предпросмотр"
 
+msgid "math"
+msgstr "математика"
+
 msgid "cli"
 msgstr "cli"
 
@@ -1292,6 +1295,18 @@ msgstr "Выбор папки хранения заметок, в том чис�
 
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "Добавление изображений перетаскиванием и отображение Markdown нативным предпросмотром GTK вместо веб-движка."
+
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "Пишите формулы в LaTeX и смотрите, как они нативно рисуются в предварительном просмотре, в заголовках заметок и в структуре."
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "Ориентируйтесь в длинных заметках с помощью панели структуры, ищите и заменяйте текст в редакторе или в предварительном просмотре."
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "Форматируйте с панели инструментов или сочетаниями клавиш; списки, цитаты и таблицы продолжаются по нажатию Enter."
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "Масштабируйте предварительный просмотр и настраивайте межстрочный интервал под свой экран."
 
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "Автоматизация заметок через CLI с выводом в JSON — из скриптов, конвейеров оболочки и ИИ-агентов."
@@ -1326,8 +1341,8 @@ msgstr "Enter в списке, цитате или таблице продолж
 msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
 msgstr "Сочетания клавиш для форматирования: Ctrl+B — полужирный, Ctrl+I — курсив, Ctrl+K — ссылка, Ctrl+E — код, Ctrl+Shift+Q — цитата, Ctrl+Shift+L — маркированный список, Ctrl+Shift+O — нумерованный список."
 
-msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
-msgstr "Заметка с нулевым символом больше не открывается пустой — из-за этого её текст мог быть перезаписан. Предварительный просмотр сохраняет свою ширину рядом со структурой, а заголовки заметок с символами вроде < или & правильно отображаются в уведомлениях."
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "Заметка с нулевым символом больше не открывается пустой — из-за этого её текст мог быть перезаписан. Предварительный просмотр сохраняет свою ширину рядом со структурой, а заголовки заметок со специальными символами правильно отображаются в уведомлениях."
 
 msgid "The Snap package now includes the spell-checking library it needs to start."
 msgstr "Пакет Snap теперь включает библиотеку проверки орфографии, без которой он не запускался."
@@ -1359,8 +1374,8 @@ msgstr "Переименование демонстрационной замет
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "Нативные Markdown-заметки на GTK с предпросмотром и автоматизацией через CLI"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "заметки;markdown;редактор;текст;cli;автоматизация;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "заметки;markdown;редактор;текст;cli;автоматизация;математика;LaTeX;"
 
 msgid "New Window"
 msgstr "Новое окно"

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-30 12:27+0700\n"
+"POT-Creation-Date: 2026-10-30 12:40+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Japanese\n"
@@ -1239,6 +1239,9 @@ msgstr "エディター"
 msgid "preview"
 msgstr "プレビュー"
 
+msgid "math"
+msgstr "数式"
+
 msgid "cli"
 msgstr "cli"
 
@@ -1268,6 +1271,18 @@ msgstr "クラウド同期フォルダーを含め、ノートの保存場所を
 
 msgid "Import images with drag and drop and render Markdown with a native GTK preview instead of a web view."
 msgstr "ドラッグ＆ドロップで画像をインポートし、ウェブビューではなくネイティブ GTK のプレビューで Markdown を表示。"
+
+msgid "Write formulas in LaTeX and see them drawn natively in the preview, in note titles and in the outline."
+msgstr "LaTeX で数式を書くと、プレビュー、ノートのタイトル、アウトラインにネイティブに描画されます。"
+
+msgid "Find your way through long notes with the outline panel, and find and replace text in the editor or the preview."
+msgstr "長いノートはアウトラインパネルで見渡せ、エディターやプレビューでテキストを検索・置換できます。"
+
+msgid "Format with the toolbar or keyboard shortcuts; lists, quotes and tables continue when you press Enter."
+msgstr "ツールバーやキーボードショートカットで書式を設定でき、リスト・引用・表は Enter キーで続けて入力できます。"
+
+msgid "Zoom the preview and set its line spacing to suit your screen."
+msgstr "プレビューを拡大・縮小し、画面に合わせて行間を設定できます。"
 
 msgid "Use the CLI for JSON-friendly note automation from scripts, shell pipelines, and AI agents."
 msgstr "スクリプトやシェルのパイプライン、AI エージェントから、JSON で扱いやすいノートの自動化をコマンドラインで実行。"
@@ -1302,8 +1317,8 @@ msgstr "リスト、引用、表で Enter キーを押すと次の項目・行�
 msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
 msgstr "書式設定のキーボードショートカット: Ctrl+B 太字、Ctrl+I 斜体、Ctrl+K リンク、Ctrl+E コード、Ctrl+Shift+Q 引用、Ctrl+Shift+L 箇条書き、Ctrl+Shift+O 番号付きリスト。"
 
-msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
-msgstr "ヌル文字を含むノートが空の状態で開かれ、本文が上書きされるおそれのある問題を修正しました。プレビューはアウトラインの横でも幅を保ち、< や & などの記号を含むノートのタイトルが通知で正しく表示されるようになりました。"
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with special characters show correctly in notifications."
+msgstr "ヌル文字を含むノートが空の状態で開かれ、本文が上書きされるおそれのある問題を修正しました。プレビューはアウトラインの横でも幅を保ち、特殊文字を含むノートのタイトルが通知で正しく表示されるようになりました。"
 
 msgid "The Snap package now includes the spell-checking library it needs to start."
 msgstr "Snap パッケージに、起動に必要なスペルチェックライブラリが含まれるようになりました。"
@@ -1335,8 +1350,8 @@ msgstr "付属のサンプルノートの名前を変えても、その画像が
 msgid "Native GTK markdown notes with preview and CLI automation"
 msgstr "プレビューとコマンドラインでの自動化に対応した、ネイティブ GTK の Markdown ノート"
 
-msgid "notes;markdown;editor;text;cli;automation;"
-msgstr "ノート;メモ;markdown;エディター;テキスト;cli;自動化;"
+msgid "notes;markdown;editor;text;cli;automation;math;LaTeX;"
+msgstr "ノート;メモ;markdown;エディター;テキスト;cli;自動化;数式;LaTeX;"
 
 msgid "New Window"
 msgstr "新しいウィンドウ"
