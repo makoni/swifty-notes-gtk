@@ -65,6 +65,20 @@
   <releases>
     <release version="@VERSION@" date="@DATE@">
       <description>
+        <p>Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker.</p>
+        <ul>
+          <li>Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead.</li>
+          <li>Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings.</li>
+          <li>Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone.</li>
+          <li>Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it.</li>
+          <li>Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list.</li>
+          <li>A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as &lt; or &amp; show correctly in notifications.</li>
+          <li>The Snap package now includes the spell-checking library it needs to start.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.5.0" date="2026-09-07">
+      <description>
         <p>Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away.</p>
         <ul>
           <li>The interface is available in Arabic, German, Spanish, French, Hebrew, Italian, Japanese, Korean, Dutch, Brazilian Portuguese, Russian, Simplified Chinese and Traditional Chinese, alongside English. The Language row in Settings picks one or follows your desktop, and the whole window retranslates on the spot: no restart, and nothing you had open is lost.</li>

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-30 12:27+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Simplified Chinese\n"
@@ -1283,6 +1283,30 @@ msgstr "带文档大纲的原生 Markdown 预览，便于浏览长笔记。"
 
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "带格式工具栏和文档大纲面板的完整编辑器。"
+
+msgid "Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker."
+msgstr "Swifty Notes 现在可以绘制数学公式，写笔记和读笔记都更快了。"
+
+msgid "Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead."
+msgstr "用 LaTeX 书写的公式会在预览中显示为真正的数学公式：在句子中用单个美元符号括起来，或在单独的行上用两个美元符号括起来。分数、根号、矩阵、对齐的方程和化学式均以原生方式绘制，笔记标题、大纲和导航路径中同样如此。无法解析的公式会改为显示其源码。"
+
+msgid "Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings."
+msgstr "按住 Ctrl 滚动鼠标滚轮即可缩放预览，并可在设置中调整缩放比例和行间距。"
+
+msgid "Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone."
+msgstr "可以选择从文件管理器打开的 Markdown 文件以编辑器、与预览并排，还是仅预览的方式打开。"
+
+msgid "Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it."
+msgstr "在列表、引用或表格中按 Enter 会接续下一项、下一行或下一行表格；在空项中按 Enter 则结束它。"
+
+msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
+msgstr "格式快捷键：Ctrl+B 粗体、Ctrl+I 斜体、Ctrl+K 链接、Ctrl+E 代码、Ctrl+Shift+Q 引用、Ctrl+Shift+L 项目符号列表、Ctrl+Shift+O 编号列表。"
+
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
+msgstr "含有空字符的笔记不再以空白打开，以前这可能导致其内容被覆盖。预览在大纲旁边能保持宽度，含有 < 或 & 等符号的笔记标题在通知中也能正确显示。"
+
+msgid "The Snap package now includes the spell-checking library it needs to start."
+msgstr "Snap 软件包现在包含了启动所需的拼写检查库。"
 
 msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
 msgstr "Swifty Notes 现在会说你的语言了：共十三种，切换后立即生效。"

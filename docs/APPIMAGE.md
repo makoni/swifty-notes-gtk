@@ -9,7 +9,7 @@ per architecture and attaches it, with its `.zsync`, to the drafted release.
 packaging/release/assemble-install-root.sh --dest packaging/out/install-root-usr --prefix /usr
 packaging/release/build-appimage.sh --install-root packaging/out/install-root-usr
 packaging/release/verify-appimage.sh \
-    --appimage packaging/out/appimage/swifty-notes-gtk-1.5.0-x86_64.AppImage \
+    --appimage packaging/out/appimage/swifty-notes-gtk-1.6.0-x86_64.AppImage \
     --appdir packaging/out/appimage/work/AppDir
 ```
 

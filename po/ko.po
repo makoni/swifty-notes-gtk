@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-30 12:27+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Korean\n"
@@ -1283,6 +1283,30 @@ msgstr "긴 노트를 오갈 수 있는 문서 개요를 갖춘 네이티브 마
 
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "서식 도구 모음과 문서 개요 패널을 갖춘 전체 편집기입니다."
+
+msgid "Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker."
+msgstr "이제 Swifty Notes가 수식을 그려 주며, 노트를 쓰고 읽는 일이 더 빨라졌습니다."
+
+msgid "Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead."
+msgstr "LaTeX로 작성한 수식이 미리 보기에 실제 수식으로 표시됩니다. 문장 안에서는 달러 기호 하나로, 별도의 줄에서는 달러 기호 두 개로 감싸세요. 분수, 근호, 행렬, 정렬된 수식, 화학식이 네이티브로 그려지며 노트 제목, 개요, 이동 경로에도 표시됩니다. 읽을 수 없는 수식은 대신 원본을 보여 줍니다."
+
+msgid "Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings."
+msgstr "Ctrl 키와 마우스 휠로 미리 보기를 확대하거나 축소하고, 확대/축소와 줄 간격은 설정에서 지정하세요."
+
+msgid "Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone."
+msgstr "파일 관리자에서 연 Markdown 파일을 편집기, 미리 보기와 나란히, 또는 미리 보기만으로 시작할지 선택할 수 있습니다."
+
+msgid "Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it."
+msgstr "목록, 인용문, 표에서 Enter 키를 누르면 다음 항목, 줄, 행이 이어지고, 빈 항목에서 Enter 키를 누르면 끝납니다."
+
+msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
+msgstr "서식 지정 단축키: Ctrl+B 굵게, Ctrl+I 기울임, Ctrl+K 링크, Ctrl+E 코드, Ctrl+Shift+Q 인용문, Ctrl+Shift+L 글머리 기호 목록, Ctrl+Shift+O 번호 매기기 목록."
+
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
+msgstr "널 문자가 포함된 노트가 빈 채로 열려 내용이 덮어쓰일 수 있던 문제를 고쳤습니다. 미리 보기는 개요 옆에서도 너비를 유지하며, < 또는 & 같은 기호가 들어간 노트 제목이 알림에 올바르게 표시됩니다."
+
+msgid "The Snap package now includes the spell-checking library it needs to start."
+msgstr "Snap 패키지에 실행에 필요한 맞춤법 검사 라이브러리가 포함되었습니다."
 
 msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
 msgstr "Swifty Notes가 이제 여러분의 언어로 말합니다. 열세 가지 언어를 지원하며, 전환하면 바로 반영됩니다."

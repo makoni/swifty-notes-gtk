@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-30 12:27+0700\n"
 "PO-Revision-Date: 2026-09-04 16:30+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: German\n"
@@ -1294,6 +1294,30 @@ msgstr "Native Markdown-Vorschau mit Dokumentgliederung für lange Notizen."
 
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "Vollständiger Editor mit Formatierungsleiste und Gliederungsbereich."
+
+msgid "Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker."
+msgstr "Swifty Notes zeichnet jetzt mathematische Formeln, und Notizen schreiben und lesen geht schneller."
+
+msgid "Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead."
+msgstr "In LaTeX geschriebene Formeln erscheinen in der Vorschau als echte Mathematik: Setzen Sie eine Formel im Satz zwischen einfache Dollarzeichen oder auf eigenen Zeilen zwischen doppelte. Brüche, Wurzeln, Matrizen, ausgerichtete Gleichungen und chemische Formeln werden nativ gezeichnet, auch in Notiztiteln, in der Gliederung und in der Pfadleiste. Eine Formel, die sich nicht lesen lässt, zeigt stattdessen ihren Quelltext."
+
+msgid "Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings."
+msgstr "Zoomen Sie die Vorschau mit Strg und dem Mausrad, und legen Sie Zoom und Zeilenabstand in den Einstellungen fest."
+
+msgid "Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone."
+msgstr "Wählen Sie, ob Markdown-Dateien, die Sie aus dem Dateimanager öffnen, im Editor, geteilt neben der Vorschau oder nur in der Vorschau starten."
+
+msgid "Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it."
+msgstr "Die Eingabetaste in einer Liste, einem Zitat oder einer Tabelle setzt sie mit dem nächsten Eintrag, der nächsten Zeile oder Reihe fort; auf einem leeren Eintrag beendet sie sie."
+
+msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
+msgstr "Tastenkürzel zum Formatieren: Strg+B Fett, Strg+I Kursiv, Strg+K Link, Strg+E Code, Strg+Umschalt+Q Zitat, Strg+Umschalt+L Aufzählung und Strg+Umschalt+O nummerierte Liste."
+
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
+msgstr "Eine Notiz mit einem Nullzeichen öffnet sich nicht mehr leer, was ihren Text überschreiben konnte. Die Vorschau behält ihre Breite neben der Gliederung, und Notiztitel mit Zeichen wie < oder & erscheinen in Benachrichtigungen richtig."
+
+msgid "The Snap package now includes the spell-checking library it needs to start."
+msgstr "Das Snap-Paket enthält jetzt die Rechtschreibbibliothek, die es zum Starten braucht."
 
 msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
 msgstr "Swifty Notes spricht jetzt Ihre Sprache – dreizehn davon, und der Wechsel zwischen ihnen wirkt sofort."

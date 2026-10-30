@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: swifty-notes-gtk\n"
-"POT-Creation-Date: 2026-10-14 07:39+0700\n"
+"POT-Creation-Date: 2026-10-30 12:27+0700\n"
 "PO-Revision-Date: 2026-09-05 12:40+0700\n"
 "Last-Translator: Swifty Notes contributors\n"
 "Language-Team: Arabic\n"
@@ -1338,6 +1338,30 @@ msgstr "معاينة ماركداون أصيلة مع مخطط المستند ل
 
 msgid "Full editor with the formatting toolbar and the document outline panel."
 msgstr "محرر كامل مع شريط التنسيق ولوحة مخطط المستند."
+
+msgid "Swifty Notes now draws mathematical formulas, and writing and reading notes gets quicker."
+msgstr "يرسم Swifty Notes الآن الصيغ الرياضية، وصارت كتابة الملاحظات وقراءتها أسرع."
+
+msgid "Formulas written in LaTeX appear in the preview as real mathematics: put one between single dollar signs inside a sentence, or between double dollar signs on lines of their own. Fractions, roots, matrices, aligned equations and chemical formulas are drawn natively, and also in note titles, the outline and the breadcrumb. A formula that cannot be read shows its source instead."
+msgstr "تظهر الصيغ المكتوبة بلغة LaTeX في المعاينة رياضياتٍ حقيقية: ضع الصيغة بين علامتَي دولار مفردتين داخل الجملة، أو بين علامتَي دولار مزدوجتين على أسطر مستقلة. تُرسم الكسور والجذور والمصفوفات والمعادلات المحاذاة والصيغ الكيميائية رسمًا أصليًا، وكذلك في عناوين الملاحظات والمخطط وشريط التنقل. والصيغة التي تتعذر قراءتها تُعرض بنصها المصدري بدلًا منها."
+
+msgid "Zoom the preview with Ctrl and the mouse wheel, and set its zoom and line spacing in Settings."
+msgstr "كبّر المعاينة بالضغط على Ctrl مع عجلة الفأرة، واضبط تقريبها وتباعد أسطرها من الإعدادات."
+
+msgid "Choose whether Markdown files you open from your file manager start in the editor, side by side with the preview, or in the preview alone."
+msgstr "اختر هل تبدأ ملفات Markdown التي تفتحها من مدير الملفات في المحرر، أو بجانب المعاينة، أو في المعاينة وحدها."
+
+msgid "Pressing Enter in a list, a quote or a table continues it with the next item, line or row; pressing Enter on an empty one ends it."
+msgstr "الضغط على Enter في قائمة أو اقتباس أو جدول يتابعه بالعنصر أو السطر أو الصف التالي، والضغط على Enter في عنصر فارغ ينهيه."
+
+msgid "Keyboard shortcuts for formatting: Ctrl+B bold, Ctrl+I italic, Ctrl+K link, Ctrl+E code, Ctrl+Shift+Q quote, Ctrl+Shift+L bulleted list and Ctrl+Shift+O numbered list."
+msgstr "اختصارات لوحة المفاتيح للتنسيق: Ctrl+B عريض، Ctrl+I مائل، Ctrl+K رابط، Ctrl+E شفرة، Ctrl+Shift+Q اقتباس، Ctrl+Shift+L قائمة نقطية، Ctrl+Shift+O قائمة مرقّمة."
+
+msgid "A note containing a null character no longer opens empty, which could save over its text. The preview keeps its width beside the outline, and note titles with symbols such as < or & show correctly in notifications."
+msgstr "لم تعد الملاحظة التي تحتوي على محرف فارغ تُفتح فارغة، وهو ما كان قد يؤدي إلى الكتابة فوق نصها. وتحتفظ المعاينة بعرضها بجانب المخطط، وتظهر عناوين الملاحظات التي تحتوي على رموز مثل < أو & ظهورًا صحيحًا في الإشعارات."
+
+msgid "The Snap package now includes the spell-checking library it needs to start."
+msgstr "تتضمن حزمة Snap الآن مكتبة التدقيق الإملائي التي تحتاجها لتعمل."
 
 msgid "Swifty Notes now speaks your language: thirteen of them, and switching between them takes effect straight away."
 msgstr "‏Swifty Notes صار يتحدث لغتك: ثلاث عشرة لغة، والتبديل بينها يسري فورًا."
