@@ -81,7 +81,7 @@ jobs:
       # older than its dependencies accept (1.88); noble-updates ships
       # versioned toolchains, which install under /usr/lib/rust-<version>.
       - name: Cache the math engine build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
