@@ -53,6 +53,7 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            fonts-dejavu-core \
             fonts-noto-color-emoji \
             gettext \
             libadwaita-1-dev \
@@ -115,8 +116,11 @@ jobs:
       # (release-packages.yml runs the same list).
       - name: Run core test suites
         env:
-          # The runner has colour emoji (fonts-noto-color-emoji): the emoji
-          # limit's tests must run, not skip themselves.
+          # Colour emoji (fonts-noto-color-emoji) are drawn as images only
+          # where the engine's text fallback font lacks them; left to guess,
+          # it picks one here that has them. With DejaVu Serif the emoji
+          # limit's tests run instead of skipping themselves.
+          RATEX_UNICODE_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
           SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           suites="$(paste -sd '|' scripts/core-test-suites.txt)"

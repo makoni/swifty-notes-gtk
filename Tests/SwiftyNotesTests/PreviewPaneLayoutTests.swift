@@ -99,17 +99,7 @@ struct PreviewPaneLayoutTests {
         window.toggleSidebarVisibility()
         // Checked once the room has grown and holds still, however late the
         // slide starts: checked earlier, it would pass with the bug.
-        let clock = ContinuousClock()
-        var lastRoom = narrowRoom
-        var stillSince = clock.now
-        Self.waitUntil(timeout: .seconds(3)) {
-            let room = window.editorPreviewPane.width
-            if room != lastRoom {
-                lastRoom = room
-                stillSince = clock.now
-            }
-            return room > narrowRoom + 100 && clock.now - stillSince >= .milliseconds(150)
-        }
+        Self.waitUntilWidthHoldsStill(of: window.editorPreviewPane, timeout: .seconds(3)) { $0 > narrowRoom + 100 }
         #expect(window.editorPreviewPane.width > narrowRoom + 100, "the sidebar did not slide out")
         expectPreviewWidth("room grown while settling")
         #expect(window.state.preferredPreviewWidth == WorkspaceState.defaultPreviewWidth)
@@ -136,8 +126,12 @@ struct PreviewPaneLayoutTests {
         // preview back beside it.
         window.debugSetViewMode(.editor)
         MainContext.pump(for: .milliseconds(100))
+        let roomBeforeOutline = window.editorPreviewPane.width
         window.toggleOutlineVisibility()
-        MainContext.pump(for: .milliseconds(500))
+        // Until the Outline has slid in, however late it starts (a loaded
+        // runner): a slide later than the divider's settle is not this test.
+        Self.waitUntilWidthHoldsStill(of: window.editorPreviewPane, timeout: .seconds(3)) { $0 < roomBeforeOutline - 100 }
+        #expect(window.editorPreviewPane.width < roomBeforeOutline - 100, "the Outline did not slide in")
         window.debugSetViewMode(.split)
 
         func previewWidthMiss() -> Int {
@@ -259,6 +253,23 @@ struct PreviewPaneLayoutTests {
         #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 0, windowWidth: 1400) == 252)
         #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 0, windowWidth: 800) == 220)
         #expect(PaneLayout.outlineWidth(isShown: true, allocatedWidth: 0, windowWidth: 3000) == 320)
+    }
+
+    /// Pumps until `widget`'s width passes `isReady` and has held still for
+    /// 150 ms, or `timeout` runs out.
+    @MainActor
+    private static func waitUntilWidthHoldsStill(of widget: Widget, timeout: Duration, _ isReady: (Int) -> Bool) {
+        let clock = ContinuousClock()
+        var lastWidth = widget.width
+        var stillSince = clock.now
+        waitUntil(timeout: timeout) {
+            let width = widget.width
+            if width != lastWidth {
+                lastWidth = width
+                stillSince = clock.now
+            }
+            return isReady(width) && clock.now - stillSince >= .milliseconds(150)
+        }
     }
 
     @MainActor

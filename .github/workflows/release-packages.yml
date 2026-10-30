@@ -59,6 +59,7 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            fonts-dejavu-core \
             fonts-noto-color-emoji \
             gettext \
             libadwaita-1-dev \
@@ -89,6 +90,11 @@ jobs:
       # the preview widget suites.
       - name: Verify project
         env:
+          # Colour emoji (fonts-noto-color-emoji) are drawn as images only
+          # where the engine's text fallback font lacks them; left to guess,
+          # it picks one here that has them. With DejaVu Serif the emoji
+          # limit's tests run instead of skipping themselves.
+          RATEX_UNICODE_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
           SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           swift build
@@ -143,6 +149,11 @@ jobs:
 
       - name: Verify project
         env:
+          # Colour emoji (fonts-noto-color-emoji) are drawn as images only
+          # where the engine's text fallback font lacks them; left to guess,
+          # it picks one here that has them. With DejaVu Serif the emoji
+          # limit's tests run instead of skipping themselves.
+          RATEX_UNICODE_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
           SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           swift build
