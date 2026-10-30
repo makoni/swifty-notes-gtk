@@ -430,17 +430,30 @@ jobs:
             packaging/out/install-root-usr/usr/bin/swiftynotes \
             packaging/out/install-root-usr/usr/libexec/swifty-notes/swiftynotes
 
+      # Canonical's craft-actions, not snapcore/action-build, which still
+      # runs on Node 20. It takes no --build-for: each platform in
+      # snapcraft.yaml builds on its own architecture, so a runner packs
+      # only its own.
       - name: Build Snap
         id: build-snap
-        uses: snapcore/action-build@v1
+        uses: canonical/craft-actions/snapcraft/pack@v1
+        env:
+          # The old action embedded the build manifest, which the Snap Store
+          # scans for vulnerable stage-packages; this one leaves it out.
+          SNAPCRAFT_BUILD_INFO: "1"
         with:
           path: .
-          snapcraft-args: --build-for=${{ matrix.platform }}
 
       - name: Resolve Snap artifact
         id: snap-artifact
         run: |
-          snap_path='${{ steps.build-snap.outputs.snap }}'
+          snap_path='${{ steps.build-snap.outputs.snaps }}'
+          case "$snap_path" in
+            *' '*)
+              echo "Expected one snap, got: $snap_path" >&2
+              exit 1
+              ;;
+          esac
           if [ ! -f "$snap_path" ]; then
             echo "Missing snap artifact at $snap_path" >&2
             exit 1
