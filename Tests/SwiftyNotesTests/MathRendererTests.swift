@@ -88,7 +88,8 @@ struct MathRendererTests {
     }
 
     // RaTeX 0.1.14 never returned from these; 0.1.15 rejects them in
-    // milliseconds. The time limit turns a regression into a failure.
+    // milliseconds. The time limit reports a regression, but cannot stop a
+    // call that never returns: the CI jobs' timeout-minutes ends the run.
     @Test("Self-doubling macros stop instead of hanging", .timeLimit(.minutes(1)))
     func selfDoublingMacrosStopInsteadOfHanging() {
         for tex in [#"\def\a#1{\a{#1#1}}\a{x}"#, #"\newcommand{\a}[1]{\a{#1#1}}\a{x}"#] {

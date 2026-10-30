@@ -1017,20 +1017,24 @@ struct RepositoryStateTests {
     }
 
     @Test("A preview width saved with the Outline counted in loses the Outline's width", arguments: [
-        // (saved width, outline shown, marker present, loaded width)
-        (812, true, false, 560),
-        (812, false, false, 812),
-        (812, true, true, 812),
-        (WorkspaceState.defaultPreviewWidth, true, false, WorkspaceState.defaultPreviewWidth),
-        (WorkspaceState.legacyDefaultPreviewWidth, true, false, WorkspaceState.legacyDefaultPreviewWidth),
-        (400, true, false, 360),
+        // (window width, saved width, outline shown, marker present, loaded
+        // width). A 1400 px window gave the Outline 252 px.
+        (1400, 812, true, false, 560),
+        (1400, 812, false, false, 812),
+        (1400, 812, true, true, 812),
+        (1400, WorkspaceState.defaultPreviewWidth, true, false, WorkspaceState.defaultPreviewWidth),
+        (1400, WorkspaceState.legacyDefaultPreviewWidth, true, false, WorkspaceState.legacyDefaultPreviewWidth),
+        (1400, 400, true, false, 360),
+        // The Outline was never narrower than 220 px nor wider than 320.
+        (1000, 812, true, false, 592),
+        (2400, 812, true, false, 492),
         // A corrupted file must not overflow.
-        (Int.min + 8, true, false, 360),
+        (1400, Int.min + 8, true, false, 360),
+        (-1400, 812, true, false, 592),
     ])
-    func aPreviewWidthSavedWithTheOutlineLosesItsWidth(saved: Int, outline: Bool, marker: Bool, loaded: Int) throws {
-        // A 1400 px window gives the Outline 252 px.
+    func aPreviewWidthSavedWithTheOutlineLosesItsWidth(window: Int, saved: Int, outline: Bool, marker: Bool, loaded: Int) throws {
         let json = """
-        {"windowWidth": 1400, "previewWidth": \(saved), "isOutlineVisible": \(outline)\(marker ? ", \"previewWidthExcludesOutline\": true" : "")}
+        {"windowWidth": \(window), "previewWidth": \(saved), "isOutlineVisible": \(outline)\(marker ? ", \"previewWidthExcludesOutline\": true" : "")}
         """
         let decoded = try JSONDecoder().decode(WorkspaceState.self, from: Data(json.utf8))
         #expect(decoded.previewWidth == loaded)

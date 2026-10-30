@@ -79,8 +79,8 @@ struct PangoMarkupEscapingTests {
         // "İ" lowercases to two code points, so ranges found in the
         // lowercased text used to run past the end of the original.
         let markup = MathInlineText.markup(for: "İİİİİİ x", highlighting: "x").markup
-        #expect(markup == "İİİİİİ <span background=\"#f5c211\" foreground=\"#1e1e1e\">x</span>")
-        #expect(MathInlineText.markup(for: "Area <b>", highlighting: "AREA").markup.hasPrefix("<span background=\"#f5c211\" foreground=\"#1e1e1e\">Area</span>"))
+        #expect(markup == "İİİİİİ \(pangoHighlightOpenTag)x</span>")
+        #expect(MathInlineText.markup(for: "Area <b>", highlighting: "AREA").markup.hasPrefix("\(pangoHighlightOpenTag)Area</span>"))
         #expect(parses(MathInlineText.markup(for: tricky, highlighting: "a").markup))
         #expect(MathInlineText.markup(for: "a<b").markup == "a&lt;b")
     }

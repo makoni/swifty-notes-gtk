@@ -484,6 +484,9 @@ struct MathPreviewWidgetTests {
         if Double(ink.height) > 8 * Double(max(1, logical.height)) {
             #expect(drawn == 0, "ink \(ink.height) px over a \(logical.height) px box")
             #expect(label.text.contains("$x_{1}$"))
+        } else {
+            // Said, so a run on such a font is not mistaken for coverage.
+            FileHandle.standardError.write(Data("MathPreviewWidgetTests: this font does not stack the marks; the tall-ink case was not checked\n".utf8))
         }
         // Ordinary accents are fine.
         fixture.render("Café naïve $x_0$ $x_1$ résumé")

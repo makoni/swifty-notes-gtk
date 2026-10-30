@@ -59,12 +59,14 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            fonts-noto-color-emoji \
             gettext \
             libadwaita-1-dev \
             libgtk-4-dev \
             libgtksourceview-5-dev \
             libspelling-1-dev \
             locales \
+            webp-pixbuf-loader \
             xdotool \
             xvfb \
             rustc-1.91 \
@@ -83,11 +85,18 @@ jobs:
           echo /usr/lib/rust-1.91/bin >> "$GITHUB_PATH"
           PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
 
+      # The same suites as ci.yml, from scripts/core-test-suites.txt, and
+      # the preview widget suites.
       - name: Verify project
+        env:
+          SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           swift build
+          suites="$(paste -sd '|' scripts/core-test-suites.txt)"
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|MarkdownNoSpellRangesTests|MathRendererTests|MathRenderingPipelineTests|MathInlineTextTests|MathSpanExtractorTests|MountedDirectoryTests|NoteModelAndRendererTests|PangoMarkupEscapingTests|ParseBudgetPeriodTests|PreviewPaneLayoutTests|PreviewTypographyTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter '$suites' --no-parallel"
+          xvfb-run -a dbus-run-session -- bash -lc \
+            "swift test --filter 'MarkdownPreviewWidgetTests|MathPreviewWidgetTests' --no-parallel"
 
   prepare-install-roots:
     name: Prepare install root (${{ matrix.arch }})
@@ -133,6 +142,8 @@ jobs:
           PATH=/usr/lib/rust-1.91/bin:$PATH bash scripts/build-ratex-bridge.sh
 
       - name: Verify project
+        env:
+          SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
           swift build
           swift test --filter 'CLICommandTests|CLITests|NoteModelAndRendererTests|RepositoryStateTests|SettingsStoreTests' --no-parallel

@@ -31,22 +31,54 @@ struct MountedDirectoryTests {
         #expect(MountedDirectory.mountPoints(in: Self.line(#"/tmp/a\09"#)) == [#"/tmp/a\09"#])
     }
 
-    @Test("A directory reached through a symlink is checked at its real path")
-    func aSymlinkedDirectoryIsCheckedAtItsRealPath() throws {
-        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        let real = base.appendingPathComponent("real", isDirectory: true)
-        let link = base.appendingPathComponent("link", isDirectory: true)
-        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+    @Test("A directory reached through a symlinked parent is checked at its real path")
+    func aDirectoryUnderASymlinkIsCheckedAtItsRealPath() throws {
+        let base = try Self.makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: base) }
+        let real = base.appendingPathComponent("real", isDirectory: true)
+        let doc = real.appendingPathComponent("inner/doc", isDirectory: true)
+        try FileManager.default.createDirectory(at: doc, withIntermediateDirectories: true)
+        let link = base.appendingPathComponent("link", isDirectory: true)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
-        let realPath = real.resolvingSymlinksInPath().path(percentEncoded: false)
-        let realMount = Self.line(realPath.hasSuffix("/") ? realPath + "doc" : realPath + "/doc")
+        // mountinfo names real paths: unresolved, `link/inner` would not
+        // match, and the delete would go through the link into the mount.
+        let mountinfo = Self.line(doc.resolvingSymlinksInPath().path(percentEncoded: false))
 
-        // Mounted inside by its real path: reached through the link, it stays.
-        removeUnlessMountedInto(link, mountinfo: realMount)
-        #expect(FileManager.default.fileExists(atPath: real.path(percentEncoded: false)))
-        // Nothing mounted: it goes.
-        removeUnlessMountedInto(real, mountinfo: Self.line("/"))
-        #expect(!FileManager.default.fileExists(atPath: real.path(percentEncoded: false)))
+        removeUnlessMountedInto(link.appendingPathComponent("inner", isDirectory: true), mountinfo: mountinfo)
+        #expect(FileManager.default.fileExists(atPath: doc.path(percentEncoded: false)))
+    }
+
+    @Test("Mounts that cannot be read keep the directory")
+    func unreadableMountsKeepTheDirectory() throws {
+        let base = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        removeUnlessMountedInto(base, mountinfo: nil)
+        #expect(FileManager.default.fileExists(atPath: base.path(percentEncoded: false)))
+        // Readable and nothing mounted there: it goes.
+        removeUnlessMountedInto(base, mountinfo: Self.line("/"))
+        #expect(!FileManager.default.fileExists(atPath: base.path(percentEncoded: false)))
+    }
+
+    @Test("Deleting leaves alone what is on another device")
+    func deletingLeavesAloneWhatIsOnAnotherDevice() throws {
+        let base = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let file = base.appendingPathComponent("inner/file.txt", isDirectory: false)
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("kept".utf8).write(to: file)
+        var info = stat()
+        try #require(lstat(base.path(percentEncoded: false), &info) == 0)
+
+        // Every entry looks like a mount point of another file system.
+        #expect(!MountedDirectory.remove(base.path(percentEncoded: false), onDevice: info.st_dev &+ 1))
+        #expect(FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
+        #expect(MountedDirectory.remove(base.path(percentEncoded: false), onDevice: info.st_dev))
+        #expect(!FileManager.default.fileExists(atPath: base.path(percentEncoded: false)))
+    }
+
+    private static func makeTemporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
     }
 }

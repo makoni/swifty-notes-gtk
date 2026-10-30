@@ -25,6 +25,9 @@ jobs:
   build-and-core-test:
     name: Build and core test (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    # A test that never returns (a parse that hangs in the math engine)
+    # would otherwise hold the runner for GitHub's six hours.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +53,7 @@ jobs:
             at-spi2-core \
             dbus \
             dbus-user-session \
+            fonts-noto-color-emoji \
             gettext \
             libadwaita-1-dev \
             libgtk-4-dev \
@@ -107,10 +111,17 @@ jobs:
       - name: Build project (release)
         run: swift build -c release
 
+      # The suites CI runs are listed once, in scripts/core-test-suites.txt
+      # (release-packages.yml runs the same list).
       - name: Run core test suites
+        env:
+          # The runner has colour emoji (fonts-noto-color-emoji): the emoji
+          # limit's tests must run, not skip themselves.
+          SWIFTY_NOTES_EXPECT_EMOJI_IMAGES: "1"
         run: |
+          suites="$(paste -sd '|' scripts/core-test-suites.txt)"
           xvfb-run -a dbus-run-session -- bash -lc \
-            "swift test --filter 'CLICommandTests|CLITests|ExtractorTests|LanguageSwitchingTests|LocalizationCatalogTests|LocalizationTests|LongStringLayoutTests|MainWindowActionsTests|MainWindowCoreTests|MarkdownFormattingTests|MarkdownNoSpellRangesTests|MathRendererTests|MathRenderingPipelineTests|MathInlineTextTests|MathSpanExtractorTests|MountedDirectoryTests|NoteModelAndRendererTests|PangoMarkupEscapingTests|ParseBudgetPeriodTests|PreviewPaneLayoutTests|PreviewTypographyTests|RepositoryStateTests|SettingsStoreTests' --no-parallel"
+            "swift test --filter '$suites' --no-parallel"
 
       - name: Run MarkdownPreview widget tests
         run: |
@@ -120,6 +131,7 @@ jobs:
   build-macos:
     name: Build on macOS (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -161,9 +173,13 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      # The image ships rustup with a current stable toolchain.
+      # The image ships rustup; the toolchain is pinned to what the Linux
+      # builds use (Ubuntu's rustc-1.91).
       - name: Build the math engine
+        env:
+          RUSTUP_TOOLCHAIN: "1.91"
         run: |
+          rustup toolchain install 1.91 --profile minimal
           cargo --version
           bash scripts/build-ratex-bridge.sh
 
@@ -195,9 +211,25 @@ jobs:
             DEVELOPMENT_TEAM= \
             build
 
+      - name: Build Xcode .app target (Release)
+        # The configuration release-macos.yml ships, linking the math
+        # engine the way the DMG does; still ad-hoc signed, no bundling.
+        if: matrix.runner == 'macos-26'
+        run: |
+          xcodebuild \
+            -project packaging/macos/swiftynotes.xcodeproj \
+            -scheme swiftynotes \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= \
+            build
+
   ui-smoke-tests:
     name: UI smoke tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: build-and-core-test
 
     steps:
